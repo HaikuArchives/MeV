@@ -165,6 +165,8 @@ CInspectorWindow::CInspectorWindow(
 	// REM: When we close inspector, then save position to
 	// 		preferences.
 	// REM: Also save the fact whether the inspector was open or closed.
+
+	Clear();
 }
 
 // ---------------------------------------------------------------------------
