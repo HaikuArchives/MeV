@@ -129,7 +129,7 @@ public:							// BLooper Implementation
 
 public:							// CObserver Implementation
 
-	virtual void				Released(
+	virtual bool				Released(
 									CObservable *subject);
 
 	virtual void				Updated(

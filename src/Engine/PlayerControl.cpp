@@ -133,9 +133,6 @@ CPlayerControl::PlaySong(
 	enum ESyncType syncType,
 	int16 options)
 {
-	// Make sure document doesn't go away!
-	document->Acquire();
-	
 	CommandArgs args;
 	args.document = document;
 	args.trackID = trackID;
@@ -151,9 +148,6 @@ void
 CPlayerControl::StopSong(
 	CMeVDoc *document)
 {
-	// Make sure document doesn't go away!
-	document->Acquire();
-
 	CommandArgs args;
 	args.document = document;
 	write_port(thePlayer.m_port, Command_Stop, &args, sizeof(args));

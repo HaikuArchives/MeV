@@ -19,6 +19,7 @@
 #include <Screen.h>
 #include <ScrollBar.h>
 // Support Kit
+#include <Autolock.h>
 #include <Debug.h>
 #include <String.h>
 
@@ -250,6 +251,20 @@ CTrackListWindow::MessageReceived(
 	}
 }
 
+bool
+CTrackListWindow::SubjectReleased(
+	CObservable *subject)
+{
+	if (subject == m_doc)
+	{
+		m_doc->RemoveObserver(this);
+		m_doc = NULL;
+		return true;
+	}
+
+	return CAppWindow::SubjectReleased(subject);
+}
+
 void
 CTrackListWindow::Zoom(
 	BPoint origin,
@@ -351,17 +366,33 @@ CTrackListWindow::AddMenuBar()
 }
 
 void
-CTrackListWindow::WatchDocument(
-	CMeVDoc *doc)
+CTrackListWindow::WatchTrack(
+	CEventTrack *track)
 {
 	D_OPERATION(("CTrackListWindow::WatchDocument()\n"));
 
-	if ((doc != m_doc) && Lock())
+	BAutolock lock(this);
+
+	if (track != NULL)
 	{
-		m_doc = doc;
-		m_listView->SetDocument(m_doc);
-		Unlock();
+		CMeVDoc *doc = &(track->Document());
+		if (doc != m_doc)
+		{
+			if (m_doc != NULL)
+				m_doc->RemoveObserver(this);
+
+			m_doc = doc;
+			if (m_doc != NULL)		
+				m_doc->AddObserver(this);
+		}
 	}
+	else
+	{
+		if (m_doc != NULL)
+			m_doc->RemoveObserver(this);
+	}
+
+	m_listView->SetDocument(m_doc);
 }
 
 // END - TrackListWindow.cpp

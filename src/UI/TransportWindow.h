@@ -70,7 +70,7 @@ public:							// CAppWindow Implementation
 	/**	If the app wants us to stop looking at the track, then oblige it.
 		Overridden from the CObserver class.
 	*/
-	virtual void				SubjectReleased(
+	virtual bool				SubjectReleased(
 									CObservable *subject);
 
 	/**	Update inspector info when we get an observer update message.

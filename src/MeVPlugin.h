@@ -182,7 +182,7 @@ public:
 	MeVDocHandle FirstDocument();
 
 		/**	Function to release a document handle */
-	void ReleaseDocument( MeVDocHandle );
+//	void ReleaseDocument( MeVDocHandle );
 
 		/** Return text of error */
 	char *LookupErrorText( status_t error );

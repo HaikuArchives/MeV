@@ -28,7 +28,7 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) PRINT(x)		// Constructor/Destructor
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -337,32 +337,38 @@ CTransportWindow::WatchTrack(
 
 	if (track != m_track)
 	{
-		if (m_track)
+		if (m_track != NULL)
 			m_track->RemoveObserver(this);
 
-		CMeVDoc *oldDoc = m_document;
 		m_track = track;
 
-		m_document = track ? &track->Document() : NULL;
-		if (m_document != oldDoc)
+		CMeVDoc *doc = m_track ? &track->Document() : NULL;
+		if (doc != m_document)
 		{
-			if (oldDoc != NULL)
-				oldDoc->RemoveObserver(this);
+			if (m_document != NULL)
+				m_document->RemoveObserver(this);
+			m_document = doc;
 			SetButtons();
 		}
 
-		m_track->AddObserver(this);
+		if (m_track)
+			m_track->AddObserver(this);
 	}
 }
 
-void
+bool
 CTransportWindow::SubjectReleased(
 	CObservable *subject)
 {
 	D_OBSERVE(("CTransportWindow<%p>::SubjectReleased()\n", this));
 
 	if (subject == m_track)
+	{
 		WatchTrack(NULL);
+		return true;
+	}
+
+	return CAppWindow::SubjectReleased(subject);
 }
 
 void

@@ -53,7 +53,7 @@ CDestinationModifier::~CDestinationModifier()
 }
 
 // ---------------------------------------------------------------------------
-// BWindow Implementation
+// CAppWindow Implementation
 
 void
 CDestinationModifier::MenusBeginning()
@@ -150,10 +150,7 @@ CDestinationModifier::QuitRequested()
 	return false;
 }
 
-// ---------------------------------------------------------------------------
-// CObserver Implementation
-
-void
+bool
 CDestinationModifier::SubjectReleased(
 	CObservable *subject)
 {
@@ -162,7 +159,10 @@ CDestinationModifier::SubjectReleased(
 		m_dest->RemoveObserver(this);
 		m_dest = NULL;
 		PostMessage(B_QUIT_REQUESTED, this);
+		return true;
 	}
+
+	return CAppWindow::SubjectReleased(subject);	
 }
 
 void

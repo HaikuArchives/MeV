@@ -316,10 +316,6 @@ public:							// CAppWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				SubjectReleased(
-									CObservable *subject)
-								{ }
-
 private:						// Instance Data
 
 	BListView *					pList;

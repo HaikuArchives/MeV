@@ -470,16 +470,24 @@ CTrackListView::MouseUp(
 // ---------------------------------------------------------------------------
 // CObserver Implementation
 
-void
+bool
 CTrackListView::Released(
 	CObservable *subject)
 {
-	if (subject == m_doc)
+	bool released = false;
+
+	if (LockLooper())
 	{
-		CTrackListWindow *window = dynamic_cast<CTrackListWindow *>(Window());
-		if (window)
-			window->WatchDocument(NULL);
+		if (subject == m_doc)
+		{
+			m_doc->RemoveObserver(this);
+			m_doc = NULL;
+			released = true;
+		}
+		UnlockLooper();
 	}
+
+	return released;
 }
 
 // ---------------------------------------------------------------------------

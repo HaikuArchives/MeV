@@ -370,7 +370,6 @@ CPlayer::ControlThread()
 
 					if (args.document == NULL)
 						break;
-					CRefCountObject::Release(songGroup->doc);
 					songGroup->doc = args.document;
 					// Reset all channel state records...
 					InitChannelStates();
@@ -387,13 +386,6 @@ CPlayer::ControlThread()
 											 args.duration,
 											 (enum ESyncType)args.syncType,
 											 args.options);
-						}
-						else
-						{
-							if (meterTrack)
-								CRefCountObject::Release(meterTrack);
-							if (realTrack)
-								CRefCountObject::Release(realTrack);
 						}
 					}
 					else
@@ -417,7 +409,6 @@ CPlayer::ControlThread()
 
 					if (args.document == NULL)
 						break;
-					CRefCountObject::Release(args.document);
 					songGroup->flags |= CPlaybackTaskGroup::Clock_Stopped;
 					songGroup->FlushNotes();
 					break;

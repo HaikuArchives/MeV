@@ -398,10 +398,10 @@ long CTextSlider::Drag()
 				newValue;
 	float		delay = 200 * 1000.0;
 
-	Window()->Lock();
+	LockLooper();
 	BRect		r( Bounds() );
 	KnobPosition( kPos, kWidth );
-	Window()->Unlock();
+	UnlockLooper();
 				
 	if (mousePos.x < Arrow_Width)
 	{
@@ -409,11 +409,11 @@ long CTextSlider::Drag()
 		{
 			bool		inside;
 		
-			Window()->Lock();
+			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 			if (!buttons)
 			{
-				Window()->Unlock();
+				UnlockLooper();
 				break;
 			}
 			
@@ -427,15 +427,15 @@ long CTextSlider::Drag()
 			if (decLit && currentVal > minVal) UpdateValue( currentVal - 1 );
 			
 			Window()->UpdateIfNeeded();
-			Window()->Unlock();
+			UnlockLooper();
 			snooze( delay );
 			delay = 50.0 * 1000.0;
 		}
 		
 		decLit = false;
-		Window()->Lock();
+		LockLooper();
 		Invalidate( BRect( r.left, r.top, r.left + Arrow_Width, r.bottom ) );
-		Window()->Unlock();
+		UnlockLooper();
 	}
 	else if (mousePos.x >= r.right - Arrow_Width)
 	{
@@ -443,11 +443,11 @@ long CTextSlider::Drag()
 		{
 			bool		inside;
 		
-			Window()->Lock();
+			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 			if (!buttons)
 			{
-				Window()->Unlock();
+				UnlockLooper();
 				break;
 			}
 			
@@ -461,25 +461,25 @@ long CTextSlider::Drag()
 			if (incLit && currentVal < maxVal) UpdateValue( currentVal + 1 );
 			
 			Window()->UpdateIfNeeded();
-			Window()->Unlock();
+			UnlockLooper();
 			snooze( delay );
 			delay = 50.0 * 1000.0;
 		}
 		
 		incLit = false;
-		Window()->Lock();
+		LockLooper();
 		Invalidate( BRect( r.right - Arrow_Width, r.top, r.right, r.bottom ) );
-		Window()->Unlock();
+		UnlockLooper();
 	}
 	else if (mousePos.x < kPos)
 	{
 		for (;;)
 		{
-			Window()->Lock();
+			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 			if (!buttons)
 			{
-				Window()->Unlock();
+				UnlockLooper();
 				break;
 			}
 	
@@ -489,7 +489,7 @@ long CTextSlider::Drag()
 		
 			UpdateValue( newValue );
 			Window()->UpdateIfNeeded();
-			Window()->Unlock();
+			UnlockLooper();
 	
 			snooze( delay * 2 );
 			delay = 70.0 * 1000.0;
@@ -499,11 +499,11 @@ long CTextSlider::Drag()
 	{
 		for (;;)
 		{
-			Window()->Lock();
+			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 			if (!buttons)
 			{
-				Window()->Unlock();
+				UnlockLooper();
 				break;
 			}
 	
@@ -513,7 +513,7 @@ long CTextSlider::Drag()
 		
 			UpdateValue( newValue );
 			Window()->UpdateIfNeeded();
-			Window()->Unlock();
+			UnlockLooper();
 	
 			snooze( delay * 2 );
 			delay = 70.0 * 1000.0;
@@ -525,7 +525,7 @@ long CTextSlider::Drag()
 	
 		do
 		{
-			Window()->Lock();
+			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 	
 				// If both buttons are held down, it means cancel the drag
@@ -539,7 +539,7 @@ long CTextSlider::Drag()
 				msg.AddBool( "canceled", true );
 				Invoke( &msg );
 
-				Window()->Unlock();
+				UnlockLooper();
 				break;
 			}
 		
@@ -558,7 +558,7 @@ long CTextSlider::Drag()
 		
 			UpdateValue( newValue );
 			Window()->UpdateIfNeeded();
-			Window()->Unlock();
+			UnlockLooper();
 	
 			snooze( 20.0 * 1000.0 );
 		}

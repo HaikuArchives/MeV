@@ -73,7 +73,6 @@ CTrackWindow::CTrackWindow(
 {
 	D_ALLOC(("TrackWindow::TrackWindow(new)\n"));
 
-	track->Acquire();
 	track->AddObserver(this);
 	
 	SetPulseRate(100000);
@@ -83,10 +82,8 @@ CTrackWindow::~CTrackWindow()
 {
 	D_ALLOC(("CTrackWindow::~CTrackWindow()\n"));
 
-	CRefCountObject::Release(trackOp);
-
-	track->RemoveObserver(this);
-	CRefCountObject::Release(track);
+	if (track != NULL)
+		track->RemoveObserver(this);
 }
 
 // ---------------------------------------------------------------------------
@@ -682,17 +679,24 @@ CTrackWindow::MessageReceived(
 bool
 CTrackWindow::QuitRequested()
 {
-	BMessage *message = Track()->GetWindowSettings();
-	if (message != NULL)
-		delete message;
-	message = new BMessage();
-	ExportSettings(message);
-	Track()->SetWindowSettings(message);
+	if (Track() != NULL)
+	{
+		BMessage *message = Track()->GetWindowSettings();
+		if (message != NULL)
+			delete message;
+		message = new BMessage();
+		ExportSettings(message);
+		Track()->SetWindowSettings(message);
+
+		Track()->RemoveObserver(this);
+
+		track = NULL;
+	}
 
 	return CDocWindow::QuitRequested();
 }
 
-void
+bool
 CTrackWindow::SubjectReleased(
 	CObservable *subject)
 {
@@ -701,12 +705,11 @@ CTrackWindow::SubjectReleased(
 	if (subject == track)
 	{
 		track->RemoveObserver(this);
-		CRefCountObject::Release(track);
 		track = NULL;
-		return;
+		return true;
 	}
 
-	CDocWindow::SubjectReleased(subject);
+	return CDocWindow::SubjectReleased(subject);
 }
 
 void

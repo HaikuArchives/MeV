@@ -183,7 +183,7 @@ public:							// CDocWindow Implementation
 
 	virtual bool				QuitRequested();
 
-	virtual void				SubjectReleased(
+	virtual bool				SubjectReleased(
 									CObservable *subject);
 
 	virtual void				WindowActivated(

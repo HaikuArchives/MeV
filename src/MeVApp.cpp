@@ -330,7 +330,7 @@ CMeVApp::~CMeVApp()
 CTrack *
 CMeVApp::ActiveTrack()
 {
-	return activeTrack ? (CTrack *)activeTrack->Acquire() : NULL;
+	return activeTrack;
 }
 
 // ---------------------------------------------------------------------------
@@ -369,17 +369,13 @@ CMeVApp::WatchTrack(
 	if (activeTrack == inTrack)
 		return;
 	
-	if (activeTrack)
-		CRefCountObject::Release( activeTrack );
 	activeTrack = inTrack;
-	if (activeTrack)
-		activeTrack->Acquire();
 
 	mApp->trackListState.Lock();
 	w = mApp->trackListState.Window();
 	if (w)
 	{
-		((CTrackListWindow *)w)->WatchDocument(&(inTrack->Document()));
+		((CTrackListWindow *)w)->WatchTrack(inTrack);
 	}
 	mApp->trackListState.Unlock();
 
@@ -387,7 +383,7 @@ CMeVApp::WatchTrack(
 	w = mApp->inspectorState.Window();
 	if (w)
 	{
-		((CInspectorWindow *)w)->WatchTrack( inTrack );
+		((CInspectorWindow *)w)->WatchTrack(inTrack);
 	}
 	mApp->inspectorState.Unlock();
 
@@ -395,7 +391,7 @@ CMeVApp::WatchTrack(
 	w = mApp->gridWinState.Window();
 	if (w)
 	{
-		((CGridWindow *)w)->WatchTrack( inTrack );
+		((CGridWindow *)w)->WatchTrack(inTrack);
 	}
 	mApp->gridWinState.Unlock();
 
@@ -403,7 +399,7 @@ CMeVApp::WatchTrack(
 	w = mApp->transportState.Window();
 	if (w)
 	{
-		((CTransportWindow *)w)->WatchTrack( inTrack );
+		((CTransportWindow *)w)->WatchTrack(inTrack);
 	}
 	mApp->transportState.Unlock();
 }
@@ -437,10 +433,8 @@ CMeVApp::ShowTrackList( bool inShow )
 			window = new CTrackListWindow(trackListState.Rect().LeftTop(),
 										  trackListState);
 			window->Show();
-			if (activeTrack)
-			{
-				window->WatchDocument(&(activeTrack->Document()));
-			}
+			if (activeTrack != NULL)
+				window->WatchTrack((CEventTrack *)activeTrack);
 		}
 	}
 	else
@@ -810,9 +804,9 @@ CMeVApp::NewDocument(
 	CMeVDoc *doc;
 
 	if (ref)
-		doc = new CMeVDoc(*this, *ref);
+		doc = new CMeVDoc(this, *ref);
 	else
-		doc = new CMeVDoc(*this);
+		doc = new CMeVDoc(this);
 
 	// If document did not initialize OK, then fail.
 	if (!doc->InitCheck())

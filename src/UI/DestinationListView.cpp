@@ -102,7 +102,6 @@ CDestinationListView::SetDocument(
 			m_doc->RemoveObserver(this);
 
 			StSubjectLock lock(*m_doc, Lock_Shared);
-
 			CDestination *dest = NULL;
 			int32 i = 0;
 			int32 index = 0;
@@ -116,7 +115,6 @@ CDestinationListView::SetDocument(
 			m_doc->AddObserver(this);
 
 			StSubjectLock lock(*m_doc, Lock_Shared);	
-
 			CDestination *dest = NULL;
 			int32 index = 0;
 			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
@@ -132,15 +130,11 @@ CDestinationListView::SetTrack(
 	if (m_track != track)
 	{
 		if (m_track != NULL)
-		{
 			m_track->RemoveObserver(this);
-			CRefCountObject::Release(m_track);
-		}
 
 		m_track = track;
 		if (m_track)
 		{
-			m_track->Acquire();
 			m_track->AddObserver(this);
 			if (LockLooper())
 			{
@@ -364,20 +358,32 @@ CDestinationListView::MessageReceived(
 // ---------------------------------------------------------------------------
 //	CObserver Implementation
 
-void
+bool
 CDestinationListView::Released(
 	CObservable *subject)
 {
 	D_OBSERVE(("CDestinationListView<%p>::Released()\n", this));
 
+	bool released = false;
+
 	if (LockLooper())
 	{
 		if (subject == m_doc)
-			SetDocument(NULL);
+		{
+			m_doc->RemoveObserver(this);
+			m_doc = NULL;
+			released = true;
+		}
 		else if (subject == m_track)
-			SetTrack(NULL);
+		{
+			m_track->RemoveObserver(this);
+			m_track = NULL;
+			released = true;
+		}
 		UnlockLooper();
 	}
+
+	return released;
 }
 
 void

@@ -389,10 +389,12 @@ CMidiManager::MessageReceived(
 // ---------------------------------------------------------------------------
 // CObservable Implementation
 
-void
+bool
 CMidiManager::Released(
 	CObservable *subject)
 {
+	bool released = false;
+
 	if (Lock())
 	{
 		// do anything necessary to let go of the subject
@@ -401,9 +403,10 @@ CMidiManager::Released(
 		// from the multimap and release it
 
 		// if it's a document, just release it
-
 		Unlock();
 	}
+
+	return released;
 }
 
 void

@@ -53,7 +53,7 @@ CMeVDoc::DEFAULT_TEMPO = 90.0;
 // Constructor/Destructor
 
 CMeVDoc::CMeVDoc(
-	CMeVApp &app)
+	CMeVApp *app)
 	:	CDocument(app),
 		m_newTrackID(2),
 		m_initialTempo(DEFAULT_TEMPO)
@@ -74,7 +74,7 @@ CMeVDoc::CMeVDoc(
 }
 
 CMeVDoc::CMeVDoc(
-	CMeVApp &app,
+	CMeVApp *app,
 	entry_ref &ref)
 	:	CDocument(app, ref),
 		m_newTrackID(2),
@@ -174,20 +174,19 @@ CMeVDoc::~CMeVDoc()
 {
 	D_ALLOC(("CMeVDoc::~CMeVDoc()\n"));
 
-	// Delete the master track
-	m_masterRealTrack->RequestDelete();
-	CRefCountObject::Release(m_masterRealTrack);
+	D_ALLOC((" -> delete master real track\n"));
+	delete m_masterRealTrack;
 
-	m_masterMeterTrack->RequestDelete();
-	CRefCountObject::Release(m_masterMeterTrack);
-	
-	// Delete all tracks
+	D_ALLOC((" -> delete master metered track\n"));
+	delete m_masterMeterTrack;
+
+	D_ALLOC((" -> delete tracks\n"));
 	for (int i = 0; i < tracks.CountItems(); i++)
-	{
-		CTrack *track = (CTrack *)tracks.ItemAt(i);
-		track->RequestDelete();
-		CRefCountObject::Release(track);
-	}
+		delete (CTrack *)tracks.RemoveItem(i);
+
+	D_ALLOC((" -> delete destinations\n"));
+	for (int i = 0; i < m_destinations.CountItems(); i ++)
+		delete (CDestination *)m_destinations.RemoveItem(i);
 
 	for (int i = 0; i < operators.CountItems(); i++)
 	{
@@ -199,12 +198,6 @@ CMeVDoc::~CMeVDoc()
 	{
 		EventOp *op = (EventOp *)activeOperators.ItemAt(i);
 		CRefCountObject::Release(op);
-	}
-
-	for (int i = 0; i < m_destinations.CountItems(); i ++)
-	{
-		CDestination *dest = (CDestination *)m_destinations.ItemAt(i);
-		CRefCountObject::Release(dest);
 	}
 }
 
@@ -304,10 +297,11 @@ CMeVDoc::ShowWindow(
 	else if (!show)
 	{
 		m_windowState[which].Close();
-		return NULL;
 	}
+
+	return NULL;
 }
-	
+
 bool
 CMeVDoc::IsWindowOpen(
 	uint32 which)
@@ -408,15 +402,18 @@ CTrack *CMeVDoc::NewTrack( ulong inTrackType, TClockType inClockType )
 	// Locate a track by it's ID. (0,1 for master track)
 CTrack *CMeVDoc::FindTrack( long inTrackID )
 {
-	if (inTrackID == 0)		return (CTrack *)m_masterRealTrack->Acquire();
-	else if (inTrackID == 1)	return (CTrack *)m_masterMeterTrack->Acquire();
+	if (inTrackID == 0)
+		return (CTrack *)m_masterRealTrack;
+	else if (inTrackID == 1)
+		return (CTrack *)m_masterMeterTrack;
+
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
-		CTrack		*track = (CTrack *)tracks.ItemAt( i );
-		
-		if (track->Deleted()) continue;
-
-		if (inTrackID == track->GetID()) return (CTrack *)track->Acquire();
+		CTrack *track = (CTrack *)tracks.ItemAt(i);
+		if (track->Deleted())
+			continue;
+		if (inTrackID == track->GetID())
+			 return track;
 	}
 	return NULL;
 }
@@ -430,8 +427,8 @@ CTrack *CMeVDoc::FindTrack( char *inTrackName )
 		
 		if (track->Deleted()) continue;
 		
-		if (strcmp( track->Name(), inTrackName ) == 0)
-			return (CTrack *)track->Acquire();
+		if (strcmp(track->Name(), inTrackName) == 0)
+			return track;
 	}
 	return NULL;
 }

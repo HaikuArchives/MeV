@@ -193,7 +193,7 @@ CAssemblyWindow::MessageReceived(
 	}
 }
 
-void
+bool
 CAssemblyWindow::SubjectReleased(
 	CObservable *subject)
 {
@@ -201,9 +201,12 @@ CAssemblyWindow::SubjectReleased(
 
 	CTrack *realMaster = Document()->FindTrack((int32)0);
 	if (subject == realMaster)
+	{
 		realMaster->RemoveObserver(this);
-	else
-		CTrackWindow::SubjectReleased(subject);
+		return true;
+	}
+
+	return CTrackWindow::SubjectReleased(subject);
 }
 
 void

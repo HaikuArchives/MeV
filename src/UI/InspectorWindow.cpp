@@ -230,13 +230,14 @@ CInspectorWindow::MessageReceived(
 				if (!cancelFlag
 					&& (val != m_previousValue)
 					&& gPrefs.FeedbackEnabled(attr, false)
-					&& m_doc)
+					&& m_track)
 				{
-					CPlayerControl::DoAudioFeedback(m_doc, attr, val, 
+					CPlayerControl::DoAudioFeedback(&m_track->Document(),
+													attr, val, 
 													m_track->CurrentEvent());
+					m_track->Document().SetDefaultAttribute(attr, val);
 				}
 				window->PostMessage(&msg, window);
-				m_doc->SetDefaultAttribute(attr, val);
 			}
 	
 			if (finalFlag || cancelFlag)
@@ -280,16 +281,10 @@ CInspectorWindow::WatchTrack(
 			m_track->RemoveObserver(this);
 
 		m_track = track;
-		m_channelControl->SetTrack(m_track);
 		if (m_track)
-		{
 			m_track->AddObserver(this);
-			m_doc = &(m_track->Document());
-		}
-		else
-		{
-			m_doc = NULL;
-		}
+
+		m_channelControl->SetTrack(m_track);
 	}
 }
 
@@ -309,14 +304,20 @@ CInspectorWindow::Clear()
 // ---------------------------------------------------------------------------
 // CAppWindow Implementation
 
-void
+bool
 CInspectorWindow::SubjectReleased(
 	CObservable *subject)
 {
-	D_OBSERVE(("CTransportWindow<%p>::SubjectReleased()\n", this));
+	D_OBSERVE(("CInspectorWindow<%p>::SubjectReleased()\n", this));
 
 	if (subject == m_track)
-		WatchTrack(NULL);
+	{
+		m_track->RemoveObserver(this);
+		m_track = NULL;
+		return true;
+	}
+
+	return CAppWindow::SubjectReleased(subject);
 }
 
 void

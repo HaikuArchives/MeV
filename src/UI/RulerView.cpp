@@ -355,17 +355,23 @@ CRulerView::SetScrollValue(
 // ---------------------------------------------------------------------------
 // CObserver Implementation
 
-void
+bool
 CRulerView::Released(
 	CObservable *subject)
 {
 	D_HOOK(("CRulerView::Released()\n"));
 
+	bool released = false;
+
 	if (LockLooper())
 	{
+		m_track->RemoveObserver(this);
 		m_track = NULL;
+		released = true;
 		UnlockLooper();
 	}
+
+	return released;
 }
 
 void

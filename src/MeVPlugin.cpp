@@ -130,7 +130,6 @@ MeVDocHandle MeVPlugIn::FindDocument( int32 inDocID )
 		{
 			MeVDocRef		*ref = new MeVDocRef();
 			
-			doc->Acquire();
 			ref->data = doc;
 		
 			app.Unlock();
@@ -159,7 +158,6 @@ MeVDocHandle MeVPlugIn::FindDocument( char *inDocName )
 		{
 			MeVDocRef		*ref = new MeVDocRef();
 			
-			doc->Acquire();
 			ref->data = doc;
 		
 			app.Unlock();
@@ -182,7 +180,6 @@ MeVDocHandle MeVPlugIn::FirstDocument()
 		CMeVDoc	*doc = (CMeVDoc *)app.DocumentAt( 0 );
 		MeVDocRef		*ref = new MeVDocRef();
 			
-		doc->Acquire();
 		ref->data = doc;
 		
 		app.Unlock();
@@ -193,13 +190,13 @@ MeVDocHandle MeVPlugIn::FirstDocument()
 	return NULL;
 }
 
-void MeVPlugIn::ReleaseDocument( MeVDocHandle inHandle )
+/*void MeVPlugIn::ReleaseDocument( MeVDocHandle inHandle )
 {
 	CMeVDoc		*doc = (CMeVDoc *)inHandle->data;
 	
 	CRefCountObject::Release( doc );
 	delete inHandle;
-}
+}*/
 
 char *MeVPlugIn::LookupErrorText( status_t error )
 {
@@ -225,9 +222,7 @@ bool MeVDocRef::NextDocument()
 
 	if (app.CountDocuments() > index + 1)
 	{
-		CRefCountObject::Release( doc );
 		doc = (CMeVDoc *)app.DocumentAt( index + 1 );
-		doc->Acquire();
 		data = doc;
 		
 		app.Unlock();
@@ -416,14 +411,12 @@ MeVTrackRef::MeVTrackRef(void* doc, void* track)
 	:	trackData(track), docData(doc), undo(0)
 {
 	CTrack* theTrack = reinterpret_cast<CTrack *>(track);
-	theTrack->Acquire();
 	theTrack->Lock(Lock_Exclusive);
 }
 
 MeVTrackRef::~MeVTrackRef()
 {
 	((CTrack *)trackData)->Unlock( Lock_Exclusive );
-	CRefCountObject::Release( (CTrack *)trackData );
 }
 
 	/**	Repositions this handle to point to the next track. */
@@ -440,9 +433,7 @@ bool MeVTrackRef::NextTrack()
 	if (index >= 0 && doc->tracks.CountItems() > index + 1)
 	{
 		track->Unlock(Lock_Exclusive);
-		CRefCountObject::Release(track);
 		track = reinterpret_cast<CTrack*>(doc->tracks.ItemAt(index + 1));
-		track->Acquire();
 		track->Lock(Lock_Exclusive);
 		trackData = track;
 		return true;

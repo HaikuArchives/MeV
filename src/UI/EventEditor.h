@@ -159,7 +159,7 @@ public:							// Hook Functions
 									BPoint point,
 									ulong buttons);
 
-	virtual void				SubjectReleased(
+	virtual bool				SubjectReleased(
 									CObservable *subject);
 
 	virtual void				SubjectUpdated(
@@ -307,7 +307,7 @@ public:							// CStripView Implementation
 
 public:							// CObserver Implementation
 
-	virtual void				Released(
+	virtual bool				Released(
 									CObservable *subject);
 
 	virtual void				Updated(

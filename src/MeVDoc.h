@@ -99,10 +99,10 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CMeVDoc(
-									CMeVApp &app);
+									CMeVApp *app);
 
 								CMeVDoc(
-									CMeVApp &app,
+									CMeVApp *app,
 									entry_ref &ref);
 
 	virtual						~CMeVDoc();

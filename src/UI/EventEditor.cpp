@@ -574,7 +574,7 @@ CEventEditor::StartDrag(
 	}
 }
 
-void
+bool
 CEventEditor::SubjectReleased(
 	CObservable *subject)
 {
@@ -582,7 +582,10 @@ CEventEditor::SubjectReleased(
 	{
 		m_track->RemoveObserver(this);
 		m_track = NULL;
+		return true;
 	}
+
+	return false;
 }
 
 void
@@ -1261,15 +1264,19 @@ CEventEditor::SetScrollValue(
 // ---------------------------------------------------------------------------
 // CObserver Implementation
 
-void
+bool
 CEventEditor::Released(
 	CObservable *subject)
 {
+	bool released = false;
+
 	if (LockLooper())
 	{
-		SubjectReleased(subject);
+		released = SubjectReleased(subject);
 		UnlockLooper();
 	}
+
+	return released;
 }
 
 // ---------------------------------------------------------------------------

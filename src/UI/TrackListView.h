@@ -102,7 +102,7 @@ public:							// CObserver Implementation
 									BMessage *message)
 								{ Window()->PostMessage(message, this); }
 
-	virtual void				Released(
+	virtual bool				Released(
 									CObservable *subject);
 
 protected:						// Operations

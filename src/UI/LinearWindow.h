@@ -72,7 +72,7 @@ public:							// CTrackWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				SubjectReleased(
+	virtual bool				SubjectReleased(
 									CObservable *subject);
 
 	virtual void				SubjectUpdated(

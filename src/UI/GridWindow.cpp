@@ -78,7 +78,7 @@ CGridWindow::MessageReceived(
 		{
 			if (m_track)
 			{
-				StSubjectLock(*m_track, Lock_Exclusive);
+				StSubjectLock lock(*m_track, Lock_Exclusive);
 				m_track->SetTimeGridSize(m_intervalControl->Value());
 			}
 			break;
@@ -90,14 +90,19 @@ CGridWindow::MessageReceived(
 	}
 }
 
-void
+bool
 CGridWindow::SubjectReleased(
 	CObservable *subject)
 {
 	D_OBSERVE(("CGridWindow<%p>::SubjectReleased()\n", this));
 
 	if (subject == m_track)
+	{
 		WatchTrack(NULL);
+		return true;
+	}
+
+	return CAppWindow::SubjectReleased(subject);
 }
 
 void
@@ -123,11 +128,10 @@ CGridWindow::WatchTrack(
 			m_track->RemoveObserver(this);
 
 		m_track = track;
-		m_track->AddObserver(this);
-		if (m_track && Lock())
+		if (m_track)
 		{
+			m_track->AddObserver(this);
 			m_intervalControl->SetValue(m_track->TimeGridSize());
-			Unlock();
 		}
 	}
 }

@@ -169,7 +169,7 @@ CLinearWindow::MessageReceived(
 	}
 }
 
-void
+bool
 CLinearWindow::SubjectReleased(
 	CObservable *subject)
 {
@@ -178,7 +178,7 @@ CLinearWindow::SubjectReleased(
 		PostMessage(B_QUIT_REQUESTED, this);
 	}
 	
-	CTrackWindow::SubjectReleased(subject);
+	return CTrackWindow::SubjectReleased(subject);
 }
 
 void

@@ -49,9 +49,6 @@ CPlaybackTaskGroup::~CPlaybackTaskGroup()
 
 	if (locatorThread >= B_NO_ERROR) kill_thread( locatorThread );
 	FlushTasks();						// delete all active tasks
-	CRefCountObject::Release( mainTracks[ 0 ] );
-	CRefCountObject::Release( mainTracks[ 1 ] );
-	CRefCountObject::Release( doc );		// Release refcount to doc
 	Remove();							// Remove from list of playback contexts
 }
 
@@ -318,7 +315,7 @@ void CPlaybackTaskGroup::Locate()
 				
 				// REM: This use of "track duration" is incorrect if
 				// both the master sequences are playing.
-				StSubjectLock(*tr, Lock_Shared);
+				StSubjectLock lock(*tr, Lock_Shared);
 				if (!tr->Events().IsEmpty())
 				{
 					// Start the new tasks at time 0 with no parent task.
@@ -545,8 +542,6 @@ void CPlaybackTaskGroup::Start(
 		else if (timeDiff > 0)		flags |= (Locator_Find|Locator_Reset);
 	}
 
-	CRefCountObject::Release( mainTracks[ 0 ] );
-	CRefCountObject::Release( mainTracks[ 1 ] );
 	mainTracks[ 0 ]	= inTrack1;
 	mainTracks[ 1 ]	= inTrack2;
 	syncType			= inSyncType;

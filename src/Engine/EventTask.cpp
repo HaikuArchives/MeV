@@ -298,7 +298,7 @@ CEventTask::PlayEvent(
 			if (tr == NULL)
 				break;
 
-			StSubjectLock(*tr, Lock_Shared);
+			StSubjectLock lock(*tr, Lock_Shared);
 			for (p = this; p != NULL; p = p->Parent())
 			{
 				// Don't allow tracks to call each other recursively.
@@ -580,7 +580,7 @@ void CEventTask::Play()
 		return;
 	}
 	
-		// REM: Is this incorrect for the master track?
+	// REM: Is this incorrect for the master track?
 	track->Unlock(Lock_Shared);
 	flags |= Task_Finished;
 	ReQueue( timeBase.stack, trackEndTime + originTime );

@@ -40,6 +40,7 @@
 
 #include "AppWindow.h"
 
+class CEventTrack;
 class CMeVDoc;
 class CTrackListView;
 
@@ -61,8 +62,8 @@ public:							// Constructor/Destructor
 	
 public:							// Operations
 
-	void						WatchDocument(
-									CMeVDoc *doc);
+	void						WatchTrack(
+									CEventTrack *track);
 
 public:							// CAppWindow Implementation
 
@@ -75,9 +76,8 @@ public:							// CAppWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				SubjectReleased(
-									CObservable *subject)
-								{ }
+	virtual bool				SubjectReleased(
+									CObservable *subject);
 
 	virtual void				Zoom(
 									BPoint origin,

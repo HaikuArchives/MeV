@@ -82,7 +82,7 @@ public:						// CAppWindow Implementation
 								BMessage *message);
 
 	// If the app wants us to stop looking at the track, then oblige it.
-	virtual void			SubjectReleased(
+	virtual bool			SubjectReleased(
 								CObservable *subject);
 
 	// Update inspector info when we get an observer update message.
@@ -92,7 +92,6 @@ public:						// CAppWindow Implementation
 private:					// Instance Data
 	
 	CBorderView *			m_bgView;
-	CMeVDoc *				m_doc;
 	CEventTrack *			m_track;
 
 	CDestinationListView *	m_channelControl;

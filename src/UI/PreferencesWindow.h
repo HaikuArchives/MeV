@@ -83,10 +83,6 @@ public:							// CAppWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				SubjectReleased(
-									CObservable *subject)
-								{ }
-
 protected:						// Internal Operations
 
 	BView *						AddPanel(

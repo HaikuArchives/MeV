@@ -140,9 +140,9 @@ long CSpinner::Drag()
 				mid;
 	uint8		whichLit;
 
-	Window()->Lock();
+	LockLooper();
 	BRect		r( Bounds() );
-	Window()->Unlock();
+	UnlockLooper();
 	mid  = (r.top + r.bottom) / 2;
 	
 	if (mousePos.y < mid)
@@ -164,11 +164,11 @@ long CSpinner::Drag()
 	{
 		uint8		newLit;
 		
-		Window()->Lock();
+		LockLooper();
 		GetMouse( &mousePos, &buttons, TRUE );
 		if ((buttons & (B_PRIMARY_MOUSE_BUTTON|B_SECONDARY_MOUSE_BUTTON)) == 0)
 		{
-			Window()->Unlock();
+			UnlockLooper();
 			break;
 		}
 		else if ((~buttons & (B_PRIMARY_MOUSE_BUTTON|B_SECONDARY_MOUSE_BUTTON)) == 0)
@@ -182,7 +182,7 @@ long CSpinner::Drag()
 			msg.AddBool( "canceled", true );
 			Invoke( &msg );
 
-			Window()->Unlock();
+			UnlockLooper();
 			break;
 		}
 			
@@ -205,14 +205,14 @@ long CSpinner::Drag()
 		}
 
 		Window()->UpdateIfNeeded();
-		Window()->Unlock();
+		UnlockLooper();
 		snooze( 20 * 1000 );
 	}
 		
 	lit = 0;
-	Window()->Lock();
+	LockLooper();
 	Invalidate( r );
-	Window()->Unlock();
+	UnlockLooper();
 
 	if (Value() != prevValue)
 	{
