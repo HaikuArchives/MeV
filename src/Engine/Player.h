@@ -25,13 +25,13 @@
  * Purpose:
  *  Defines characteristics of the player task
  *
- *	The thread playback pointer normally plays somewhat ahead of the actual clock
+ *	The task playback pointer normally plays somewhat ahead of the actual clock
  *	value. This is so that an event who's start time is moved earlier by a real-time
  *	filter function can still play on time.
  *
  *	The reason for the two different values is this: Each time a track is checked
  *	for events which are ready, the track must be locked, which takes time. So to avoid
- *	too much locking, we allow each thread to stack up a number of events in a "burst",
+ *	too much locking, we allow each task to stack up a number of events in a "burst",
  *	placing a copy of these events on the event stack, which will then be emitted at the
  *	correct time. 
  *
@@ -62,10 +62,9 @@
 #define __C_Player_H__
 
 #include "MeV.h"
-#include "PlaybackThread.h"
-#include "PlaybackThreadTeam.h"
+#include "PlaybackTask.h"
+#include "PlaybackTaskGroup.h"
 #include "PlayerControl.h"
-#include <midi/Midi.h>
 #include <MidiEndpoint.h>
 #include <MidiProducer.h>
 // ---------------------------------------------------------------------------
@@ -81,16 +80,17 @@ const int32			cTrackAdvance_Real	= Ticks_Per_QtrNote / 2,
 // ---------------------------------------------------------------------------
 // CMIDIPlayer controls the execution thread of the player task
 
-class CMIDIPlayer : public BMidi {
+class CMIDIPlayer {
 
-	friend class StPlayerLock;
-	friend class	CPlaybackThreadTeam;
-	friend class	CPlaybackThread;
-	friend class	CEventThread;
-	friend class	CRealTimeEventThread;
-	friend class	CMeteredTimeEventThread;
-	friend class	CMasterEventThread;
-	friend class CPlayerControl;
+	// rather incestuous, aren't we?
+	friend class	StPlayerLock;
+	friend class	CPlaybackTaskGroup;
+	friend class	CPlaybackTask;
+	friend class	CEventTask;
+	friend class	CRealTimeEventTask;
+	friend class	CMeteredTimeEventTask;
+	friend class	CMasterEventTask;
+	friend class	CPlayerControl;
 
 private:
 
@@ -110,18 +110,21 @@ private:
 		ChannelState	channelStates[ 16 ];
 	};
 
-	BMidiLocalProducer	*ports[ Max_MidiPorts ];		// List of virtual midi ports
-	PortInfo		portInfo[ Max_MidiPorts ];
+	BMidiLocalProducer	*m_ports[ Max_MidiPorts ];		// List of virtual midi ports
+	PortInfo		m_portInfo[ Max_MidiPorts ];
 	
-	BSynth		*synth;
-	int32		synthUseCount;
+//	BSynth		*synth;
+//	int32		synthUseCount;
 	
-	BLocker		lock;						// Lock for concurrent access
+	BLocker		m_lock;							// Lock for concurrent access
 
-	port_id		cmdPort;						// Port for sending player commands to
+	port_id		m_port;							// Port for sending player commands to
+	thread_id	m_thread;						// Realtime playback thread
 
 		// low-level clock functions
-	long			internalTimerTick;			// the current time value
+	// +++++ shouldn't be exposed +++++
+	// (CPlaybackTaskGroup uses)
+	long		m_internalTimerTick;			// the current time value
 
 		// external synchronization variables
 // long			lastExternalTimeVal,			// time value of last external tick
@@ -129,22 +132,22 @@ private:
 // 			externalTickPeriod,			// timer ticks between external tick
 // 			externalOrigin;				// origin of external time
 
-	long			nextEventTime;				// task wake-up time
-
 		// Management of playback contexts
-	DList		teamList;					// list of playback contexts
+	DList		m_groupList;					// list of playback contexts
 
 //	long			defaultTempoPeriod;			// default period of tempo
 	
-		// BMidi hook function
-	void Run();
+	// thread control
+	static status_t ControlThreadEntry(void *user);
+	void ControlThread();
+	status_t StopControlThread();
 
-	CPlaybackThreadTeam
-				*songTeam,					// context for playing songs
-				*wildTeam;					// context for playing seperate data
+	CPlaybackTaskGroup
+				*songGroup,					// context for playing songs
+				*wildGroup;					// context for playing seperate data
 				
-	CPlaybackThreadTeam						// Find team associated with a document
-				*FindTeam( CMeVDoc *doc );
+	CPlaybackTaskGroup						// Find group associated with a document
+				*FindGroup( CMeVDoc *doc );
 				
 	BMidiSynth *NewMidiSynth();
 	void DeleteMidiSynth( BMidiSynth *inSynth );
@@ -166,22 +169,29 @@ public:
 		// State query functions
 	void SetExternalTime( int32 time );
 
-		// Queue events for immediate execution.
+		// Queue events
 	bool QueueEvents( Event *eventList, uint32 count, int32 startTime );
-	bool QueueImmediate( Event *eventList, uint32 count )
-	{
-		return QueueEvents( eventList, count, B_NOW );
-	}
+	bool QueueImmediate( Event *eventList, uint32 count );
 	
 		// Send an event directly to a hardware port. You probably shouldn't call
 		// this directly. (no locking, for one thing)
 	void SendEvent(	const Event &inEvent, uint8 inPort, uint8 inActualChannel, bigtime_t inTime  );
 
+		// Fetch the player's command port ID
+	port_id Port() const;
+
 		// Launch a new track
 // BOOL launch( CTrack *track, long time, int clockType );
 
-		/**	Assert that the player is in fact locked. */
-	void CheckLock() { /* ASSERT( lock.IsLocked() ); */ }
+	// locking
+	bool Lock();
+	void Unlock();
+	bool IsLocked();
+	
+	/**	Assert that the player is in fact locked.
+	    +++++ deprecated
+	*/
+	void CheckLock() { /* ASSERT( m_lock.IsLocked() ); */ }
 };
 
 	// Global instance of the player
@@ -190,8 +200,8 @@ extern CMIDIPlayer		thePlayer;
 	// Stack-based locker for player
 class StPlayerLock {
 public:
-	StPlayerLock() { thePlayer.lock.Lock(); }
-	~StPlayerLock() { thePlayer.lock.Unlock(); }
+	StPlayerLock() { thePlayer.Lock(); }
+	~StPlayerLock() { thePlayer.Unlock(); }
 };
 
 #define LOCK_PLAYER		StPlayerLock		_stlock

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * PlaybackThread.h (MeV/Engine)
+ * PlaybackTask.h (MeV/Engine)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -35,49 +35,49 @@
  *
  * ===================================================================== */
 
-#ifndef __C_PlaybackThread_H__
-#define __C_PlaybackThread_H__
+#ifndef __C_PlaybackTask_H__
+#define __C_PlaybackTask_H__
 
 #include "MeV.h"
 #include "EventTrack.h"
 #include "EventStack.h"
 
 // ---------------------------------------------------------------------------
-// CPlaybackThread -- an instance of a track being played
+// CPlaybackTask -- an instance of a track being played
 
-const int				cMaxNormalThread = 250,
-						cFeedbackThread = 251;
+const int				cMaxNormalTask = 250,
+						cFeedbackTask = 251;
 
-class CPlaybackThread : public DNode {
+class CPlaybackTask : public DNode {
 
 	friend class		CMIDIPlayer;
-	friend class		CPlaybackThreadTeam;
+	friend class		CPlaybackTaskGroup;
 	friend class		CPlayerControl;
 
 	friend int32 GetPlaybackMarkerTimes( CTrack *track, int32 *resultBuf, int32 bufSize );
 
 public:
-	enum threadFlags {
-		Thread_Muted		= (1<<0),			// turns off sound on track
-		Thread_Solo		= (1<<1),			// mute all other tracks
-		Thread_Wild		= (1<<2),			// use internal tick, not master time
-		Thread_Finished	= (1<<3),			// no more playback for this thread
-		Thread_ImplicitLoop = (1<<4),			// thread has implicit looping
+	enum taskFlags {
+		Task_Muted		= (1<<0),			// turns off sound on track
+		Task_Solo		= (1<<1),			// mute all other tracks
+		Task_Wild		= (1<<2),			// use internal tick, not master time
+		Task_Finished	= (1<<3),			// no more playback for this task
+		Task_ImplicitLoop = (1<<4),			// task has implicit looping
 	};
 
 protected:
-	uint8				threadID;				// unique ID number of thread
-	uint8				flags;				// thread flags (see above)
+	uint8				taskID;				// unique ID number of task
+	uint8				flags;				// task flags (see above)
 	uint16				pad;					// longword-align
 
-	CPlaybackThreadTeam	&team;				// which song or context is this in.
+	CPlaybackTaskGroup	&group;				// which song or context is this in.
 	CTrack				*track;				// pointer to track being played
-	CPlaybackThread		*parent;				// pointer to parent track
+	CPlaybackTask		*parent;				// pointer to parent track
 
 		// The start of this sequence, relative to the start of the song.
 		// The origin may be different due to repeat events and other non-
 		// linear playback features.
-	int32				startTime,			// clock time that thread started
+	int32				startTime,			// clock time that task started
 						originTime;			// base time that clock is relative to
 
 		// Current time, relative to beginning of track.
@@ -85,30 +85,30 @@ protected:
 
 public:
 		// constructor
-	CPlaybackThread(	CPlaybackThreadTeam &team,
+	CPlaybackTask(	CPlaybackTaskGroup &group,
 					CTrack *track,
-					CPlaybackThread *parent,
+					CPlaybackTask *parent,
 					long start );
 
-		// copy constructor -- can copy to a different team
-	CPlaybackThread(	CPlaybackThreadTeam &team,
-					CPlaybackThread &th );
+		// copy constructor -- can copy to a different group
+	CPlaybackTask(	CPlaybackTaskGroup &group,
+					CPlaybackTask &th );
 
 		// destructor
-	virtual ~CPlaybackThread();
+	virtual ~CPlaybackTask();
 
 		// Play next event if event is earlier than time 't'; either way,
-		// return the time that the thread wants to be woken up next.
+		// return the time that the task wants to be woken up next.
 	virtual void Play() = 0;
 
-		// Re-queue this thread on the list of threads to do.
+		// Re-queue this task on the list of tasks to do.
 	void ReQueue( CEventStack &stack, long time );
 	
 		/**	Returns the current time of this track. */
 	virtual int32 CurrentTime() = 0;
 
 		/**	Returns pointer to parent track, if any. */
-	CPlaybackThread *Parent() { return parent; }
+	CPlaybackTask *Parent() { return parent; }
 
 		/**	Returns pointer to track. */
 	CTrack *Track() { return track; }
@@ -206,4 +206,4 @@ class PlayBackState {
 
 #endif
 
-#endif /* __C_PlaybackThread_H__ */
+#endif /* __C_PlaybackTask_H__ */

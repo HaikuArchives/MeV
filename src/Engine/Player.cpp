@@ -8,19 +8,25 @@
 #include "TimeUnits.h"
 #include "Track.h"
 #include "EventStack.h"
-#include "PlaybackThread.h"
-#include "PlaybackThreadTeam.h"
+#include "PlaybackTask.h"
+#include "PlaybackTaskGroup.h"
 #include "Player.h"
 #include "Idents.h"
 #include "MidiDeviceInfo.h"
 #include <stdio.h>
 
+#include <Debug.h>
+
 // Gnu C Library
 #include <math.h>
-
 // Midi Kit
 //#include <MidiPort.h>
 //#include <MidiSynth.h>
+
+#define D_CONTROL(x) PRINT (x)
+#define D_SYNTH(x) PRINT (x)
+#define D_EVENT(x) PRINT (x)
+#define D_WARNING(x) PRINT (x)
 
 const int32			maxSleep = 30;
 
@@ -29,40 +35,76 @@ CMIDIPlayer			thePlayer;
 // ---------------------------------------------------------------------------
 // The main player loop
 
-void CMIDIPlayer::Run()
+status_t 
+CMIDIPlayer::ControlThreadEntry(void *user)
 {
+	(static_cast<CMIDIPlayer*>(user))->ControlThread();
+	return B_OK;
+}
+
+status_t 
+CMIDIPlayer::StopControlThread()
+{
+	thread_id tid = m_thread;
+	if(tid < 0)
+	{
+		D_WARNING(("CMIDIPlayer::StopControlThread(): thread already stopped\n"));
+		return B_NOT_ALLOWED;
+	}
+	status_t err = write_port_etc(m_port, Command_Quit, 0, 0, B_TIMEOUT, 250000LL);
+	if(err < B_OK)
+	{
+		D_WARNING(("CMIDIPlayer::StopControlThread(): write_port_etc(): %s\n",
+			strerror(err)));
+		return err;
+	}
+	while(wait_for_thread(tid, &err) == B_INTERRUPTED) {}
+	m_thread = 0;
+	return B_OK;
+}
+
+
+void CMIDIPlayer::ControlThread()
+{
+	D_CONTROL(("CMIDIPlayer::Run()\n"));
+
 		// Initialize time vars
-	internalTimerTick = system_time() / 1000;			// the current time value
-	nextEventTime = internalTimerTick;
+	m_internalTimerTick = system_time() / 1000;			// the current time value
+
+	// +++++ convert to bigtime_t
+	long nextEventTime = m_internalTimerTick;
 	
-	while (KeepRunning()) {
+	bool keepRunning = true;
+	while (keepRunning) {
 	
 		int32		cmdSize,
 					cmdCode;
 		CommandArgs	cmdArgs;
 		bigtime_t	wakeUp = (bigtime_t)nextEventTime * 1000 - system_time();
 		
-		if (wakeUp < 0) wakeUp = 0;
+		if (wakeUp < 0) {
+//			fprintf(stderr, "late: next event %Ld, now %Ld\n",
+//				bigtime_t(nextEventTime) * 1000,
+//				system_time());
+			wakeUp = 0;
+		}
 		
-		// Calculate the REAL time of the next event.
-		// We need to always calculate the REAL time of the next METERED event.
-		// But -- never wait longer than, say, 20 ms.
-		
-		cmdSize = read_port_etc(	cmdPort,
+		cmdSize = read_port_etc(m_port,
 								&cmdCode,
 								&cmdArgs,
 								sizeof cmdArgs,
 								B_TIMEOUT,
 								wakeUp );
 
-		if (cmdSize >= 4)
+		if (cmdSize >= 0)
 		{
 			switch( cmdCode ) {
 			case Command_Start:
+				D_CONTROL(("CMIDIPlayer: Command_Start\n"));
 				if (cmdArgs.document == NULL) break;
-				CRefCountObject::Release( songTeam->doc );
-				songTeam->doc = cmdArgs.document;
-				songTeam->vChannelTable = &cmdArgs.document->GetVChannel( 0 );
+				CRefCountObject::Release( songGroup->doc );
+				songGroup->doc = cmdArgs.document;
+				songGroup->vChannelTable = &cmdArgs.document->GetVChannel( 0 );
 				
 					// Reset all channel state records...
 				InitChannelStates();
@@ -76,7 +118,7 @@ void CMIDIPlayer::Run()
 					track2 = cmdArgs.document->FindTrack( 1 );
 					if (track1 != NULL && track2 != NULL)
 					{	
-						songTeam->Start(	track1,
+						songGroup->Start(track1,
 										track2,
 										cmdArgs.locTime,
 										(enum ELocateTarget)cmdArgs.locateTarget,
@@ -97,7 +139,7 @@ void CMIDIPlayer::Run()
 					track = cmdArgs.document->FindTrack( cmdArgs.trackID );
 					if (track != NULL)
 					{	
-						songTeam->Start(	track,
+						songGroup->Start(track,
 										NULL,
 										cmdArgs.locTime,
 										(enum ELocateTarget)cmdArgs.locateTarget,
@@ -109,10 +151,11 @@ void CMIDIPlayer::Run()
 				break;
 
 			case Command_Stop:
+				D_CONTROL(("CMIDIPlayer: Command_Stop\n"));
 				if (cmdArgs.document == NULL) break;
 				CRefCountObject::Release( cmdArgs.document );
-				songTeam->flags |= CPlaybackThreadTeam::Clock_Stopped;
-				songTeam->FlushNotes();
+				songGroup->flags |= CPlaybackTaskGroup::Clock_Stopped;
+				songGroup->FlushNotes();
 				// REM: Notify UI of stoppage...
 				break;
 
@@ -121,6 +164,8 @@ void CMIDIPlayer::Run()
 				break;
 				
 			case Command_Quit:
+				D_CONTROL(("CMIDIPlayer: Command_Quit\n"));
+				keepRunning = false;
 				break;
 			}
 			
@@ -133,28 +178,28 @@ void CMIDIPlayer::Run()
 		}
 		
 			// And then process any waiting events.
-		internalTimerTick = system_time() / 1000;			// the current time value
+		m_internalTimerTick = system_time() / 1000;			// the current time value
 
 		{
 			LOCK_PLAYER;
 			
-			CPlaybackThreadTeam *team;
+			CPlaybackTaskGroup *group;
 			
-			nextEventTime = internalTimerTick + maxSleep;
+			nextEventTime = m_internalTimerTick + maxSleep;
 
-			for (	team = (CPlaybackThreadTeam *)teamList.First();
-					team;
-					team = (CPlaybackThreadTeam *)team->Next() )
+			for (	group = (CPlaybackTaskGroup *)m_groupList.First();
+					group;
+					group = (CPlaybackTaskGroup *)group->Next() )
 			{
-				int32		nextTeamEvent;
+				int32		nextGroupEvent;
 			
-				team->nextEventTime = LONG_MAX;
-				team->Update( internalTimerTick );
+				group->nextEventTime = LONG_MAX;
+				group->Update( m_internalTimerTick );
 
-					// Compute next event time as min of all track times
-				nextTeamEvent = team->nextEventTime + team->origin;
-				if (IsTimeGreater( nextTeamEvent, nextEventTime ))
-					nextEventTime = nextTeamEvent;
+				// Compute next event time as min of all track times
+				nextGroupEvent = group->nextEventTime + group->origin;
+				if (IsTimeGreater( nextGroupEvent, nextEventTime ))
+					nextEventTime = nextGroupEvent;
 			}
 		}
 	}
@@ -167,21 +212,21 @@ CMIDIPlayer::CMIDIPlayer()
 {
 	for (uint32 i = 0; i < Max_MidiPorts; i++)
 	{
-		ports[ i ] = NULL;
-		strcpy( portInfo[ i ].portName, "" );
-		strcpy( portInfo[ i ].devString, "" );
+		m_ports[ i ] = NULL;
+		strcpy( m_portInfo[ i ].portName, "" );
+		strcpy( m_portInfo[ i ].devString, "" );
 	}
 	
 	InitChannelStates();
 
-	synth = NULL;
-	synthUseCount = 0;
+//	synth = NULL;
+//	synthUseCount = 0;
 	
 		// Default tempo is 100 bpm
 //	defaultTempoPeriod = RateToPeriod( 100.0 );
 	
-	songTeam = NULL;
-	wildTeam = NULL;
+	songGroup = NULL;
+	wildGroup = NULL;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,44 +234,82 @@ CMIDIPlayer::CMIDIPlayer()
 
 CMIDIPlayer::~CMIDIPlayer()
 {
-	Stop();
+	StopControlThread();
 
-	CPlaybackThreadTeam	*team;
+	CPlaybackTaskGroup	*group;
 
 		// Delete song contexts
-	while ((team = (CPlaybackThreadTeam *)teamList.First())) delete team;
-	songTeam = wildTeam = NULL;
+	while ((group = (CPlaybackTaskGroup *)m_groupList.First())) delete group;
+	songGroup = wildGroup = NULL;
 
 		// release ports
 		// REM: Commented out because code crashes...!
 	for (uint32 i = 0; i < Max_MidiPorts; i++)
 	{
-		ports[ i ]->Release();
+		m_ports[ i ]->Release();
 	}
 	//delete synth;
 }
 
 void CMIDIPlayer::Initialize()
 {
-	cmdPort = create_port( 1024, "MeVPlayer Command Port" );
+	m_thread = spawn_thread(
+		&ControlThreadEntry,
+		"CMIDIPlayer",
+		B_REAL_TIME_PRIORITY,
+		this);
+
+	m_port = create_port( 1024, "MeVPlayer Command Port" );
 
 		// Set up a context for playing songs
 		// REM: Should pass the document pointer as parameter
-	songTeam = new CPlaybackThreadTeam( NULL );
+	songGroup = new CPlaybackTaskGroup( NULL );
+	D_CONTROL((">>>>> songGroup: %p\n", songGroup));
 
 		// Set up a context for miscellaneous note-playing
-		// REM: wildContext->setTime( internalTimerTick, 0 );
-	wildTeam = new CPlaybackThreadTeam( NULL );
+		// REM: wildContext->setTime( m_internalTimerTick, 0 );
+	wildGroup = new CPlaybackTaskGroup( NULL );
+	D_CONTROL((">>>>> wildGroup: %p\n", wildGroup));
 
 		// Set up wildContext with current time, and start it.
-	wildTeam->origin = 0; // system_time() / 1000;
-	wildTeam->real.time = 0;
-	wildTeam->metered.time = 0;
+	wildGroup->origin = 0; // system_time() / 1000;
+	wildGroup->real.time = 0;
+	wildGroup->metered.time = 0;
 		// set context to "running always"
-	wildTeam->flags = CPlaybackThreadTeam::Clock_Continuous;
+	wildGroup->flags = CPlaybackTaskGroup::Clock_Continuous;
 
-	Start();
+	resume_thread(m_thread);
 }
+
+port_id 
+CMIDIPlayer::Port() const
+{
+	return m_port;
+}
+
+
+// ---------------------------------------------------------------------------
+// locking API
+
+bool 
+CMIDIPlayer::Lock()
+{
+	return m_lock.Lock();
+}
+
+void 
+CMIDIPlayer::Unlock()
+{
+	m_lock.Unlock();
+}
+
+bool 
+CMIDIPlayer::IsLocked()
+{
+	return m_lock.IsLocked();
+}
+
+
 
 // ---------------------------------------------------------------------------
 // Initialize all channel state records...
@@ -238,7 +321,7 @@ void CMIDIPlayer::InitChannelStates()
 	{
 		for (int j = 0; j < 16; j++)
 		{
-			memset( &portInfo[ i ].channelStates[ j ], 0xff, sizeof (ChannelState) );
+			memset( &m_portInfo[ i ].channelStates[ j ], 0xff, sizeof (ChannelState) );
 		}
 	}
 }
@@ -254,7 +337,7 @@ void CMIDIPlayer::DumpChannelStates()
 	{
 		for (int j = 0; j < 16; j++)
 		{
-			memset( &portInfo[ i ].channelStates[ j ], 0xff, sizeof (ChannelState) );
+			memset( &m_portInfo[ i ].channelStates[ j ], 0xff, sizeof (ChannelState) );
 		}
 	}
 }
@@ -265,7 +348,8 @@ void CMIDIPlayer::DumpChannelStates()
 
 BMidiSynth *CMIDIPlayer::NewMidiSynth()
 {
-printf ("new midi synth called\n");
+	D_SYNTH(("CMIDIPlayer::NewMidiSynth()\n"));
+	
 /*	BMidiSynth		*s;
 	status_t 		err;
 
@@ -306,7 +390,8 @@ printf ("new midi synth called\n");
 
 void CMIDIPlayer::DeleteMidiSynth( BMidiSynth *inSynth )
 {
-printf("delete midi synth");
+	D_SYNTH(("CMIDIPlayer::DeleteMidiSynth()\n"));
+
 	/*delete inSynth;
 	synthUseCount--;
 	if (synthUseCount <= 0 && synth != NULL)
@@ -324,19 +409,30 @@ bool CMIDIPlayer::QueueEvents( Event *eventList, uint32 count, long startTime )
 {
 		// Note: Locking not needed since stack has it's own lock.
 
-	if (wildTeam->real.stack.PushList( eventList, count, startTime ))
+	if (wildGroup->real.stack.PushList( eventList, count, startTime ))
 	{
 		return true;
 	}
 	else return false;
 }
 
-// ---------------------------------------------------------------------------
-// Find the team associated with a particular document
 
-CPlaybackThreadTeam *CMIDIPlayer::FindTeam( CMeVDoc *doc )
+// ---------------------------------------------------------------------------
+// queue given events for immediate execution
+bool 
+CMIDIPlayer::QueueImmediate(Event *eventList, uint32 count)
 {
-	if (doc != NULL && songTeam->doc == doc) return songTeam;
+	return QueueEvents( eventList, count, uint32(system_time() / 1000LL));
+}
+
+
+
+// ---------------------------------------------------------------------------
+// Find the group associated with a particular document
+
+CPlaybackTaskGroup *CMIDIPlayer::FindGroup( CMeVDoc *doc )
+{
+	if (doc != NULL && songGroup->doc == doc) return songGroup;
 	return NULL;
 }
 
@@ -349,8 +445,8 @@ void CMIDIPlayer::SendEvent(
 	uchar			inActualChannel,
 	bigtime_t		inTime )
 {
-	BMidiLocalProducer	*port = ports[ inPort ];
-	ChannelState	*chState = &portInfo[ inPort ].channelStates[ inActualChannel ];
+	BMidiLocalProducer	*port = m_ports[ inPort ];
+	ChannelState	*chState = &m_portInfo[ inPort ].channelStates[ inActualChannel ];
 	MIDIDeviceInfo	*mdi;
 	uint8			lsbIndex;
 
@@ -363,12 +459,14 @@ void CMIDIPlayer::SendEvent(
 		// MIDI channel events:
 
 	case EvtType_Note:							// note-on event
+		D_EVENT(("SendEvent(NoteOn)\n"));
 		port->SprayNoteOn(inActualChannel,
 						 ev.note.pitch,
 						 ev.note.attackVelocity, (bigtime_t)inTime );
 		break;
 
 	case EvtType_NoteOff:						// note-off event 
+		D_EVENT(("SendEvent(NoteOff)\n"));
 		port->SprayNoteOff(	inActualChannel,
 						ev.note.pitch,
 						ev.note.releaseVelocity,
@@ -376,6 +474,7 @@ void CMIDIPlayer::SendEvent(
 		break;
 
 	case EvtType_ChannelATouch:					// channel aftertouch
+		D_EVENT(("SendEvent(ChannelATouch)\n"));
 		if (chState->channelAfterTouch != ev.aTouch.value)
 		{
 			port->SprayChannelPressure(
@@ -387,6 +486,7 @@ void CMIDIPlayer::SendEvent(
 		break;
 
 	case EvtType_PolyATouch:						// polyphonic aftertouch
+		D_EVENT(("SendEvent(PolyATouch)\n"));
 		port->SprayKeyPressure(	inActualChannel,
 							ev.aTouch.pitch,
 							ev.aTouch.value,
@@ -394,6 +494,7 @@ void CMIDIPlayer::SendEvent(
 		break;
 
 	case EvtType_Controller:						// controller change
+		D_EVENT(("SendEvent(Controller)\n"));
 
 			// Check if it's a 16-bit controller
 		lsbIndex = controllerInfoTable[ ev.controlChange.controller ].LSBNumber;
@@ -441,6 +542,7 @@ void CMIDIPlayer::SendEvent(
 		break;
 
 	case EvtType_ProgramChange:					// program change
+		D_EVENT(("SendEvent(ProgramChange)\n"));
 
 			// Return the MIDI device associated with this port and channel
 		mdi = ((CMeVApp *)be_app)->LookupInstrument( inPort, inActualChannel );
@@ -485,6 +587,7 @@ void CMIDIPlayer::SendEvent(
 		break;
 
 	case EvtType_PitchBend:						// pitch bend
+		D_EVENT(("SendEvent(PitchBend)\n"));
 
 			// Don't send un-needed pitch-bends
 		if (chState->pitchBendState != ev.pitchBend.targetBend)
@@ -500,6 +603,7 @@ void CMIDIPlayer::SendEvent(
 		// MIDI system events
 
 	case EvtType_SysEx:							// system exclusive
+		D_EVENT(("SendEvent(SysEx)\n"));
 
 		void				*data;
 		int32			size;
@@ -593,7 +697,7 @@ void CPlayerControl::DoAudioFeedback(
 		// Set up a default list of events which plays an average note.
 
 	modEvent->stack.start = 0;
-	modEvent->stack.thread = cFeedbackThread;
+	modEvent->stack.task = cFeedbackTask;
 	modEvent->note.command = 0;
 
 	*noteStart = *modEvent;
@@ -659,7 +763,7 @@ void CPlayerControl::DoAudioFeedback(
 	LOCK_PLAYER;
 
 		// Kill the previous feedback event
-	thePlayer.wildTeam->FlushEvents();
+	thePlayer.wildGroup->FlushEvents();
 
 		// If it's a note event, play the note.
 		// If the doc is already playing, play only the feedback event, no note,
@@ -695,7 +799,7 @@ void CPlayerControl::PlaySong(
 	cmd.syncType		= syncType;
 	cmd.options		= options;
 	
-	write_port(	thePlayer.cmdPort,
+	write_port(	thePlayer.Port(),
 				Command_Start,
 				&cmd,
 				sizeof cmd );
@@ -712,7 +816,7 @@ void CPlayerControl::StopSong( CMeVDoc *document )
 
 	cmd.document		= document;
 	
-	write_port( thePlayer.cmdPort, Command_Stop, &cmd, sizeof cmd );
+	write_port( thePlayer.m_port, Command_Stop, &cmd, sizeof cmd );
 }
 
 // ---------------------------------------------------------------------------
@@ -721,8 +825,8 @@ void CPlayerControl::StopSong( CMeVDoc *document )
 bool CPlayerControl::IsPlaying( CMeVDoc *document )
 {
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
-	if (team && (team->flags & CPlaybackThreadTeam::Clock_Stopped) == false)
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
+	if (group && (group->flags & CPlaybackTaskGroup::Clock_Stopped) == false)
 		return true;
 	return false;
 }
@@ -733,12 +837,12 @@ bool CPlayerControl::IsPlaying( CMeVDoc *document )
 bool CPlayerControl::GetPlaybackState( CMeVDoc *document, PlaybackState &outState )
 {
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
-	if (team)
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
+	if (group)
 	{
-		outState.running		= !(team->flags & CPlaybackThreadTeam::Clock_Stopped);
-		outState.realTime		= team->real.time;
-		outState.meteredTime	= team->metered.time;
+		outState.running		= !(group->flags & CPlaybackTaskGroup::Clock_Stopped);
+		outState.realTime		= group->real.time;
+		outState.meteredTime	= group->metered.time;
 		return true;
 	}
 	return false;
@@ -750,8 +854,8 @@ bool CPlayerControl::GetPlaybackState( CMeVDoc *document, PlaybackState &outStat
 bool CPlayerControl::PauseState( CMeVDoc *document )
 {
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
-	if (team && (team->flags & CPlaybackThreadTeam::Clock_Paused) != false)
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
+	if (group && (group->flags & CPlaybackTaskGroup::Clock_Paused) != false)
 		return true;
 	return false;
 }
@@ -762,12 +866,12 @@ bool CPlayerControl::PauseState( CMeVDoc *document )
 void CPlayerControl::SetPauseState( CMeVDoc *document, bool inPauseState )
 {
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
-	if (team)
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
+	if (group)
 	{
 			// REM: If externally sync'd, then no effect.
-		if (inPauseState)	team->flags |= CPlaybackThreadTeam::Clock_Paused;
-		else					team->flags &= ~CPlaybackThreadTeam::Clock_Paused;
+		if (inPauseState)	group->flags |= CPlaybackTaskGroup::Clock_Paused;
+		else					group->flags &= ~CPlaybackTaskGroup::Clock_Paused;
 	}
 }
 
@@ -777,11 +881,11 @@ void CPlayerControl::SetPauseState( CMeVDoc *document, bool inPauseState )
 void CPlayerControl::TogglePauseState( CMeVDoc *document )
 {
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
-	if (team)
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
+	if (group)
 	{
 			// REM: If externally sync'd, then no effect.
-		team->flags ^= CPlaybackThreadTeam::Clock_Paused;
+		group->flags ^= CPlaybackTaskGroup::Clock_Paused;
 	}
 }
 
@@ -791,9 +895,9 @@ void CPlayerControl::TogglePauseState( CMeVDoc *document )
 double CPlayerControl::Tempo( CMeVDoc *document )
 {
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
 	
-	if (team) return PeriodToRate( team->CurrentTempoPeriod() );
+	if (group) return PeriodToRate( group->CurrentTempoPeriod() );
 //	return PeriodToRate( thePlayer.defaultTempoPeriod );
 	if (document) return document->InitialTempo();
 	return 100.0;
@@ -807,8 +911,8 @@ void CPlayerControl::SetTempo( CMeVDoc *document, double newTempo )
 	long		period = RateToPeriod( newTempo );
 	
 	LOCK_PLAYER;
-	CPlaybackThreadTeam *team = thePlayer.FindTeam( document );
-	if (team) team->ChangeTempo( period, team->metered.time, 0, ClockType_Metered );
+	CPlaybackTaskGroup *group = thePlayer.FindGroup( document );
+	if (group) group->ChangeTempo( period, group->metered.time, 0, ClockType_Metered );
 
 //	thePlayer.defaultTempoPeriod = period;
 }
@@ -820,7 +924,7 @@ char *CPlayerControl::PortName(uint32 inPortIndex )
 {
 	//maybe we should be returning the name of the producer on this index.
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
-	return thePlayer.portInfo[ inPortIndex ].portName;
+	return thePlayer.m_portInfo[ inPortIndex ].portName;
 }
 	
 // ---------------------------------------------------------------------------
@@ -831,7 +935,7 @@ void CPlayerControl::SetPortName(uint32 inPortIndex, char *inPortName )
 	//maybe we should be setting the name of the producer on this index.
 	CMIDIPlayer::PortInfo		*pi;
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return;
-	pi = &thePlayer.portInfo[ inPortIndex ];
+	pi = &thePlayer.m_portInfo[ inPortIndex ];
 	strncpy( pi->portName, inPortName, sizeof( pi->portName ) );
 	pi->portName[ sizeof( pi->portName ) - 1 ] = '\0';
 }
@@ -839,21 +943,21 @@ void CPlayerControl::SetPortName(uint32 inPortIndex, char *inPortName )
 // ---------------------------------------------------------------------------
 int32 CPlayerControl::PortDeviceID(uint32 inPortIndex)
 {
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
+	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return -1;
 	//return a bmidi producer id.
-	return (thePlayer.ports[inPortIndex]->ID());
+	return (thePlayer.m_ports[inPortIndex]->ID());
 	
 }
 // Get the port device string of the Nth port.
 const char *CPlayerControl::PortDevice(uint32 inPortIndex )
 {
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
-	if (thePlayer.ports[ inPortIndex ]==NULL) return NULL;
-	return thePlayer.ports[ inPortIndex ]->Name();
+	if (thePlayer.m_ports[ inPortIndex ]==NULL) return NULL;
+	return thePlayer.m_ports[ inPortIndex ]->Name();
 }
 bool CPlayerControl::IsDefined(uint32 inPortIndex)
 {
-	if (thePlayer.ports[inPortIndex]!=NULL) return true;
+	if (thePlayer.m_ports[inPortIndex]!=NULL) return true;
 	else return false;
 }
 int CPlayerControl::CountDefinedPorts()
@@ -862,7 +966,7 @@ int CPlayerControl::CountDefinedPorts()
 	int count=0;
 	while (index<Max_MidiPorts)
 	{
-		if (thePlayer.ports[index]!=NULL)
+		if (thePlayer.m_ports[index]!=NULL)
 		{
 			count++;
 		}
@@ -873,10 +977,10 @@ int CPlayerControl::CountDefinedPorts()
 bool CPlayerControl::DeleteDevice(int inPortIndex)
 {
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
-	if (thePlayer.ports[inPortIndex]==NULL) return 0;
-	thePlayer.ports[inPortIndex]->Release();
+	if (thePlayer.m_ports[inPortIndex]==NULL) return 0;
+	thePlayer.m_ports[inPortIndex]->Release();
 	//delete? distroy...?
-	thePlayer.ports[inPortIndex]==NULL;
+	thePlayer.m_ports[inPortIndex]==NULL;
 }
 // ---------------------------------------------------------------------------
 // Set the port device string of the Nth port.
@@ -888,15 +992,15 @@ bool CPlayerControl::SetPortDevice(uint32 inPortIndex, char *inPortName)
 	{
 		return 0;
 	}
-	if (thePlayer.ports[inPortIndex]==NULL)
+	if (thePlayer.m_ports[inPortIndex]==NULL)
 	{
-		thePlayer.ports[inPortIndex]=new BMidiLocalProducer(inPortName);
-		thePlayer.ports[inPortIndex]->Register();
+		thePlayer.m_ports[inPortIndex]=new BMidiLocalProducer(inPortName);
+		thePlayer.m_ports[inPortIndex]->Register();
 		return true;
 	}
 	else
 	{
-		thePlayer.ports[inPortIndex]->SetName(inPortName);
+		thePlayer.m_ports[inPortIndex]->SetName(inPortName);
 		return true;
 	}
 }
@@ -905,23 +1009,23 @@ bool CPlayerControl::SetPortConnect(uint32 inPortIndex, BMidiConsumer *sink )
 {
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
 	if (sink==NULL) return 0;
-	if (thePlayer.ports[inPortIndex]->IsConnected(sink))
+	if (thePlayer.m_ports[inPortIndex]->IsConnected(sink))
 	{
-		thePlayer.ports[inPortIndex]->Disconnect(sink);
+		thePlayer.m_ports[inPortIndex]->Disconnect(sink);
 		printf("disconnecting\n");
 		return 1;
 	}
 	else
 	{
-		thePlayer.ports[inPortIndex]->Connect(sink);
+		thePlayer.m_ports[inPortIndex]->Connect(sink);
 		printf("connecting\n");
 		return 1;
 	}
 }
 	
 // ---------------------------------------------------------------------------
-// For each thread that is currently playing the given track, return
-// what time in the track the thread is playing at. This is used to
+// For each task that is currently playing the given track, return
+// what time in the track the task is playing at. This is used to
 // show the timeline on the track as the track is playing.
 
 int32 CPlayerControl::GetPlaybackMarkerTimes(
@@ -930,25 +1034,25 @@ int32 CPlayerControl::GetPlaybackMarkerTimes(
 	int32			bufSize )
 {
 	int32			count = 0;
-	CPlaybackThreadTeam *team;
-	CPlaybackThread	*th;
+	CPlaybackTaskGroup *group;
+	CPlaybackTask	*th;
 
 		// Lock list of contexts while we are looking through it
  	LOCK_PLAYER;
 
 		// Search each context
-	for (	team = (CPlaybackThreadTeam *)thePlayer.teamList.First();
-			team != NULL && count < bufSize;
-			team = (CPlaybackThreadTeam *)team->Next() )
+	for (	group = (CPlaybackTaskGroup *)thePlayer.m_groupList.First();
+			group != NULL && count < bufSize;
+			group = (CPlaybackTaskGroup *)group->Next() )
 	{
-		if (!(team->flags &
-			(CPlaybackThreadTeam::Clock_Stopped
-			| CPlaybackThreadTeam::Clock_AwaitingSync
-			| CPlaybackThreadTeam::Clock_Locating)))
+		if (!(group->flags &
+			(CPlaybackTaskGroup::Clock_Stopped
+			| CPlaybackTaskGroup::Clock_AwaitingSync
+			| CPlaybackTaskGroup::Clock_Locating)))
 		{
-			for (	th = (CPlaybackThread *)team->threads.First();
+			for (	th = (CPlaybackTask *)group->tasks.First();
 					th != NULL;
-					th = (CPlaybackThread *)th->Next() )
+					th = (CPlaybackTask *)th->Next() )
 			{
 				if (th->track == track)
 				{
@@ -964,7 +1068,7 @@ int32 CPlayerControl::GetPlaybackMarkerTimes(
 
 /*	1. How are the timestamps going to be interpreted from the input device?
 
-	Launch thread at moment's notice (example: key mapping)
+	Launch task at moment's notice (example: key mapping)
 
 	Relocate at moment's notice
 		MIDI start

@@ -67,8 +67,8 @@ public:
 	when found in a track and when it is on the playback stack.
 
 	First off, when on the task stack, the upper 8 bits of the start time are
-	used to store the thread number, so that when that thread is altered,
-	all pending items which were started from that thread can be found.
+	used to store the task number, so that when that task is altered,
+	all pending items which were started from that task can be found.
 
 	Secondly, in a track, the vChannel field is an index into the
 	virtual channel table, but in a stacked item it is divided into two
@@ -122,7 +122,7 @@ typedef enum E_EventType {
 	EvtType_TimeSig,							// change time signature event
 
 		// Only used on playback stack -- never saved in a file
-	EvtType_ThreadMarker,						// indicates thread is ready
+	EvtType_TaskMarker,						// indicates task is ready
 	EvtType_StartInterpolate,					// Start an interpolation
 	EvtType_Interpolate,						// Continue an interpolation
 
@@ -261,7 +261,7 @@ const int			MIDIValueUnset = 0xff,		// indicates value was never set
 const int			Interpolation_PitchBend = 128,
 					Interpolation_AfterTouch = 129;
 
-class				CPlaybackThread;
+class				CPlaybackTask;
 
 	// An Event is a single musical data item. It is a low-level structure
 	// designed to be handled in bulk. Programmatic access to events are probably
@@ -356,7 +356,7 @@ public:
 			int32		start;					// start time of event
 			uint8		actualPort,				// actual port number
 						actualChannel,			// actual channel number
-						thread,					// playback thread of this evt.
+						task,					// playback task of this evt.
 						pad;
 			uint8		command,				// command byte + control bits
 						vChannel,				// virtual channel
@@ -544,10 +544,10 @@ public:
 
 		struct {
 			int32		start;					// sequence start time
-			CPlaybackThread *threadPtr;			// pointer to playback thread
-			uint8		command,				// command = ETYPE_THREAD_MARKER
+			CPlaybackTask *taskPtr;				// pointer to playback task
+			uint8		command,				// command = EvtType_TaskMarker
 						pad[ 7 ];				// unused
-		} thread;
+		} task;
 
 		struct {
 			int32		start;				// start time of event

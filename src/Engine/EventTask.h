@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * EventThread.h (MeV/Engine)
+ * EventTask.h (MeV/Engine)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -35,22 +35,22 @@
  *
  * ===================================================================== */
 
-#ifndef __C_EventThread_H__
-#define __C_EventThread_H__
+#ifndef __C_EventTask_H__
+#define __C_EventTask_H__
 
-#include "PlaybackThread.h"
-#include "PlaybackThreadTeam.h"
+#include "PlaybackTask.h"
+#include "PlaybackTaskGroup.h"
 
 // ---------------------------------------------------------------------------
-// CEventThread -- subclass which is used for event-based tracks
+// CEventTask -- subclass which is used for event-based tracks
 
 #define maxRepeatNest		4
 
-typedef CPlaybackThreadTeam::TimeState		TState;
+typedef CPlaybackTaskGroup::TimeState		TState;
 
-class CEventThread : public CPlaybackThread {
+class CEventTask : public CPlaybackTask {
 
-// friend class CPlaybackThreadTeam;
+// friend class CPlaybackTaskGroup;
 
 	struct RepeatState {
 		RepeatState		*next;				// next enclosing repeat
@@ -68,14 +68,14 @@ class CEventThread : public CPlaybackThread {
 protected:
 	TState				&timeBase;
 	EventMarker			playPos;				// Playback position
-	int8					transposition;		// key transposition of thread
-	uint8				clockType;			// clock type for this thread
+	int8					transposition;		// key transposition of task
+	uint8				clockType;			// clock type for this task
 	int32				trackAdvance,			// track playback buffering time
 						eventAdvance;			// event playback buffering time
 	int32				nextRepeatTime;		// time of next repeat
 	int32				trackEndTime;			// end time of track, compressed
-	int32				threadDuration;		// desired duration of thread, expanded.
-	bool					interruptable;			// thread can end at any time;
+	int32				taskDuration;		// desired duration of task, expanded.
+	bool					interruptable;			// task can end at any time;
 											// false means ends only at the end.
 
 		// Variables pertaining to Repeat events
@@ -90,19 +90,19 @@ protected:
 
 public:
 		// constructor
-	CEventThread(	CPlaybackThreadTeam	&team,
+	CEventTask(	CPlaybackTaskGroup	&group,
 					CEventTrack			*track,
 					TState				&inTimeBase,
-					CPlaybackThread		*parent,
+					CPlaybackTask		*parent,
 					int32				start,
 					int32				end );
 
 		// copy constructor
-	CEventThread(	CPlaybackThreadTeam	&team,
-					CEventThread			&thread );
+	CEventTask(	CPlaybackTaskGroup	&group,
+					CEventTask			&task );
 
 		// destructor
-	~CEventThread();
+	~CEventTask();
 
 		// Perform a single event
 	void PlayEvent( const Event &ev, CEventStack &stack, long time );
@@ -115,44 +115,44 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// CRealTimeEventThread -- play events in real time
+// CRealTimeEventTask -- play events in real time
 
-class CRealClockEventThread : public CEventThread {
+class CRealClockEventTask : public CEventTask {
 
 		// playback routine
 //	void Play();
 
 public:
 		// constructor
-	CRealClockEventThread(	CPlaybackThreadTeam &team,
+	CRealClockEventTask(	CPlaybackTaskGroup &group,
 							CEventTrack		*track,
-							CPlaybackThread	*parent,
+							CPlaybackTask	*parent,
 							int32			start,
 							int32			end );
 };
 
 // ---------------------------------------------------------------------------
-// CMeteredTimeEventThread -- play events in real time
+// CMeteredTimeEventTask -- play events in real time
 
-class CMeteredClockEventThread : public CEventThread {
+class CMeteredClockEventTask : public CEventTask {
 
 		// playback routine
 //	void Play();
 
 public:
 		// constructor
-	CMeteredClockEventThread(		CPlaybackThreadTeam &team,
+	CMeteredClockEventTask(		CPlaybackTaskGroup &group,
 								CEventTrack		*track,
-								CPlaybackThread	*parent,
+								CPlaybackTask	*parent,
 								int32			start,
 								int32			end );
 };
 
 #if 0
 // ---------------------------------------------------------------------------
-// CRealTimeEventThread -- play events in real time
+// CRealTimeEventTask -- play events in real time
 
-class CMasterEventThread : public CEventThread {
+class CMasterEventTask : public CEventTask {
 
 	EventMarker			mPlayPos;				// Playback position
 
@@ -161,7 +161,7 @@ class CMasterEventThread : public CEventThread {
 
 public:
 		// constructor
-	CMasterEventThread(	CPlaybackThreadTeam &team,
+	CMasterEventTask(	CPlaybackTaskGroup &group,
 						CEventTrack		*track,
 						CTrack			*parent,
 						long				start );
@@ -170,4 +170,4 @@ public:
 };
 #endif
 
-#endif /* __C_EventThread_H__ */
+#endif /* __C_EventTask_H__ */

@@ -254,7 +254,7 @@ enum E_EventAttribute Event::QueryAttribute( int32 index ) const
 // EvtType_EndSequence,						// end of a play track
 // EvtType_EndErase,							// end of erase event
 // EvtType_EndPunch,							// end of a "punch" event
-// EvtType_ThreadMarker,						// indicates thread is ready
+// EvtType_TaskMarker,						// indicates task is ready
 
 /*		some future event ideas...
 
