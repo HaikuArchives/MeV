@@ -14,9 +14,10 @@
 #include "Idents.h"
 #include "InspectorWindow.h"
 #include "LinearWindow.h"
-#include "MidiManager.h"
+#include "MidiModule.h"
 #include "MeV.h"
 #include "MeVDoc.h"
+#include "MeVModule.h"
 #include "MeVPlugin.h"
 #include "PlayerControl.h"
 #include "PreferencesWindow.h"
@@ -38,13 +39,18 @@
 #include <MenuItem.h>
 #include <PopUpMenu.h>
 #include <ScrollView.h>
-//#include <StringView.h>
 #include <TextView.h>
 // Storage Kit
 #include <AppFileInfo.h>
 #include <FilePanel.h>
 #include <NodeInfo.h>
 #include <Path.h>
+// Support Kit
+#include <Debug.h>
+
+// Debugging Macros
+#define D_MODULE(x) PRINT(x)			// Module Management
+
 
 #define TRACKLIST_NAME		"Part List"
 #define INSPECTOR_NAME		"Inspector"
@@ -201,7 +207,8 @@ CMeVApp::CMeVApp()
 	m_exportPanel = NULL;
 	m_importPanel = NULL;
 
-	Midi::CMidiManager::Instance();
+	AddModule(Midi::CMidiModule::Instance());
+
 	CPlayerControl::InitPlayer();
 
 	LoadAddOns();
@@ -322,8 +329,7 @@ CMeVApp::~CMeVApp()
 	{
 	}
 
-	Midi::CMidiManager::Instance()->Lock();
-	Midi::CMidiManager::Instance()->Quit();
+	RemoveModule('MIDI');
 }
 
 // ---------------------------------------------------------------------------
@@ -404,6 +410,46 @@ CMeVApp::WatchTrack(
 		((CTransportWindow *)w)->WatchTrack(inTrack);
 	}
 	mApp->transportState.Unlock();
+}
+
+// ---------------------------------------------------------------------------
+// Module Management
+
+void
+CMeVApp::AddModule(
+	CMeVModule *module)
+{
+	D_MODULE(("CMeVApp::AddModule()\n"));
+
+	m_modules[module->Type()] = module;
+}
+
+CMeVModule *
+CMeVApp::ModuleFor(
+	unsigned long type) const
+{
+	D_MODULE(("CMeVApp::ModuleFor(%ld)\n", type));
+
+	module_map::const_iterator i = m_modules.find(type);
+	if (i != m_modules.end())
+		return i->second;
+	else
+		return NULL;
+}
+
+void
+CMeVApp::RemoveModule(
+	uint32 type)
+{
+	D_MODULE(("CMeVApp::RemoveModule(%ld)\n", type));
+
+	CMeVModule *module = ModuleFor(type);
+	if (module != NULL)
+	{
+		module->Lock();
+		module->Quit();
+		m_modules.erase(type);
+	}
 }
 
 // ---------------------------------------------------------------------------

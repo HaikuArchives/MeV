@@ -199,8 +199,9 @@ public:							// Track Management
 
 public :						//Destination Management
 
-	CDestination *				NewDestination();
-	
+	CDestination *				NewDestination(
+									unsigned long type = 'MIDI');
+
 	CDestination *				FindDestination(
 									int32 id) const;
 	

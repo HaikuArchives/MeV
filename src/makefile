@@ -4,6 +4,7 @@ TYPE= APP
 SRCS= \
 	MeVApp.cpp \
 	MeVDoc.cpp \
+	MeVModule.cpp \
 	MeVPlugin.cpp \
 	Framework/AppWindow.cpp \
 	Framework/DialogWindow.cpp \

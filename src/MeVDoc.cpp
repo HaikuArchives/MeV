@@ -15,16 +15,13 @@
 #include "LinearWindow.h"
 #include "MeVDocIconBits.h"
 #include "MeVFileID.h"
-#include "MidiDestination.h"
-#include "MidiDeviceInfo.h"
+#include "MeVModule.h"
 #include "MixWindow.h"
 #include "OperatorWindow.h"
 #include "PlayerControl.h"
 #include "ScreenUtils.h"
 #include "StdEventOps.h"
 #include "TrackWindow.h"
-#include "ReconnectingMidiProducer.h"
-#include "MidiManager.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -474,12 +471,13 @@ CMeVDoc::IsDefinedDest(
 }
 
 CDestination *
-CMeVDoc::NewDestination()
+CMeVDoc::NewDestination(
+	unsigned long type)
 {
-	using namespace Midi;
-	CMidiDestination *dest = new CMidiDestination(m_destinations.CountItems(),
-												  "Untitled Destination",
-												  this);
+	CMeVModule *module = Application()->ModuleFor(type);
+	int32 id = m_destinations.CountItems();
+	CDestination *dest = module->CreateDestination(this, &id,
+												   "Untitled Destination");
 	m_destinations.AddItem(dest);
 
 	CUpdateHint hint;
@@ -843,19 +841,16 @@ CMeVDoc::_readEnvironment(
 			{
 				D_SERIALIZE((" -> DESTINATION_CHUNK\n"));
 
-				uint32 type;
+				unsigned long type;
 				reader >> type;
-				if (type == 'MIDI')
-				{
-					using namespace Midi;
-					CMidiDestination *dest = new CMidiDestination(this);
-					CWriteLock lock(dest);
-					reader.Push();
-					while (reader.NextChunk())
-						dest->ReadChunk(reader);
-					reader.Pop();
-					m_destinations.AddItem(dest, dest->ID());
-				}
+				CMeVModule *module = Application()->ModuleFor(type);
+				CDestination *dest = module->CreateDestination(this);
+				CWriteLock lock(dest);
+				reader.Push();
+				while (reader.NextChunk())
+					dest->ReadChunk(reader);
+				reader.Pop();
+				m_destinations.AddItem(dest, dest->ID());
 				break;
 			}
 			case SOURCE_CHUNK:
@@ -864,10 +859,6 @@ CMeVDoc::_readEnvironment(
 
 				uint32 type;
 				reader >> type;			
-				if (type == 'MIDI')
-				{
-					// +++ nyi
-				}
 				break;
 			}
 		}

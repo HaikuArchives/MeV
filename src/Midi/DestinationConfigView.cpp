@@ -4,11 +4,13 @@
 
 #include "DestinationConfigView.h"
 
-#include "MidiDestination.h"
 #include "IconMenuItem.h"
-#include "MidiManager.h"
+#include "InternalSynth.h"
+#include "MidiDestination.h"
+#include "MidiModule.h"
 
 // Interface Kit
+#include <Bitmap.h>
 #include <MenuField.h>
 #include <MenuItem.h>
 #include <PopUpMenu.h>
@@ -146,7 +148,7 @@ CDestinationConfigView::MessageReceived(
 				return;
 			item->SetMarked(true);
 
-			BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(consumerID);
+			BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(consumerID);
 			Destination()->ConnectTo(consumer);
 			break;
 		}
@@ -212,12 +214,12 @@ CDestinationConfigView::_updatePortMenu()
 	BMenuItem *item;
 
 	// Add the internal Synth
-	consumer = CMidiManager::Instance()->InternalSynth();
+	consumer = CMidiModule::Instance()->InternalSynth();
 	BMessage *message = new BMessage(PORT_SELECTED);
 	message->AddInt32("consumer", consumer->ID());
 	BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
 									  B_MINI_ICON - 1.0), B_CMAP8);
-	if (CMidiManager::Instance()->GetIconFor(consumer, B_MINI_ICON,
+	if (CMidiModule::Instance()->GetIconFor(consumer, B_MINI_ICON,
 											 icon) != B_OK)
 	{
 		delete icon;
@@ -229,7 +231,7 @@ CDestinationConfigView::_updatePortMenu()
 		item->SetMarked(true);
 
 	int32 id = 0;
-	while ((consumer = CMidiManager::Instance()->GetNextConsumer(&id)) != NULL)
+	while ((consumer = CMidiModule::Instance()->GetNextConsumer(&id)) != NULL)
 	{
 		if (consumer->IsValid())
 		{
@@ -237,7 +239,7 @@ CDestinationConfigView::_updatePortMenu()
 			message->AddInt32("consumer", id);
 			BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
 											  B_MINI_ICON - 1.0), B_CMAP8);
-			if (CMidiManager::Instance()->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
+			if (CMidiModule::Instance()->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
 			{
 				delete icon;
 				icon = NULL;

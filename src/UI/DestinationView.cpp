@@ -46,8 +46,6 @@ CDestinationView::CDestinationView(
 		m_monitorView(NULL),
 		m_contextMenu(NULL)
 {
-	MakeExpandable(false);
-	MakeSelectable(false);
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	SetFont(be_plain_font);
 

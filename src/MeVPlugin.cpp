@@ -9,7 +9,7 @@
 #include "Event.h"
 #include "MidiDestination.h"
 #include "InternalSynth.h"
-#include "MidiManager.h"
+#include "MidiModule.h"
 
 #include <support/Debug.h>
 
@@ -221,7 +221,7 @@ bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_
 	ASSERT(outName);
 	ASSERT(nameLength > 0);
 
-	BMidiConsumer* consumer = Midi::CMidiManager::Instance()->GetNextConsumer(cookie);
+	BMidiConsumer* consumer = Midi::CMidiModule::Instance()->GetNextConsumer(cookie);
 	if (consumer)
 	{
 		*outConsumerID = consumer->ID();
@@ -237,7 +237,7 @@ bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_
 
 int MeVDocRef::GetInternalSynthConsumerID()
 {
-	BMidiConsumer* synth = Midi::CMidiManager::Instance()->InternalSynth();
+	BMidiConsumer* synth = Midi::CMidiModule::Instance()->InternalSynth();
 	ASSERT(synth);
 	return synth ? synth->ID() : -1;
 }

@@ -8,7 +8,7 @@
 #include "GeneralMidi.h"
 #include "InternalSynth.h"
 #include "MeVDoc.h"
-#include "MidiManager.h"
+#include "MidiModule.h"
 #include "ReconnectingMidiProducer.h"
 
 // Interface Kit
@@ -170,7 +170,7 @@ CMidiDestination::ConnectTo(
 {
 	D_ACCESS(("CMidiDestination::ConnectTo(id)\n"));
 
-	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(id);
+	BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(id);
 	if (consumer != NULL)
 		ConnectTo(consumer);
 }
@@ -181,7 +181,7 @@ CMidiDestination::ConnectTo(
 {
 	D_ACCESS(("CMidiDestination::ConnectTo(name)\n"));
 
-	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(name);
+	BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(name);
 	if (consumer != NULL)
 		ConnectTo(consumer);
 	// +++ else remember name
@@ -192,7 +192,7 @@ CMidiDestination::Disconnect()
 {
 	D_ACCESS(("CMidiDestination::Disconnect()\n"));
 
-	CMidiManager *mm = CMidiManager::Instance();
+	CMidiModule *mm = CMidiModule::Instance();
 	if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
 	{
 		m_producer->Disconnect(mm->FindConsumer(m_consumerID));

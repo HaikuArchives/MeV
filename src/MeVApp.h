@@ -55,11 +55,15 @@
 #include "Preferences.h"
 #include "Destination.h"
 
+// Standard Template Library
+#include <map>
+
 class CDocWindow;
 class CStripFrameView;
 class CScroller;
 class CStripView;
 class CInspectorWindow;
+class CMeVModule;
 class MIDIDeviceInfo;
 class CTrack;
 class CTrackListWindow;
@@ -128,6 +132,17 @@ public:							// Operations
 	static void					WatchTrack(
 									CEventTrack *track);
 	
+public:							// Module Management
+
+	void						AddModule(
+									CMeVModule *module);
+
+	CMeVModule *				ModuleFor(
+									unsigned long type) const;
+
+	void						RemoveModule(
+									unsigned long type);
+
 public:							// Device Management
 
 	/** Returns the number of devices in the instrument table. */
@@ -289,6 +304,9 @@ private:						// Instance Data
 	bool						loopFlag;
 
 	MIDIDeviceInfo *			deviceTable[16][16];
+
+	typedef map<unsigned long, CMeVModule *> module_map;
+	module_map					m_modules;
 };
 
 // ---------------------------------------------------------------------------

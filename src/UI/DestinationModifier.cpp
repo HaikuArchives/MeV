@@ -9,7 +9,7 @@
 #include "DestinationView.h"
 #include "MeVDoc.h"
 #include "DestinationListView.h"
-#include "MidiManager.h"
+#include "MidiModule.h"
 #include "IconMenuItem.h"
 
 #include <stdio.h>
