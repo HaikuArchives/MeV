@@ -334,6 +334,11 @@ CInspectorWindow::SubjectUpdated(
 	{
 		StSubjectLock trackLock(*m_track, Lock_Shared);
 		const Event *event = m_track->CurrentEvent();
+		if (!event)
+		{
+			Clear();
+			return;
+		}
 		StWindowLocker lck(this);
 	
 		// Set the event name
@@ -342,7 +347,7 @@ CInspectorWindow::SubjectUpdated(
 		SetTitle(title.String());
 
 		// Set up the data values for all three sliders
-		for(int i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 		{
 			enum E_EventAttribute attrType;
 			attrType = event->QueryAttribute(i);
