@@ -109,6 +109,8 @@ ResourceUtils::LoadImage(
 		// if that failed, assume the image is an archived BBitmap
 		size_t size;
 		void *data = LoadResource(B_RAW_TYPE, resourceID, &size);
+		if (!data)
+			return NULL;
 		BMessage message;
 		message.Unflatten(static_cast<char *>(data));
 		bitmap = new BBitmap(&message);
@@ -129,6 +131,8 @@ ResourceUtils::LoadImage(
 		// if that failed, assume the image is an archived BBitmap
 		size_t size;
 		void *data = LoadResource(B_RAW_TYPE, resourceName, &size);
+		if (!data)
+			return NULL;
 		BMessage message;
 		message.Unflatten(static_cast<char *>(data));
 		bitmap = new BBitmap(&message);
