@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  implements the observer pattern
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -69,6 +65,11 @@ class CObservableSubject;
 const long			Update_ID = '#UPD',		//	Data has changed
 					Delete_ID = '#DEL';		//	Observerable going away
 
+/**
+ *  Implements the observer pattern
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class CUpdateHint : public BMessage {
 public:
 

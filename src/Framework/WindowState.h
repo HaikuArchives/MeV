@@ -21,13 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
- * To Do:
+ *  To Do:
  *
  * ===================================================================== */
 
@@ -100,7 +100,7 @@ public:
 
 	CWindowState( BRect inRect ) { wRect = inRect; w = NULL; }
 
-		/**	Call this to activate the window. Returns false if not open. */
+		/**	Call this to activate the window. Returns false if not open.	*/
 	bool Activate();
 	bool IsOpen()
 	{
@@ -113,30 +113,30 @@ public:
 		return result;
 	}
 	
-		/**	Call this to request that the window be closed. */
+		/**	Call this to request that the window be closed.	*/
 	void Close();
 	
-		/**	Call this to get the rectangle of the window when it was last open. */
+		/**	Call this to get the rectangle of the window when it was last open.	*/
 	BRect Rect();
 	BPoint Pos();
 
-	/**	Returns a pointer to the window. You should lock before calling this. */
+	/**	Returns a pointer to the window. You should lock before calling this.	*/
 	CAppWindow *				Window() const
 								{ return w; }
 	
-		/**	Lock the window state. */
+		/**	Lock the window state.	*/
 	void Lock() { lock.Lock(); }
 	
 		/**	Unlock the window state. */
 	void Unlock() { lock.Unlock(); }
 	
-		/**	Set position of window */
+		/**	Set position of window.	*/
 	void SetPos( const BPoint &inPos )
 	{
 		wRect.OffsetTo( inPos );
 	}
 
-		/**	Set position of window */
+		/**	Set the position of window.	*/
 	void SetPos( const BRect &inPos )
 	{
 		wRect = inPos;

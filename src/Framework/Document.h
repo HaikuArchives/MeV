@@ -21,11 +21,10 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
@@ -43,9 +42,9 @@
 class CDocApp;
 class CDocWindow;
 
-/** Document framework class
- *	@author		Talin, Christopher Lenz
- *	@package	Framework
+/**	Document framework class.
+ *		@author		Talin, Christopher Lenz
+ *		@package	Framework
  */
 class CDocument
 	:	public CObservableSubject
@@ -72,10 +71,10 @@ public:							// Constructor/Destructor
 
 public:							// Hook Functions
 
-	/** Override this to change the way the save file panel is created. */
+	/**	Override this to change the way the save file panel is created.	*/
 	virtual BFilePanel *		CreateSavePanel();
 
-	/** Low-level function to actually write the document data. */
+	/**	Low-level function to actually write the document data.	*/
 	virtual void				SaveDocument() = 0;
 
 public:							// Accessors
@@ -86,20 +85,20 @@ public:							// Accessors
 	const BEntry &				DocLocation()
 								{ return m_entry; }
 
-	/** Returns true if document is correctly initialized. */
+	/**	Returns true if document is correctly initialized.	*/
 	bool						InitCheck()
 								{ return m_valid; }
 
 	void						CancelSaving()
 								{ m_saving = false; }
 
-	/** Returns true if the document is currently being saved.
-	 *	ie, if it has an open save panel.
+	/**	Returns true if the document is currently being saved
+	 *		i.e., if it has an open save panel.
 	 */
 	bool						IsSaving() const
 								{ return m_saving; }
 
-	/**	Name must be at least B_FILE_NAME_LENGTH. */
+	/**	Name must be at least B_FILE_NAME_LENGTH.	*/
 	status_t					GetName(
 									char *name) const;
 	status_t					GetEntry(
@@ -107,15 +106,15 @@ public:							// Accessors
 	status_t					SetEntry(
 									const BEntry *entry);
 
-	/** Returns true if document has unsaved modifications. */
+	/** Returns true if the document has unsaved modifications. */
 	bool						Modified()
 								{ return m_modified; }
-	/** Used to set the modification state of the document. */
+	/**	Used to set the modification state of the document.	*/
 	void						SetModified(
 									bool modified = true)
 								{ m_modified = modified; }
 
-	/** Returns true if document has ever been saved. */
+	/**	Returns true if document has ever been saved.	*/
 	bool						Named()
 								{ return m_named; }
 	void						SetNamed();
@@ -138,41 +137,42 @@ public:							// Operations
 									int32 index) const
 								{ return (CDocWindow *)m_windows.ItemAt(index); }
 
-	/** Call this to save the document to it's current location. */
+	/**	Call this to save the document to it's current location.	*/
 	void						Save();
-	/** Call this to save the document to a new location. */
+	/**	Call this to save the document to a new location.	*/
 	void						SaveAs();
 
-private:						// Instance Data
+private:						//	Instance Data
 
-	//	Location of this doc in hierarchy
+	/**	Location of this doc in hierarchy.	*/
 	BEntry						m_entry;
 
 	CDocApp &					app;
 
-	//	List of open windows relating to this document
+	/**	List of open windows relating to this document.	*/
 	BList						m_windows;
 
-	// Pointer to the main document window
+	/**	Pointer to the main document window.	*/
 	CDocWindow *				m_masterWindow;
 
-	// true if the document has been modified
+	/**	true if the document has been modified.	*/
 	bool						m_modified;				
 
-	// true if the document has been given a file name
+	/**	true if the document has been given a file name.		*/
 	bool						m_named;
 	
-	// true if the constructor initialized OK
+	/**	true if the constructor initialized properly.	*/
 	bool						m_valid;
 
-	// the file panel for saving this document
+	/**	The file panel for saving this document.	*/
 	BFilePanel *				m_savePanel;
 
-	/** true if the a save panel is open for the document. */
+	/**	true if the a save panel is open for the document.	*/
 	bool						m_saving;
 
-private:						// Class Data
-
+private:						//	Class Data
+	
+	/**	Adds a new document to the list of documents already open.	*/
 	static int32				s_newDocCount;
 };
 

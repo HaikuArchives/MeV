@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Framework for reference-counted objects
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -47,22 +43,27 @@
 	#pragma export on
 #endif
 
+/**
+ *  Framework for reference-counted objects.
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class AppFrameSpec CRefCountObject {
 
 	int32			count;
 
 public:
 
-		/**	Constructor. Initializes reference count to 1 */
+		/**	Constructor. Initializes reference count to 1.	*/
 	CRefCountObject() : count( 1 ) {}
 
-		/**	Virtual constructor (does nothing, serves as place-holder). */
+		/**	Virtual constructor (does nothing, serves as place-holder).	*/
 	virtual ~CRefCountObject() {}
 
-		/**	Increment the object's reference count. */
+		/**	Increment the object's reference count.	*/
 	CRefCountObject *Acquire();
 
-		/**	Static version to decrement reference count, safe if inObj == NULL. */
+		/**	Static version to decrement reference count, safe if inObj == NULL.	*/
 	static void Release( CRefCountObject *inObj );
 };
 

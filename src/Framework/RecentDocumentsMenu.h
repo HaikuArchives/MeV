@@ -39,24 +39,25 @@
  *	@author		Christopher Lenz
  *	@package	Framework
  */
+ 
 class CRecentDocumentsMenu
 	:	public BMenu
 {
 
 public:							// Constructor/Destructor
 
-	/** Constructor for a single document MIME types.
-	 *	@param name			Name (and potentially label) of the BMenu.
-	 *	@param message		A model message that should be sent when the
-	 *						user invokes an item in this menu.
-	 *	@param maxCount		The maximum number of recent documents to put
-	 *						in the menu.
-	 *	@param ofType		The MIME type of the documents. Specifying NULL 
-	 * 						will fetch all files of all types.
-	 *	@param openedByApp	If you're only interested in files that want to 
-	 *						be opened by a specific application, specify that 
-	 *						application's signature. Otherwise specify NULL.
-	 */
+/**	Constructor for a single document MIME types.
+ *	@param name					Name (and potentially label) of the BMenu.
+ *	@param message				A model message that should be sent when the
+ *											user invokes an item in this menu.
+ *	@param maxCount			The maximum number of recent documents to put
+ *											in the menu.
+ *	@param ofType				The MIME type of the documents. Specifying NULL 
+ *				 							will fetch all files of all types.
+ *	@param openedByApp		If you're only interested in files that want to 
+ *											be opened by a specific application, specify that 
+ *											application's signature. Otherwise specify NULL.
+ */
 								CRecentDocumentsMenu(
 									const char *name,
 									BMessage *message,
@@ -64,19 +65,19 @@ public:							// Constructor/Destructor
 									const char *ofType = NULL,
 									const char *openedByApp = NULL);
 
-	/** Constructor for multiple document MIME types.
-	 *	@param name				Name (and potentially label) of the BMenu.
-	 *	@param message			A model message that should be sent when the
-	 *							user invokes an item in this menu.
-	 *	@param maxCount			The maximum number of recent documents to put
-	 *							in the menu.
-	 *	@param ofTypeList		Specify a pointer to an array of strings.
-	 *	@param ofTypeListCount	The number of types in ofTypeList.
-	 *	@param openedByApp		If you're only interested in files that want 
-	 *							to be opened by a specific application, 
-	 *							specify that application's signature. 
-	 *							Otherwise specify NULL.
-	 */
+/**	Constructor for multiple document MIME types.
+ *	@param name				Name (and potentially label) of the BMenu.
+ *	@param message			A model message that should be sent when the
+ *										user invokes an item in this menu.
+ *	@param maxCount		The maximum number of recent documents to put
+ *										in the menu.
+ *	@param ofTypeList		Specify a pointer to an array of strings.
+ *	@param ofTypeListCount	The number of types in ofTypeList.
+ *	@param openedByApp		If you're only interested in files that want 
+ *											to be opened by a specific application, 
+ *											specify that application's signature. 
+ *											Otherwise specify NULL.
+ */
 								CRecentDocumentsMenu(
 									const char *name,
 									BMessage *message,
@@ -85,17 +86,18 @@ public:							// Constructor/Destructor
 									int32 ofTypeListCount,
 									const char *openedByApp = NULL);
 
-	/** Destructor. Does nothing. */
+	/**	Destructor. Does nothing.	*/
 	virtual						~CRecentDocumentsMenu();
 
 private:						// Internal Operations
 
-	/** Populate the menu with BMenuItems pointing to the recent
-	 *	documents.
+	/**	Populate the menu with BMenuItems pointing to the recent
+	 *		documents.
 	 *	@param refList		The list of refs of recent documents, as returned 
-	 *						by BRoster::GetRecentDocuments()
+	 *								by BRoster::GetRecentDocuments()
 	 *	@param itemMessage	Model message for the menu items.
 	 */
+	 
 	void						_populateMenu(
 									BMessage *refList,
 									BMessage *itemMessage);

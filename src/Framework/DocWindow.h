@@ -21,11 +21,10 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000		cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
@@ -44,9 +43,10 @@ class CDocument;
 class CToolBar;
 
 /**	Abstract document window class.
- *	@author		Talin, Christopher Lenz
- *	@package	Framework
+ *		@author		Talin, Christopher Lenz
+ *		@package	Framework
  */
+
 class CDocWindow :
 	public CAppWindow
 {
@@ -56,16 +56,16 @@ public:							// Constants
 
 	enum messages
 	{
-								/** Activate this window */
+								//	Activate this window.
 								ACTIVATE = 'dwdA',
 
-								/** Hide all windows for this document. */
+								//	Hide all windows for this document.
 								HIDE_ALL,
 
-								/** Show all windows for this document. */
+								//	Show all windows for this document.
 								SHOW_ALL,
 
-								/** We lost selection */
+								//	We lost selection.
 								SELECTED,
 
 								DONE_SAVING
@@ -93,21 +93,21 @@ public:							// Constructor/Destructor
 
 public:							// Accessors
 
-	// Return the document window which has the active token
+	/**	Return the document window which has the active token.	*/
 	static CDocWindow *			ActiveDocWindow()
 								{ return s_activeDocWin; }
 
-	// Returns a pointer to the document for this DocWindow
+	/**	Returns a pointer to the document for this DocWindow.	*/
 	virtual CDocument *			Document();
 	
-	// Return true if this window has the active selection token
+	/**	Return true if this window has the active selection token.	*/
 	bool						HasSelectToken()
 								{ return (this == s_activeDocWin); }
 	
 	bool						IsMasterWindow() const
 								{ return m_isMaster; }
 
-	// set and get the current toolbar
+	/**	Set and get the current toolbar.	*/
 	CToolBar *					ToolBar() const
 								{ return m_toolBar; }
 	void						SetToolBar(
@@ -159,16 +159,16 @@ private:						// Instance Data
 
 	CToolBar *					m_toolBar;
 
-	// Menu of opened/openable windows
+	/**	Menu of opened/openable windows.	*/
 	BMenu *						m_windowMenu;
 
-	//	Which # view of document is this
+	/**	Which # view of document is this.	*/
 	int16						m_windowNumber;
 
-	//	Start item of window menu
+	/**	Start item of window menu.	*/
 	int16						m_windowMenuStart;
 
-	// the 'sub-name' of the window, ie the part after the colon
+	/**	The 'sub-name' of the window, i.e. the part after the colon.	*/
 	BString						m_name;
 
 	bool						m_waitingToQuit;

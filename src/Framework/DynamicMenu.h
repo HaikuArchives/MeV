@@ -21,29 +21,10 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *	A dynamic menu definition. Dynamic menus are used for menus who's
- *	contents are not known at compile time, such as a list of open windows
- *	or a list of available plug-ins or fonts.
- *
- *	Each dynamic menu represents a list of menus. The menus must be of
- *	the standard BMenuItem class -- custom menus are not supported.
- *
- *	Dynamic menu definitions can be shared between multiple windows.
- *	Each window must have it's own CDynamicMenuInstance. When an item is
- *	added, removed, or changed, all CDynamicMenuInstance objects associated
- *	with this menu definition are marked for update. The update does not
- *	actually occur until the instance's CheckMenusChanged member is called,
- *	which would normally be called by the window's MenusBeginning() member.
- *	This avoids needless updating of the menu structures. In addition,
- *	the menu instance tries to do as little work as possible when updating
- *	the menu structure to avoid flickering or other cosmetic problems.
- * ---------------------------------------------------------------------
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
@@ -60,6 +41,26 @@
 // Support Kit
 #include <Locker.h>
 
+/**
+ *	A dynamic menu definition. Dynamic menus are used for menus who's
+ *	contents are not known at compile time, such as a list of open windows
+ *	or a list of available plug-ins or fonts.
+ *
+ *	Each dynamic menu represents a list of menus. The menus must be of
+ *	the standard BMenuItem class -- custom menus are not supported.
+ *
+ *	Dynamic menu definitions can be shared between multiple windows.
+ *	Each window must have it's own CDynamicMenuInstance. When an item is
+ *	added, removed, or changed, all CDynamicMenuInstance objects associated
+ *	with this menu definition are marked for update. The update does not
+ *	actually occur until the instance's CheckMenusChanged member is called,
+ *	which would normally be called by the window's MenusBeginning() member.
+ *	This avoids needless updating of the menu structures. In addition,
+ *	the menu instance tries to do as little work as possible when updating
+ *	the menu structure to avoid flickering or other cosmetic problems.
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class CDynamicMenuDef {
 	friend class CDynamicMenuInstance;
 

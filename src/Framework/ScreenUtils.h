@@ -21,14 +21,10 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Various utility functions related to the screen.
- * ---------------------------------------------------------------------
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
@@ -48,6 +44,11 @@
 
 class BWindow;
 
+/**
+ *  Various utility functions related to the screen.
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class AppFrameSpec UScreenUtils
 {
 

@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Generalized undo framework
- * ---------------------------------------------------------------------
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
- * To Do:
+ *  To Do:
  *
  * ===================================================================== */
 
@@ -40,10 +36,13 @@
 
 #include "DList.h"
 
-/** --------------------------------------------------------------------
-	UndoAction is a single undoable user action. It should be subclassed
-	to provide specific undo functionality.
-*/
+/**
+ *	Generalized undo framework.  	UndoAction is a single
+ *	undoable user action. It should be subclassed
+ *	to provide specific undo functionality.
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 
 class UndoAction : public DNode {
 	friend class UndoHistory;
@@ -67,30 +66,34 @@ protected:
 	virtual const char *Description() const { return NULL; }
 };
 
-/** --------------------------------------------------------------------
-	UndoHistory is a series of undoable actions.
-*/
+		/**	UndoHistory is a series of undoable actions.	*/
 
 class UndoHistory {
 
-		//	List of undoable actions. The oldest actions are at the tail
-		//	of the list, with newer actions being prepended to the head.
+		/**	List of undoable actions. The oldest actions are at the tail
+		*		of the list, with newer actions being prepended to the head.
+		*/
+
 	DList		undoList;	
 	int32		currentUndoSize,			//	Size of undo data
 				maxUndoSize;				//	Limit size of undo data
 				
-		//	Position of current item in undo list. This is the item
-		//	which will be undone if an undo command is given; The
-		//	predeccessor of this item is the current redo() item.
+		/**	Position of current item in undo list. This is the item
+		*	which will be undone if an undo command is given; The
+		*	predeccessor of this item is the current redo() item.
+		*/
+		
 	UndoAction	*undoPos;
 
 	void TrimUndo();
 
 public:
+		
 		/**	Constructor. Optional parameter specifies how much undo
-			information should be kept in RAM. (At least one is always
-			kept).
+		*		information should be kept in RAM. (At least one is always
+		*		kept).
 		*/
+		
 	UndoHistory( int32 inMaxUndoSize = (1024 * 10) )
 	{
 		currentUndoSize	= 0;
@@ -98,41 +101,45 @@ public:
 		undoPos			= NULL;
 	}
 
-		/**	Return true if there is an undoable action. */
+		/**	Return true if there is an undoable action.	*/
 	bool CanUndo();
 	
-		/**	Return true if there is a redoable action. */
+		/**	Return true if there is a redoable action.	*/
 	bool CanRedo();
 
 		/**	Undo the undoable action, if any. */
 	bool Undo();
 
-		/**	Redo the redoable action, if any. */
+		/**	Redo the redoable action, if any.	*/
 	bool Redo();
 	
 		/**	Return the description of the current undo action. Returns NULL
-			if current undo action has no description, or there is no current
-			undo action.
+		*		if current undo action has no description, or there is no current
+		*		undo action.
 		*/
+		
 	const char *UndoDescription() const;
 	
 		/**	Return the description of the current redo action. Returns NULL
-			if current redo action has no description, or there is no current
-			redo action.
+		*		if current redo action has no description, or there is no current
+		*		redo action.
 		*/
+		
 	const char *RedoDescription() const;
 	
 		/**	Add a new action to be undone to the list. This discards any
-			pending re-do actions.
+		*		pending re-do actions.
 		*/
+		
 	void Add( UndoAction *inAction );
 
-		/**	Set how much undo information we wish to keep. */
+		/**	Set how much undo information we wish to keep.	*/
 	void SetMaxUndoSize( int32 inMaxUndo );
 	
 		/**	Query if this is the most recent undo action.
-			Can be used to build up undo's cumulatively
+		*		Can be used to build up undo's cumulatively.
 		*/
+		
 	bool IsMostRecent( UndoAction *inAction );
 };
 

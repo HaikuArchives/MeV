@@ -21,14 +21,10 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Implements shared / exclusive locks, I hope...
- * ---------------------------------------------------------------------
- * History:
- *	1997		Talin
+ *  History:
+ *  1997		Talin
  *		Original implementation
- *	04/08/2000	cell
+ *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
@@ -42,13 +38,18 @@
 
 typedef enum
 {
-	// A shared lock that waits if there is an exclusive lock waiting
+	//	A shared lock that waits if there is an exclusive lock waiting.
 	Lock_Shared,
 
-	// An exclusive lock
+	//	An exclusive lock.
 	Lock_Exclusive,
 } TLockType;
 
+/**
+ *  Implements shared / exclusive locks, I hope...
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class CSharedLock
 {
 
@@ -61,41 +62,41 @@ public:							// Constructor/Destructor
 
 public:							// Operations
 
-	/** Acquire the lock. */
+	/**	Acquire the lock.	*/
 	bool						Acquire(
 									TLockType inLockType);
 
-	/** Acquire the lock with a timeout. */
+	/**	Acquire the lock with a timeout.	*/
 	bool						Acquire(
 									TLockType inLockType,
 									bigtime_t inTimeout);
 
-	/** Release the lock. */
+	/**	Release the lock.	*/
 	bool						Release(
 									TLockType inLockType);
 
-	/** Returns true if the lock is exclusively locked. */
+	/**	Returns true if the lock is exclusively locked.	*/
 	bool						IsExclusiveLocked() const
 								{ return m_eCount > 0; }
 
-	/** Returns true if the lock is read-locked. */
+	/**	Returns true if the lock is read-locked.	*/
 	bool						IsLocked() const;
 
 private:						// Instance Data
 
 	sem_id						m_sem;
 
-	// Exclusive owner, or -1
+	/**	Exclusive owner, or -1.	*/
 	int							m_eOwner;
 
-	// Exclusion lock recursion count
+	/**	Exclusion lock recursion count.	*/
 	int							m_eCount;
 
-	// Number of shared locks for exclusive lock owner
+	/**	Number of shared locks for exclusive lock owner.	*/
 	int							m_sCount;
 };
 
-/** Stack based class to acquire a shared lock. */
+/**	Stack based class to acquire a shared lock.	*/
 class StLocker
 {
 
