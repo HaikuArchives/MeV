@@ -434,18 +434,21 @@ CMeVApp::ShowTrackList( bool inShow )
 }
 
 void
-CMeVApp::ShowInspector( bool inShow )
+CMeVApp::ShowInspector(
+	bool show)
 {
 	inspectorState.Lock();
 
-	if (inShow)
+	if (show)
 	{
 		if (!inspectorState.Activate())
 		{
-			BWindow		*w;
-		
-			w = new CInspectorWindow( inspectorState.Rect().LeftTop(), inspectorState );
-			w->Show();
+			CInspectorWindow *window;
+			window = new CInspectorWindow(inspectorState.Rect().LeftTop(),
+										  inspectorState);
+			window->Show();
+			if (activeTrack)
+				window->WatchTrack(dynamic_cast<CEventTrack *>(activeTrack));
 		}
 	}
 	else
@@ -457,18 +460,21 @@ CMeVApp::ShowInspector( bool inShow )
 }
 
 void
-CMeVApp::ShowGridWindow( bool inShow )
+CMeVApp::ShowGridWindow(
+	bool show)
 {
 	gridWinState.Lock();
 
-	if (inShow)
+	if (show)
 	{
 		if (!gridWinState.Activate())
 		{
-			BWindow		*w;
-		
-			w = new CGridWindow( gridWinState.Rect().LeftTop(), gridWinState );
-			w->Show();
+			CGridWindow *window;
+			window = new CGridWindow(gridWinState.Rect().LeftTop(),
+									 gridWinState);
+			window->Show();
+			if (activeTrack)
+				window->WatchTrack(dynamic_cast<CEventTrack *>(activeTrack));
 		}
 	}
 	else
@@ -488,10 +494,12 @@ CMeVApp::ShowTransportWindow( bool inShow )
 	{
 		if (!transportState.Activate())
 		{
-			BWindow		*w;
-		
-			w = new CTransportWindow( transportState.Rect().LeftTop(), transportState );
-			w->Show();
+			CTransportWindow *window;
+			window = new CTransportWindow(transportState.Rect().LeftTop(),
+										  transportState);
+			window->Show();
+			if (activeTrack)
+				window->WatchTrack(dynamic_cast<CEventTrack *>(activeTrack));
 		}
 	}
 	else
