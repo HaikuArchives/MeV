@@ -5,27 +5,26 @@
  * $NoKeywords: $
  * ===================================================================== */
  
-// Storage Kit
-#include <File.h>
+#include <cstring>
+
+#include <support/SupportDefs.h>
+
+#include "Error.h"
 
 void CheckBeError( status_t errCode );
 void CheckBeError( status_t errCode )
 {
-	char			*msg;
-	
-	if (errCode >= 0) return;
+	class Error :
+		public IError
+	{
+	public:
+		Error(status_t error) : m_error(error) { }
+		virtual	const char*		Description() const
+									{ return strerror(m_error); }
+	private:
+		status_t m_error;
+	};
 
-	switch (errCode) {
-	case B_NO_ERROR: return;
-	case B_NO_INIT:	msg = "File object is uninitialized"; break;
-	case B_BAD_VALUE: msg = "NULL path in dir/path, or some other argument is uninitialized"; break;
-	case B_ENTRY_NOT_FOUND: msg = "File not found, or couldn't create the file"; break;
-	case B_FILE_EXISTS: msg = "File already exists"; break;
-	case B_PERMISSION_DENIED: msg = "Permission denied"; break;
-	case B_NO_MEMORY: msg = "Couldn't allocate necessary memory to complete the operation"; break;
-	case B_NOT_ALLOWED: msg = "Operation not allowed"; break;
-	case B_DEVICE_FULL: msg = "Device full"; break;
-//	case B_BAD_FILE: msg = "Uninitialized file"; break;
-	default: msg = "Unknown error"; break;
-	}
+	if (errCode < B_OK)
+		throw Error(errCode);
 }
