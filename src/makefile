@@ -108,8 +108,10 @@ SRCS= \
 RSRCS= \
 	../resources/Bitmaps.rsrc \
 	../resources/Buttons.rsrc \
-	../resources/Cursor.rsrc \
-	../resources/MeV.rsrc
+	../resources/Cursors.rsrc \
+	../resources/Icons.rsrc \
+	../resources/MeV.rsrc \
+	../resources/Midi.rsrc
 
 # @<-src@ 
 #%}
