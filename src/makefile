@@ -19,7 +19,7 @@ SRCS= \
 	Framework/SharedLock.cpp \
 	Framework/Undo.cpp \
 	Framework/WindowState.cpp \
-	Engine/DestinationList.cpp \
+	Engine/Destination.cpp \
 	Engine/Event.cpp \
 	Engine/EventList.cpp \
 	Engine/EventOp.cpp \
