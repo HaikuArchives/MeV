@@ -67,7 +67,7 @@
 #include "GeneralMidi.h"
 #include "PortNameMap.h"
 #include "InternalSynth.h"
-#include "Observer.h"
+#include "Observable.h"
 
 class CMidiManager : public BLooper,public CObservableSubject{
 	public:

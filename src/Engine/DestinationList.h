@@ -38,6 +38,7 @@
 #define __C_VChannelManager_H__
 #include "MeV.h"
 #include "Destination.h"
+#include "Observable.h"
 #include "Observer.h"
 #include "IFFWriter.h"
 #include "IFFReader.h"
