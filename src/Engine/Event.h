@@ -458,11 +458,11 @@ public:
 		struct {
 			int32		start;					// program change time
 			uint32		duration;				// not used
-			ExtDataPtr	extData;				// pointer to sysex buffer
 			uint8		command,				// sysex cmd
 						vChannel,				// virtual channel to send to
 						data1,					// 1st data byte (not used)
 						vPos;					// vertical position
+			ExtDataPtr	extData;				// pointer to sysex buffer
 						BMidiLocalProducer		*actualPort;	
 		
 		} sysEx;
@@ -470,11 +470,11 @@ public:
 		struct {
 			int32		start;					// program change time
 			uint32		duration;				// not used
-			ExtDataPtr	extData;				// pointer to null-terminated text buffer
 			uint8		command,				// sysex cmd
 						vChannel,				// virtual channel to send to
 						textType,				// type of text (lyric, cue, etc)
 						vPos;					// vertical position
+			ExtDataPtr	extData;				// pointer to null-terminated text buffer
 						BMidiLocalProducer		*actualPort;	
 		
 		} text;
