@@ -68,6 +68,7 @@ SRCS= \
 	UI/StdButton.cpp \
 	UI/StringEditView.cpp \
 	UI/StripFrameView.cpp \
+	UI/StripLabelView.cpp \
 	UI/StripView.cpp \
 	UI/TextDisplay.cpp \
 	UI/TextSlider.cpp \
