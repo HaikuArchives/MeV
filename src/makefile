@@ -1,7 +1,6 @@
 NAME= MeV
 TYPE= APP
 
-
 SRCS= \
 	MeVApp.cpp \
 	MeVDoc.cpp \
@@ -171,7 +170,25 @@ DEFINES= DEBUG=1 NDEBUG=0
 #	if unspecified default warnings will be used
 #	NONE = supress all warnings
 #	ALL = enable all warnings
-WARNINGS = 
+WARNINGS= \
+	-Wparentheses \
+	-Wreturn-type \
+	-Wswitch \
+	-Wunused \
+	-Wuninitialized \
+	-Wreorder \
+	-Wno-ctor-dtor-privacy \
+	-Wnon-virtual-dtor \
+	-Wsign-compare \
+	-Wchar-subscripts \
+	-Wformat \
+	-Wtrigraphs \
+	-Wbad-function-cast \
+	-Wcast-qual \
+	-Wconversion \
+	-Wextern-inline \
+	-Woverloaded-virtual \
+	-Wno-multichar
 
 #	specify whether image symbols will be created
 #	so that stack crawls in the debugger are meaningful
