@@ -46,8 +46,10 @@
 
 #include "TransportButton.h"
 
-/**	CTransportButton subclass to switches loop modes between 'looping' and
- *	'not looping'.
+/**	
+ *		CTransportButton subclass to switches loop modes between 'looping' and
+ *		'not looping'.
+ *		@author	Christoper Lenz.   
  */
 class CLoopButton
 	:	public CTransportButton
@@ -55,6 +57,7 @@ class CLoopButton
 
 public:							// Constructor/Destructor
 
+								/**	Constructor.	*/
 								CLoopButton(
 									BRect frame,
 									const char *name,

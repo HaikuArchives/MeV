@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  classes relating to the pich bend editor strip
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,9 +36,11 @@
 
 #include "ContinuousValueEditor.h"
 
-// ---------------------------------------------------------------------------
-// Pitch bend editor strip view
-
+ /**
+ *		Classes relating to the Pich Bend editor strip.
+ *		@author	Talin, Christoper Lenz.  
+ */
+ 
 class CPitchBendEditor
 	:	public CContinuousValueEditor
 {

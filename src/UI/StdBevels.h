@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Standardizes "bevel box" drawing routines.
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/18/2000	cell
- *		Updated DrawBorderBevel() to use BViews' LineArray API
+ *	Updated DrawBorderBevel() to use BViews' LineArray API
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,9 +41,14 @@
 class BRect;
 class BView;
 
+/**
+ *		Standardizes "bevel box" drawing routines.
+ *		@author	Talin, Christoper Lenz.  
+ */
+
 namespace StdBevels
 {
-	// Constants
+	/**	Constants.	*/
 	enum bevel_state {
 
 		NORMAL_BEVEL,
@@ -82,20 +83,20 @@ namespace StdBevels
 		{220, 220, 220, 255}
 	};
 
-	// Bevels with coloration similar to Be Scrollbars, for placing in
-	// window borders...
+	/**	Bevels with coloration similar to Be Scrollbars, for placing in
+			window borders.	*/
 	void DrawBorderBevel(
 		BView *view,
 		BRect rect,
 		bevel_state state = NORMAL_BEVEL);
 
-	// Bevels with same coloration as Be buttons.
+	/**	Bevels with same coloration as Be buttons.	*/
 	void DrawButtonBevel(
 		BView *view,
 		BRect rect,
 		bevel_state state = NORMAL_BEVEL);
 
-	// Same as button bevel but with square corners.
+	/**	Same as button bevel but with square corners.	*/
 	void DrawSquareBevel(
 		BView *view,
 		BRect rect,

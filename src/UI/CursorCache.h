@@ -21,12 +21,9 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	09/05/2000	cell
- *		Initial implementation
+ *	Initial implementation
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -35,6 +32,11 @@
 #ifndef __C_CursorCache_H__
 #define __C_CursorCache_H__
 
+ /**	
+ *		Cursor Cache.	
+ *		@author	Christoper Lenz.   
+ */
+ 
 class BCursor;
 
 #include <SupportDefs.h>

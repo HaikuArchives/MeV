@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  similar to BPolygon, but has more functions...
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -41,6 +37,11 @@
 // Interface Kit
 #include <Point.h>
 #include <Rect.h>
+
+/**
+ *		Similar to BPolygon, but has more functions.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CPolygon
 {

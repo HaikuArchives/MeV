@@ -21,18 +21,14 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Up/down increment/decrement arrows
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/30/2000	cell
- *		Updated the drawing routines to make use of StdBevels & the
- *		LineArray API
+ *	Updated the drawing routines to make use of StdBevels & the
+ *	LineArray API
  * ---------------------------------------------------------------------
  * To Do:
  *	- update mouse handling to use SetMouseEventMask() etc
@@ -44,6 +40,11 @@
 
 // Interface Kit
 #include <Control.h>
+
+/**
+ *		Up/down increment/decrement arrows.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CSpinner :
 	public BControl

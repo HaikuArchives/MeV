@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Similar to BorderView, but draws a shadow / shine border
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,7 +41,11 @@
 #include <Control.h>
 #include <Window.h>
 
-	/**	Similar to BorderView, but draws a shadow / shine border */
+/**	
+ * 	Similar to BorderView, but draws a shadow / shine border.	
+ *		@author	Talin, Christoper Lenz.  	
+ */
+
 class CTextDisplay : public BView {
 	char			*text;
 	alignment	align;
@@ -60,7 +60,7 @@ class CTextDisplay : public BView {
 	}
 	
 public:
-		/**	Constructor */
+	/**	Constructor. */
 	CTextDisplay(	BRect		rect,
 					const char	*name,
 					bool			drawBorders = true,
@@ -75,7 +75,7 @@ public:
 	
 	~CTextDisplay() { if (text) free( text ); }
 
-		/*	Change the text being displayed. */
+	/**	Change the text being displayed. */
 	void SetText(const char *inText, bool inRefresh = true )
 	{
 		if (text) free( text );
@@ -90,7 +90,7 @@ public:
 		}
 	}
 
-		/*	Set the alignment of the text being displayed. */
+	/**	Set the alignment of the text being displayed. */
 	void SetAlignment( alignment inAlign ) { align = inAlign; }
 };
 

@@ -22,15 +22,11 @@
  *		Dan Walton (dwalton)
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- * A class that manages the m_destinations.  
- * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
- *		Original implementation.
+ *	Original implementation.
  *	8/01/2000		dwalton
- *      Name change, many improvements.
+ * Name change, many improvements.
  * ---------------------------------------------------------------------
  * To Do:
  * 
@@ -41,6 +37,11 @@
 
 #include "AppWindow.h"
 
+/**
+ *		A class that manages the m_destinations. 
+ *		@author	Christoper Lenz, Dan Walton.    
+ */
+ 
 class CConsoleView;
 class CDestination;
 class CDestinationList;
@@ -60,13 +61,15 @@ public:							// Constants
 	};
 
 public:							// Constructor/Destructor
-
+								
+								/**	Constructor.	*/
 								CDestinationModifier(
 									BRect frame,
 									int32 id,
 									CMeVDoc *doc,
 									BHandler *parent);
-
+								
+								/**	Destructor.	*/
 	virtual 					~CDestinationModifier();
 
 public:							// CAppWindow Implementation
@@ -85,7 +88,7 @@ private:						// Internal Operations
 
 private:						// Instance Data
 
-	//pointer to the currently selected dest.
+	/**	Pointer to the currently selected dest.	*/
 	CDestination *				m_dest;
 
 	int32						m_id;

@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Class which draws a decorative border and fill
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -47,6 +43,11 @@
 // Interface Kit
 #include <View.h>
 
+/**	
+ *		Class which draws a decorative border and fill.	
+ *		@author	Talin, Christoper Lenz.   
+ */
+ 
 class CBorderView :
 	public BView
 {

@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Controls track grid settings.
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
- *  04/15/2000	cell
- *		Now uses B_FLOATING_WINDOW type instead of the PaletteWindow
+ *	General cleanup in preparation for initial SourceForge checkin
+ *	04/15/2000	cell
+ *	Now uses B_FLOATING_WINDOW type instead of the PaletteWindow
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -43,11 +39,18 @@
 #include "Observer.h"
 #include "AppWindow.h"
 
+ /**
+ *		Controls track grid settings.
+ *		@author	Talin, Christoper Lenz.   
+ */
+
 class CEventTrack;
 class CTimeIntervalControl;
 
-	// Floating preference editors for editor windows...
-	// 	Grid size with track...
+/**
+*	Floating preference editors for editor windows.
+*	Grid size with track.
+*/
 
 class CGridWindow :
 	public CAppWindow
@@ -64,10 +67,12 @@ public:						// Constants
 
 public:						// Constructor/Destructor
 
-							CGridWindow(
+								/**	Constructor.	*/
+								CGridWindow(
 								BPoint position,
 								CWindowState &state );
-
+								
+								/**	Destructor.	*/	
 	virtual					~CGridWindow();
 
 public:						// Operations

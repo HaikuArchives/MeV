@@ -21,11 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *	BControl derived class for displaying & editing the tempo of a 
- *  metered track (in bpm)
- * ---------------------------------------------------------------------
  * History:
  *	07/10/2000	cell
  *		Original implementation
@@ -41,6 +36,12 @@
 #include <Control.h>
 
 class CMeVDoc;
+
+ /**
+ *		BControl derived class for displaying & editing the tempo of a 
+ *		metered track (in bpm).
+ *		@author	Christoper Lenz.  
+ */
 
 class CTempoEditControl
 	:	public BControl

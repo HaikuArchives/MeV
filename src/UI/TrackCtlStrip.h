@@ -21,10 +21,6 @@
  *  Contributor(s):
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  classes relating to the track control editor
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -42,8 +38,10 @@
 #include "EventEditor.h"
 #include "StripFrameView.h"
 
-// ---------------------------------------------------------------------------
-// Linear editor strip view
+/**
+ *		Classes relating to the track control editor.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CTrackCtlStrip
 	:	public CEventEditor
@@ -68,11 +66,11 @@ public:							// Operations
 
 	void						DeselectAll();
 
-	/** returns y-pos for pitch */
+	/**	Returns y-pos for pitch.	*/
 	float						VPosToViewCoords(
 									int32 pos) const;
 
-	/** returns pitch for y-pos and optionally clamp to legal values */
+	/**	Returns pitch for y-pos and optionally clamp to legal values.	*/
 	int32						ViewCoordsToVPos(
 									float y,
 									bool limit = true) const;
@@ -81,7 +79,7 @@ public:							// CEventEditor Implementation
 
 	virtual void				AttachedToWindow();
 
-	/** Construct a new event of the current selected type */
+	/**	Construct a new event of the current selected type.	*/
 	virtual bool				ConstructEvent(
 									BPoint point);
 
@@ -97,12 +95,12 @@ public:							// CEventEditor Implementation
 									const BMessage *message);
 
 	/**	Called when the window activates to tell this view
-		to make the selection visible. */
+			to make the selection visible. */
 	virtual void				OnGainSelection()
 								{ InvalidateSelection(); }
 	
 	/**	Called when some other window activates to tell this view
-		to hide the selection. */
+			to hide the selection. */
 	virtual void				OnLoseSelection()
 								{ InvalidateSelection(); }
 
@@ -119,7 +117,7 @@ public:							// CEventEditor Implementation
 
 public:							// Internal Operations
 
-	/** Construct a new event of the given type */
+	/** Construct a new event of the given type.	*/
 	bool						ConstructEvent(
 									BPoint point,
 									event_type type);
@@ -130,7 +128,7 @@ private:
 
 	int32						m_barHeight;
 
-	// logical height of strip.
+	/**	Logical height of strip. 	*/
 	short						m_stripLogicalHeight;
 };
 

@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *	
- * ---------------------------------------------------------------------
  * History:
  *	04/21/2000	cell
  *		Initial version
@@ -41,6 +37,10 @@
 
 class CSplitterMessageFilter;
 
+/**
+ *		@author	Talin, Christoper Lenz.  
+ */
+ 
 class CSplitter
 	:	public BView
 {
@@ -86,8 +86,8 @@ public:							// Accessors
 
 public:							// Operations
 
-	// called by the B_MOUSE_MOVED message filter when the splitter
-	// bar is being dragged
+	/**	Called by the B_MOUSE_MOVED message filter when the splitter
+			bar is being dragged.	*/
 	void						Dragged(
 									BPoint point);
 

@@ -40,6 +40,10 @@
 // Support Kit
 #include <String.h>
 
+/**
+ *		@author	Christoper Lenz.  
+ */
+ 
 class CConsoleView :
 	public BView,
 	public CObserver

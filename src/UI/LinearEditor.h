@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  classes relating to the linear editor
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	07/02/2000	cell
- *		Major cleanup, simpler and more efficient drawing code
+ *	Major cleanup, simpler and more efficient drawing code
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -44,8 +40,10 @@
 #include "EventEditor.h"
 #include "StripFrameView.h"
 
-// ---------------------------------------------------------------------------
-// Linear editor strip view
+/**
+ *		Classes relating to the linear editor.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CLinearEditor
 	:	public CEventEditor
@@ -62,6 +60,7 @@ public:							// Constants
 
 public:							// Constructor/Destructor
 
+								/**	Constructor.	*/
 								CLinearEditor(
 									CStripFrameView &frame,
 									BRect rect);
@@ -73,14 +72,14 @@ public:							// CEventEditor Implementation
 	virtual bool				ConstructEvent(
 									BPoint point);
 
-	// Do additional audio feedback or selection for this event
+	/**	Do additional audio feedback or selection for this event.	*/
 	virtual void				DoEventFeedback(
 									const Event &event);
 
 	virtual void				Draw(
 									BRect updateRect);
 
-	// Remove any feedback artifacts for this event
+	/**	Remove any feedback artifacts for this event.	*/
 	virtual void				KillEventFeedback();
 
 	virtual void				MouseMoved(
@@ -88,13 +87,15 @@ public:							// CEventEditor Implementation
 									ulong transit,
 									const BMessage *message);
 
-	// Called when the window activates to tell this view
-	// to make the selection visible.
+	/**	Called when the window activates to tell this view
+			to make the selection visible.	*/
+	
 	virtual void				OnGainSelection()
 								{ InvalidateSelection(); }
 	
-	// Called when some other window activates to tell this view
-	// to hide the selection.
+	/**	Called when some other window activates to tell this view
+			 to hide the selection.	*/
+			 
 	virtual void				OnLoseSelection()
 								{ InvalidateSelection(); }
 
@@ -119,27 +120,27 @@ protected:						// Internal Operations
 	void						DisplayPitchInfo(
 									BPoint point);
 
-	// convert a pitch-value to a y-coordinate
+	/**	Convert a pitch-value to a y-coordinate.	*/
 	long						PitchToViewCoords(
 									int pitch);
 
-	// Convert a y-coordinate to a pitch value
+	/**	Convert a y-coordinate to a pitch value.	*/
 	long						ViewCoordsToPitch(
 									int yPos,
 									bool limit = true);
 
 private:						// Instance Data
 
-	// Zoom amount in vertical direction
+	/**	Zoom amount in vertical direction.	*/
 	short int					m_verticalZoom;
 
-	// step interval of white key
+	/**	Step interval of white key.	*/
 	short int					m_whiteKeyStep;
 
-	// step interval of octave
+	/**	Step interval of octave.	*/
 	short int					m_octaveStep;
 
-	// logical height of strip.
+	/**	Logical height of strip.	*/
 	short int					m_stripLogicalHeight;
 };
 

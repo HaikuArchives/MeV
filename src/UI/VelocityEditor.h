@@ -21,18 +21,14 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	09/12/2000	cell
- *		Added option to couple the control of attack & release velocity
- *		Added StripLabelView descendant to extend the context menu
+ *	Added option to couple the control of attack & release velocity
+ *	Added StripLabelView descendant to extend the context menu
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -47,8 +43,10 @@
 
 class EventListUndoAction;
 
-// ---------------------------------------------------------------------------
-// Linear editor strip view
+
+/**	Linear editor strip view.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CVelocityEditor
 	:	public CEventEditor

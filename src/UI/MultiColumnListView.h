@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  A list view with multiple columns
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -41,9 +37,11 @@
 #include <ListView.h>
 #include <ListItem.h>
 
-/** ---------------------------------------------------------------------------
-	Defines a column in a multi-column list.
-*/
+/**
+ *		Defines a column in a multi-column list.
+ *		@author	Talin, Christoper Lenz.   
+ */
+
 class CColumnField {
 	friend class CMultiColumnListView;
 	friend class CMultiColumnListItem;

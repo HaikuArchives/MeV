@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Label views used by editor strips
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -47,6 +43,11 @@ class CStripFrameView;
 class CStripView;
 
 class BPopUpMenu;
+
+ /**
+ *		Label views used by editor strips.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CStripLabelView
 	:	public BView
@@ -109,7 +110,7 @@ protected:						// Internal Methods
 
 private:						// Internal Operations
 
-	// called by CStripView when attached to the strip
+	/**	Called by CStripView when attached to the strip.	*/
 	void						attach(
 									CStripView *stripView);
 

@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  A toolbar class.
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,6 +41,11 @@
 
 class CTool;
 
+ /**
+  *		A toolbar class.
+  *		@author	Talin, Christoper Lenz.  
+  */
+ 
 class CToolBar :
 	public BControl {
 
@@ -73,7 +74,7 @@ public:									// Constructor/Destructor
 
 public:									// Accessors
 
-	// return the number of tools and seperators
+	/**	Return the number of tools and seperators.	*/
 	int32								CountTools()
 										{ return m_toolList.CountItems(); }
 	
@@ -90,22 +91,22 @@ public:									// Accessors
 
 public:									// Operations
 
-	// Add a separator
+	/**	Add a separator.		*/
 	bool								AddSeparator();
 
-	// Add a tool to the array. (Doesn't redraw)
+	/**	Add a tool to the array (doesn't redraw).		*/
 	bool								AddTool(
 											CTool *tool);
 
-	// Delete a tool
+	/**	Delete a tool.	*/
 	CTool *								RemoveTool(
 											int32 index);
 
-	// Will set the items from 'fromItem' to 'toItem' to radio mode,
-	// ie only one of them can be turned on at once; if 'toItem' is
-	// NULL (default), the radio group will either extend until the
-	// separator or the end of the toolbar; the 'forceSelection' arg
-	// determines whether the group _must_ have one tool turned on
+	/** Will set the items from 'fromItem' to 'toItem' to radio mode,
+	 ie only one of them can be turned on at once; if 'toItem' is
+	 NULL (default), the radio group will either extend until the
+	 separator or the end of the toolbar; the 'forceSelection' arg
+	 determines whether the group _must_ have one tool turned on.	*/
 	void								MakeRadioGroup(
 											const char *fromItem,
 											const char *toItem = NULL,
@@ -115,7 +116,7 @@ public:									// BControl Implementation
 
 	virtual void						AttachedToWindow();
 
-	// Redraw the toolbar.
+	/**	Redraw the toolbar.	*/
 	virtual void						Draw(
 											BRect updateRect);
 	

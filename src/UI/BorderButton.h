@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  buttons which can look good in the border
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -46,6 +42,11 @@
 // Interface Kit
 #include <Control.h>
 
+/**   
+ *		Buttons which can look good in the border.
+ *		@author	Talin, Christoper Lenz.   
+ */
+ 
 class CBorderButton :
 	public BControl
 {

@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Shows the list of operators
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -47,7 +43,10 @@
 class CMultiColumnListView;
 class CEventTrack;
 
-	/**	Real-time operator editor window. */
+/**	
+ *		Real-time operator editor window. 
+ *		@author	Talin, Christoper Lenz.   
+ */
 
 class COperatorWindow
 	:	public CDocWindow
@@ -69,7 +68,7 @@ public:
 	COperatorWindow( CWindowState &inState, CMeVDoc &inDocument );
 	~COperatorWindow();
 	
-		// Set which track we are currently viewing
+		/**	Set which track we are currently viewing.	*/
 	void SetTrack( CEventTrack *inViewTrack );
 								
 	virtual CMeVDoc *			Document()

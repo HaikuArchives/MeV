@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  base class for event editor strip views
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -48,6 +44,11 @@
 #include "BorderView.h"
 #include "StripView.h"
 #include "TrackWindow.h"
+
+/**
+ *		Base class for event editor strip views.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CEventRenderer;
 class CEventTrack;
@@ -93,6 +94,7 @@ public:							// Constants
 
 public:							// Constructor/Destructor
 
+								/**	Constructor.	*/
 								CEventEditor(
 									CStripFrameView	&frame,
 									BRect rect,
@@ -107,7 +109,8 @@ public:							// Constructor/Destructor
 									const char *name,
 									bool makeScroller = false,
 									bool makeMagButtons = false );
-	
+									
+									/**	Destructor.	*/	
 	virtual						~CEventEditor();
 
 public:							// Hook Functions

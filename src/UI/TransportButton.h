@@ -52,10 +52,13 @@ class BMessageRunner;
 class BBitmap;
 class CBitmapStash;
 
-/**	Media buttons for transport control.
- *	CTransportButton must be installed into a window with 
- *	B_ASYNCHRONOUS_CONTROLS on.
+/**
+ *		Media buttons for transport control.
+ *		CTransportButton must be installed into a window with 
+ *		B_ASYNCHRONOUS_CONTROLS on.
+ *		@author	Christoper Lenz.  
  */
+ 
 class CTransportButton
 	:	public BControl
 {
@@ -125,15 +128,15 @@ protected:						// Internal Hooks
 		PRESSED_MASK = 0x2
 	};
 	
-	// lazy bitmap builder
+	/**	Lazy bitmap builder.	*/
 	virtual BBitmap *			MakeBitmap(
 									uint32 mask);
 	
-	// mode mask corresponding to the current button state
-	// - determines which bitmap will be used
+	/**	Mode mask corresponding to the current button state
+			- determines which bitmap will be used.	*/
 	virtual uint32				ModeMask() const;
 
-	// overriding class can add swapping between two pairs of bitmaps, etc.
+	/**	Overriding class can add swapping between two pairs of bitmaps, etc.	*/
 	virtual void				StartPressing();
 
 	virtual void				MouseCancelPressing();

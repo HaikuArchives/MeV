@@ -22,15 +22,11 @@
  *		Dan Walton (dwalton)
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- * A class that manages the m_destinations.  
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	6/21/2000		dwalton
- *		Original implementation.
+ *	Original implementation.
  *	8/01/2000		dwalton
- *      Name change, many improvements.
+ *	Name change, many improvements.
  * ---------------------------------------------------------------------
  * To Do:
  * 
@@ -44,6 +40,11 @@
 // Support Kit
 #include <String.h>
 
+/**
+ *		A class that manages the m_destinations.  
+ *		@author	Christoper Lenz, Dan Walton.  
+ */
+ 
 class CColorWell;
 class CDestination;
 
@@ -77,11 +78,13 @@ public:							// Constants
 	};
 
 public:							// Constructor/Destructor
-
+								
+								/**	Constructor.	*/
 								CDestinationView(
 									BRect frame,
 									CDestination *destination);
-
+								
+								/**	Destructor.	*/
 	virtual 					~CDestinationView();
 
 public:							// Accessors

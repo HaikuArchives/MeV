@@ -21,18 +21,14 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Editor Window for linear editor strips
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/30/2000	cell
- *		Removed internal CImageAndTextMenuItem class, now using the new
- *		CIconMenuItem class for the same thing
+ *	Removed internal CImageAndTextMenuItem class, now using the new
+ *	CIconMenuItem class for the same thing
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -43,6 +39,11 @@
 
 #include "TrackWindow.h"
 
+ /**
+ *		Editor Window for linear editor strips.
+ *		@author	Talin, Christoper Lenz.   
+ */
+
 class CTimeIntervalEditor;
 class CTextDisplay;
 class CToolBar;
@@ -52,7 +53,8 @@ class CLinearWindow :
 {
 	
 public:							// Constructor/Destructor
-
+					
+								/**	Constructor.	*/
 								CLinearWindow(
 									BRect frame,
 									CMeVDoc *document,
@@ -61,7 +63,7 @@ public:							// Constructor/Destructor
 
 public:							// Accessors
 
-	// Returns current toolbar setting
+	/**	Returns current toolbar setting.	*/
 	int32						CurrentTool()
 								{ return m_toolStates[0]; }
 

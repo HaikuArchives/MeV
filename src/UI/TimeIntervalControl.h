@@ -21,18 +21,14 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  A composite control for editing intervals of time.
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/29/2000	cell
- *		Renamed from the less approproate CTimeIntervalEditor and fixed
- *		usage of CToolBar; complete clean-up
+ *	Renamed from the less approproate CTimeIntervalEditor and fixed
+ *	usage of CToolBar; complete clean-up
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -50,6 +46,11 @@ class CToolBar;
 class CTextSlider;
 class CTextDisplay;
 class CSpinner;
+
+ /**
+ *		A composite control for editing intervals of time.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CTimeIntervalControl :
 	public BControl
@@ -128,7 +129,7 @@ protected:						// Internal Operations
 
 	void						Notify();
 
-	// Reduce fraction to lowest terms
+	/**	Reduce fraction to lowest terms.	*/
 	void						Reduce(
 									int32 *numerator,
 									int32 *denominator);
@@ -136,7 +137,7 @@ protected:						// Internal Operations
 	void						ShowRatio(
 									bool updateSlider = true);
 
-	// update the toolbar to match the controls value
+	/**	Update the toolbar to match the controls value.	*/
 	void						UpdateToolBar();
 
 private:						// Instance Data

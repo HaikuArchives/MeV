@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  classes relating to the pich bend editor strip
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,8 +36,11 @@
 
 #include "EventEditor.h"
 
-// ---------------------------------------------------------------------------
-// Continuous Value editor strip view
+/**
+ *		Continuous Value editor strip view.
+ *		Classes relating to the pich bend editor strip.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CContinuousValueEditor
 	:	public CEventEditor
@@ -60,8 +59,8 @@ public:							// Constructor/Destructor
 public:							// Hook Functions
 
 	/**	Derived classes implement this to optionally draw 
-		horizontal grid lines.
-	*/
+			horizontal grid lines.		*/
+			
 	virtual void				DrawHorizontalGrid(
 									BRect updateRect)
 								{ }

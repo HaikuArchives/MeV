@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Subclass of BScrollBar which is a bit more flexible
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -39,6 +35,11 @@
 #define __C_Scroller_H__
 
 #include <ScrollBar.h>
+
+ /**
+ *		Subclass of BScrollBar which is a bit more flexible.
+ *		@author	Talin, Christoper Lenz.   
+ */
 
 class CScroller;
 
@@ -86,17 +87,17 @@ public:							// Accessors
 									CScrollerTarget *target)
 								{ redirect = target; }	
 
-	// Adjust the current scroll value by a delta amount
+	/**	Adjust the current scroll value by a delta amount.	*/
 	void						ScrollBy(
 									float amount,
 									orientation posture);
 	
-	// Return the actual size of the frame being scrolled,
-	// which might not be this frame.
+	/**	Return the actual size of the frame being scrolled,
+			which might not be this frame.	*/
 	virtual BPoint				FrameSize()
 								{ return BPoint(Frame().Width(), Frame().Height()); }
 
-	// Return the amount of scrolling overlap
+	/**	Return the amount of scrolling overlap.	*/
 	virtual BPoint				StepSize()
 								{ return BPoint(10.0, 10.0); }
 
@@ -113,13 +114,13 @@ protected:						// Internal Operations
 
 protected:						// Instance Data
 
-	// Total range of scrollbar
+	/**	Total range of scrollbar.	*/
 	BPoint						scrollRange;
 
-	// Current scroll value
+	/**	Current scroll value.	*/
 	BPoint						scrollValue;
 
-	// Redirect to 2nd target
+	/**	Redirect to 2nd target.	*/
 	CScrollerTarget *			redirect;
 };
 

@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *	time editing control 
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	07/09/2000	cell
- *		Separated from Junk
+ *	Separated from Junk
  * ---------------------------------------------------------------------
  * To Do:
  *	- locating doesn't work yet; ie the time values are editable, but
@@ -53,6 +49,11 @@ class CMeVDoc;
 
 class BMessageRunner;
 class BPopUpMenu;
+
+/**
+ *		Time editing control. 
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CTimeEditControl
 	:	public BControl

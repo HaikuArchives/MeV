@@ -21,21 +21,17 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Class which draws a decorative border and fill
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *  04/15/2000	cell
- *		Merged CColorWell and CBevelColorWell into a single class,
- *		only separated by the border_style argument
+ *	Merged CColorWell and CBevelColorWell into a single class,
+ *	only separated by the border_style argument
  *	09/12/2000	cell
- *		Added optional dimming of the button when window is not
- *		activated (similar to BColorWell).
+ *	Added optional dimming of the button when window is not
+ *	activated (similar to BColorWell).
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -46,6 +42,11 @@
 
 // Interface Kit
 #include <Control.h>
+
+/**	
+ *		Class which draws a decorative border and fill.
+ *		@author	Talin, Christoper Lenz.   
+ */
 
 class CColorWell :
 	public BControl

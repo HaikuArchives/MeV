@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	08/06/2000	cell
- *		Separated from Junk
+ *	Separated from Junk
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -46,6 +42,11 @@
 class CTextSlider;
 
 #define MAX_PREFERENCES_PANELS 32
+
+/**
+ *		Preferences Window.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CPreferencesWindow
 	:	public CAppWindow

@@ -21,18 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Extends the CTool class to provide 'buttcons' including a pop-up
- *	menu
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/21/2000	cell
- *		Separated functionality from CToolBar class
+ *	Separated functionality from CToolBar class
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -43,11 +38,18 @@
 
 #include "Tool.h"
 
+ /**
+ *		Extends the CTool class to provide 'buttcons' including a pop-up
+ *		menu.
+ *		@author	Talin, Christoper Lenz.   
+ */
+
 class CMenuTool :
 	public CTool {
 
 public:									// Constructor/Destructor
 
+										/**	Constructor.	*/
 										CMenuTool(
 											const char *name,
 											BBitmap *bitmap,
@@ -56,6 +58,7 @@ public:									// Constructor/Destructor
 											int32 mode = TOGGLE_MODE,
 											uint32 flags = 0);
 
+										/**	Destructor.	*/	
 										~CMenuTool();
 
 public:									// Accessors
@@ -92,7 +95,7 @@ private:								// Instance Data
 	
 	BPopUpMenu *						m_menu;
 
-	// the offset of the popup button
+	/**	The offset of the popup button.	*/
 	BPoint								m_popUpOffset;
 };
 

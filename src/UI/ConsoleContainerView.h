@@ -34,6 +34,10 @@
 
 class CConsoleView;
 
+/**
+ *		@author	Christoper Lenz.  
+ */
+
 class CConsoleContainerView
 	:	public BView
 {

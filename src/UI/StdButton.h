@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Some standard button types
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,8 +36,11 @@
 
 #include <Control.h>
 
-/**	A button class which pushes on but never off.
-*/
+/**	
+ *		A button class which pushes on but never off.
+ *		@author	Talin, Christoper Lenz.   
+ */
+ 
 class CPushOnButton
 	:	public BControl
 {

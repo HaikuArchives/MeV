@@ -21,16 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Displays a bordered, self-resizing, editable BTextView for editing
- *	a single line of text
- * ---------------------------------------------------------------------
  * History:
  *	06/02/2000	cell
- *		Original implementation
+ *	Original implementation
  *	07/10/200	cell
- *		added ctor for alternative font & colors
+ *	added ctor for alternative font & colors
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -48,6 +43,12 @@
 
 class BTextView;
 
+ /**
+  *		Displays a bordered, self-resizing, editable BTextView for editing
+  *		a single line of text.
+  *		@author	Christoper Lenz.  
+  */
+ 
 class CStringEditView :
 	public BView,
 	public BInvoker

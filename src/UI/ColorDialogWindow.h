@@ -35,6 +35,10 @@
 #include <Message.h>
 #include <Messenger.h>
 
+/**
+ *		@author	Christoper Lenz.  
+ */
+  
 class CColorDialogWindow :
 	public CDialogWindow
 {

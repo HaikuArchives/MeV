@@ -21,17 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Slider which displays text string in thumb.
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/29/2000	vember
- *		Fixed drawing
+ *	Fixed drawing
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -44,6 +40,11 @@
 #include <Control.h>
 #include <Region.h>
 
+ /**
+  *		Slider which displays text string in thumb.
+  *		@author	Talin, Christoper Lenz.  
+  */
+ 
 class CTextSlider : public BControl {
 
 public:
@@ -53,7 +54,7 @@ public:
 			/**	Return the width in pixels of the largest possible knob text. */
 		virtual int32 Largest( BView *inView, int32 inMin, int32 inMax ) = 0;
 
-			/**	Format the text for the text slider knob */
+			/**	Format the text for the text slider knob. */
 		virtual void FormatText( char *outText, int32 inValue, int32 inMaxLen ) = 0;
 	};
 

@@ -20,22 +20,17 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
- *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Base class of windows that edit event tracks
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *  05/19/2000	dwalton
- *		Quick fix of annoying seg-fault during MenuBeginning
+ *	Quick fix of annoying seg-fault during MenuBeginning
  *	07/02/2000	cell
- *		new event duration is now same as the grid size
+ *	new event duration is now same as the grid size
  *	10/08/2000	cell
- *		Added serialization caps.
+ *	Added serialization caps.
  * ---------------------------------------------------------------------
  * To Do:
  * Further investigate menubeginning no-item seg-fault bug. 
@@ -55,8 +50,10 @@ class CTrackOperation;
 
 class BStringView;
 
-// ---------------------------------------------------------------------------
-// A window which displays and edits strips
+/**
+ *		Base class of windows that edit event tracks.
+ *		@author	Talin, Christoper Lenz.  
+ */
 
 class CTrackWindow :
 	public CDocWindow
@@ -74,7 +71,7 @@ public:							// Constants
 
 public:							// Constructor/Destructor
 
-	/** Constructor for a new window */
+								/** Constructor.	*/
 								CTrackWindow(
 									BRect frame,
 									CMeVDoc *document,
@@ -88,7 +85,7 @@ public:							// Hook Functions
 
 	virtual int32				CurrentTool() = 0;
 	
-	// Set which track we're editing
+	/**	Set which track we're editing.	*/
 	virtual void				SelectActive(
 									CEventTrack *track)
 								{ }
@@ -99,8 +96,8 @@ public:							// Hook Functions
 
 protected:
 
-	/** call this from the subclass implementation after adding
-		the frame view */
+	/**	Call this from the subclass implementation after adding
+			the frame view. */
 	virtual void				AddFrameView(
 									BRect frame,
 									CTrack *track);
@@ -116,23 +113,23 @@ protected:
 
 public:							// Accessors
 
-	// For windows which edit dual tracks, select which one
-	// has selected events
+	/**	For windows which edit dual tracks, select which one
+			has selected events.	*/
 	virtual CEventTrack *		ActiveTrack() const
 								{ return track; }
 
-	// Return a pointer to the track that this window is viewing
+	/**	Return a pointer to the track that this window is viewing.	*/
 	CEventTrack *				Track() const
 								{ return track; }
 
-	// Get the pending operation
+	/**	Get the pending operation.	*/
 	EventOp *					PendingOperation() const
 								{ return trackOp; }
 
-	// Returns the default event duration
+	/**	Returns the default event duration.	*/
 	int32						NewEventDuration() const;
 	
-	// Returns the type of new events to be created
+	/**	Returns the type of new events to be created.	*/
 	event_type					NewEventType(
 									event_type defaultType) const;
 	void						SetNewEventType(
@@ -141,11 +138,11 @@ public:							// Accessors
 
 public:							// Operations
 
-	// Set the EventOp representing a pending operation
+	/**	Set the EventOp representing a pending operation.	*/
 	void						SetPendingOperation(
 									EventOp *op);
 	
-	// Finish the operation on this track
+	/**	Finish the operation on this track.	*/
 	void						FinishTrackOperation(
 									int32 commit);
 
@@ -176,7 +173,7 @@ public:							// Serialization
 
 public:							// CDocWindow Implementation
 
-	// Returns a pointer to the current document
+	/**	Returns a pointer to the current document.	*/
 	virtual CMeVDoc *			Document()
 								{ return static_cast<CMeVDoc *>
 										 (CDocWindow::Document()); }
@@ -217,15 +214,15 @@ protected:						// Instance Data
 
 private:
 
-	/** Type of newly created events */
+	/**	Type of newly created events.	*/
 	event_type					m_newEventType;
 
-	/** The horizontal position info display in the lower left 
-		corner of the window */
+	/**	The horizontal position info display in the lower left 
+			corner of the window.		*/
 	BStringView *				m_hPosInfoView;
 
-	/** The vertical position info display in the lower left 
-		corner of the window */
+	/**	The vertical position info display in the lower left 
+			corner of the window.	*/
 	BStringView *				m_vPosInfoView;
 
 	CPositionInfoBar *			m_posInfoBar;

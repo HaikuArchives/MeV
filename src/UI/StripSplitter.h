@@ -21,14 +21,9 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *	Specializes CSplitter to take the minimum height of CStripViews into
- *  account.
- * ---------------------------------------------------------------------
  * History:
  *	07/23/2000	cell
- *		Initial version
+ *	Initial version
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,6 +35,12 @@
 #include "Splitter.h"
 
 class CStripView;
+
+ /**
+ *		Specializes CSplitter to take the minimum height of CStripViews into
+ *		account.
+ *		@author	Christoper Lenz.  
+ */
 
 class CStripSplitter
 	:	public CSplitter

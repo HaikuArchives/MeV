@@ -38,6 +38,10 @@ class CConsoleContainerView;
 class CDestination;
 class CDestinationView;
 
+/**
+ *		@author	Talin, Christoper Lenz.  
+ */
+ 
 class CMixWindow
 	:	public CDocWindow
 {

@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Playback controls window
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -43,6 +39,11 @@
 class CEventTrack;
 class CMeVDoc;
 class CTrackListView;
+
+ /**
+  *		Playback controls window.
+  *	 	@author	Talin, Christoper Lenz.  
+  */
 
 class CTrackListWindow :
 	public CAppWindow

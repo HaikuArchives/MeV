@@ -21,18 +21,14 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Frame which contains scrolling strips
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	10/08/2000	cell
- *		Merged functionality of the CTrackEditFrame subclass into this
- *		class. Added serialization caps.
+ *	Merged functionality of the CTrackEditFrame subclass into this
+ *	class. Added serialization caps.
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -54,6 +50,11 @@ class CStripSplitter;
 class CStripView;
 class CTrack;
 
+ /**
+ *		Frame which contains scrolling strips.
+ *		@author	Talin, Christoper Lenz.  
+ */
+ 
 class CStripFrameView
 	:	public CScrollerTarget
 {
@@ -188,13 +189,13 @@ protected:						// Instance Data
 
 	CTrack *					m_track;
 
-	// contains strip_info objects
+	/**	Contains strip_info objects.	*/
 	BList						m_strips;
 
-	// a list of available strips
+	/**	A list of available strips.	*/
 	BList						m_types;
 
-	// Optional horizontal ruler frame
+	/**	Optional horizontal ruler frame.	*/
 	CScrollerTarget *			m_ruler;
 
 	TClockType					m_clockType;

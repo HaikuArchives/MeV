@@ -21,18 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Extends the CTool class to provide 'buttcons', ie buttons displaying
- *  icons in a tool bar
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/21/2000	cell
- *		Separated functionality from CToolBar class
+ *	Separated functionality from CToolBar class
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -42,6 +37,12 @@
 #define __C_BitmapTool_H__
 
 #include "Tool.h"
+
+/**
+ *  	Extends the CTool class to provide 'buttcons', ie buttons displaying
+ *  	icons in a tool bar.
+ *		@author	Talin, Christoper Lenz.   
+ */
 
 class CBitmapTool
 	:	public CTool

@@ -35,6 +35,10 @@
 // Support Kit
 #include <String.h>
 
+/** 
+ *		@author	Christoper Lenz.
+ */
+   
 class CPositionInfoBar :
 	public CStatusBar
 {

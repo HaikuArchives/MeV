@@ -35,6 +35,11 @@
 
 class BBitmap;
 
+/**
+ *		Status Bar.
+ *		@author	Christoper Lenz.  
+ */
+
 class CStatusBar :
 	public BView
 {

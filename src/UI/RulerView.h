@@ -23,13 +23,13 @@
  *
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/21/2000	cell
- *		Separated from TradkEditFrame.h
+ *	Separated from TradkEditFrame.h
  *	09/29/2000	cell
- *		Merged with subclass CAssemblyRulerView
+ *	Merged with subclass CAssemblyRulerView
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,10 +45,10 @@ class CEventTrack;
 class CStripFrameView;
 
 /**
- *	Ruler View, associated with track edit frames
- *	@author		Talin, Christopher Lenz
- *	@package	UI
+ *		Ruler View, associated with track edit frames
+ *		@author		Talin, Christopher Lenz
  */
+
 class CRulerView :
 	public CScrollerTarget,
 	public CObserver

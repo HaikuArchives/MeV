@@ -21,19 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Special strips for editors w/ scrollbars and spacers.
- *	StripView is a class which can function as a scrolling
- *	strip within the strip frame.
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	10/08/2000	cell
- *		Added serialization caps.
+ *	Added serialization caps.
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -52,6 +46,13 @@ class CIFFReader;
 class CIFFWriter;
 class CStripFrameView;
 
+ /**
+ *		Special strips for editors w/ scrollbars and spacers.
+ *		StripView is a class which can function as a scrolling
+ *		strip within the strip frame.
+ *		@author	Talin, Christoper Lenz.   
+ */
+ 
 class CStripView :
 	public CScrollerTarget
 {
@@ -81,20 +82,20 @@ public:							// Constructor/Destructor
 
 public:							// Hook Functions
 
-	// Called when the window activates to tell this view
-	// to make the selection visible.
+	/**	Called when the window activates to tell this view
+			to make the selection visible.	*/
 	virtual void				OnGainSelection()
 								{ Invalidate(); }
 	
-	// Called when some other window activates to tell this view
-	// to hide the selection.
+	/**	Called when some other window activates to tell this view
+			to hide the selection.	*/
 	virtual void				OnLoseSelection()
 								{ Invalidate(); }
 
 	virtual float				MinimumHeight() const;
 
-	/** Called when the vertical zoom value has been changed,
-		either programatically, or by the user */
+	/**	Called when the vertical zoom value has been changed,
+			either programatically, or by the user.	*/
 	virtual void				ZoomChanged(
 									int32 diff)
 								{ }
@@ -109,7 +110,7 @@ public:							// Accessors
 	void						SetLabelView(
 									CStripLabelView *labelView);
 
-	// Individual strips can have rulers as well
+	/**	Individual strips can have rulers as well.	*/
 	CScrollerTarget *			RulerView() const
 								{ return m_rulerView; }
 	void						SetRulerView(
@@ -118,7 +119,7 @@ public:							// Accessors
 	CScrollerTarget *			TopView()
 								{ return m_container; }
 
-	// Returns true if this view should display the selection highlight.
+	/**	Returns true if this view should display the selection highlight.	*/
 	bool						IsSelectionVisible()
 								{ return m_selectionVisible; }
 
@@ -134,19 +135,18 @@ public:							// Operations
 									float value,
 									orientation posture);
 
-	// Called by framework when selection is gained or lost.
+	/**	Called by framework when selection is gained or lost.	*/
 	void						SetSelectionVisible(
 									bool visible);
 
-	/** Increments the vertical zoom value */
+	/**	Increments the vertical zoom value.	*/
 	void						ZoomBy(
 									int32 diff);
 
-	/** returns the vertical zoom setting:
-		positive -> zoomed in by x steps
-		0		 -> original zoom
-		negative -> zoomed out by x steps
-	 */
+	/**	Returns the vertical zoom setting:
+			positive -> zoomed in by x steps
+			0		 -> original zoom
+			negative -> zoomed out by x steps.	 */
 	int32						ZoomValue() const
 								{ return m_verticalZoom; }
 
@@ -197,10 +197,10 @@ private:
 
 	BControl *					magDecButton;
 
-	// true if selection should be shown
+	/**	True if selection should be shown.	*/
 	bool						m_selectionVisible;
 
-	// defaults to true; false will disable the 'Hide' option
+	/**	Defaults to true; false will disable the 'Hide' option.	*/
 	bool						m_removable;
 
 	int32						m_verticalZoom;

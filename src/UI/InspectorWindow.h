@@ -52,6 +52,10 @@ class CMeVDoc;
 class CTextDisplay;
 class CTextSlider;
 
+/**
+ *		@author	Talin, Christoper Lenz, Dan Walton.  
+ */
+ 
 class CInspectorWindow :
 	public CAppWindow
 {
@@ -61,14 +65,15 @@ public:						// Constants
 	static const BRect		DEFAULT_DIMENSIONS;
 
 public:						// Constructor/Destructor
-
+							
+							/**	Constructor.	*/
 							CInspectorWindow(
 								BPoint position,
 								CWindowState &state);
 
 public:						// Operations
 
-	// Inspect the current event of the track
+	/**	Inspect the current event of the track.	*/
 	void					WatchTrack(
 								CEventTrack *track);
 
@@ -81,11 +86,11 @@ public:						// CAppWindow Implementation
 	virtual void			MessageReceived(
 								BMessage *message);
 
-	// If the app wants us to stop looking at the track, then oblige it.
+	/**	If the app wants us to stop looking at the track, then oblige it.		*/
 	virtual bool			SubjectReleased(
 								CObservable *subject);
 
-	// Update inspector info when we get an observer update message.
+	/**	Update inspector info when we get an observer update message.	*/
 	virtual void			SubjectUpdated(
 								BMessage *message);
 
@@ -96,7 +101,7 @@ private:					// Instance Data
 
 	CDestinationListView *	m_channelControl;
 
-	// Three generic sliders
+	/**	Three generic sliders.	*/
 	BStringView	*			m_vLabel[3];
 	CTextSlider	*			m_vSlider[3];			
 

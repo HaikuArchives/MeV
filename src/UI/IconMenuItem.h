@@ -21,11 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Simply adds (icon sized) bitmaps to the left of the MenuItems
- *	text
- * ---------------------------------------------------------------------
  * History:
  *	04/30/2000	cell
  *		Original implementation
@@ -40,12 +35,18 @@
 // Interfacem Kit
 #include <MenuItem.h>
 
+ /**
+ *		Simply adds (icon sized) bitmaps to the left of the MenuItems	text.
+ *		@author	Christoper Lenz.  
+ */
+
 class CIconMenuItem :
 	public BMenuItem
 {
 
 	public:						// Constructor/Destructor
 
+								/**	Constructor.	*/
 								CIconMenuItem(
 									const char *label,
 									BMessage *message,
@@ -58,6 +59,7 @@ class CIconMenuItem :
 									BMessage *message = NULL,
 									BBitmap *bitmap = 0);
 
+								/**	Destructor.	*/	
 			virtual 			~CIconMenuItem();
 
 	public:						// BMenuItem Implementation

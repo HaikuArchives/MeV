@@ -21,18 +21,13 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  CTool is complementary to the CToolBar class, defining the individual
- *	items displayed in a tool bar
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  *	04/21/2000	cell
- *		Separated functionality from CToolBar class
+ *	Separated functionality from CToolBar class
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,6 +40,12 @@
 #include <Rect.h>
 // Support Kit
 #include <Archivable.h>
+
+ /**
+  *		CTool is complementary to the CToolBar class, defining the individual
+  *		items displayed in a tool bar.
+  *		@author	Talin, Christoper Lenz.  
+  */
 
 class CTool :
 	public BArchivable
@@ -88,7 +89,7 @@ public:									// Hook Functions
 											float *width,
 											float *height) const = 0;
 
-	// is called by the tool bar when the tool has been clicked
+	/**	Is called by the tool bar when the tool has been clicked.	*/
 	virtual void						Clicked(
 											BPoint point,
 											uint32 buttons)
@@ -99,20 +100,20 @@ public:									// Hook Functions
 
 public:									// Accessors
 
-	// Returns the position of this tool in the tool bar
+	/**	Returns the position of this tool in the tool bar.	*/
 	BPoint								ContentLocation() const;
 
 	uint32								Flags() const
 										{ return m_flags; }
 
-	// Returns the tools frame rectangle
+	/**	Returns the tools frame rectangle.	*/
 	BRect								Frame() const;
 
-	// Returns whether the tool is currently selected or not
+	/**	Returns whether the tool is currently selected or not.	*/
 	bool								IsSelected() const
 										{ return m_selected; }
 
-	// Returns whether the tool is currently enabled or not
+	/**	Returns whether the tool is currently enabled or not.	*/
 	bool								IsEnabled() const
 										{ return m_enabled;	}
 
@@ -122,7 +123,7 @@ public:									// Accessors
 	int32								Mode() const
 										{ return m_mode; }
 
-	// Returns the tools name
+	/**	Returns the tools name.	*/
 	const char *						Name() const
 										{ return m_name; }
 
@@ -138,12 +139,12 @@ public:									// Accessors
 
 public:									// Operations
 
-	// Select/deselect the tool
+	/**	Select/deselect the tool.	*/
 	void								Select(
 											bool selected = true)
 										{ m_selected = selected; }
 
-	// Enable or disable the tool
+	/**	Enable or disable the tool.	*/
 	void								SetEnabled(
 											bool enabled = true)
 										{ m_enabled = enabled; }

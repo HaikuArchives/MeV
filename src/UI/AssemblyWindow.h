@@ -21,15 +21,11 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Editor Window for song assembly
- * ---------------------------------------------------------------------
- * History:
+ *	History:
  *	1997		Talin
- *		Original implementation
+ *	Original implementation
  *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
+ *	General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,6 +36,11 @@
 
 #include "TrackWindow.h"
 
+/**
+ *		Editor Window for song assembly.
+ *		@author	Talin, Christoper Lenz.  		
+ */
+ 
 class CToolBar;
 
 class CAssemblyWindow : 
@@ -57,12 +58,15 @@ public:							// Constructor/Destructor
 
 public:							// CTrackWindow Implementation
 
-	// For windows which edit dual tracks, select which one
-	// has selected events
+/**	
+ *	For windows which edit dual tracks, select which one
+ *	has selected events.
+ */
+	 
 	CEventTrack *				ActiveTrack()
 								{ return Document()->ActiveMaster(); }
 
-	// Returns current toolbar setting
+	/**	Returns current toolbar setting.	*/
 	int32						CurrentTool()
 								{ return m_toolStates[0]; }
 

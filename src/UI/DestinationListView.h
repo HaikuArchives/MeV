@@ -22,10 +22,6 @@
  *              Dan Walton (dwalton) 
  *				Christopher Lenz (cell)
  * 
- * --------------------------------------------------------------------- 
- * Purpose: 
- *  
- * --------------------------------------------------------------------- 
  * History: 
  * 6/21/00 Original Implementation: Dan Walton 
  * 
@@ -48,6 +44,10 @@ class CDestinationModifier;
 class CMeVDoc;
 class CEventTrack;
 
+/**
+ *		@author	Christoper Lenz, Dan Walton.  
+ */ 
+ 
 class CDestinationListView
 	:	public BView,
 		public CObserver

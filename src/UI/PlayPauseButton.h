@@ -46,9 +46,12 @@
 
 #include "TransportButton.h"
 
-/**	CTransportButton subclass that knows about playing and paused 
- *	states. Blinks the pause LED during paused state.
+/**
+ *		CTransportButton subclass that knows about playing and paused 
+ *		states. Blinks the pause LED during paused state.
+ *		@author	Christoper Lenz.   
  */
+ 
 class CPlayPauseButton
 	:	public CTransportButton
 {
