@@ -36,6 +36,16 @@
 #ifndef __U_MathUtils_H__
 #define __U_MathUtils_H__
 
+#include <Point.h>
+
 #define CLAMP(min, val, max)	val < min ? min : val > max ? max : val
+
+namespace MathUtils
+{								
+	float						DistanceFromPointToLine(
+									BPoint point,
+									BPoint lineStart,
+									BPoint lineEnd);
+};
 
 #endif /* __U_MathUtils_H__ */
