@@ -222,8 +222,10 @@ CDocWindow::QuitRequested()
 			}
 			else if (result == 2)
 			{
-				m_document->Save();
-				return false;
+				bool named = Document()->Named();
+				Document()->Save();
+				if (!named)
+					return false;
 			}
 		}
 	}
