@@ -498,35 +498,6 @@ CMeVDoc::NewDestination(
 	return dest;
 }
 
-int32 
-CMeVDoc::MaxDestinationLatency (uint8 clockType)
-{
-	if (clockType==ClockType_Real)
-		return m_maxDestLatency;
-	else if (clockType==ClockType_Metered)
-		return (TempoMap().ConvertRealToMetered(m_maxDestLatency));
-
-	return 0;
-}
-
-void
-CMeVDoc::SetDestinationLatency(
-	int32 id,
-	int32 microseconds)
-{
-	StSubjectLock lock(*this, Lock_Shared);	
-
-	// go though entire destination list and find the one with the 
-	// highest latency.
-	CDestination *dest;
-	int32 index = 0;
-	while ((dest = GetNextDestination(&index)) != NULL)
-	{
-		if (m_maxDestLatency < dest->Latency())
-			m_maxDestLatency = dest->Latency();
-	}
-}
-
 void CMeVDoc::ReplaceTempoMap( CTempoMapEntry *entries, int length )
 {
 		// REM: Should be exclusively locked when this occurs
@@ -949,10 +920,6 @@ CMeVDoc::_init()
 	tempoMap.list[1].SetTempo(tempoMap.list[0], RateToPeriod(256.0),
 							  Ticks_Per_QtrNote * 4, Ticks_Per_QtrNote * 4,
 							  ClockType_Metered);
-
-
-    m_newDestID=0; //hemm remember me.
-    m_maxDestLatency=0;
 }
 
 // END - MeVDoc.cpp

@@ -223,20 +223,8 @@ public :						//Destination Management
 	int32						IndexOf(
 									const CDestination *destination) const;
 
-	int32						SelectedDestination() const
-								{ return m_selectedDest; }
-	void						SetSelectedDestination(int32 id)
-								{ m_selectedDest=id; }
-
 	bool 						IsDefinedDest(
 									int32 id) const;
-	
-	int32						MaxDestinationLatency(
-									uint8 clockType);
-
-	void						SetDestinationLatency(
-									int32 id,
-									int32 microseconds);
 	
 public:							// Window Management
 
@@ -359,9 +347,6 @@ private:						// Instance Data
 	int32						m_newTrackID;
 	
 	BList						m_destinations;
-	int32						m_newDestID;
-	int32						m_selectedDest;
-	int32 						m_maxDestLatency;
 
 	// Opers associated with doc
 	BList						operators;
