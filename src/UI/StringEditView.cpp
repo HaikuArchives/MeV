@@ -6,6 +6,7 @@
 
 // Interface Kit
 #include <TextView.h>
+#include <Window.h>
 // Support Kit
 #include <Debug.h>
 
@@ -24,7 +25,8 @@ CStringEditView::CStringEditView(
 	:	BView(frame.InsetByCopy(-2.0, -1.0), "StringEditView",
 			  B_FOLLOW_NONE, B_WILL_DRAW),
 		BInvoker(message, messenger),
-		m_text(text)
+		m_text(text),
+		m_restoreAvoidFocus(false)
 {
 	D_ALLOC(("CStringEditView::CStringEditView()\n", label));
 
@@ -61,7 +63,8 @@ CStringEditView::CStringEditView(
 	:	BView(frame.InsetByCopy(-2.0, -1.0), "StringEditView",
 			  B_FOLLOW_NONE, B_WILL_DRAW),
 		BInvoker(message, messenger),
-		m_text(text)
+		m_text(text),
+		m_restoreAvoidFocus(false)
 {
 	D_ALLOC(("CStringEditView::CStringEditView()\n", label));
 
@@ -114,6 +117,25 @@ CStringEditView::AttachedToWindow()
 	D_HOOK(("CStringEditView::AttachedToWindow()\n"));
 
 	SetEventMask(B_POINTER_EVENTS | B_KEYBOARD_EVENTS, B_NO_POINTER_HISTORY);
+
+	if (Window()->Flags() & B_AVOID_FOCUS)
+	{
+		m_restoreAvoidFocus = true;
+		Window()->SetFlags(Window()->Flags() ^ B_AVOID_FOCUS);
+		Window()->Activate(true);
+	}	
+}
+
+void
+CStringEditView::DetachedFromWindow()
+{
+	D_HOOK(("CStringEditView::DetachedFromWindow()\n"));
+
+	if (m_restoreAvoidFocus)
+	{
+		Window()->SetFlags(Window()->Flags() | B_AVOID_FOCUS);
+		Window()->Activate(false);
+	}
 }
 
 void

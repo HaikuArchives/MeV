@@ -83,6 +83,8 @@ public:							// BMenuItem Implementation
 
 	virtual void				AttachedToWindow();
 
+	virtual void				DetachedFromWindow();
+
 	virtual void				Draw(
 									BRect updateRect);
 
@@ -98,6 +100,8 @@ private:						// Instance Data
 	BString						m_text;
 
 	BTextView *					m_textView;
+
+	bool						m_restoreAvoidFocus;
 };
 
 #endif /* __C_IconMenuItem_H__ */
