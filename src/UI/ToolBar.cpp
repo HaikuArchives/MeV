@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * ToolBar.cpp (MeV/User Interface)
+ * ToolBar.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "ToolBar.h"
@@ -13,6 +13,7 @@
 #include <Looper.h>
 // Interface Kit
 #include <Region.h>
+#include <Window.h>
 // Support Kit
 #include <Debug.h>
 
@@ -389,6 +390,9 @@ CToolBar::MouseMoved(
 	const BMessage *message)
 {
 	D_HOOK(("CToolBar::MouseMoved()\n"));
+
+	if (!Window()->IsActive() && !(Window()->Flags() & B_AVOID_FOCUS))
+		return;
 
 	CTool *tool = ToolAt(IndexOf(point));
 	if (tool != m_lastSelectedTool)

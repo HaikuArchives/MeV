@@ -249,7 +249,7 @@ void CSplitter::MouseMoved(
 	uint32 transit,
 	const BMessage *message)
 {
-	if (message == NULL)
+	if ((message == NULL) && Window()->IsActive())
 	{
 		if (transit == B_ENTERED_VIEW)
 		{
