@@ -102,8 +102,13 @@ CMeVDoc::CMeVDoc(
 	m_activeMaster = m_masterMeterTrack;
 
 	for (int32 i = 0; i < CountTracks(); i++)
+	{
 		if (TrackAt(i)->m_openWindow)
 			ShowWindowFor(TrackAt(i));
+
+		if (TrackAt(i)->GetID() >= m_newTrackID)
+			m_newTrackID = TrackAt(i)->GetID() + 1;
+	}
 
 	SetValid();
 	SetModified(false);
