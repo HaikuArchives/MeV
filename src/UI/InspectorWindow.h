@@ -46,7 +46,7 @@
 #include "EventEditor.h"
 #include "EventTrack.h"
 #include "MeVApp.h"
-#include "ChannelManagerView.h"
+#include "DestinationListView.h"
 //#include "ChannelSelectorView.h"
 
 class CTextDisplay;
@@ -97,7 +97,7 @@ private:					// Instance Data
 	CTextDisplay			*m_eventTypeView;
 	CTextDisplay			*m_channelNameView;
 	//CChannelSelectorView	*m_channelControl;
-	CChannelManagerView	   *m_channelControl;
+	CDestinationListView	   *m_channelControl;
 	BStringView				*m_vLabel[3];
 	CTextSlider				*m_vSlider[3];			// Three sliders
 	int32					m_baseValue[3];

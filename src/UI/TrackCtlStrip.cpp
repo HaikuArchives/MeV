@@ -742,7 +742,7 @@ CProgramChangeEventHandler::Draw(
 					 + be_plain_font->StringWidth(patchName.String());
 	textRect.top = textRect.bottom - fh.ascent;
 
-	VChannelEntry *vce = editor.Track()->Document().GetVChannel(ev.GetVChannel());
+	Destination *dest = editor.Track()->Document().GetVChannel(ev.GetVChannel());
 	rgb_color lightColor, darkColor;
 	if (editor.Track()->IsChannelLocked(ev.GetVChannel()))
 	{
@@ -751,8 +751,8 @@ CProgramChangeEventHandler::Draw(
 	}
 	else
 	{
-		lightColor = vce->highlightColor;
-		darkColor = vce->fillColor;
+		lightColor = dest->highlightColor;
+		darkColor = dest->fillColor;
 	}
 
 	BRect frameRect(textRect.InsetByCopy(-1.0, -2.0));
@@ -892,9 +892,9 @@ CProgramChangeEventHandler::GetPatchName(
 {
 	CMeVDoc *doc = &editor.Track()->Document();
 
-	VChannelEntry *vc = doc->GetVChannel(ev.GetVChannel());
+	Destination *dest = doc->GetVChannel(ev.GetVChannel());
 	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,
-																vc->channel - 1);
+																dest->channel - 1);
 	if (info == NULL)
 	{
 		*outName = "(Unknown)";
@@ -1384,7 +1384,7 @@ CTrackCtlStrip::OnUpdate(
 
 		StSubjectLock trackLock(*Track(), Lock_Shared);
 		EventMarker	marker(Track()->Events());
-
+		printf ("we are here\n");
 		// redraw every instance of the changed track
 		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;

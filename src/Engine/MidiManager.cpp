@@ -5,7 +5,7 @@
 #include <Messenger.h>
 #include <Debug.h>
 #include <stdio.h>
-enum EVChannelModifierControlID {
+enum EDestinationModifierControlID {
 	NOTIFY='ntfy'
 	};
 CMidiManager* CMidiManager::m_instance=0;

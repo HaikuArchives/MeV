@@ -53,7 +53,7 @@
 #include "WindowState.h"
 #include "DynamicMenu.h"
 #include "Preferences.h"
-#include "VChannel.h"
+#include "Destination.h"
 #include "MeV.h"
 
 class CDocWindow;
@@ -116,7 +116,7 @@ class CMeVApp : public CDocApp {
 	BList					defaultOperatorList;
 	BList					deviceList;
 	BList					patchList;
-	VChannelTable			defaultVCTable;
+	m_destlist			defaultVCTable;
 
 		// Menu lists for plug-ins
 	CDynamicMenuDef		assemWindowPlugIns,
@@ -262,14 +262,8 @@ public:
 		/** Set the state of the "loop" flag. */
 	void SetLoopFlag( bool inLoop ) { loopFlag = inLoop; }
 	
-		/** Get the default Virtual Channel table. */
-	void GetDefaultVCTable( VChannelTable &outTable )
-	{
-		memcpy( outTable, defaultVCTable, sizeof outTable );
-	}
 		
 		/** Set the default Virtual Channel table. */
-	void SetDefaultVCTable( VChannelTable &inTable );
 	
 		/** Build the export menu */
 	void BuildExportMenu( BMenu *inMenu );

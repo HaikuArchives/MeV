@@ -10,12 +10,12 @@
 #include <PopUpMenu.h>
 #include "MidiManager.h"
 #include "Observer.h"
-#include "VCTableManager.h"
+#include "DestinationList.h"
 #include <MidiProducer.h>
-class CVChannelModifier :
+class CDestinationModifier :
 	public BWindow,public CObserver {
 private:
-	VChannelEntry *m_vc;   //pointer to the currently selected vc.
+	Destination *m_vc;   //pointer to the currently selected dest.
 	int32 m_id;
 	BHandler *m_parent;
 	//int m_selected_id;
@@ -29,13 +29,13 @@ private:
 	BColorControl *m_colors;
 	CMidiManager *m_midiManager;	
 	void _buildUI();
-	CVCTableManager *m_tm;
+	CDestinationList *m_tm;
 	virtual void OnUpdate(BMessage *msg);
 virtual void AttachedToWindow();
 virtual void MenusBeginning();
 void Update();
 public:
-	CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BHandler *parent);  //new vchannel;
+	CDestinationModifier(BRect frame,int32 id,CDestinationList *tm,BHandler *parent);  //new vchannel;
 	virtual void MessageReceived(BMessage *msg);
 	virtual bool QuitRequested();
 };

@@ -37,7 +37,7 @@
 
 #ifndef __C_MevDoc_H__
 #define __C_MevDoc_H__
-#include "VCTableManager.h"
+#include "DestinationList.h"
 
 //debug
 #include <stdio.h>
@@ -45,7 +45,7 @@
 #include "MeV.h"
 #include "MeVApp.h"
 #include "Document.h"
-#include "VChannel.h"
+#include "Destination.h"
 #include "Event.h"
 #include "EventOp.h"
 #include "WindowState.h"
@@ -69,7 +69,7 @@ class CMeVDoc : public CDocument {
 	CEventTrack			*masterRealTrack,	// Master track (real)
 					*masterMeterTrack,	// Master track (metered)
 					*activeMaster;		// Which track is being edited
-	CVCTableManager *m_VCTM;
+	CDestinationList *m_destlist;
 	int32				defaultAttributes[ EvAttr_Count ];
 	double			initialTempo;		// Initial tempo for document
 	CTempoMap			tempoMap;
@@ -120,15 +120,15 @@ public:
 	
 	long GetUniqueTrackID();
 	
-	//VChannelEntry &GetVChannel( int channel ) { return vcTable[ channel ]; }
+	//Destination &GetVChannel( int channel ) { return vcTable[ channel ]; }
 	//
-	VChannelEntry  * GetVChannel (int channel) {
-		VChannelEntry *vc;
-		vc=m_VCTM->get(channel);
-		return (vc);
+	Destination  * GetVChannel (int channel) {
+		Destination *dest;
+		dest=m_destlist->get(channel);
+		return (dest);
 	}
-	CVCTableManager	* GetVCTableManager () {
-											return (m_VCTM);
+	CDestinationList	* GetDestinationList () {
+											return (m_destlist);
 											}
 	
 		/**	Locate a track by it's ID, and Acquire it. (-1 for master track) */

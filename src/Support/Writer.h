@@ -43,7 +43,7 @@
 
 // Support Kit
 #include <ByteOrder.h>
-
+#include <String.h>
 	/**	An abstract class representing a writeable stream of bytes.
 		You make subclasses for files, strings, packets, etc.
 	*/
@@ -156,6 +156,8 @@ public:
 
 		/**	Stream output operator to write a double */
 	CAbstractWriter &operator<<( double d ) { MustSwapAndWrite( &d, sizeof d ); return *this; }
+		/** Stream output operator to write a BString */
+	CAbstractWriter &operator<<( char  *d ) { MustWrite( &d, sizeof d ); return *this; }
 };
 
 	/**	A Writer which writes to a fixed array of bytes. */

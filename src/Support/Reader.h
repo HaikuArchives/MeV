@@ -43,7 +43,7 @@
 
 // Support Kit
 #include <ByteOrder.h>
-
+#include <String.h>
 	/**	An abstract class representing a readable stream of bytes.
 		You make subclasses for files, strings, packets, etc.
 	*/
@@ -175,6 +175,8 @@ public:
 
 		/**	Stream read operator to read a double */
 	CAbstractReader &operator>>( double &d ) { MustReadAndSwap( &d, sizeof d); return *this; }
+		/** Stream read operator to read a bstring*/
+	CAbstractReader &operator>>( char  &d) { MustRead (&d,sizeof d); return *this;}
 };
 
 	/**	A reader which reads from a fixed array of bytes, supplied at

@@ -1,4 +1,4 @@
-#include "VCTableManager.h"
+#include "DestinationList.h"
 
 #include "Messenger.h"
 #include "MeVDoc.h"
@@ -6,7 +6,7 @@
 enum ID {
 	VCTM_NOTIFY='ntfy'
 	};
-const rgb_color CVCTableManager::m_defaultColorTable[]= {
+const rgb_color CDestinationList::m_defaultColorTable[]= {
 	{ 255, 128, 128 },			// Midi Channel 1
 	{ 255, 128,   0 },			// Midi Channel 2
 	{ 255, 255,   0 },			// Midi Channel 3
@@ -24,13 +24,13 @@ const rgb_color CVCTableManager::m_defaultColorTable[]= {
 	{ 192, 192, 192 },			// Midi Channel 15
 	{ 128, 128,   0 },			// Midi Channel 16
 };
-CVCTableManager::CVCTableManager(CMeVDoc *inDoc) : CObservableSubject (),CObserver(* CMidiManager::Instance(),CMidiManager::Instance())
+CDestinationList::CDestinationList(CMeVDoc *inDoc) : CObservableSubject (),CObserver(* CMidiManager::Instance(),CMidiManager::Instance())
 {
 	count=0;
     pos=0;
     m_notifier=NULL;
     int c;
-    for (c=0;c<Max_VChannels;c++)
+    for (c=0;c<Max_Destinations;c++)
     {	
     	m_tablerep[c]=NULL;
     }
@@ -40,26 +40,26 @@ CVCTableManager::CVCTableManager(CMeVDoc *inDoc) : CObservableSubject (),CObserv
     //BMessenger *msgr=new BMessenger (this,this->Window());
     //m_midimanager->Subscribe(msgr);
 }
-CVCTableManager::~CVCTableManager()
+CDestinationList::~CDestinationList()
 {
 	//m_midimanager->Unsubscribe(msg);
 }
-int CVCTableManager::NewVC()
+int CDestinationList::NewDest()
 {
 	count++; 
 	int c;
-	for (c=0;c<Max_VChannels;c++)
+	for (c=0;c<Max_Destinations;c++)
     {
     	if ((m_tablerep[c])==NULL)
     	{
-    		m_tablerep[c]=new VChannelEntry;
+    		m_tablerep[c]=new Destination;
     		m_tablerep[c]->name << "Untitled ";
     		m_tablerep[c]->name << c+1;
     		m_tablerep[c]->m_producer=NULL;
     		m_tablerep[c]->producer_name="never name a midiport this";
     		m_tablerep[c]->channel	= 1;
-    		m_tablerep[c]->flags		= VChannelEntry::transposable;  
-    		//m_tablerep[c]->flags		= VChannelEntry::mute; 
+    		m_tablerep[c]->flags		= Destination::transposable;  
+    		//m_tablerep[c]->flags		= Destination::mute; 
     		m_tablerep[c]->velocityContour=0;
     		m_tablerep[c]->VUMeter=0;
     		SetColorFor(c, m_defaultColorTable[c % 16]);
@@ -68,21 +68,21 @@ int CVCTableManager::NewVC()
     }
     return -1;		
 }
-void CVCTableManager::RemoveVC (int id)
+void CDestinationList::RemoveVC (int id)
 {
 	count--;
 	delete (m_tablerep[id]);
 	m_tablerep[id]=NULL;
 }
-VChannelEntry *  CVCTableManager::operator[](int i)
+Destination *  CDestinationList::operator[](int i)
 {
 	return (m_tablerep)[i];
 }
-VChannelEntry *  CVCTableManager::get(int i)
+Destination *  CDestinationList::get(int i)
 {
 	return m_tablerep[i];
 }
-bool CVCTableManager::IsDefined(int id)
+bool CDestinationList::IsDefined(int id)
 {
 	if (m_tablerep[id]!=NULL)
 	{
@@ -96,21 +96,21 @@ bool CVCTableManager::IsDefined(int id)
 	}
 }
 
-void CVCTableManager::First()
+void CDestinationList::First()
 {
 	pos=0;
 	while (m_tablerep[pos]==NULL)
 	{
 		pos++;
-		if (pos>=Max_VChannels)
+		if (pos>=Max_Destinations)
 		{
 			return;
 		}
 	}
 }
-bool CVCTableManager::IsDone()
+bool CDestinationList::IsDone()
 {
-	if (pos>=Max_VChannels)
+	if (pos>=Max_Destinations)
 	{
 		return true;
 	}
@@ -119,27 +119,27 @@ bool CVCTableManager::IsDone()
 		return false;
 	}
 }
-int CVCTableManager::CurrentID()  
+int CDestinationList::CurrentID()  
 {
 	return pos;
 }
-VChannelEntry * CVCTableManager::CurrentVC()
+Destination * CDestinationList::CurrentDest()
 {
 	if (m_tablerep[pos]==NULL)
 	{
-	    VChannelEntry *vc=new VChannelEntry;
-   		vc->name.SetTo("blah");
-   		vc->m_producer=NULL;
-   		vc->channel	= 1;
-   		vc->flags = VChannelEntry::transposable;   
-   		vc->velocityContour=0;
-   		vc->VUMeter=0;
+	    Destination *dest=new Destination;
+   		dest->name.SetTo("blah");
+   		dest->m_producer=NULL;
+   		dest->channel	= 1;
+   		dest->flags = Destination::transposable;   
+   		dest->velocityContour=0;
+   		dest->VUMeter=0;
 		rgb_color color = {128, 128, 128, 255};
    		SetColorFor(pos, color);
-		return (vc);
+		return (dest);
 	}
 
-	if (pos < Max_VChannels)
+	if (pos < Max_Destinations)
 	{
 		return m_tablerep[pos];
 	}
@@ -147,19 +147,19 @@ VChannelEntry * CVCTableManager::CurrentVC()
 	return NULL;
 }
 
-void CVCTableManager::Next()
+void CDestinationList::Next()
 {
 	pos++;
 	while (m_tablerep[pos]==NULL)
 	{
 		pos++;
-		if (pos>=Max_VChannels)
+		if (pos>=Max_Destinations)
 		{
 				return;
 		}
 	}
 }
-void CVCTableManager::OnUpdate(BMessage *msg)
+void CDestinationList::OnUpdate(BMessage *msg)
 {
 	int32 op;
 	BString portname;
@@ -173,9 +173,9 @@ void CVCTableManager::OnUpdate(BMessage *msg)
 				msg->FindString("name",&portname);
 				for (First();!IsDone();Next())
 				{
-					VChannelEntry *vc=CurrentVC();
+					Destination *dest=CurrentDest();
 					
-					if (vc->producer_name==portname)
+					if (dest->producer_name==portname)
 					{
 						SetDisableFor(CurrentID(),true);
 					}
@@ -187,10 +187,10 @@ void CVCTableManager::OnUpdate(BMessage *msg)
 				msg->FindString("name",&portname);
 				for (First();!IsDone();Next())
 				{
-					VChannelEntry *vc=CurrentVC();
-					if (vc->producer_name==portname)
+					Destination *dest=CurrentDest();
+					if (dest->producer_name==portname)
 					{
-						
+						dest->m_producer=m_midimanager->GetProducer(&dest->producer_name);
 						SetDisableFor(CurrentID(),false);
 					}
 				}
@@ -199,7 +199,7 @@ void CVCTableManager::OnUpdate(BMessage *msg)
 		}
 	}
 }
-void CVCTableManager::ReadVCTable (CIFFReader &reader)
+void CDestinationList::ReadVCTable (CIFFReader &reader)
 {
 	int32		i = 0;
 	int32 portid=0;
@@ -208,55 +208,57 @@ void CVCTableManager::ReadVCTable (CIFFReader &reader)
 	while (reader.BytesAvailable() > 0 )
 	{
 		reader >> portid;
-		m_tablerep[portid]=new VChannelEntry;
+		m_tablerep[portid]=new Destination;
 		reader >> m_tablerep[portid]->channel >> m_tablerep[portid]->flags >> m_tablerep[portid]->velocityContour >> m_tablerep[portid]->initialTranspose;
 		reader >> m_tablerep[portid]->fillColor.red;
 		reader >> m_tablerep[portid]->fillColor.green;
 		reader >> m_tablerep[portid]->fillColor.blue;
 		m_tablerep[portid]==NULL;
 		//reader >> midiport;
+		printf ("reading %s\n",midiport.String());
 		//printf ("midiport read %s\n",midiport.String());*/
 	}
 }
-void CVCTableManager::WriteVCTable (CIFFWriter &writer)
+void CDestinationList::WriteVCTable (CIFFWriter &writer)
 {
 	for (First();!IsDone();Next())
 	{
 		writer << (int32)CurrentID(); 
-		VChannelEntry *vc=CurrentVC();
-		writer << vc->channel << vc->flags << vc->velocityContour << vc->initialTranspose;
-		writer << vc->fillColor.red;
-		writer << vc->fillColor.green;
-		writer << vc->fillColor.blue;
-		//writer << vc->m_producer->Name();
+		Destination *dest=CurrentDest();
+		writer << dest->channel << dest->flags << dest->velocityContour << dest->initialTranspose;
+		writer << dest->fillColor.red;
+		writer << dest->fillColor.green;
+		writer << dest->fillColor.blue;
+		//writer << dest->m_producer->Name();
+		printf ("writing %s\n",dest->m_producer->Name());
 	}
 }
-void CVCTableManager::SetNameFor(
+void CDestinationList::SetNameFor(
 	int id,
 	BString name)
 {
-	VChannelEntry *vce = m_tablerep[id];
-	if (vce)
+	Destination *dest = m_tablerep[id];
+	if (dest)
 	{
-		vce->name=name;
+		dest->name=name;
 	}
 	CUpdateHint		hint;
 	hint.AddInt8( "channel", id);
 	CObservableSubject::PostUpdate( &hint, NULL );
 }
 void
-CVCTableManager::SetColorFor(
+CDestinationList::SetColorFor(
 	int id,
 	rgb_color color)
 {
-	VChannelEntry *vce = m_tablerep[id];
-	if (vce)
+	Destination *dest = m_tablerep[id];
+	if (dest)
 	{
-		vce->fillColor = color;
+		dest->fillColor = color;
 		if ((color.red + color.green + color.blue) < 384)
-			vce->highlightColor = tint_color(color, B_LIGHTEN_2_TINT);
+			dest->highlightColor = tint_color(color, B_LIGHTEN_2_TINT);
 		else
-			vce->highlightColor = tint_color(color, B_DARKEN_2_TINT);
+			dest->highlightColor = tint_color(color, B_DARKEN_2_TINT);
 	}
 	CUpdateHint		hint;
 	hint.AddInt8( "channel", id);
@@ -264,39 +266,39 @@ CVCTableManager::SetColorFor(
 	m_doc->PostUpdateAllTracks(&hint);
 }
 void 
-CVCTableManager::SetChannelFor(
+CDestinationList::SetChannelFor(
 	int id,
 	int channel)
 {
-	VChannelEntry *vce = m_tablerep[id];
-	if (vce)
+	Destination *dest = m_tablerep[id];
+	if (dest)
 	{
-		vce->channel=channel;
+		dest->channel=channel;
 	}
 	CUpdateHint hint;
 	hint.AddInt8("channel",id);
 	CObservableSubject::PostUpdate(&hint,NULL);
 }
 void 
-CVCTableManager::SetPortFor(
+CDestinationList::SetPortFor(
 	int id,
 	BMidiLocalProducer *producer)
 {
 	if (producer!=NULL)
 	{
 	
-		VChannelEntry *vce = m_tablerep[id];
-		if (vce)
+		Destination *dest = m_tablerep[id];
+		if (dest)
 		{
-			vce->m_producer=producer;
-			vce->producer_name=producer->Name();
+			dest->m_producer=producer;
+			dest->producer_name=producer->Name();
 			CUpdateHint hint;
 			hint.AddInt8("channel",id);
 			CObservableSubject::PostUpdate(&hint,NULL);
-			if (vce->flags & VChannelEntry::disabled)
+			if (dest->flags & Destination::disabled)
 			{
 			//if disabled, let everyone know about it...no longer disabled.
-					vce->flags-=VChannelEntry::disabled;
+					dest->flags-=Destination::disabled;
 					m_doc->PostUpdateAllTracks(&hint);
 			}
 		}
@@ -305,14 +307,14 @@ CVCTableManager::SetPortFor(
 
 }
 void
-CVCTableManager::SetMuteFor(
+CDestinationList::SetMuteFor(
 	int id,
 	bool muted)
 {
 	if (muted)
 	{
-		VChannelEntry *vce = m_tablerep[id];
-		vce->flags+=VChannelEntry::mute;
+		Destination *dest = m_tablerep[id];
+		dest->flags+=Destination::mute;
 		CUpdateHint hint;
 		hint.AddInt8("channel",id);
 		CObservableSubject::PostUpdate(&hint,NULL);
@@ -320,8 +322,8 @@ CVCTableManager::SetMuteFor(
 	}
 	else
 	{
-		VChannelEntry *vce = m_tablerep[id];
-		vce->flags-=VChannelEntry::mute;
+		Destination *dest = m_tablerep[id];
+		dest->flags-=Destination::mute;
 		CUpdateHint hint;
 		hint.AddInt8("channel",id);
 		CObservableSubject::PostUpdate(&hint,NULL);
@@ -330,21 +332,20 @@ CVCTableManager::SetMuteFor(
 
 }
 void 
-CVCTableManager::SetDisableFor(
+CDestinationList::SetDisableFor(
 	int id,
 	bool disable)
 {
-	VChannelEntry *vce = m_tablerep[id];
+	Destination *dest = m_tablerep[id];
 	if (disable)
 	{
-		if (vce->flags & VChannelEntry::disabled)
+		if (dest->flags & Destination::disabled)
 		{
 		}
 		else
 		{
-			vce->flags+=VChannelEntry::disabled;		
-			vce->m_producer=NULL;
-				
+			dest->flags+=Destination::disabled;		
+			dest->m_producer=NULL;	
 			CUpdateHint hint;
 			hint.AddInt8("channel",id);
 			CObservableSubject::PostUpdate(&hint,NULL);
@@ -353,11 +354,9 @@ CVCTableManager::SetDisableFor(
 	}
 	else
 	{
-		if (vce->flags & VChannelEntry::disabled)
+		if (dest->flags & Destination::disabled)
 		{
-			vce->flags-=VChannelEntry::disabled;
-			BMidiLocalProducer *producer=m_midimanager->GetProducer(&vce->producer_name);
-			SetPortFor(id,producer);
+			dest->flags-=Destination::disabled;
 			CUpdateHint hint;
 			hint.AddInt8("channel",id);
 			CObservableSubject::PostUpdate(&hint,NULL);
@@ -371,7 +370,7 @@ CVCTableManager::SetDisableFor(
 }
 
 void
-CVCTableManager::SetSoloFor(
+CDestinationList::SetSoloFor(
 	int id,
 	bool solo)
 {
@@ -389,4 +388,4 @@ CVCTableManager::SetSoloFor(
 }
 
 
-// END - VCTableManager.cpp
+// END - DestinationList.cpp

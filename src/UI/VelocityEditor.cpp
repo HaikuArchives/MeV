@@ -5,7 +5,7 @@
 #include "VelocityEditor.h"
 
 #include "EventTrack.h"
-#include "VChannel.h"
+#include "Destination.h"
 #include "MeVDoc.h"
 #include "MathUtils.h"
 #include "ResourceUtils.h"
@@ -39,7 +39,7 @@ void CVelocityNoteEventHandler::Draw(
 {
 	CVelocityEditor	&vEditor = (CVelocityEditor &)editor;
 
-	VChannelEntry	*vce = vEditor.TrackWindow()->Document()->GetVChannel( ev.GetVChannel() );
+	Destination	*dest = vEditor.TrackWindow()->Document()->GetVChannel( ev.GetVChannel() );
 
 	BRect			r( vEditor.ViewBounds() );
 	BPoint			points[ 4 ] = { BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ) };
@@ -64,13 +64,13 @@ void CVelocityNoteEventHandler::Draw(
 		
 		vEditor.StrokeRect( r );
 		r.InsetBy( 1.0, 1.0 );
-		vEditor.SetHighColor( vce->fillColor );
+		vEditor.SetHighColor( dest->fillColor );
 		vEditor.SetDrawingMode( B_OP_BLEND );
 		vEditor.FillRect( r );
 	}
 	else
 	{
-		vEditor.SetHighColor( vce->fillColor );
+		vEditor.SetHighColor( dest->fillColor );
 		vEditor.SetDrawingMode( B_OP_BLEND );
 		vEditor.FillPolygon( points, 4, r );
 

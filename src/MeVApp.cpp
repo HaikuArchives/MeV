@@ -187,8 +187,8 @@ CMeVApp::CMeVApp()
 	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
 
-	//CVCTableManager *vcm;
-	//vcm = new CVCTableManager();
+	//CDestinationList *vcm;
+	//vcm = new CDestinationList();
 
 	// Load in add-ons
 	if (addOnDir.InitCheck() == B_NO_ERROR)
@@ -280,30 +280,30 @@ CMeVApp::CMeVApp()
 	{
 		BMessage		&prefMessage = vtableSettings.GetMessage();
 				
-		for (int i = 0; i < Max_VChannels; i++)
+		for (int i = 0; i < Max_Destinations; i++)
 		{
 			int8				b;
 			bool				t;
 		
-			VChannelEntry	&vc = (*defaultVCTable)[ i ];
+			Destination	&dest = (*defaultVCTable)[ i ];
 
-			//if (prefMessage.FindInt8( "Port", i, &b ) == B_OK) vc.port = b;
-			if (prefMessage.FindInt8( "Channel", i, &b ) == B_OK) vc.channel = b;
-			if (prefMessage.FindInt8( "Red", i, &b ) == B_OK) vc.fillColor.red = b;
-			if (prefMessage.FindInt8( "Green", i, &b ) == B_OK) vc.fillColor.green = b;
-			if (prefMessage.FindInt8( "Blue", i, &b ) == B_OK) vc.fillColor.blue = b;
-			//if (prefMessage.FindInt8( "Contour", i, &b ) == B_OK) vc.velocityContour = b;
+			//if (prefMessage.FindInt8( "Port", i, &b ) == B_OK) dest.port = b;
+			if (prefMessage.FindInt8( "Channel", i, &b ) == B_OK) dest.channel = b;
+			if (prefMessage.FindInt8( "Red", i, &b ) == B_OK) dest.fillColor.red = b;
+			if (prefMessage.FindInt8( "Green", i, &b ) == B_OK) dest.fillColor.green = b;
+			if (prefMessage.FindInt8( "Blue", i, &b ) == B_OK) dest.fillColor.blue = b;
+			//if (prefMessage.FindInt8( "Contour", i, &b ) == B_OK) dest.velocityContour = b;
 
 			if (prefMessage.FindBool( "Transpose", i, &t ) == B_OK)
 			{
-				if (t) vc.flags |= VChannelEntry::transposable;
-				else vc.flags &= ~VChannelEntry::transposable;
+				if (t) dest.flags |= Destination::transposable;
+				else dest.flags &= ~Destination::transposable;
 			}
 
 			if (prefMessage.FindBool( "Mute", i, &t ) == B_OK)
 			{
-				if (t) vc.flags |= VChannelEntry::mute;
-				else vc.flags &= ~VChannelEntry::mute;
+				if (t) dest.flags |= Destination::mute;
+				else dest.flags &= ~Destination::mute;
 			}
 		}	
 	}
@@ -1544,35 +1544,7 @@ BFilePanel *CMeVApp::GetExportPanel( BMessenger *msngr )
 	return exportPanel;
 }
 
-void CMeVApp::SetDefaultVCTable( VChannelTable &inTable )
-{
-printf ("default vc table set\n");
-/*	memcpy( defaultVCTable, inTable, sizeof defaultVCTable );
 
-		// Save default virtual channel table
-	if (!vtableSettings.InitCheck())
-	{
-		BMessage		&prefMessage = vtableSettings.GetMessage();
-		
-		prefMessage.MakeEmpty();
-
-		for (int i = 0; i < Max_VChannels; i++)
-		{
-			VChannelEntry	*vc = defaultVCTable->get(i);
-
-			//prefMessage.AddInt8( "Port", vc.port );
-			prefMessage.AddInt8( "Channel", vc->channel );
-			prefMessage.AddInt8( "Red", vc->fillColor.red );
-			prefMessage.AddInt8( "Green", vc->fillColor.green );
-			prefMessage.AddInt8( "Blue", vc->fillColor.blue );
-			prefMessage.AddInt8( "Contour", vc->velocityContour );
-
-			prefMessage.AddBool( "Transpose", vc->flags & VChannelEntry::transposable ? true : false );
-			prefMessage.AddBool( "Mute", vc->flags & VChannelEntry::mute ? true : false );
-		}	
-		vtableSettings.Save();
-	}*/
-}
 
 void CMeVApp::BuildExportMenu( BMenu *inMenu )
 {

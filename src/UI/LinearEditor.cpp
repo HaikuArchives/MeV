@@ -6,7 +6,7 @@
 
 #include "EventTrack.h"
 #include "Idents.h"
-#include "VChannel.h"
+#include "Destination.h"
 #include "PlayerControl.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
@@ -577,29 +577,29 @@ CLinearNoteEventHandler::Draw(
 	}
 
 
-	VChannelEntry *vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+	Destination *dest = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 
-	if ((vce->flags & VChannelEntry::mute) || (vce->flags & VChannelEntry::disabled))
+	if ((dest->flags & Destination::mute) || (dest->flags & Destination::disabled))
 	{
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
-					  vce->fillColor, vce->highlightColor, true,C_MIXED_COLORS);
+					  dest->fillColor, dest->highlightColor, true,C_MIXED_COLORS);
 	}
 	else if (shadowed)
 	{
 		lEditor.SetDrawingMode(B_OP_BLEND);
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR, 
-					  vce->fillColor, vce->highlightColor, true);
+					  dest->fillColor, dest->highlightColor, true);
 		lEditor.SetDrawingMode(B_OP_COPY);
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
 		DrawNoteShape(&lEditor, r, SELECTED_BORDER_COLOR,
-					  vce->fillColor, vce->highlightColor, true);
+					  dest->fillColor, dest->highlightColor, true);
 	}
 	else 
 	{
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
-					  vce->fillColor, vce->highlightColor, true);
+					  dest->fillColor, dest->highlightColor, true);
 	}
 
 }

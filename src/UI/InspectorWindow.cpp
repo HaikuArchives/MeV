@@ -166,7 +166,7 @@ CInspectorWindow::CInspectorWindow(
 //												       m_channelNameView);
 	BRect r;
 	r.Set(410,3,410 + channelBoxWidth * 16 + 2,3 + channelBoxHeight * 4 + 2);
-	m_channelControl = new CChannelManagerView(r,m_channelNameView,this);
+	m_channelControl = new CDestinationListView(r,m_channelNameView,this);
 	bgView->AddChild(m_channelControl);
 	
 	
@@ -322,7 +322,7 @@ CInspectorWindow::MessageReceived(
 				}
 				m_doc->VirtualChannelName(channel, vcName);
 				m_channelNameView->SetText(vcName);
-				if((channel >= 0) && (channel <= Max_VChannels) && m_track)
+				if((channel >= 0) && (channel <= Max_Destinations) && m_track)
 				{
 					// Set attribute for newly created events
 					m_doc->SetDefaultAttribute(EvAttr_Channel, channel);

@@ -1,9 +1,9 @@
-#include "VChannelModifier.h"
-#include "VChannel.h"
+#include "DestinationModifier.h"
+#include "Destination.h"
 #include <Rect.h>
 #include <MenuField.h>
 #include "MidiManager.h"
-#include "ChannelManagerView.h"
+#include "DestinationListView.h"
 #include <stdio.h>
 enum EVChannelModifierControlID {
 	NAME_ID='name',
@@ -16,7 +16,7 @@ enum EVChannelModifierControlID {
 	MUTE_ID='cmut'
 	};
 	
-CVChannelModifier::CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BHandler *parent) : 
+CDestinationModifier::CDestinationModifier(BRect frame,int32 id,CDestinationList *tm,BHandler *parent) : 
 	BWindow(frame,"Destination Modifier",B_TITLED_WINDOW,B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
 	CObserver(*this,tm)
 {
@@ -32,7 +32,7 @@ CVChannelModifier::CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BH
 
 
 void
-CVChannelModifier::_buildUI()
+CDestinationModifier::_buildUI()
 {
 	BRect r;
 	m_background=new BView (Bounds(),"bk",B_FOLLOW_LEFT,B_WILL_DRAW);
@@ -81,7 +81,7 @@ CVChannelModifier::_buildUI()
 	m_mute=new BCheckBox(r,"mutebox","Mute",new BMessage (MUTE_ID));
 	m_background->AddChild(m_mute);
 }
-void CVChannelModifier::AttachedToWindow()
+void CDestinationModifier::AttachedToWindow()
 {
 	
 	m_done->SetTarget((BView *)this);
@@ -93,7 +93,7 @@ void CVChannelModifier::AttachedToWindow()
 }
 
 void
-CVChannelModifier::Update()
+CDestinationModifier::Update()
 {
 	int c=m_midiPorts->CountItems();
 	while (c>=0)
@@ -117,17 +117,17 @@ CVChannelModifier::Update()
 		}	
 	}
 }
-void CVChannelModifier::OnUpdate(BMessage *msg)
+void CDestinationModifier::OnUpdate(BMessage *msg)
 {
 //i don't really know why this would happen.
 }
 void
-CVChannelModifier::MenusBeginning()
+CDestinationModifier::MenusBeginning()
 {
 	Update();
 }
 bool 
-CVChannelModifier::QuitRequested()
+CDestinationModifier::QuitRequested()
 {
 	BMessage *msg = new BMessage (VCQUIT);
 	msg->AddInt32("ID",m_id);
@@ -137,7 +137,7 @@ CVChannelModifier::QuitRequested()
 }
 
 void
-CVChannelModifier::MessageReceived(BMessage *msg)
+CDestinationModifier::MessageReceived(BMessage *msg)
 {
 	switch (msg->what)
 	{
@@ -145,7 +145,7 @@ CVChannelModifier::MessageReceived(BMessage *msg)
 	{
 		m_tm->SetColorFor(m_id, m_colors->ValueAsColor());
 		
-		//((CChannelManagerView *) m_parent)->track->RefreshChannel(m_id);
+		//((CDestinationListView *) m_parent)->track->RefreshChannel(m_id);
 	}
 	break;
 	case CHANNEL_SELECT:

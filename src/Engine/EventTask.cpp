@@ -103,11 +103,11 @@ CEventTask::~CEventTask()
 void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 {
 		// filter event though virtual channel table
-	if (group.vChannelTable->IsDefined(ev.note.vChannel))
+	if (group.m_destlist->IsDefined(ev.note.vChannel))
 	{
-		VChannelEntry			*vc = group.vChannelTable->get(ev.note.vChannel);
-		//CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ vc->port ].channelStates[ vc->channel ];
-		CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ 0 ].channelStates[ vc->channel ];
+		Destination			*dest = group.m_destlist->get(ev.note.vChannel);
+		//CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ dest->port ].channelStates[ dest->channel ];
+		CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ 0 ].channelStates[ dest->channel ];
 		
 		int32			duration;
 		Event			stackedEvent( ev );
@@ -120,8 +120,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	
 			// Modify the stack
 		stackedEvent.stack.start			+= origin;
-		stackedEvent.stack.actualPort		= vc->m_producer;
-		stackedEvent.stack.actualChannel	= vc->channel;
+		stackedEvent.stack.actualPort		= dest->m_producer;
+		stackedEvent.stack.actualChannel	= dest->channel;
 		stackedEvent.stack.task			= taskID;
 	
 			// REM: Do we also want to filter on the VChannel? I think so...
@@ -134,10 +134,10 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	
 				// Ignore the note event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
-			if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
+			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
 				// Apply task-specific transposition.
-			if (transposition != 0 && vc->flags & VChannelEntry::transposable)
+			if (transposition != 0 && dest->flags & Destination::transposable)
 			{
 				stackedEvent.note.pitch += transposition;
 	
@@ -164,7 +164,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		case EvtType_PitchBend:						// pitch bend
 		
 				// Play nothing if muted
-			if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
+			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -201,13 +201,13 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		case EvtType_ProgramChange:					// program change
 	
 				// Play nothing if muted
-			if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
+			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 	
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
 			{
-				//vc->port - > 0
-				MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( 0, vc->channel );
+				//dest->port - > 0
+				MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( 0, dest->channel );
 	
 					// (Only update the channel bank state if this device supports banks)
 				if (	mdi != NULL
@@ -230,7 +230,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		case EvtType_ChannelATouch:					// channel aftertouch
 	
 				// Play nothing if muted
-			if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
+			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 	
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -245,7 +245,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		case EvtType_Controller:						// controller change
 	
 				// Play nothing if muted
-			if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
+			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
 				// REM: Data entry controls should probably be passed through, since they
 				// can't be summarized in a simple way.
@@ -288,7 +288,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	
 				// Ignore the event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
-			if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
+			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 	
 			stack.Push( stackedEvent );
 			break;

@@ -4,7 +4,7 @@
 
 #include "MeVSpec.h"
 #include "Event.h"
-#include "VChannel.h"
+#include "Destination.h"
 #include "MathUtils.h"
 #include <stdio.h>
 /** ======================================================================= **
@@ -535,7 +535,7 @@ bool Event::SetAttribute( enum E_EventAttribute inAttr, int32 inValue )
 	
 	case EvAttr_Channel:						// virtual channel number
 		if (HasProperty( Prop_Channel ))
-			SetVChannel( CLAMP( 0L, inValue, Max_VChannels ) );
+			SetVChannel( CLAMP( 0L, inValue, Max_Destinations ) );
 		return true;
 	
 	case EvAttr_Pitch:						// pitch attribute

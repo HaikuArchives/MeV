@@ -41,7 +41,7 @@
 #include "Track.h"
 #include "EventList.h"
 #include "EventOp.h"
-#include "VChannel.h"
+#include "Destination.h"
 
 const ulong			TrackType_Event	= 'eTrk';
 

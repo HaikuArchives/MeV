@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * VCTableManager.h (MeV/engine)
+ * DestinationList.h (MeV/engine)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -36,7 +36,7 @@
 #ifndef __C_VChannelManager_H__
 #define __C_VChannelManager_H__
 #include "MeV.h"
-#include "VChannel.h"
+#include "Destination.h"
 #include "Observer.h"
 #include "IFFWriter.h"
 #include "IFFReader.h"
@@ -46,24 +46,24 @@
 //	VCTM_NOTIFY='ntfy'
 //	};
 class CMeVDoc;
-class CVCTableManager :
+class CDestinationList :
 	public CObservableSubject,public CObserver {
 public:
-	CVCTableManager(CMeVDoc *inDoc);
-	~CVCTableManager();
+	CDestinationList(CMeVDoc *inDoc);
+	~CDestinationList();
 	void _notifyClients();
 	void NotifyClients();
 	void AddClient(BHandler *nhandler);
-	int NewVC();
+	int NewDest();
 	void RemoveVC(int id);
-	VChannelEntry * operator[](int i);
-	VChannelEntry * get(int i);
+	Destination * operator[](int i);
+	Destination * get(int i);
 	bool IsDefined(int id);
 	void First();
 	bool IsDone();
 	void Next();
-	//VChannelEntry * GetVC(int id);
-	VChannelEntry * CurrentVC();
+	//Destination * GetVC(int id);
+	Destination * CurrentDest();
 	int CurrentID();
 	
 	void SetColorFor(int id, rgb_color color);
@@ -73,16 +73,17 @@ public:
 	void SetMuteFor (int id, bool mute);
 	void SetSoloFor (int id, bool solo);
 	void SetDisableFor (int id, bool disable);
-	int32 count;
+	
 	void ReadVCTable (CIFFReader &reader);
 	void WriteVCTable (CIFFWriter &writer);
 private:
+	int32 count;
 	virtual void OnUpdate(BMessage *msg);
 	CMidiManager *m_midimanager;
 	BMessenger *m_notifier;
 	static const rgb_color m_defaultColorTable[ 16 ] ;
 	int32 pos;
-	VChannelEntry * m_tablerep[Max_VChannels];
+	Destination * m_tablerep[Max_Destinations];
 	CMeVDoc *m_doc;
 };
 #endif /* __C_VChannelManager_H__ */

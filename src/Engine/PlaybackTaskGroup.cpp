@@ -21,7 +21,7 @@ CPlaybackTaskGroup::CPlaybackTaskGroup( CMeVDoc *d )
 	
 		// Initialize what fields need it
 	doc			= d;
-	vChannelTable	= d ? d->GetVCTableManager(  ) : NULL;
+	m_destlist	= d ? d->GetDestinationList(  ) : NULL;
 	flags			= Clock_Stopped;
 	origin		= thePlayer.m_internalTimerTick; // +++++ REMOVE THIS DEPENDANCY +++++
 	real.time		= real.start = 0;

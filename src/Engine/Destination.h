@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * VChannel.h (MeV/Engine)
+ * Destination.h (MeV/Engine)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -38,8 +38,8 @@
  *
  * ===================================================================== */
 
-#ifndef __C_VChannelEntry_H__
-#define __C_VChannelEntry_H__
+#ifndef __C_Destination_H__
+#define __C_Destination_H__
 
 #include "BitSet.h"
 #include <MidiProducer.h>
@@ -48,19 +48,19 @@
 // Interface Kit
 #include <InterfaceDefs.h>
 
-const int			Max_VChannels = 64;			// 64 virtual channels
+const int			Max_Destinations = 64;			
 
 /* ============================================================================ *
-                                VChannelEntry
+                                Destination
 
-	VChannels, or virtual channels, allow routing and remapping of MIDI data
+	Destinations, allow routing and remapping of MIDI data
 	upon playback. There are up to 128 channels supported.
  * ============================================================================ */
 
-class VChannelEntry {
+class Destination {
 public:
 
-	enum vChannelFlags {
+	enum destinationFlags {
 		transposable	= (1<<0),				// channel is transposable
 		mute			= (1<<1),				// channel is muted
 		muteFromSolo	= (1<<2),				// channel muted because of solo
@@ -94,13 +94,13 @@ public:
 						highlightColor;			// hightlight color
 };
 
-typedef VChannelEntry  * VChannelTable[ Max_VChannels ];
+typedef Destination  * m_destlist[ Max_Destinations ];
 
 /* ============================================================================ *
    VBitTable -- array of bits, one for each possible virtual channel.
  * ============================================================================ */
 
-typedef BitSet<Max_VChannels> VBitTable;
+typedef BitSet<Max_Destinations> VBitTable;
 
 /* ============================================================================ *
                                VelocityContour
@@ -109,10 +109,10 @@ typedef BitSet<Max_VChannels> VBitTable;
 	can scale or compress the velocity information being processed through
 	a virtual channel. (I could have decided to have a seperate velocity
 	contour for each virtual channel, however I realized that in most situations,
-	you would want to control the velocyt scaling of many virtual channels in
+	you would want to control the velocyt scaling of many Destinations in
 	parallel.
  * ============================================================================ */
 
 //#define maxVContours	8
 
-#endif /* __C_VChannelEntry_H__ */
+#endif /* __C_Destination_H__ */

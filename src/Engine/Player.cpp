@@ -104,8 +104,8 @@ void CMIDIPlayer::ControlThread()
 				if (cmdArgs.document == NULL) break;
 				CRefCountObject::Release( songGroup->doc );
 				songGroup->doc = cmdArgs.document;
-				songGroup->vChannelTable = cmdArgs.document->GetVCTableManager(  );
-				//songGroup->vChannelTable = &cmdArgs.document->GetVChannel( 0 );
+				songGroup->m_destlist = cmdArgs.document->GetDestinationList(  );
+				//songGroup->m_destlist = &cmdArgs.document->GetVChannel( 0 );
 				//check the above out dan				
 					// Reset all channel state records...
 				InitChannelStates();
@@ -683,11 +683,10 @@ void CPlayerControl::DoAudioFeedback(
 				? attributeValue
 				: demoEvent->GetVChannel();
 
-		VChannelEntry	*vc = doc->GetVChannel( channel );
-//dan 6/30/00
+		Destination	*dest = doc->GetVChannel( channel );
 		
-		modEvent->stack.actualPort = vc->m_producer;	
-		modEvent->stack.actualChannel = vc->channel;
+		modEvent->stack.actualPort = dest->m_producer;	
+		modEvent->stack.actualChannel = dest->channel;
 	}
 	else
 	{

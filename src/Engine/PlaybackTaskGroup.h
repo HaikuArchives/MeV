@@ -44,7 +44,7 @@
 #include "EventStack.h"
 #include "PlayerControl.h"
 #include "TempoMap.h"
-#include "VCTableManager.h"
+#include "DestinationList.h"
 // ---------------------------------------------------------------------------
 // A playback task group represents a set of related tasks, such as a song.
 
@@ -105,7 +105,7 @@ private:
 	CMeVDoc			*doc;
 
 		// Pointer to document's virtual channel table
-	CVCTableManager	*vChannelTable;
+	CDestinationList	*m_destlist;
 
 		// The start time of this group, in absolute real time
 	int32			origin;
