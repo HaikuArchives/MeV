@@ -343,13 +343,17 @@ CTrackListView::MouseMoved(
 {
 	D_HOOK(("CTrackListView::MouseMoved()\n"));
 
-	if (!message || (message->what != MeVDragMsg_ID))
+	if (!message || (message->what != MeVDragMsg_ID)) {
+		BListView::MouseMoved(point, transit, message);
 		return;
+	}
 
 	int32 type;
 	if ((message->FindInt32("Type", &type) != B_OK)
-	 || (type != DragTrack_ID))
+	 || (type != DragTrack_ID)) {
+		BListView::MouseMoved(point, transit, message);
 		return;
+	}
 
 	int32 index;
 	message->FindInt32("Index", &index);
