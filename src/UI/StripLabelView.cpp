@@ -244,7 +244,10 @@ CStripLabelView::ShowContextMenu(
 
 	BMenuItem *item = m_contextMenu->FindItem(CStripView::REMOVE_STRIP);
 	if (item)
-		item->SetEnabled(m_stripView->IsRemovable());
+	{
+		if (!m_stripView->IsRemovable() || (FrameView()->CountStrips() < 2))
+			item->SetEnabled(false);
+	}
 
 	BMessenger messenger(m_stripView, Window());
 	m_contextMenu->SetTargetForItems(messenger);
