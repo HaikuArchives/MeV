@@ -38,27 +38,30 @@
 #ifndef __MeVFileID_H__
 #define __MeVFileID_H__
 
-	// File format IDs
-enum MeVFileIDs {
-
-		// General IFF headers
+// File format IDs
+enum MeVFileIDs
+{
+	// General IFF headers
 	Form_ID				= 'FORM',
 	Body_ID				= 'BODY',
 
-		// MeV Document type
-	MeV_ID				= 'MeV ',			// Idenfies a MeV file
+	// MeV Document type
+	MeV_ID				= 'MeV ',		// Idenfies a MeV file
 
-		// Document chunk headers
-	VCTable_ID			= 'vctb',			// Virtual channel table
-	FMasterRealTrack		= 'mrTk',			// Master real track embedded form
+	// Document chunk headers
+	VCTable_ID			= 'vctb',		// Virtual channel table
+	FMasterRealTrack	= 'mrTk',		// Master real track embedded form
 	FMasterMeteredTrack	= 'mmTk',		// Master metered track embedded form
-	DocTempo_ID			= 'dTem',			// Overall document tempo
+	DocTempo_ID			= 'dTem',		// Overall document tempo
 
-		// Track chunk headers
-	Track_Header_ID		= 'head',			// Track header chunk
-	Track_Name_ID		= 'name',			// Track name chunk
-	Track_Section_ID		= 'sect',			// Section markers chunk
-	Track_Grid_ID			= 'grid',			// Gridsnap chunk
+	// Track chunk headers
+	Track_Header_ID		= 'head',		// Track header chunk
+	Track_Name_ID		= 'name',		// Track name chunk
+	Track_Section_ID	= 'sect',		// Section markers chunk
+	Track_Grid_ID		= 'grid',		// Gridsnap chunk
+
+	// UI chunk headers
+	TRACK_WINDOW_CHUNK	= 'tkwd'		// Track window chunk
 };
 
 #endif /* __MeVFileID_H__ */
