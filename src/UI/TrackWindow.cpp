@@ -368,10 +368,13 @@ CTrackWindow::MenusBeginning()
 	}
 
 	// Set up Window menu
-	CMeVApp *app = dynamic_cast<CMeVApp *>(be_app);
-	item = KeyMenuBar()->FindItem(MENU_TRACKLIST);
+	CMeVApp *app = Document()->Application();
+	item = KeyMenuBar()->FindItem(MENU_PARTS_WINDOW);
 	if (item)
 		item->SetMarked(app->TrackList());
+	item = KeyMenuBar()->FindItem(MENU_MIX_WINDOW);
+	if (item)
+		item->SetMarked(Document()->IsWindowOpen(CMeVDoc::MIX_WINDOW));
 	item = KeyMenuBar()->FindItem(MENU_INSPECTOR);
 	if (item)
 		item->SetMarked(app->Inspector());
@@ -479,12 +482,18 @@ CTrackWindow::MessageReceived(
 				tool->SetValue(B_CONTROL_ON);
 			break;
 		}
-		case MENU_TRACKLIST:
+		case MENU_PARTS_WINDOW:
 		{
 			bool show = (Document()->Application()->TrackList() == NULL);
 			Document()->Application()->ShowTrackList(show);
 			// In case window was deactivated
 			Activate();
+			break;
+		}
+		case MENU_MIX_WINDOW:
+		{
+			bool visible = Document()->IsWindowOpen(CMeVDoc::MIX_WINDOW);
+			Document()->ShowWindow(CMeVDoc::MIX_WINDOW, !visible);
 			break;
 		}
 		case MENU_INSPECTOR:
@@ -785,10 +794,12 @@ CTrackWindow::CreateWindowMenu(
 {
 	BMenu *menu;
 
-	// Create the file menu
 	menu = new BMenu("Window");
 	menu->AddItem(new BMenuItem("Parts",
-								new BMessage(MENU_TRACKLIST), 'L'));
+								new BMessage(MENU_PARTS_WINDOW), 'P'));
+	menu->AddItem(new BMenuItem("Mix",
+								new BMessage(MENU_MIX_WINDOW), 'M'));
+	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Inspector",
 								new BMessage(MENU_INSPECTOR), 'I'));
 	menu->AddItem(new BMenuItem("Grid",
