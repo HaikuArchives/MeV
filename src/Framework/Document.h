@@ -22,9 +22,6 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  Document framework classes
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -39,8 +36,6 @@
 #define __C_Document_H__
 
 #include "Observer.h"
-//#include <AppKit.h>
-//#include <Resources.h>
 
 // Storage Kit
 #include <Entry.h>
@@ -48,6 +43,10 @@
 class CDocApp;
 class CDocWindow;
 
+/** Document framework class
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class CDocument
 	:	public CObservableSubject
 {
@@ -73,10 +72,10 @@ public:							// Constructor/Destructor
 
 public:							// Hook Functions
 
-	// Override this to change the way the save file panel is created
+	/** Override this to change the way the save file panel is created. */
 	virtual BFilePanel *		CreateSavePanel();
 
-	// Low-level function to actually write the document data
+	/** Low-level function to actually write the document data. */
 	virtual void				SaveDocument() = 0;
 
 public:							// Accessors
@@ -87,18 +86,20 @@ public:							// Accessors
 	const BEntry &				DocLocation()
 								{ return m_entry; }
 
-	// Returns true if document is correctly initialized
+	/** Returns true if document is correctly initialized. */
 	bool						InitCheck()
 								{ return m_valid; }
 
 	void						CancelSaving()
 								{ m_saving = false; }
+
 	/** Returns true if the document is currently being saved.
-		ie, if it has an open save panel */
+	 *	ie, if it has an open save panel.
+	 */
 	bool						IsSaving() const
 								{ return m_saving; }
 
-	//	name must be at least B_FILE_NAME_LENGTH
+	/**	Name must be at least B_FILE_NAME_LENGTH. */
 	status_t					GetName(
 									char *name) const;
 	status_t					GetEntry(
@@ -106,15 +107,15 @@ public:							// Accessors
 	status_t					SetEntry(
 									const BEntry *entry);
 
-	// Returns true if document has unsaved modifications
+	/** Returns true if document has unsaved modifications. */
 	bool						Modified()
 								{ return m_modified; }
-	// Used to set the modification state of the document
+	/** Used to set the modification state of the document. */
 	void						SetModified(
 									bool modified = true)
 								{ m_modified = modified; }
 
-	// Returns true if document has ever been saved
+	/** Returns true if document has ever been saved. */
 	bool						Named()
 								{ return m_named; }
 	void						SetNamed();
@@ -129,21 +130,19 @@ public:							// Operations
 									CDocWindow *window);
 	int32						CountWindows() const
 								{ return m_windows.CountItems(); }
+	CDocWindow *				MasterWindow() const
+								{ return m_masterWindow; }
 	void						RemoveWindow(
 									CDocWindow *window);
 	CDocWindow *				WindowAt(
 									int32 index) const
 								{ return (CDocWindow *)m_windows.ItemAt(index); }
 
-	// Call this to save the document to it's current location
+	/** Call this to save the document to it's current location. */
 	void						Save();
-	// Call this to save the document to a new location
+	/** Call this to save the document to a new location. */
 	void						SaveAs();
 
-private:						// Internal Operations
-
-	int32						CalcUniqueWindowNumber();
-	
 private:						// Instance Data
 
 	//	Location of this doc in hierarchy
@@ -153,6 +152,9 @@ private:						// Instance Data
 
 	//	List of open windows relating to this document
 	BList						m_windows;
+
+	// Pointer to the main document window
+	CDocWindow *				m_masterWindow;
 
 	// true if the document has been modified
 	bool						m_modified;				

@@ -79,7 +79,7 @@ CDocument::CreateSavePanel()
 	message.AddPointer("Document", this);
 
 	// Create a new save panel
-	BMessenger messenger(NULL, WindowAt(0));
+	BMessenger messenger(NULL, MasterWindow());
 	BFilePanel *panel = new BFilePanel(B_SAVE_PANEL, &messenger,
 									   NULL, B_FILE_NODE, false, &message);
 
@@ -157,29 +157,12 @@ void
 CDocument::AddWindow(
 	CDocWindow *window)
 {
-	int32 plainWindowCount = 0;
 	StSubjectLock(*this, Lock_Exclusive);
 
-	m_windows.AddItem(window);
-	for (int32 i = 0; i < CountWindows(); i++)
-	{
-		CDocWindow *window = WindowAt(i);
-		if (window->WindowNumber() >= 0)
-			plainWindowCount++;
-	}
-
-	if (plainWindowCount > 1)
-	{
-		for (int i = 0; i < CountWindows(); i++)
-		{
-			CDocWindow *window = WindowAt(i);
-			if (window->WindowNumber() == 0)
-			{
-				window->SetWindowNumber(CalcUniqueWindowNumber());
-				window->CalcWindowTitle();
-			}
-		}
-	}
+	if (window->IsMasterWindow())
+		m_masterWindow = window;
+	else
+		m_windows.AddItem(window);
 }
 
 void
@@ -188,34 +171,23 @@ CDocument::RemoveWindow(
 {
 	StSubjectLock(*this, Lock_Exclusive);
 
-	int32 plainWindowCount = 0;
-	m_windows.RemoveItem(window);
-	for (int32 i = 0; i < CountWindows(); i++)
-	{
-		CDocWindow *window = WindowAt(i);
-		if (window->WindowNumber() >= 0)
-			plainWindowCount++;
-	}
-	
-	if (plainWindowCount == 1)
+	if (window->IsMasterWindow())
 	{
 		for (int32 i = 0; i < CountWindows(); i++)
 		{
-			CDocWindow *window = WindowAt(i);
-			if (window->WindowNumber() > 0)
-			{
-				window->SetWindowNumber(0);
-				window->CalcWindowTitle();
-			}
+			WindowAt(i)->Lock();
+			WindowAt(i)->QuitRequested();
+			WindowAt(i)->Quit();
+		}
+		if (!IsSaving())
+		{
+			RequestDelete();
+			Application()->RemoveDocument(this);
 		}
 	}
-
-	//	If there are any other observers hanging on to this, then
-	//	ask them to please observe something else.
-	if ((CountWindows() == 0) && !IsSaving())
+	else
 	{
-		RequestDelete();
-		Application()->RemoveDocument(this);
+		m_windows.RemoveItem(window);
 	}
 }
 
@@ -241,34 +213,6 @@ CDocument::SaveAs()
 		m_savePanel = CreateSavePanel();
 	CRefCountObject::Acquire();
 	m_savePanel->Show();
-}
-
-// ---------------------------------------------------------------------------
-// Internal Operations
-
-long
-CDocument::CalcUniqueWindowNumber()
-{
-	long trialID = 1, prevID = -1;
-
-	//	Loop until we can run through the entire list
-	//	without a collision.
-	while (trialID != prevID)
-	{
-		prevID = trialID;
-
-		//	If we collide, then increase the ID by one
-		for (int i = 0; i < CountWindows(); i++)
-		{
-			CDocWindow *window = WindowAt(i);
-			if (window->WindowNumber() <= 0)
-				continue;
-			if (trialID == window->WindowNumber())
-				trialID++;
-		}
-	}
-
-	return trialID;
 }
 
 // END - Document.cpp

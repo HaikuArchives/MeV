@@ -22,9 +22,6 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  Abstract document window class
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -46,6 +43,10 @@
 class CDocument;
 class CToolBar;
 
+/**	Abstract document window class.
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class CDocWindow :
 	public CAppWindow
 {
@@ -58,6 +59,12 @@ public:							// Constants
 								/** Activate this window */
 								ACTIVATE = 'dwdA',
 
+								/** Hide all windows for this document. */
+								HIDE_ALL,
+
+								/** Show all windows for this document. */
+								SHOW_ALL,
+
 								/** We lost selection */
 								SELECTED,
 
@@ -69,6 +76,7 @@ public:							// Constructor/Destructor
 								CDocWindow(
 									BRect frame,
 									CDocument *document,
+									bool isMaster = true,
 									const char *inWinTypeName = NULL,
 									window_type = B_DOCUMENT_WINDOW,
 									uint32 flags = 0);
@@ -76,6 +84,7 @@ public:							// Constructor/Destructor
 								CDocWindow(
 									CWindowState &state,
 									CDocument *document,
+									bool isMaster = true,
 									const char	*inWinTypeName = NULL,
 									window_type = B_DOCUMENT_WINDOW,
 									uint32 flags = 0);
@@ -95,6 +104,9 @@ public:							// Accessors
 	bool						HasSelectToken()
 								{ return (this == s_activeDocWin); }
 	
+	bool						IsMasterWindow() const
+								{ return m_isMaster; }
+
 	// set and get the current toolbar
 	CToolBar *					ToolBar() const
 								{ return m_toolBar; }
@@ -142,6 +154,8 @@ protected:						// Internal Operations
 private:						// Instance Data
 
 	CDocument *					m_document;
+
+	bool						m_isMaster;
 
 	CToolBar *					m_toolBar;
 

@@ -6,6 +6,8 @@
 
 #include "DocApp.h"
 #include "Document.h"
+#include "IconMenuItem.h"
+#include "ResourceUtils.h"
 #include "ToolBar.h"
 
 // Interface Kit
@@ -31,11 +33,13 @@ CDocWindow::s_activeDocWin = NULL;
 CDocWindow::CDocWindow(
 	BRect frame,
 	CDocument *document,
+	bool isMaster,
 	const char *inTypeName,
 	window_type type,
 	uint32 flags)
 	:	CAppWindow(frame, NULL, type, 0),
 		m_document(document),
+		m_isMaster(isMaster),
 		m_toolBar(NULL),
 		m_windowMenu(NULL),
 		m_windowMenuStart(-1),
@@ -51,11 +55,13 @@ CDocWindow::CDocWindow(
 CDocWindow::CDocWindow(
 	CWindowState &state,
 	CDocument *document,
+	bool isMaster,
 	const char *inTypeName,
 	window_type type,
 	uint32 flags)
 	:	CAppWindow(state, state.Rect(), NULL, type, 0),
 		m_document(document),
+		m_isMaster(isMaster),
 		m_toolBar(NULL),
 		m_windowMenu(NULL),
 		m_windowMenuStart(-1),
@@ -140,6 +146,28 @@ CDocWindow::MessageReceived(
 			Activate();
 			break;
 		}
+		case HIDE_ALL:
+		{
+			for (int32 i = 0; i < Document()->CountWindows(); i++)
+			{
+				if (!Document()->WindowAt(i)->IsMinimized())
+					Document()->WindowAt(i)->Minimize(true);
+			}
+			if (!IsMinimized())
+				Minimize(true);
+			break;
+		}
+		case SHOW_ALL:
+		{
+			for (int32 i = 0; i < Document()->CountWindows(); i++)
+			{
+				if (Document()->WindowAt(i)->IsMinimized())
+					Document()->WindowAt(i)->Minimize(false);
+			}
+			if (IsMinimized())
+				Minimize(true);
+			break;
+		}
 		case B_CANCEL:
 		{
 			m_waitingToQuit = false;
@@ -189,39 +217,40 @@ CDocWindow::MessageReceived(
 bool
 CDocWindow::QuitRequested()
 {
-	m_waitingToQuit = true;
-
-	if (m_document->CountWindows() == 1)
+	if (IsMasterWindow())
 	{
 		if (m_document->Modified())
 		{
-			long result;
-	
+			m_waitingToQuit = true;
+
 			char fileName[B_FILE_NAME_LENGTH];
 			m_document->GetName(fileName);
 	
 			BString text = "Save changes to '";
 			text << fileName << "' ?";
 	
-			BAlert *alert = new BAlert("Quit", text.String(), "Don't Save",
-									   "Cancel", "Save",
+			BAlert *alert = new BAlert("Quit", text.String(), "Cancel",
+									   "Don't Save", "Save",
 									   B_WIDTH_AS_USUAL, B_OFFSET_SPACING,
 									   B_WARNING_ALERT); 
 			alert->SetShortcut(1, B_ESCAPE);
-			result = alert->Go();
+			int32 result = alert->Go();
 			
 			if (result == 0)
 			{
-				if (m_document->Application()->CountDocuments() == 1)
-					be_app->PostMessage(B_QUIT_REQUESTED);
-			}
-			else if (result == 1)
-			{
+				// Cancel
 				m_waitingToQuit = false;
 				return false;
 			}
+			else if (result == 1)
+			{
+				// Don't Save
+				if (m_document->Application()->CountDocuments() == 1)
+					be_app->PostMessage(B_QUIT_REQUESTED);
+			}
 			else if (result == 2)
 			{
+				// Save
 				bool named = Document()->Named();
 				Document()->Save();
 				if (!named)
@@ -277,8 +306,6 @@ CDocWindow::CalcWindowTitle(
 	BString title = docName;
 	if (m_name.CountChars() > 0)
 		title << ": " << m_name;
-//	if (m_windowNumber > 0)
-//		title << " [" << m_windowNumber + 1 << "]";
 
 	SetTitle(title.String());
 }
@@ -299,15 +326,73 @@ CDocWindow::UpdateWindowMenu()
 				delete item;
 		}
 
-		for (int i = 0; i < Document()->CountWindows(); i++)
+		// add one submenu per document
+		for (int32 i = 0; i < Document()->Application()->CountDocuments(); i++)
 		{
-			CDocWindow *window = Document()->WindowAt(i);
-			BMenuItem *item = new BMenuItem(window->Title(),
-											new BMessage(ACTIVATE));
+			CDocument *doc = Document()->Application()->DocumentAt(i);
+			BMenu *subMenu = new BMenu(doc->MasterWindow()->Title());
+
+			// Add windows to document submenu
+			CDocWindow *window = doc->MasterWindow();
+			BMenuItem *item;
+			bool hidden = false;
+			bool shown = false;
+			if (!window->IsMinimized())
+			{
+				item = new CIconMenuItem(window->Title(), new BMessage(ACTIVATE),
+										 ResourceUtils::LoadImage("WindowShownIcon"));
+				shown = true;
+			}
+			else
+			{
+				item = new CIconMenuItem(window->Title(), new BMessage(ACTIVATE),
+										 ResourceUtils::LoadImage("WindowHiddenIcon"));
+				hidden = true;
+			}
 			item->SetTarget(window);
 			if (window == this)
 				item->SetMarked(true);
-	
+			subMenu->AddItem(item);
+
+			for (int i = 0; i < doc->CountWindows(); i++)
+			{
+				window = doc->WindowAt(i);
+				if (!window->IsMinimized())
+				{
+					item = new CIconMenuItem(window->Title(), new BMessage(ACTIVATE),
+											 ResourceUtils::LoadImage("WindowShownIcon"));
+					shown = true;
+				}
+				else
+				{
+					item = new CIconMenuItem(window->Title(), new BMessage(ACTIVATE),
+											 ResourceUtils::LoadImage("WindowHiddenIcon"));
+					hidden = true;
+				}
+				item->SetTarget(window);
+				if (window == this)
+					item->SetMarked(true);
+
+				subMenu->AddItem(item);
+			}
+
+			subMenu->AddSeparatorItem();
+			subMenu->AddItem(item = new BMenuItem("Hide All",
+												  new BMessage(HIDE_ALL)));
+			item->SetEnabled(shown);
+			item->SetTarget(doc->MasterWindow());
+			subMenu->AddItem(item = new BMenuItem("Show All",
+												  new BMessage(SHOW_ALL)));
+			item->SetEnabled(hidden);
+			item->SetTarget(doc->MasterWindow());
+			subMenu->AddItem(item = new BMenuItem("Close All",
+												  new BMessage(B_QUIT_REQUESTED)));
+			item->SetTarget(doc->MasterWindow());
+
+			// Add master document window
+			item = new CIconMenuItem(subMenu, new BMessage(ACTIVATE),
+									 ResourceUtils::LoadImage("WindowGroupIcon"));
+			item->SetTarget(doc->MasterWindow());
 			m_windowMenu->AddItem(item);
 		}
 	}
