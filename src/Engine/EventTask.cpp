@@ -96,8 +96,7 @@ CEventTask::PlayEvent(
 		// assign actual port
 		stackedEvent.stack.actualPort =(BMidiLocalProducer *) dest->GetProducer();
 		stackedEvent.stack.actualChannel = dest->Channel();
-		//stackedEvent.stack.start+=(Track()->Document().MaxDestinationLatency(clockType)-dest->Latency(clockType));
-
+		stackedEvent.stack.start -= (dest->Latency() / 1000);
 	}
 	else
 	{
