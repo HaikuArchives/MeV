@@ -65,14 +65,12 @@ CLinearWindow::CLinearWindow(
 	stripFrame->AddType("Velocity");
 	stripFrame->AddType("Pitch Bend");
 	stripFrame->AddType("Sequence");
-	stripFrame->AddType("Record Strip");
 	if (!hasSettings)
 	{
 		// create default strips
 		AddStrip("Piano Roll", 0.5);
 		AddStrip("Velocity", 0.25);
 		AddStrip("Sequence", 0.25);
-		//AddStrip("Record Strip", 0.10);
 		stripFrame->PackStrips();
 	}
 }
