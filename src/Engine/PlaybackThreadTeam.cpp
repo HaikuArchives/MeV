@@ -645,7 +645,7 @@ void CPlaybackThreadTeam::ExecuteEvent( Event &ev, TimeState &tState )
 			if (flags & Clock_Locating) return;		// no notes while locating
 		}
 
-		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, B_NOW );
+		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time() );
 	}
 	else
 	{

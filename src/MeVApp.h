@@ -32,6 +32,11 @@
  *		General cleanup in preparation for initial SourceForge checkin
  *	04/21/2000	cell
  *		Moved the CAboutWindow class into its own source files
+ *	05/13/2000  dwalton
+ *		Added two default mev soft ports to first time load.
+ *  05/13/2000	dwalton
+ *		extended CPortAttrsDialog to add support for midi kit2.
+ *		including menubeginning midi consumer search.
  * ---------------------------------------------------------------------
  * To Do:
  *

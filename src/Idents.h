@@ -106,7 +106,7 @@ enum EMessageIDs {
 	ToolBar_ID			= 'tbar',
 	TrackName_ID			= 'tkNm',
 	LoseFocus_ID			= 'lfoc',
-	
+	Connect_ID				= 'conn',
 		// Drag and drop message command
 	MeVDragMsg_ID		= 'MeV-',
 	
@@ -118,6 +118,8 @@ enum EMessageIDs {
 // ---------------------------------------------------------------------------
 // A selection of BMessage command codes which inform the main application
 // about various changes in the state of the real-time player
+
+
 
 enum EPlayerStateChangeIDs {
 	Player_ChangeTransportState		= 'pcts',		// player was stopped, started, etc.

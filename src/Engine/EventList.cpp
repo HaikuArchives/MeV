@@ -281,7 +281,8 @@ bool EventList::Merge( Event *inEvents, long count, EventListUndoAction *inActio
 			if (inEvents[ i ].Start() > ((ConstEventPtr)marker)->Start())
 				break;
 		}
-		printf( "marker.Insert partial\n" );
+		//i removed this debug statment dan
+		//printf( "marker.Insert partial\n" );
 		status = marker.Insert( inEvents, i, inAction );
 		inEvents += i;
 		count -= i;
