@@ -96,6 +96,8 @@ public:							// Accessors
 	int32						ZoomValue() const
 								{ return m_horizontalZoom; }
 
+	float						MinimumHeight() const;
+
 public:							// Operations
 
 	void						AddType(

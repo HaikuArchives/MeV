@@ -93,6 +93,10 @@ public:							// Hook Functions
 									CEventTrack *track)
 								{ }
 
+	virtual void				FrameResized(
+									float width,
+									float height);
+
 protected:
 
 	/** call this from the subclass implementation after adding

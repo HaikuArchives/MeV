@@ -32,7 +32,7 @@ CStripView::CStripView(
 	bool makeMagButtons)
 	:	CScrollerTarget(frame.OffsetToCopy(B_ORIGIN),
 	  					name, B_FOLLOW_ALL_SIDES,
-	  					B_WILL_DRAW | B_FRAME_EVENTS | B_PULSE_NEEDED),
+	  					B_NAVIGABLE | B_WILL_DRAW | B_FRAME_EVENTS | B_PULSE_NEEDED),
 		frame(inFrame),
 		m_labelView(NULL),
 		m_rulerView(NULL),

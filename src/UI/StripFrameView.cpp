@@ -79,6 +79,20 @@ CStripFrameView::SetClockType(
 	Ruler()->Invalidate();
 }
 
+float
+CStripFrameView::MinimumHeight() const
+{
+	float height = 0.0;
+	for (int32 i = 0; i < CountStrips(); i++)
+	{
+		strip_info *info = (strip_info *)m_strips.ItemAt(i);
+		height += info->strip->MinimumHeight();
+		if (info->splitter)
+			height += CSplitter::H_SPLITTER_HEIGHT + 1.0;
+	}
+	return height;
+}
+
 // ---------------------------------------------------------------------------
 // Operations
 

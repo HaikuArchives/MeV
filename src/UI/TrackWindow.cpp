@@ -92,6 +92,22 @@ CTrackWindow::~CTrackWindow()
 // Hook Functions
 
 void
+CTrackWindow::FrameResized(
+	float width,
+	float height)
+{
+	float minWidth, minHeight, maxWidth, maxHeight;
+	GetSizeLimits(&minWidth, &maxWidth, &minHeight, &maxHeight);
+	
+	minWidth = m_posInfoBar->Frame().Width() + 6 * B_V_SCROLL_BAR_WIDTH + 3;
+	minHeight = KeyMenuBar()->Frame().Height() + ToolBar()->Frame().Height() +
+	stripFrame->MinimumHeight() + m_posInfoBar->Frame().Height();
+	
+	SetSizeLimits(minWidth, maxWidth, minHeight, maxHeight);
+	CDocWindow::FrameResized(width, height);
+}
+
+void
 CTrackWindow::AddFrameView(
 	BRect frame,
 	CTrack *track)
