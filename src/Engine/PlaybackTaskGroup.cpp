@@ -660,7 +660,7 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 	}
 	else
 	{
-		CMIDIPlayer::ChannelState		*chState;
+		CPlayer::ChannelState		*chState;
 	
 		switch (cmd) {
 		case EvtType_TaskMarker:

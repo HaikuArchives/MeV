@@ -42,168 +42,112 @@
 #include "EventTrack.h"
 #include "EventStack.h"
 
+#define MAX_NORMAL_TASKS 	250
+#define MAX_FEEDBACK_TASKS	251
+
 // ---------------------------------------------------------------------------
 // CPlaybackTask -- an instance of a track being played
 
-const int				cMaxNormalTask = 250,
-						cFeedbackTask = 251;
+class CPlaybackTask
+	:	public DNode
+{
+	friend class CPlayer;
+	friend class CPlaybackTaskGroup;
+	friend class CPlayerControl;
 
-class CPlaybackTask : public DNode {
+	static int32			GetPlaybackMarkerTimes( CTrack *track, int32 *resultBuf, int32 bufSize );
 
-	friend class		CMIDIPlayer;
-	friend class		CPlaybackTaskGroup;
-	friend class		CPlayerControl;
+public:							// Constants
 
-	friend int32 GetPlaybackMarkerTimes( CTrack *track, int32 *resultBuf, int32 bufSize );
-
-public:
 	enum taskFlags {
-		Task_Muted		= (1<<0),			// turns off sound on track
-		Task_Solo		= (1<<1),			// mute all other tracks
-		Task_Wild		= (1<<2),			// use internal tick, not master time
-		Task_Finished	= (1<<3),			// no more playback for this task
-		Task_ImplicitLoop = (1<<4),			// task has implicit looping
+								/** Turns off sound on track. */
+								Task_Muted		= (1<<0),
+
+								/** Mute all other tracks. */
+								Task_Solo		= (1<<1),
+
+								/** Use internal tick, not master time. */
+								Task_Wild		= (1<<2),
+
+								/** No more playback for this task. */
+								Task_Finished	= (1<<3),
+
+								/** Task has implicit looping. */
+								Task_ImplicitLoop = (1<<4)
 	};
 
-protected:
-	uint8				taskID;				// unique ID number of task
-	uint8				flags;				// task flags (see above)
-	uint16				pad;					// longword-align
+public:							// Constructor/Destructor
 
-	CPlaybackTaskGroup	&group;				// which song or context is this in.
-	CTrack				*track;				// pointer to track being played
-	CPlaybackTask		*parent;				// pointer to parent track
+	/** Standard constructor. */
+								CPlaybackTask(
+									CPlaybackTaskGroup &group,
+									CTrack *track,
+									CPlaybackTask *parent,
+									long start);
 
-		// The start of this sequence, relative to the start of the song.
-		// The origin may be different due to repeat events and other non-
-		// linear playback features.
-	int32				startTime,			// clock time that task started
-						originTime;			// base time that clock is relative to
+	/** Copy constructor -- can copy to a different group. */
+								CPlaybackTask(
+									CPlaybackTaskGroup &group,
+									CPlaybackTask &th);
 
-		// Current time, relative to beginning of track.
-	int32				currentTime;			// clock time relative to start
+	/** Destructor. */
+	virtual						~CPlaybackTask();
 
-public:
-		// constructor
-	CPlaybackTask(	CPlaybackTaskGroup &group,
-					CTrack *track,
-					CPlaybackTask *parent,
-					long start );
+public:							// Hook Functions
 
-		// copy constructor -- can copy to a different group
-	CPlaybackTask(	CPlaybackTaskGroup &group,
-					CPlaybackTask &th );
+	/**	Returns the current time of this track. */
+	virtual int32				CurrentTime() = 0;
 
-		// destructor
-	virtual ~CPlaybackTask();
-
-		// Play next event if event is earlier than time 't'; either way,
-		// return the time that the task wants to be woken up next.
-	virtual void Play() = 0;
-
-		// Re-queue this task on the list of tasks to do.
-	void ReQueue( CEventStack &stack, long time );
-	
-		/**	Returns the current time of this track. */
-	virtual int32 CurrentTime() = 0;
-
-		/**	Returns pointer to parent track, if any. */
-	CPlaybackTask *Parent() { return parent; }
-
-		/**	Returns pointer to track. */
-	CTrack *Track() { return track; }
-	
-		/**	This instructs the track that the implicit loop feature is going to be used.
-			If the "inAtStart" is true, it means the loop point is at the start of the
-			sequence; If it is false, then it means that the loop point is at the
-			current point to which the sequence is located.
-		*/
-//	virtual void RecalcImplicitLoop( bool inAtStart, int32 inRepeatEnd ) {}
-};
-
-#if 0
-// ---------------------------------------------------------------------------
-// CPlayerState -- describes the state of the music at a given point in time
-
-class CPlayer {
-
-	CPlayerState		current,				// state of music right now
-					recordLoopState;		// state of music at start of record loop
-};
-
-/* ============================================================================ *
-                                  VelocityState
-
-	There are 4 of these, one for each velocity envelope.
- * ============================================================================ */
-
-typedef struct _VelocityState {
-	UBYTE				currentScale,			/* current value				*/
-						orgScale,				/* start value of ramp			*/
-						targetScale;			/* end value of ramp			*/
-
-	BYTE				currentBase,			/* current value				*/
-						orgBase,				/* start value of ramp			*/
-						targetBase;				/* end value of ramp			*/
-
-	ULONG				orgTime,				/* start of ramp (real)			*/
-						targetTime;				/* end of ramp (real)			*/
-} VelocityState;
-
-/* ============================================================================ *
-                                    PBState
-
-	PBState describes the current state of the music
- * ============================================================================ */
-
-class PlayBackState {
-
-		/*	Velocity Contours */
-
-	VelocityState		vContours[ MAX_VCONTOURS ],	/* velocity contour tables	*/
-						saveContours[ MAX_VCONTOURS ];	/* for record loop		*/
-
-		/*	MIDI input / output state */
-
-	ControllerCache		controllerState;		/* state of controllers sent	*/
-
-		/*	Input-related variables */
-
-	LONG				inputStamp,				/* timestamp for input events	*/
-						inputStampOffset;		/* offset for above timestamp	*/
-
-	UBYTE				lastNotePitch,			/* most recent note pitch		*/
-						lastProgramChange,		/* most recent program change	*/
-						lastSystemRealTime;		/* most recent midi realtime	*/
-	UBYTE				MidiEventFlags;			/* what happened, midi-wise		*/
-
-		/*	Misc variables */
-
-	UBYTE				recordClockType,		/* clock type for recording		*/
-						metronomeType;
-
-};
-
-	/*	These flags are used to inform the user-interface task that a MIDI
-		or other real time event has occured which might be of interest to the
-		main tasks.
+	/** Play next event if event is earlier than time 't'; either way,
+		return the time that the task wants to be woken up next.
 	*/
+	virtual void				Play() = 0;
 
-#define MEVENT_NOTE		(1<<0)					/* a note received				*/
-#define MEVENT_NOTEOFF	(1<<1)					/* a note-off received			*/
-#define MEVENT_PROGRAM	(1<<2)					/* a program change received	*/
-#define MEVENT_REALTIME	(1<<3)					/* a midi start/stop received	*/
-#define MEVENT_RECORDED	(1<<4)					/* an event was added			*/
+public:							// Accessors
 
-#define METROTYPE_NONE	0						/* no metronome					*/
-#define METROTYPE_AUDIO	1						/* audio metronome				*/
-#define METROTYPE_MIDI	2						/* MIDI metronome				*/
+	/**	Returns pointer to parent track, if any. */
+	CPlaybackTask *				Parent() const
+								{ return parent; }
 
-#define PBF_LOOP_ON		(1<<0)					/* loop mode active				*/
-#define PBF_OVERLAY		(1<<1)					/* overlay recording			*/
-#define PBF_RECORD		(1<<2)					/* currently recording			*/
-#define PBF_SOLO		(1<<3)					/* playing just a single track	*/
+	/**	Returns pointer to track. */
+	CTrack *					Track() const
+								{ return track; }
+	
+public:							// Operations
 
-#endif
+	/** Re-queue this task on the list of tasks to do. */
+	void						ReQueue(
+									CEventStack &stack,
+									long time);
+
+protected:						// Instance Data
+
+	/** unique ID number of task */
+	uint8						taskID;
+
+	/** task flags (see above) */
+	uint8						flags;
+
+	/** longword-align */
+	uint16						__pad__;
+
+	/** which song or context is this in. */
+	CPlaybackTaskGroup &		group;
+
+	/** pointer to track being played */
+	CTrack *					track;
+
+	/** pointer to parent track */
+	CPlaybackTask *				parent;
+
+	/** The start of this sequence, relative to the start of the song.
+		The origin may be different due to repeat events and other non-
+		linear playback features. */
+	int32						startTime;
+	int32						originTime;
+
+	/** Current time, relative to beginning of track. */
+	int32						currentTime;
+};
 
 #endif /* __C_PlaybackTask_H__ */

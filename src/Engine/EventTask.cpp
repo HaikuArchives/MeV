@@ -75,7 +75,7 @@ CEventTask::PlayEvent(
 	CEventStack &stack,
 	long origin)
 {
-	CMIDIPlayer::ChannelState *chState = NULL;
+	CPlayer::ChannelState *chState = NULL;
 	Destination *dest = NULL;
 
 	Event stackedEvent(ev);

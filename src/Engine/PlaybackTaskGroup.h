@@ -50,7 +50,7 @@
 
 class CPlaybackTaskGroup : public DNode {
 
-	friend class	CMIDIPlayer;
+	friend class	CPlayer;
 	friend class	CPlaybackTask;
 	friend class	CEventTask;
 	friend class	CRealClockEventTask;
