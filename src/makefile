@@ -41,6 +41,7 @@ SRCS= \
 	Midi/MidiDestination.cpp \
 	Midi/MidiDeviceInfo.cpp \
 	Midi/MidiModule.cpp \
+	Midi/MidiPortsMenu.cpp \
 	Midi/PortNameMap.cpp \
 	Midi/ReconnectingMidiProducer.cpp \
 	Support/BeError.cpp \
