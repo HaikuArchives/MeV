@@ -79,7 +79,7 @@ CDocument::CreateSavePanel()
 	message.AddPointer("Document", this);
 
 	// Create a new save panel
-	BMessenger messenger(NULL, be_app);
+	BMessenger messenger(NULL, WindowAt(0));
 	BFilePanel *panel = new BFilePanel(B_SAVE_PANEL, &messenger,
 									   NULL, B_FILE_NODE, false, &message);
 
@@ -141,10 +141,10 @@ CDocument::SetNamed()
 
 	BMessage message(NAME_CHANGED);
 	message.AddString("name", name);
-
 	for (int32 i = 0; i < CountWindows(); i++)
 	{
-		WindowAt(i)->PostMessage(&message);
+		BMessenger messenger(NULL, WindowAt(i));
+		messenger.SendMessage(&message);
 	}
 
 	m_named = true;

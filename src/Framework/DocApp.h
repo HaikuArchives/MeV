@@ -103,10 +103,6 @@ public:							// BApplication Implementation
 	virtual void				RefsReceived(
 									BMessage *message);
 
-protected:						// Instance Data
-
-	bool						m_waitingToQuit;
-
 private:
 
 	// the list of open documents

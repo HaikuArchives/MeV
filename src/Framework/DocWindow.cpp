@@ -12,6 +12,9 @@
 #include <Alert.h>
 #include <Menu.h>
 #include <MenuItem.h>
+// Storage Kit
+#include <Directory.h>
+#include <Entry.h>
 // Support Kit
 #include <Debug.h>
 #include <String.h>
@@ -36,7 +39,8 @@ CDocWindow::CDocWindow(
 		m_toolBar(NULL),
 		m_windowMenu(NULL),
 		m_windowMenuStart(-1),
-		m_name(inTypeName)
+		m_name(inTypeName),
+		m_waitingToQuit(false)
 {
 	CalcWindowTitle();
 
@@ -55,7 +59,8 @@ CDocWindow::CDocWindow(
 		m_toolBar(NULL),
 		m_windowMenu(NULL),
 		m_windowMenuStart(-1),
-		m_name(inTypeName)
+		m_name(inTypeName),
+		m_waitingToQuit(false)
 {
 	CalcWindowTitle();
 
@@ -135,6 +140,36 @@ CDocWindow::MessageReceived(
 			Activate();
 			break;
 		}
+		case B_CANCEL:
+		{
+			m_waitingToQuit = false;
+			Document()->CancelSaving();
+			break;
+		}
+		case B_SAVE_REQUESTED:
+		{
+			entry_ref directory;
+			const char *name;
+			if ((message->FindRef("directory", 0, &directory) == B_OK)
+			 && (message->FindString("name", 0, &name ) == B_OK))
+			{
+				BDirectory dir(&directory);
+				if (dir.InitCheck() != B_NO_ERROR)
+					return;
+				BEntry entry(&dir, name);
+				if (Document()->SetEntry(&entry) == B_OK)
+					Document()->Save();
+			}
+			if (m_waitingToQuit)
+			{
+				PostMessage(B_QUIT_REQUESTED);
+				BMessage doneMsg(DONE_SAVING);
+				doneMsg.AddPointer("Document",
+								   reinterpret_cast<void *>(Document()));
+				be_app->PostMessage(&doneMsg);
+			}
+			break;
+		}
 		case CDocument::NAME_CHANGED:
 		{
 			const char *name;
@@ -154,6 +189,8 @@ CDocWindow::MessageReceived(
 bool
 CDocWindow::QuitRequested()
 {
+	m_waitingToQuit = true;
+
 	if (m_document->CountWindows() == 1)
 	{
 		if (m_document->Modified())
@@ -180,13 +217,13 @@ CDocWindow::QuitRequested()
 			}
 			else if (result == 1)
 			{
+				m_waitingToQuit = false;
 				return false;
 			}
 			else if (result == 2)
 			{
 				m_document->Save();
-				if (m_document->Application()->CountDocuments() == 1)
-					be_app->PostMessage(B_QUIT_REQUESTED);
+				return false;
 			}
 		}
 	}

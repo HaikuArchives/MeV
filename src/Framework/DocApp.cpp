@@ -4,6 +4,8 @@
 
 #include "DocApp.h"
 
+#include "DocWindow.h"
+
 // Application Kit
 #include <Roster.h>
 // Interface Kit
@@ -21,7 +23,6 @@
 CDocApp::CDocApp(
 	const char *signature)
 	:	BApplication(signature),
-		m_waitingToQuit(false),
 		m_openPanel(NULL)
 {
 }
@@ -97,40 +98,15 @@ CDocApp::MessageReceived(
 {
 	switch (message->what)
 	{
-		case B_CANCEL:
+		case CDocWindow::DONE_SAVING:
 		{
 			CDocument *doc;
 			if (message->FindPointer("Document",
-									 reinterpret_cast<void **>(&doc)) == B_OK)
-			{
-				CRefCountObject::Release( doc );
-			}
-			m_waitingToQuit = false;
-			break;
-		}
-		case B_SAVE_REQUESTED:
-		{
-			CDocument *doc;
-			if (message->FindPointer("Document",
-									 reinterpret_cast<void **>(&doc)) == B_OK)
-			{
-				entry_ref directory;
-				const char *name;
-				if ((message->FindRef("directory", 0, &directory) == B_OK)
-				 && (message->FindString("name", 0, &name ) == B_OK))
-				{
-					BDirectory dir(&directory);
-					if (dir.InitCheck() != B_NO_ERROR)
-						return;
-					BEntry entry(&dir, name);
-					doc->SetEntry(&entry);
-					doc->Save();
-				}
-			}
-			if (m_waitingToQuit)
+									  reinterpret_cast<void **>(&doc)) == B_OK)
 			{
 				RemoveDocument(doc);
-				PostMessage(B_QUIT_REQUESTED);
+				if (CountDocuments() == 0)
+					PostMessage(B_QUIT_REQUESTED);
 			}
 			break;
 		}
@@ -144,8 +120,6 @@ CDocApp::MessageReceived(
 bool
 CDocApp::QuitRequested()
 {
-	m_waitingToQuit = true;
-
 	for (int32 i = 0; i < CountDocuments(); i++)
 	{
 		if (DocumentAt(i)->IsSaving())

@@ -91,6 +91,8 @@ public:							// Accessors
 	bool						InitCheck()
 								{ return m_valid; }
 
+	void						CancelSaving()
+								{ m_saving = false; }
 	/** Returns true if the document is currently being saved.
 		ie, if it has an open save panel */
 	bool						IsSaving() const

@@ -59,7 +59,9 @@ public:							// Constants
 								ACTIVATE = 'dwdA',
 
 								/** We lost selection */
-								SELECTED
+								SELECTED,
+
+								DONE_SAVING
 	};
 
 public:							// Constructor/Destructor
@@ -154,6 +156,8 @@ private:						// Instance Data
 
 	// the 'sub-name' of the window, ie the part after the colon
 	BString						m_name;
+
+	bool						m_waitingToQuit;
 
 private:						// Class Data
 
