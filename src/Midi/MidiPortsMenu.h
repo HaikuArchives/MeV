@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * DestinationConfigView.h (MeV/Midi)
+ * MidiPortsMenu.h (MeV/Midi)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -23,79 +23,64 @@
  *
  * ---------------------------------------------------------------------
  * History:
- *	10/13/2000	cell
+ *	12/01/2000	cell
  *		Original implementation
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
-#ifndef __C_MidiConfigView_H__
-#define __C_MidiConfigView_H__
+#ifndef __C_MidiPortsMenu_H__
+#define __C_MidiPortsMenu_H__
 
-#include "ConsoleView.h"
-
-// STL
-#include <map>
-
-class BPopUpMenu;
-class BTextControl;
+// Application Kit
+#include <Messenger.h>
+// Interface Kit
+#include <PopUpMenu.h>
 
 namespace Midi
 {
 
 class CMidiDestination;
-class CMidiPortsMenu;
 
-class CDestinationConfigView
-	:	public CConsoleView
+class CMidiPortsMenu
+	:	public BPopUpMenu
 {
 
 public:						// Constants
 
 	enum messages
 	{
-							CHANNEL_SELECTED = 'msvA'
+							CONSUMER_SELECTED = 'mcmA',
+
+							PRODUCER_SELECTED
 	};
 
 public:						// Constructor/Destructor
 
-							CDestinationConfigView(
-								BRect frame,
+							CMidiPortsMenu(
 								CMidiDestination *destination);
 
-	virtual					~CDestinationConfigView();
+	virtual					~CMidiPortsMenu();
 
-public:						// Accessors
+public:						// Operations
 
-	CMidiDestination *		Destination() const
-							{ return m_destination; }
+	void					SetTarget(
+								BMessenger target)
+							{ m_target = target; }
 
-public:						// CConsoleView Implementation
+public:						// BPopUpMenu Implementation
 
 	virtual void			AttachedToWindow();
 
-	virtual void			GetPreferredSize(
-								float *width,
-								float *height);
+private:					// Internal Operations
 
-	virtual void			MessageReceived(
-								BMessage *message);
-
-	virtual bool			SubjectReleased(
-								CObservable *subject);
-
-	virtual void			SubjectUpdated(
-								BMessage *message);
+	void					_update();
 
 private:					// Instance Data
 
 	CMidiDestination *		m_destination;
 
-	BPopUpMenu *			m_channelMenu;
-	CMidiPortsMenu *		m_portMenu;
+	BMessenger				m_target;
 };
 
 };
 
-#endif /* __C_DestinationConfigView_H__ */
+#endif /* __C_MidiPortsMenu_H__ */

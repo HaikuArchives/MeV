@@ -8,6 +8,7 @@
 #include "InternalSynth.h"
 #include "MidiDestination.h"
 #include "MidiModule.h"
+#include "MidiPortsMenu.h"
 
 // Interface Kit
 #include <Bitmap.h>
@@ -58,8 +59,7 @@ CDestinationConfigView::CDestinationConfigView(
 	stringView = new BStringView(labelRect, "", "Port:");
 	stringView->SetHighColor(tint_color(HighColor(), B_LIGHTEN_1_TINT));
 	AddChild(stringView);
-	m_portMenu = new BPopUpMenu("(None)");
-	m_portMenu->SetFont(be_plain_font);
+	m_portMenu = new CMidiPortsMenu(Destination());
 	fieldRect = Bounds();
 	fieldRect.InsetBy(2.0, 2.0);
 	fieldRect.top = labelRect.bottom + 2.0;
@@ -112,8 +112,9 @@ CDestinationConfigView::AttachedToWindow()
 
 	CConsoleView::AttachedToWindow();
 
-	m_channelMenu->SetTargetForItems(this);
-	_updatePortMenu();
+	BMessenger messenger(this);
+	m_channelMenu->SetTargetForItems(messenger);
+	m_portMenu->SetTarget(messenger);
 }
 
 void
@@ -135,21 +136,24 @@ CDestinationConfigView::MessageReceived(
 
 	switch (message->what)
 	{
-		case PORT_SELECTED:
+		case CMidiPortsMenu::CONSUMER_SELECTED:
 		{
-			D_MESSAGE((" -> PORT_SELECTED\n"));
+			D_MESSAGE((" -> CMidiPortsMenu::CONSUMER_SELECTED:\n"));
 
 			CWriteLock lock(Destination());
 			int32 consumerID;
 			if (message->FindInt32("consumer", &consumerID) != B_OK)
 				return;
-			BMenuItem *item;
-			if (message->FindPointer("source", (void **)&item) != B_OK)
-				return;
-			item->SetMarked(true);
 
-			BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(consumerID);
-			Destination()->ConnectTo(consumer);
+			if (consumerID == 0)
+			{
+				Destination()->Disconnect();
+			}
+			else
+			{
+				BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(consumerID);
+				Destination()->ConnectTo(consumer);
+			}
 			break;
 		}
 		case CHANNEL_SELECTED:
@@ -200,59 +204,6 @@ CDestinationConfigView::SubjectUpdated(
 	int32 destAttrs;
 	if (message->FindInt32("DestAttrs", &destAttrs) != B_OK)
 		return;
-}
-
-// ---------------------------------------------------------------------------
-// Internal Operations
-
-void
-CDestinationConfigView::_updatePortMenu()
-{
-	ASSERT(Destination() != NULL);
-
-	BMidiConsumer *consumer = NULL;
-	BMenuItem *item;
-
-	// Add the internal Synth
-	consumer = CMidiModule::Instance()->InternalSynth();
-	BMessage *message = new BMessage(PORT_SELECTED);
-	message->AddInt32("consumer", consumer->ID());
-	BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
-									  B_MINI_ICON - 1.0), B_CMAP8);
-	if (CMidiModule::Instance()->GetIconFor(consumer, B_MINI_ICON,
-											 icon) != B_OK)
-	{
-		delete icon;
-		icon = NULL;
-	}
-	m_portMenu->AddItem(item = new CIconMenuItem(consumer->Name(), message,
-												  icon));
-	if (Destination()->IsConnectedTo(consumer))
-		item->SetMarked(true);
-
-	int32 id = 0;
-	while ((consumer = CMidiModule::Instance()->GetNextConsumer(&id)) != NULL)
-	{
-		if (consumer->IsValid())
-		{
-			BMessage *message = new BMessage(PORT_SELECTED);
-			message->AddInt32("consumer", id);
-			BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
-											  B_MINI_ICON - 1.0), B_CMAP8);
-			if (CMidiModule::Instance()->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
-			{
-				delete icon;
-				icon = NULL;
-			}
-			m_portMenu->AddItem(item = new CIconMenuItem(consumer->Name(),
-														  message, icon));
-			if (Destination()->IsConnectedTo(consumer))
-				item->SetMarked(true);
-			consumer->Release();
-		}
-	}
-
-	m_portMenu->SetTargetForItems(this);
 }
 
 // END - DestinationConfigView.cpp
