@@ -38,9 +38,9 @@
 #ifndef __C_VelocityEditor_H__
 #define __C_VelocityEditor_H__
 
-#include "TrackEditFrame.h"
-#include "EventEditor.h"
 #include "DocWindow.h"
+#include "EventEditor.h"
+#include "StripFrameView.h"
 
 class EventListUndoAction;
 
@@ -68,7 +68,7 @@ public:
 		// ---------- Constructor
 
 	CVelocityEditor(	BLooper			&inLooper,
-					CTrackEditFrame &frame,
+					CStripFrameView &frame,
 					BRect			rect );
 
 		// ---------- Hooks

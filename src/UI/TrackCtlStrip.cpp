@@ -1226,7 +1226,7 @@ CTimeSigEventHandler		timeSigEventHandler;
 
 CTrackCtlStrip::CTrackCtlStrip(
 	BLooper	&looper,
-	CTrackEditFrame	&frame,
+	CStripFrameView	&frame,
 	BRect rect,
 	CEventTrack *track,
 	char *name)
@@ -1241,7 +1241,6 @@ CTrackCtlStrip::CTrackCtlStrip(
 	SetHandlerFor(EvtType_Tempo, new CTempoEventHandler());
 
 	CalcZoom();
-	SetZoomTarget((CObserver *)this);
 
 		// Make the label view on the left-hand side
 	SetLabelView(new CStripLabelView(BRect(-1.0, 0.0, 20.0, rect.Height()),
@@ -1476,32 +1475,6 @@ CTrackCtlStrip::MessageReceived(
 {
 	switch (message->what)
 	{
-		case ZoomOut_ID:
-		{	
-			if (BarHeight() < 32)
-			{
-				m_barHeight++;
-				CalcZoom();
-				Hide();
-				SetScrollRange(scrollRange.x, scrollValue.x,
-							   m_stripLogicalHeight, scrollValue.y);
-				Show();
-			}
-			break;
-		}
-		case ZoomIn_ID:
-		{
-			if (BarHeight() > 10)
-			{
-				m_barHeight--;
-				CalcZoom();
-				Hide();
-				SetScrollRange(scrollRange.x, scrollValue.x,
-							   m_stripLogicalHeight, scrollValue.y);
-				Show();
-			}
-			break;
-		}	
 		case MeVDragMsg_ID:
 		{
 			if (m_dragType == DragType_DropTarget)
@@ -1557,10 +1530,8 @@ CTrackCtlStrip::MessageReceived(
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Linear editor mouse movement handler
-
-void CTrackCtlStrip::MouseMoved(
+void
+CTrackCtlStrip::MouseMoved(
 	BPoint			point,
 	ulong			transit,
 	const BMessage	*dragMsg )
@@ -1675,6 +1646,22 @@ CTrackCtlStrip::ConstructEvent(
 {
 	return ConstructEvent(point,
 						  TrackWindow()->NewEventType(EvtType_Sequence));
+}
+
+void
+CTrackCtlStrip::ZoomChanged(
+	int32 diff)
+{
+	m_barHeight += 2 * diff;
+	if (m_barHeight > 32)
+		m_barHeight = 32;
+	else if (m_barHeight < 10)
+		m_barHeight = 10;
+
+	CalcZoom();
+	SetScrollRange(scrollRange.x, scrollValue.x,
+				   m_stripLogicalHeight, scrollValue.y);
+	Invalidate();
 }
 
 bool

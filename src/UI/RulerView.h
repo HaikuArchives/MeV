@@ -42,7 +42,7 @@
 
 #include "Scroller.h"
 
-class CTrackEditFrame;
+class CStripFrameView;
 
 class CRulerView :
 	public CScrollerTarget
@@ -53,7 +53,7 @@ public:							// Constructor/Destructor
 								CRulerView(
 									BRect frame,
 									const char *name,
-									CTrackEditFrame *frameView,
+									CStripFrameView *frameView,
 									ulong resizingModeMask,
 									ulong flags );
 
@@ -65,7 +65,7 @@ public:							// Operations
 
 protected:						// Instance Data
 
-	CTrackEditFrame *			m_frameView;
+	CStripFrameView *			m_frameView;
 };
 
 #endif /* __C_TrackEditFrame_H__ */

@@ -45,17 +45,15 @@ CLinearNoteEventHandler::C_MIXED_COLORS = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x
 
 CLinearEditor::CLinearEditor(
 	BLooper &looper,
-	CTrackEditFrame	&frame,
+	CStripFrameView	&frame,
 	BRect rect)
-	:	CEventEditor(looper, frame, rect, "Linear Editor", true, true),
-		m_verticalZoom(1),
+	:	CEventEditor(looper, frame, rect, "Piano Roll", true, true),
 		m_whiteKeyStep(8)
 {
 	SetHandlerFor(EvtType_Note, &linearNoteHandler);
 	SetHandlerFor(EvtType_End, &gEndEventHandler);
 
 	CalcZoom();
-	SetZoomTarget((CObserver *)this);
 
 	// Make the label view on the left-hand side
 	SetLabelView(new CPianoKeyboardView(BRect(-1.0, 0.0, 20.0, rect.Height()),
@@ -254,39 +252,8 @@ void
 CLinearEditor::MessageReceived(
 	BMessage *message)
 {
-	switch (message->what) {
-		case ZoomOut_ID:
-		{
-			if (m_whiteKeyStep < 12)
-			{
-				BRect r(Frame());
-				float sValue = (ScrollValue(B_VERTICAL) + (r.Height()) / 2) / m_whiteKeyStep;
-				m_whiteKeyStep++;
-				CalcZoom();
-				Hide();
-				SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
-							   (sValue * m_whiteKeyStep) - (r.Height()) / 2);
-				LabelView()->Invalidate();
-				Show();
-			}
-			break;
-		}
-		case ZoomIn_ID:
-		{
-			if (m_whiteKeyStep > 4) 
-			{
-				BRect r(Bounds());
-				float sValue = (ScrollValue(B_VERTICAL) + (r.Height()) / 2) / m_whiteKeyStep;
-				m_whiteKeyStep--;
-				CalcZoom();
-				Hide();
-				SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
-							   (sValue * m_whiteKeyStep) - (r.Height()) / 2);
-				LabelView()->Invalidate();
-				Show();
-			}
-			break;
-		}
+	switch (message->what)
+	{
 		case Update_ID:
 		case Delete_ID:
 		{
@@ -435,6 +402,27 @@ CLinearEditor::SetScrollValue(
 {
 	CStripView::SetScrollValue(inScrollValue, inOrient);
 	LabelView()->ScrollTo(0.0, scrollValue.y);
+}
+
+void
+CLinearEditor::ZoomChanged(
+	int32 diff)
+{
+	BRect r(Frame());
+	float scroll = (ScrollValue(B_VERTICAL) + (r.Height()) / 2) / m_whiteKeyStep;
+
+	m_whiteKeyStep += diff;
+	if (m_whiteKeyStep > 12)
+		m_whiteKeyStep = 12;
+	else if (m_whiteKeyStep < 4)
+		m_whiteKeyStep = 4;
+
+	Hide();
+	CalcZoom();
+	SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
+				   (scroll * m_whiteKeyStep) - (r.Height()) / 2);
+	Show();
+	LabelView()->Invalidate();
 }
 
 // ---------------------------------------------------------------------------

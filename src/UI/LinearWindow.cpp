@@ -46,8 +46,9 @@
 CLinearWindow::CLinearWindow(
 	BRect frame,
 	CMeVDoc *document,
-	CEventTrack *track)
-	:	CTrackWindow(frame, document, track)
+	CEventTrack *track,
+	bool hasSettings)
+	:	CTrackWindow(frame, document, track, hasSettings)
 {
 	BRect rect(Bounds());
 
@@ -80,11 +81,14 @@ CLinearWindow::CLinearWindow(
 	m_timeView->SetFontSize(10);
 	view->AddChild(m_timeView);
 
-	// Now, create some strips for test purposes
-	AddStrip("Piano Roll", 0.5);
-	AddStrip("Velocity", 0.25);
-	AddStrip("Sequence", 0.25);
-	stripFrame->PackStrips();
+	if (!hasSettings)
+	{
+		// create default strips
+		AddStrip("Piano Roll", 0.5);
+		AddStrip("Velocity", 0.25);
+		AddStrip("Sequence", 0.25);
+		stripFrame->PackStrips();
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -207,19 +211,6 @@ CLinearWindow::MessageReceived(
 				Track()->SelectAll();
 			break;
 		}
-		case MENU_NEW_WINDOW:
-		{
-			CLinearWindow *window;
-			window = new CLinearWindow(BRect(60, 60, 340, 300),
-									   Document(), Track() );
-			window->Show();
-			break;
-		}
-		case MENU_PROGRAM_SETTINGS:
-		{
-			((CMeVApp *)be_app)->ShowPrefs();
-			break;
-		}
 		case MENU_PLAY:
 		{
 			if (CPlayerControl::IsPlaying(Document()))
@@ -285,7 +276,7 @@ CLinearWindow::OnUpdate(
 		trackID = -1;
 
 	if (trackHint & CTrack::Update_Name)
-		CalcWindowTitle(track->Name());
+		CalcWindowTitle(NULL, track->Name());
 }
 
 bool
@@ -427,22 +418,7 @@ CLinearWindow::AddMenuBar()
 	menuBar->AddItem(menu);
 
 	// Create the 'Window' menu
-	menu = new BMenu("Window");
-	menu->AddItem(new BMenuItem("New Window",
-								new BMessage(MENU_NEW_WINDOW), 'W',
-								B_SHIFT_KEY));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Show Tracks",
-								new BMessage(MENU_TRACKLIST), 'L'));
-	menu->AddItem(new BMenuItem("Show Inspector",
-								new BMessage(MENU_INSPECTOR), 'I'));
-	menu->AddItem(new BMenuItem("Show Grid",
-								new BMessage(MENU_GRIDWINDOW), 'G'));
-	menu->AddItem(new BMenuItem("Show Transport",
-								new BMessage(MENU_TRANSPORT), 'T'));
-	menu->AddSeparatorItem();
-	SetWindowMenu(menu);
-	menuBar->AddItem(menu);
+	CreateWindowMenu(menuBar);
 
 	// Add the menus
 	AddChild(menuBar);
@@ -527,7 +503,7 @@ CLinearWindow::AddFrameView(
 	CTrack *track)
 {
 	// Create the frame for the strips, and the scroll bar
-	stripFrame = new CTrackEditFrame(BRect(frame.left,
+	stripFrame = new CStripFrameView(BRect(frame.left,
 										   frame.top + DEFAULT_RULER_HEIGHT,
 										   frame.right, frame.bottom),
 									 (char *)NULL, track, B_FOLLOW_ALL);

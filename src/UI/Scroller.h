@@ -57,7 +57,7 @@ public:							// Constructor/Destructor
 public:							// Accessors
 
 	float						ScrollValue(
-									orientation posture)
+									orientation posture) const
 								{
 									return (posture == B_HORIZONTAL) ?
 											scrollValue.x :

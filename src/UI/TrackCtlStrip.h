@@ -38,9 +38,9 @@
 #ifndef __C_TrackCtlStrip_H__
 #define __C_TrackCtlStrip_H__
 
-#include "TrackEditFrame.h"
-#include "EventEditor.h"
 #include "DocWindow.h"
+#include "EventEditor.h"
+#include "StripFrameView.h"
 
 // ---------------------------------------------------------------------------
 // Linear editor strip view
@@ -59,7 +59,7 @@ public:							// Constructor/Destructor
 
 								CTrackCtlStrip(
 									BLooper &looper,
-									CTrackEditFrame &frame,
+									CStripFrameView &frame,
 									BRect rect,
 									CEventTrack *track,
 									char *name = "Track");
@@ -119,6 +119,9 @@ public:							// CEventEditor Implementation
 
 	virtual bool				SupportsShadowing()
 								{ return true; }
+
+	virtual void				ZoomChanged(
+									int32 diff);
 
 public:							// Internal Operations
 

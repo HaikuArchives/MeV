@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * StripView.cpp (MeV/StripView)
+ * StripView.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "StripView.h"
@@ -7,6 +7,8 @@
 #include "BorderView.h"
 #include "BorderButton.h"
 #include "Idents.h"
+#include "IFFReader.h"
+#include "IFFWriter.h"
 #include "ResourceUtils.h"
 #include "StripFrameView.h"
 
@@ -38,7 +40,8 @@ CStripView::CStripView(
 		rightSpacer(NULL),
 		magIncButton(NULL),
 		magDecButton(NULL),
-		m_removable(true)
+		m_removable(true),
+		m_verticalZoom(0)
 {
 	D_ALLOC(("CStripView::CStripView('%s')\n", name));
 	
@@ -63,7 +66,7 @@ CStripView::CStripView(
 			magRect.top = magRect.bottom - B_H_SCROLL_BAR_HEIGHT;
 			magDecButton = new CBorderButton(magRect, NULL,
 											 ResourceUtils::LoadImage("SmallMinus"),
-											 new BMessage(ZoomIn_ID),
+											 new BMessage(ZoomOut_ID),
 											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 											 B_WILL_DRAW);
 			m_container->AddChild(magDecButton);
@@ -71,7 +74,7 @@ CStripView::CStripView(
 			magRect.OffsetBy(0.0, - B_H_SCROLL_BAR_HEIGHT);
 			magIncButton = new CBorderButton(magRect, NULL, 
 											 ResourceUtils::LoadImage("SmallPlus"),
-											 new BMessage(ZoomOut_ID),
+											 new BMessage(ZoomIn_ID),
 											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 											 B_WILL_DRAW);
 			m_container->AddChild(magIncButton);
@@ -93,7 +96,6 @@ CStripView::CStripView(
 	}
 
 	m_container->SetTarget(this);
-	SetZoomTarget(this);
 }
 
 // ---------------------------------------------------------------------------
@@ -203,21 +205,83 @@ CStripView::SetSelectionVisible(
 }
 
 void
-CStripView::SetZoomTarget(
-	BHandler *handler)
+CStripView::ZoomBy(
+	int32 diff)
 {
-	if (magIncButton)
+	if (diff != 0)
 	{
-		magIncButton->SetTarget(handler);
-	}
-	if (magDecButton)
-	{
-		magDecButton->SetTarget(handler);
+		m_verticalZoom += diff;
+		ZoomChanged(diff);
 	}
 }
 
 // ---------------------------------------------------------------------------
+// Serialization
+
+void
+CStripView::ExportSettings(
+	BMessage *settings) const
+{
+	settings->AddBool("removable", m_removable);
+	settings->AddFloat("scroll_value", ScrollValue(B_VERTICAL));
+	settings->AddInt32("zoom_value", ZoomValue());
+}
+
+void
+CStripView::ImportSettings(
+	const BMessage *settings)
+{
+	settings->FindBool("removable", &m_removable);
+	settings->FindInt32("zoom_value", &m_verticalZoom);
+	ZoomChanged(m_verticalZoom);
+	float scroll = 0.0;
+	settings->FindFloat("scroll_value", &scroll);
+	SetScrollValue(scroll, B_VERTICAL);
+}
+
+void
+CStripView::ReadState(
+	CIFFReader &reader,
+	BMessage *settings)
+{
+	int8 removable;
+	reader >> removable;
+	settings->AddBool("removable", (bool)removable);
+	float scroll;
+	reader >> scroll;
+	settings->AddFloat("scroll_value", scroll);
+	int32 zoom;
+	reader >> zoom;
+	settings->AddInt32("zoom_value", zoom);
+}
+
+void
+CStripView::WriteState(
+	CIFFWriter &writer,
+	const BMessage *settings)
+{
+	int8 removable;
+	settings->FindBool("removable", (bool *)&removable);
+	writer << removable;
+	float scroll;
+	settings->FindFloat("scroll_value", &scroll);
+	writer << scroll;
+	int32 zoom;
+	settings->FindInt32("zoom_value", &zoom);
+	writer << zoom;
+}
+
+// ---------------------------------------------------------------------------
 // CScrollTarget Implementation
+
+void
+CStripView::AllAttached()
+{
+	if (magDecButton)
+		magDecButton->SetTarget(this);
+	if (magIncButton)
+		magIncButton->SetTarget(this);
+}
 
 void
 CStripView::AttachedToWindow()
@@ -251,6 +315,20 @@ CStripView::MessageReceived(
 			if (FrameView()->RemoveStrip(this))
 				delete m_container;
 			FrameView()->PackStrips();
+			break;
+		}
+		case ZoomIn_ID:
+		{
+			D_MESSAGE((" -> ZoomIn_ID\n"));
+
+			ZoomBy(1);
+			break;
+		}
+		case ZoomOut_ID:
+		{
+			D_MESSAGE((" -> ZoomOut_ID\n"));
+
+			ZoomBy(-1);
 			break;
 		}
 		default:

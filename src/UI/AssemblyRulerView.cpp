@@ -5,7 +5,7 @@
 #include "AssemblyRulerView.h"
 #include "DataSnap.h"
 #include "EventTrack.h"
-#include "TrackEditFrame.h"
+#include "StripFrameView.h"
 #include "ResourceUtils.h"
 
 // Support Kit
@@ -21,7 +21,7 @@
 
 CAssemblyRulerView::CAssemblyRulerView(
 	BLooper &looper,
-	CTrackEditFrame *frameView,
+	CStripFrameView *frameView,
 	CEventTrack *track,
 	BRect frame,
 	const char *name,

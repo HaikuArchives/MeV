@@ -54,7 +54,7 @@
 class CAbstractEventHandler;
 class CEventTrack;
 class CPolygon;
-class CTrackEditFrame;
+class CStripFrameView;
 class EventMarker;
 class EventOp;
 
@@ -87,7 +87,7 @@ public:							// Constructor/Destructor
 
 								CEventEditor(
 									BLooper	&looper,
-									CTrackEditFrame	&frame,
+									CStripFrameView	&frame,
 									BRect rect,
 									const char *name,
 									bool makeScroller = false,
@@ -95,7 +95,7 @@ public:							// Constructor/Destructor
 
 								CEventEditor(
 									BLooper &looper,
-									CTrackEditFrame &frame,
+									CStripFrameView &frame,
 									BRect rect,
 									CEventTrack *track,
 									const char *name,
@@ -182,7 +182,7 @@ public:							// Accessors
 	EventOp *					PendingOperation()
 								{ return TrackWindow()->PendingOperation(); }
 
-	CTrackEditFrame	&			TrackEditFrame() const
+	CStripFrameView	&			FrameView() const
 								{ return m_frame; }
 
 	// Returns the address of the track associated with this editor
@@ -297,7 +297,7 @@ protected:						// Instance Data
 	// Which track we're editing
 	CEventTrack *				m_track;
 
-	CTrackEditFrame	&			m_frame;
+	CStripFrameView	&			m_frame;
 
 	// Array of handlers for each event type
 	typedef map<event_type, CAbstractEventHandler *> handler_map;

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * TrackWindow.cpp (MeV/User Interface)
+ * TrackWindow.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "TrackWindow.h"
@@ -9,8 +9,11 @@
 #include "EventEditor.h"
 #include "EventTrack.h"
 #include "Idents.h"
+#include "IFFReader.h"
+#include "IFFWriter.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
+#include "MeVFileID.h"
 #include "OperatorWindow.h"
 #include "PlayerControl.h"
 #include "QuickKeyMenuItem.h"
@@ -20,7 +23,6 @@
 #include "Tool.h"
 #include "ToolBar.h"
 #include "TrackEditFrame.h"
-#include "TrackListWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -49,7 +51,8 @@ CTrackWindow::DEFAULT_RULER_HEIGHT = 12.0;
 CTrackWindow::CTrackWindow(
 	BRect frame,
 	CMeVDoc *document,
-	CEventTrack *inTrack)
+	CEventTrack *inTrack,
+	bool hasSettings)
 	:	CDocWindow(frame, document,
 				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL,
 				   B_DOCUMENT_WINDOW,
@@ -60,15 +63,11 @@ CTrackWindow::CTrackWindow(
 		trackOp(NULL),
 		m_newEventType(EvtType_Count)
 {
-	D_ALLOC(("TrackWindow::TrackWindow()\n"));
+	D_ALLOC(("TrackWindow::TrackWindow(new)\n"));
 
 	track = inTrack;
 	track->Acquire();
 	
-	BMessage *trackMsg = new BMessage('0000');
-	trackMsg->AddInt32("TrackID", track->GetID());
-	trackMsg->AddInt32("DocumentID", (int32)document);
-
 	SetPulseRate(100000);
 }
 
@@ -157,6 +156,57 @@ CTrackWindow::FinishTrackOperation(
 		CRefCountObject::Release( trackOp );
 	}
 	trackOp = NULL;
+}
+
+// ---------------------------------------------------------------------------
+// Serialization
+
+void
+CTrackWindow::ExportSettings(
+	BMessage *settings) const
+{
+	PRINT(("CTrackWindow::ExportSettings()\n"));
+
+	settings->AddRect("frame", Frame());
+	stripFrame->ExportSettings(settings);
+}
+
+void
+CTrackWindow::ImportSettings(
+	const BMessage *settings)
+{
+	BRect frame(Frame());
+	settings->FindRect("frame", &frame);
+	ResizeTo(frame.Width(), frame.Height());
+	MoveTo(frame.LeftTop());
+
+	stripFrame->ImportSettings(settings);
+}
+
+void
+CTrackWindow::ReadState(
+	CIFFReader &reader,
+	BMessage *settings)
+{
+	BRect frame;
+	reader >> frame.left >> frame.top >> frame.right >> frame.bottom;
+	settings->AddRect("frame", frame);
+
+	CStripFrameView::ReadState(reader, settings);
+}
+
+void
+CTrackWindow::WriteState(
+	CIFFWriter &writer,
+	const BMessage *settings)
+{
+	ASSERT(settings != NULL);
+
+	BRect frame;
+	settings->FindRect("frame", &frame);
+	writer << frame.left << frame.top << frame.right << frame.bottom;
+
+	CStripFrameView::WriteState(writer, settings);
 }
 
 // ---------------------------------------------------------------------------
@@ -270,16 +320,6 @@ CTrackWindow::MessageReceived(
 			be_app->PostMessage( B_ABOUT_REQUESTED );
 			break;
 		}
-		case MENU_NEW:
-		{
-			((CDocApp *)be_app)->NewDocument();
-			break;
-		}
-		case MENU_OPEN:
-		{
-			((CDocApp *)be_app)->OpenDocument();
-			break;
-		}
 		case MENU_SAVE:
 		{
 			Document()->Save();
@@ -288,11 +328,6 @@ CTrackWindow::MessageReceived(
 		case MENU_SAVE_AS:
 		{
 			Document()->SaveAs();
-			break;
-		}
-		case MENU_IMPORT:
-		{
-			((CMeVApp *)be_app)->ImportDocument();
 			break;
 		}
 		case MENU_EXPORT:
@@ -328,41 +363,44 @@ CTrackWindow::MessageReceived(
 		}
 		case MENU_TRACKLIST:
 		{
-			((CMeVApp *)be_app)->ShowTrackList(((CMeVApp *)be_app)->TrackList() == NULL);
-			Activate();				// In case window was deactivated
+			bool show = (Document()->Application()->TrackList() == NULL);
+			Document()->Application()->ShowTrackList(show);
+			// In case window was deactivated
+			Activate();
 			break;
 		}
 		case MENU_INSPECTOR:
 		{
-			((CMeVApp *)be_app)->ShowInspector( ((CMeVApp *)be_app)->Inspector() == NULL );
-			Activate();				// In case window was deactivated
+			bool show = (Document()->Application()->Inspector() == NULL);
+			Document()->Application()->ShowInspector(show);
+			// In case window was deactivated
+			Activate();
 			break;
 		}
 		case MENU_GRIDWINDOW:
 		{
-			((CMeVApp *)be_app)->ShowGridWindow( ((CMeVApp *)be_app)->GridWindow() == NULL );
-			Activate();				// In case window was deactivated
+			bool show = (Document()->Application()->GridWindow() == NULL);
+			Document()->Application()->ShowGridWindow(show);
+			// In case window was deactivated
+			Activate();
 			break;
 		}
 		case MENU_TRANSPORT:
 		{
-			((CMeVApp *)be_app)->ShowTransportWindow( ((CMeVApp *)be_app)->TransportWindow() == NULL );
-			Activate();				// In case window was deactivated
-			break;
-		}
-		case MENU_ABOUT_PLUGINS:
-		{
-			be_app->PostMessage( message );
+			bool show = (Document()->Application()->TransportWindow() == NULL);
+			Document()->Application()->ShowTransportWindow(show);
+			// In case window was deactivated
+			Activate();
 			break;
 		}
 		case ZoomOut_ID:
 		{
-			stripFrame->ZoomOut();
+			stripFrame->ZoomBy(-1);
 			break;
 		}
 		case ZoomIn_ID:
 		{
-			stripFrame->ZoomIn();
+			stripFrame->ZoomBy(1);
 			break;
 		}
 		case MENU_PAUSE:
@@ -525,11 +563,27 @@ CTrackWindow::MessageReceived(
 	}
 }
 
+bool
+CTrackWindow::QuitRequested()
+{
+	PRINT(("CTrackWindow<%s>::QuitRequested()\n", BWindow::Name()));
+
+	BMessage *message = Track()->GetWindowSettings();
+	if (message != NULL)
+		delete message;
+	message = new BMessage();
+	ExportSettings(message);
+	Track()->SetWindowSettings(message);
+
+	return CDocWindow::QuitRequested();
+}
+
 void
 CTrackWindow::WindowActivated(
 	bool active)
 {
 	CDocWindow::WindowActivated(active);
+
 	if (active)
 	{
 		SetPulseRate(70000);
@@ -551,21 +605,70 @@ void
 CTrackWindow::OnUpdate(
 	BMessage *message)
 {
-	int32 trackHint;
-	int32 docHint;
-	int32 trackID;
-
-	if (message->FindInt32("TrackID", 0, &trackID) != B_OK)
-		trackID = -1;
-	if (message->FindInt32("TrackAttrs", 0, &trackHint) != B_OK)
-		trackHint = 0;
-	if (message->FindInt32("DocAttrs", 0, &docHint) != B_OK)
-		docHint = 0;
 }
 
 // ---------------------------------------------------------------------------
 // Internal Operations
 
+void
+CTrackWindow::CreateFileMenu(
+	BMenuBar *menuBar)
+{
+	BMenu *menu, *submenu;
+	BMenuItem *item;
+
+	// Create the file menu
+	menu = new BMenu("File");
+	menu->AddItem(item = new BMenuItem("New", new BMessage(MENU_NEW)));
+	item->SetTarget(be_app);
+	menu->AddItem(item = new BMenuItem("Open...", new BMessage(MENU_OPEN), 'O'));
+	item->SetTarget(be_app);
+	menu->AddItem(new BMenuItem("Close Window", new BMessage(B_QUIT_REQUESTED), 'W'));
+	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Save", new BMessage(MENU_SAVE), 'S'));
+	menu->AddItem(new BMenuItem("Save As...", new BMessage(MENU_SAVE_AS)));
+	menu->AddSeparatorItem();
+
+	menu->AddItem(item = new BMenuItem("Import...", new BMessage(MENU_IMPORT)));
+	item->SetTarget(be_app);
+	submenu = new BMenu("Export");
+	Document()->Application()->BuildExportMenu(submenu);
+	if (submenu->CountItems() <= 0)
+		submenu->SetEnabled(false);
+	menu->AddItem(new BMenuItem(submenu));
+	menu->AddSeparatorItem();
+
+	menu->AddItem(item = new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS)));
+	item->SetTarget(be_app);
+	menu->AddItem(item = new BMenuItem("Help..", NULL));
+	item->SetEnabled(false);
+	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT), 0));
+	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));
+	menuBar->AddItem(menu);
+}
+	
+void
+CTrackWindow::CreateWindowMenu(
+	BMenuBar *menuBar)
+{
+	BMenu *menu;
+
+	// Create the file menu
+	menu = new BMenu("Window");
+	menu->AddItem(new BMenuItem("Show Tracks",
+								new BMessage(MENU_TRACKLIST), 'L'));
+	menu->AddItem(new BMenuItem("Show Inspector",
+								new BMessage(MENU_INSPECTOR), 'I'));
+	menu->AddItem(new BMenuItem("Show Grid",
+								new BMessage(MENU_GRIDWINDOW), 'G'));
+	menu->AddItem(new BMenuItem("Show Transport",
+								new BMessage(MENU_TRANSPORT), 'T'));
+	menu->AddSeparatorItem();
+	SetWindowMenu(menu);
+	menuBar->AddItem(menu);
+}
+	
 void
 CTrackWindow::UpdateActiveSelection(
 	bool active)
@@ -577,40 +680,9 @@ CTrackWindow::UpdateActiveSelection(
 	}
 }
 
-void
-CTrackWindow::CreateFileMenu(
-	BMenuBar *menus)
-{
-	BMenu *menu, *submenu;
-	BMenuItem *item;
+// ---------------------------------------------------------------------------
+// Filter Function
 
-	// Create the file menu
-	menu = new BMenu("File");
-	menu->AddItem(new BMenuItem("New", new BMessage(MENU_NEW)));
-	menu->AddItem(new BMenuItem("Open...", new BMessage(MENU_OPEN), 'O'));
-	menu->AddItem(new BMenuItem("Close Window", new BMessage(B_QUIT_REQUESTED), 'W'));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Save", new BMessage(MENU_SAVE), 'S'));
-	menu->AddItem(new BMenuItem("Save As...", new BMessage(MENU_SAVE_AS)));
-	menu->AddSeparatorItem();
-
-	submenu = new BMenu("Export");
-	Document()->Application()->BuildExportMenu(submenu);
-	if (submenu->CountItems() <= 0)
-		submenu->SetEnabled(false);
-
-	menu->AddItem(new BMenuItem("Import...", new BMessage(MENU_IMPORT)));
-	menu->AddItem(new BMenuItem(submenu));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS)));
-	menu->AddItem(item = new BMenuItem("Help..", NULL));
-	item->SetEnabled(false);
-	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT), 0));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));
-	menus->AddItem(menu);
-}
-	
 filter_result
 DefocusTextFilterFunc(
 	BMessage *msg,

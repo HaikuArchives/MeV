@@ -40,9 +40,7 @@
 
 #include "TrackWindow.h"
 
-//class CTextDisplay;
 class CToolBar;
-//class CColumnField;
 
 class CAssemblyWindow : 
 	public CTrackWindow 
@@ -52,7 +50,8 @@ public:							// Constructor/Destructor
 
 								CAssemblyWindow(
 									BRect frame,
-									CMeVDoc *document);
+									CMeVDoc *document,
+									bool hasSettings = false);
 
 								~CAssemblyWindow();
 

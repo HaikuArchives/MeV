@@ -16,7 +16,7 @@
 
 CContinuousValueEditor::CContinuousValueEditor(
 	BLooper			&inLooper,
-	CTrackEditFrame	&inFrame,
+	CStripFrameView	&inFrame,
 	BRect			rect,
 	const char		*name )
 	:	CEventEditor(	inLooper, inFrame, rect, name, true, true )

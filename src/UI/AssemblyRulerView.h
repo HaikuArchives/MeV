@@ -65,7 +65,7 @@ public:							// Constructor/Destructor
 
 								CAssemblyRulerView(
 									BLooper &looper,
-									CTrackEditFrame *frameView,
+									CStripFrameView *frameView,
 									CEventTrack	*track,
 									BRect frame,
 									const char *name,

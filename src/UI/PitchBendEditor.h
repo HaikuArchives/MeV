@@ -55,7 +55,7 @@ public:
 		// ---------- Constructor
 
 	CPitchBendEditor(	BLooper			&inLooper,
-					CTrackEditFrame &frame,
+					CStripFrameView &frame,
 					BRect			rect );
 					
 		// ---------- Hooks
@@ -69,6 +69,8 @@ public:
 
 		// returns pitch for y-pos and optionally clamp to legal values
 	long ViewCoordsToValue( int yPos, bool limit = true );
+
+	virtual void ZoomChanged(int32 diff);
 };
 
 #endif /* __C_PitchBendEditor_H__ */

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * TrackWindow.h (MeV/User Interface)
+ * TrackWindow.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -34,6 +34,8 @@
  *		Quick fix of annoying seg-fault during MenuBeginning
  *	07/02/2000	cell
  *		new event duration is now same as the grid size
+ *	10/08/2000	cell
+ *		Added serialization caps.
  * ---------------------------------------------------------------------
  * To Do:
  * Further investigate menubeginning no-item seg-fault bug. 
@@ -46,7 +48,7 @@
 #include "MeVDoc.h"
 
 class CScroller;
-class CTrackEditFrame;
+class CStripFrameView;
 class CTrackOperation;
 
 // ---------------------------------------------------------------------------
@@ -56,8 +58,7 @@ class CTrackWindow :
 	public CDocWindow,
 	public CObserver
 {
-
-public:							// Constants
+	friend class CStripFrameView;
 
 public:							// Constants
 
@@ -78,12 +79,19 @@ public:							// Constants
 
 	static const float			DEFAULT_RULER_HEIGHT;
 
+	enum
+	{
+								FILE_CHUNK_ID = 'tkwd'
+	};
+
 public:							// Constructor/Destructor
 
+	/** Constructor for a new window */
 								CTrackWindow(
 									BRect frame,
 									CMeVDoc *document,
-									CEventTrack *inTrack);
+									CEventTrack *track,
+									bool hasSettings = false);
 
 	virtual						~CTrackWindow();
 
@@ -148,8 +156,21 @@ public:							// Operations
 	void						FinishTrackOperation(
 									int32 commit);
 
-	// Show the editor preference window
-	void						ShowPrefs();
+public:							// Serialization
+
+	virtual void				ExportSettings(
+									BMessage *settings) const;
+
+	virtual void				ImportSettings(
+									const BMessage *settings);
+
+	static void					ReadState(
+									CIFFReader &reader,
+									BMessage *message);
+
+	static void					WriteState(
+									CIFFWriter &writer,
+									const BMessage *settings);
 
 public:							// CDocWindow Implementation
 
@@ -162,6 +183,8 @@ public:							// CDocWindow Implementation
 
 	virtual void				MessageReceived(
 									BMessage* message);
+
+	virtual bool				QuitRequested();
 
 	virtual void				WindowActivated(
 									bool active);
@@ -183,9 +206,12 @@ protected:						// Internal Operations
 	void						CreateFileMenu(
 									BMenuBar *menuBar);
 
+	void						CreateWindowMenu(
+									BMenuBar *menuBar);
+
 protected:						// Instance Data
 
-	CTrackEditFrame	*			stripFrame;
+	CStripFrameView	*			stripFrame;
 
 	CEventTrack *				track;
 

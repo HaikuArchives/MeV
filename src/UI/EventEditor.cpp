@@ -30,7 +30,7 @@ CEndEventHandler		gEndEventHandler;
 
 CEventEditor::CEventEditor(
 	BLooper	&looper,
-	CTrackEditFrame	&frame,
+	CStripFrameView	&frame,
 	BRect rect,
 	const char *name,
 	bool makeScroller = false,
@@ -49,7 +49,7 @@ CEventEditor::CEventEditor(
 					
 CEventEditor::CEventEditor(
 	BLooper &looper,
-	CTrackEditFrame &frame,
+	CStripFrameView &frame,
 	BRect rect,
 	CEventTrack *track,
 	const char *name,

@@ -76,7 +76,7 @@ public:
 		// ---------- Constructor
 
 	CContinuousValueEditor(	BLooper			&inLooper,
-						CTrackEditFrame 	&frame,
+						CStripFrameView 	&frame,
 						BRect			rect,
 						const char		*name );
 

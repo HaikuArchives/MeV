@@ -58,7 +58,8 @@ public:							// Constructor/Destructor
 								CLinearWindow(
 									BRect frame,
 									CMeVDoc *document,
-									CEventTrack *track);
+									CEventTrack *track,
+									bool hasSettings = false);
 
 public:							// Accessors
 

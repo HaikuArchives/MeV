@@ -436,9 +436,9 @@ CPitchBendEventHandler		pitchBendHandler;
 
 CPitchBendEditor::CPitchBendEditor(
 	BLooper			&inLooper,
-	CTrackEditFrame	&inFrame,
+	CStripFrameView	&inFrame,
 	BRect			rect )
-	:	CContinuousValueEditor(	inLooper, inFrame, rect, "Pitch Bend Editor" )
+	:	CContinuousValueEditor(	inLooper, inFrame, rect, "Pitch Bend" )
 {
 	SetHandlerFor(EvtType_PitchBend, &pitchBendHandler);
 
@@ -449,7 +449,6 @@ CPitchBendEditor::CPitchBendEditor(
 	verticalZoom	= 6;
 
 	CalcZoom();
-	SetZoomTarget( (CObserver *)this );
 
 	// Make the label view on the left-hand side
 	SetLabelView(new CStripLabelView(BRect(-1.0, -1.0, 20.0, rect.Height() + 1),
@@ -482,51 +481,23 @@ long CPitchBendEditor::ViewCoordsToValue( int yPos, bool limit )
 	return value;
 }
 
-void CPitchBendEditor::MessageReceived( BMessage *msg )
+void
+CPitchBendEditor::MessageReceived(
+	BMessage *message)
 {
-	switch (msg->what) {
-	case ZoomOut_ID:
-
-		if (verticalZoom < 12)
+	switch (message->what)
+	{
+		case Update_ID:
+		case Delete_ID:
 		{
-			BRect		r( Frame() );
-			float		sValue = (ScrollValue( B_VERTICAL ) + (r.bottom - r.top) / 2) / pixelsPerValue;
-
-			verticalZoom++;
-			CalcZoom();
-			Hide();
-			SetScrollRange(	scrollRange.x, scrollValue.x,
-							stripLogicalHeight,
-							(sValue * pixelsPerValue) - (r.bottom - r.top) / 2 );
-			Show();
+			CObserver::MessageReceived(message);
+			break;
 		}
-		break;
-
-	case ZoomIn_ID:
-
-		if (verticalZoom > 4) 
+		default:
 		{
-			BRect		r( Frame() );
-			float		sValue = (ScrollValue( B_VERTICAL ) + (r.bottom - r.top) / 2) / pixelsPerValue;
-
-			verticalZoom--;
-			CalcZoom();
-			Hide();
-			SetScrollRange(	scrollRange.x, scrollValue.x,
-							stripLogicalHeight,
-							(sValue * pixelsPerValue) - (r.bottom - r.top) / 2 );
-			Show();
+			CStripView::MessageReceived(message);
+			break;
 		}
-		break;
-
-	case Update_ID:
-	case Delete_ID:
-		CObserver::MessageReceived( msg );
-		break;
-
-	default:
-		CStripView::MessageReceived( msg );
-		break;
 	}
 }
 
@@ -657,6 +628,26 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 	}
 
 	return true;
+}
+
+void
+CPitchBendEditor::ZoomChanged(
+	int32 diff)
+{
+	BRect r(Frame());
+	float scroll = (ScrollValue(B_VERTICAL) + (r.bottom - r.top) / 2) / pixelsPerValue;
+
+	verticalZoom += diff;
+	if (verticalZoom > 12)
+		verticalZoom = 12;
+	else if (verticalZoom < 4)
+		verticalZoom = 4;
+
+	Hide();
+	CalcZoom();
+	SetScrollRange(scrollRange.x, scrollValue.x, stripLogicalHeight,
+				   (scroll * pixelsPerValue) - (r.bottom - r.top) / 2);
+	Show();
 }
 
 // END - PitchBendEditor.cpp

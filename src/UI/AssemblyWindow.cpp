@@ -35,7 +35,7 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
+#define D_ALLOC(x) PRINT (x)		// Constructor/Destructor
 #define D_MESSAGE(x) //PRINT (x)	// MessageReceived()
 
 // ---------------------------------------------------------------------------
@@ -43,10 +43,13 @@
 
 CAssemblyWindow::CAssemblyWindow(
 	BRect frame,
-	CMeVDoc *document)
-	:	CTrackWindow(frame, document, (CEventTrack *)document->FindTrack(1))
+	CMeVDoc *document,
+	bool hasSettings)
+	:	CTrackWindow(frame, document, (CEventTrack *)document->FindTrack(1),
+					 hasSettings)
 {
-	D_ALLOC(("CAssemblyWindow::CAssemblyWindow()\n"));
+	D_ALLOC(("CAssemblyWindow::CAssemblyWindow(%s)\n",
+			 hasSettings ? "hasSettings == true" : "hasSettings == false"));
 
 	AddMenuBar();
 	AddToolBar();
@@ -60,8 +63,12 @@ CAssemblyWindow::CAssemblyWindow(
 	stripFrame->AddType("Metered");
 	stripFrame->AddType("Real");
 
-	AddStrip("Metered", 1.0);
-	stripFrame->PackStrips();
+	if (!hasSettings)
+	{
+		// add default strip
+		AddStrip("Metered", 1.0);
+		stripFrame->PackStrips();
+	}
 
 	SetNewEventType(EvtType_Sequence);
 }
@@ -138,19 +145,6 @@ CAssemblyWindow::MessageReceived(
 			else Track()->SelectAll();
 			break;
 		}
-		case MENU_NEW_WINDOW:
-		{
-			CAssemblyWindow *window;
-			window = new CAssemblyWindow(UScreenUtils::StackOnScreen(540, 300),
-										 Document() );
-			window->Show();
-			break;
-		}
-		case MENU_PROGRAM_SETTINGS:
-		{
-			((CMeVApp *)be_app)->ShowPrefs();
-			break;
-		}
 		case MENU_PLAY:
 		{
 			if (CPlayerControl::IsPlaying(Document()))
@@ -216,12 +210,12 @@ CAssemblyWindow::MessageReceived(
 		}	
 		case 'cMet':
 		{
-			stripFrame->SetFrameClockType( ClockType_Metered );
+			stripFrame->SetClockType( ClockType_Metered );
 			break;
 		}
 		case 'cRea':
 		{
-			stripFrame->SetFrameClockType( ClockType_Real );
+			stripFrame->SetClockType( ClockType_Real );
 			break;
 		}
 		default:
@@ -376,20 +370,7 @@ CAssemblyWindow::AddMenuBar()
 	menuBar->AddItem(menu);
 
 	// Create the 'Window' menu
-	menu = new BMenu("Window");
-	menu->AddItem(new BMenuItem("New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Show Tracks",
-								new BMessage(MENU_TRACKLIST), 'L'));
-	menu->AddItem(new BMenuItem("Show Inspector",
-								new BMessage(MENU_INSPECTOR), 'I'));
-	menu->AddItem(new BMenuItem("Show Grid",
-								new BMessage(MENU_GRIDWINDOW), 'G'));
-	menu->AddItem(new BMenuItem("Show Transport",
-								new BMessage(MENU_TRANSPORT), 'T'));
-	menu->AddSeparatorItem();
-	SetWindowMenu(menu);
-	menuBar->AddItem(menu);
+	CreateWindowMenu(menuBar);
 
 	// Add the menus
 	AddChild(menuBar);
@@ -458,7 +439,7 @@ CAssemblyWindow::AddFrameView(
 	CTrack *track)
 {
 	// Create the frame for the strips, and the scroll bar
-	stripFrame = new CTrackEditFrame(BRect(frame), (char *)NULL,
+	stripFrame = new CStripFrameView(BRect(frame), (char *)NULL,
 									 track, B_FOLLOW_ALL);
 
 	stripScroll = new CScroller(BRect(frame.left - 1, frame.bottom + 1,

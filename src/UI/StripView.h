@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * StripView.h (MeV/User Interface)
+ * StripView.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -32,6 +32,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	10/08/2000	cell
+ *		Added serialization caps.
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -46,6 +48,8 @@
 // Interface Kit
 #include <Control.h>
 
+class CIFFReader;
+class CIFFWriter;
 class CStripFrameView;
 
 class CStripView :
@@ -88,6 +92,12 @@ public:							// Hook Functions
 								{ Invalidate(); }
 
 	virtual float				MinimumHeight() const;
+
+	/** Called when the vertical zoom value has been changed,
+		either programatically, or by the user */
+	virtual void				ZoomChanged(
+									int32 diff)
+								{ }
 
 public:							// Accessors
 
@@ -132,11 +142,37 @@ public:							// Operations
 	void						SetSelectionVisible(
 									bool visible);
 
-	// Set which handler the zoom buttons are targeting.
-	void						SetZoomTarget(
-									BHandler *handler);
+	/** Increments the vertical zoom value */
+	void						ZoomBy(
+									int32 diff);
+
+	/** returns the vertical zoom setting:
+		positive -> zoomed in by x steps
+		0		 -> original zoom
+		negative -> zoomed out by x steps
+	 */
+	int32						ZoomValue() const
+								{ return m_verticalZoom; }
+
+public:							// Serialization
+
+	virtual void				ExportSettings(
+									BMessage *settings) const;
+
+	virtual void				ImportSettings(
+									const BMessage *settings);
+
+	static void					ReadState(
+									CIFFReader &reader,
+									BMessage *settings);
+
+	static void					WriteState(
+									CIFFWriter &writer,
+									const BMessage *settings);
 
 public:							// CScrollerTarget Implementation
+
+	virtual void				AllAttached();
 
 	virtual void				AttachedToWindow();
 
@@ -175,6 +211,8 @@ private:
 
 	// defaults to true; false will disable the 'Hide' option
 	bool						m_removable;
+
+	int32						m_verticalZoom;
 };
 
 #endif /* __C_StripView_H__ */

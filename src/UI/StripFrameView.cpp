@@ -1,12 +1,16 @@
 /* ===================================================================== *
- * StripFrameView.cpp (MeV/User Interface)
+ * StripFrameView.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "StripFrameView.h"
 
+#include "IFFReader.h"
+#include "IFFWriter.h"
 #include "StripSplitter.h"
 #include "StripView.h"
 #include "StWindowUtils.h"
+#include "Track.h"
+#include "TrackWindow.h"
 
 // Interface Kit
 #include <Window.h>
@@ -18,17 +22,29 @@
 #define D_INTERNAL(x) //PRINT(x)		// Internal Operations
 
 // ---------------------------------------------------------------------------
+// Constants
+
+const int32
+CStripFrameView::FILE_CHUNK_ID = 'strf';
+
+// ---------------------------------------------------------------------------
 // Constructor/Destructor
 
 CStripFrameView::CStripFrameView(
 	BRect frame,
 	char *name,
+	CTrack *track,
 	ulong resizingMode)
 	:	CScrollerTarget(frame, name, resizingMode,
 						B_FRAME_EVENTS),
-		m_ruler(NULL)
+		m_track(track),
+		m_ruler(NULL),
+		m_clockType(track->ClockType()),
+		m_horizontalZoom(0)
 {
 	SetViewColor(B_TRANSPARENT_COLOR);
+
+	ZoomBy(16);
 }
 
 CStripFrameView::~CStripFrameView()
@@ -42,69 +58,14 @@ CStripFrameView::~CStripFrameView()
 }
 
 // ---------------------------------------------------------------------------
-// CScrollerTarget Implementation
+// Accessors
 
 void
-CStripFrameView::AttachedToWindow()
+CStripFrameView::SetClockType(
+	TClockType type)
 {
-	AdjustScrollers();
-	CScrollerTarget::AttachedToWindow();
-}
-
-void
-CStripFrameView::FrameResized(
-	float width,
-	float height)
-{
-	BAutolock autoLock(Window());
-	if (!autoLock.IsLocked())
-		return;
-
-	ArrangeViews();
-	AdjustScrollers();
-}
-
-void
-CStripFrameView::MessageReceived(
-	BMessage *message)
-{
-	switch (message->what)
-	{
-		case CStripView::PROPORTIONS_CHANGED:
-		{
-			UpdateProportions();
-			break;
-		}
-		default:
-		{
-			CScrollerTarget::MessageReceived(message);
-		}
-	}
-}
-
-void
-CStripFrameView::SetScrollValue(
-	float position,
-	orientation posture)
-{
-	if (posture == B_HORIZONTAL)
-	{
-		float scrollDelta = position - scrollValue.x;
-		scrollValue.x = position;
-
-		if (m_ruler)
-			m_ruler->SetScrollValue(position, B_HORIZONTAL);
-
-		for (int32 i = 0; i < m_strips.CountItems(); i++)
-		{
-			strip_info *info = (strip_info *)m_strips.ItemAt(i);
-			CScrollerTarget	*st = dynamic_cast<CScrollerTarget *>(info->container);
-			if (st)
-				st->SetScrollValue(position, B_HORIZONTAL);
-			else
-				info->container->ScrollBy(scrollDelta, 0.0);
-		}
-	}
+	m_clockType = type;
+	Ruler()->Invalidate();
 }
 
 // ---------------------------------------------------------------------------
@@ -271,8 +232,271 @@ CStripFrameView::SwapStrips(
 	ArrangeViews();
 }
 
+float
+CStripFrameView::TimeToViewCoords(
+	long time,
+	TClockType clockType) const
+{
+	if (clockType != ClockType())
+	{
+		const CTempoMap &tMap(Track()->Document().TempoMap());
+
+		if (clockType == ClockType_Metered)
+			time = tMap.ConvertMeteredToReal(time);
+		else
+			time = tMap.ConvertRealToMetered(time);
+	}
+	return floor(m_pixelsPerTimeUnit * time);
+}
+
+long
+CStripFrameView::ViewCoordsToTime(
+	float x,
+	TClockType clockType) const
+{
+	long time;
+
+	time = static_cast<long>(x / m_pixelsPerTimeUnit);
+	if (clockType != ClockType())
+	{
+		const CTempoMap &tMap(Track()->Document().TempoMap());
+		if (clockType == ClockType_Metered)
+			time = tMap.ConvertRealToMetered(time);
+		else
+			time = tMap.ConvertMeteredToReal(time);
+	}
+
+	return time;
+}
+
+void
+CStripFrameView::ZoomBy(
+	int32 diff)
+{
+	m_horizontalZoom += diff;
+	if (m_horizontalZoom > 24)
+		m_horizontalZoom = 24;
+	else if (m_horizontalZoom < 8)
+		m_horizontalZoom = 8;
+
+	int32 time = ViewCoordsToTime(scrollValue.x, ClockType());
+	m_pixelsPerTimeUnit = (double)(1 << m_horizontalZoom)
+						  / (256.0 * 256.0 * 16.0);
+	Hide();
+	SetScrollRange(TimeToViewCoords(Track()->LastEventTime(),
+									ClockType()) + FrameSize().x,
+				   TimeToViewCoords(time, ClockType()),
+				   0.0, 0.0);
+	Show();
+
+	if (Ruler())
+		Ruler()->Invalidate();
+}
+
 // ---------------------------------------------------------------------------
- // Internal Operations
+// Serialization
+
+void
+CStripFrameView::ExportSettings(
+	BMessage *settings) const
+{
+	settings->AddInt32("zoom_value", m_horizontalZoom);
+	settings->AddFloat("scroll_value", ScrollValue(B_HORIZONTAL));
+	for (int32 i = 0; i < CountStrips(); i++)
+	{
+		strip_info *info = (strip_info *)m_strips.ItemAt(i);
+		BMessage stripMsg;
+		stripMsg.AddString("type", info->strip->Name());
+		stripMsg.AddFloat("proportion", info->proportion);
+		stripMsg.AddBool("fixed_size", info->fixed_size);
+		info->strip->ExportSettings(&stripMsg);
+		settings->AddMessage("strip", &stripMsg);
+	}
+}
+
+void
+CStripFrameView::ImportSettings(
+	const BMessage *settings)
+{
+	CTrackWindow *window = static_cast<CTrackWindow *>(Window());
+
+	int32 zoom;
+	settings->FindInt32("zoom_value", &zoom);
+	float scroll;
+	settings->FindFloat("scroll_value", &scroll);
+	BMessage stripMsg;
+	int32 i = 0;
+	while (settings->FindMessage("strip", i, &stripMsg) == B_OK)
+	{
+		BString type;
+		stripMsg.FindString("type", &type);
+		float proportion = 0.3;
+		stripMsg.FindFloat("proportion", &proportion);
+		if (window->AddStrip(type, proportion))
+		{
+			strip_info *info = (strip_info *)m_strips.ItemAt(i);
+			if (info)
+				stripMsg.FindBool("fixed_size", &info->fixed_size);
+			info->strip->ImportSettings(&stripMsg);
+		}
+		i++;
+	}
+
+	PackStrips();
+
+	ZoomBy(zoom - ZoomValue());
+	SetScrollValue(scroll, B_HORIZONTAL);
+}
+
+void
+CStripFrameView::ReadState(
+	CIFFReader &reader,
+	BMessage *settings)
+{
+	int32 zoom;
+	reader >> zoom;
+	settings->AddInt32("zoom_value", zoom);
+	float scroll;
+	reader >> scroll;
+	settings->AddFloat("scroll_value", scroll);
+
+	while (reader.BytesAvailable() > 0)
+	{
+		BMessage stripMsg;
+
+		// read type string
+		int32 length = 0;
+		reader >> length;
+		char str[length + 1];
+		reader.MustRead(str, length);
+		str[length] = '\0';
+		stripMsg.AddString("type", str);
+
+		// read proportion
+		float proportion;
+		reader >> proportion;
+		stripMsg.AddFloat("proportion", proportion);
+
+		// read fixed_size
+		int8 fixedSize;
+		reader >> fixedSize;
+		stripMsg.AddBool("fixed_size", (bool)fixedSize);
+
+		CStripView::ReadState(reader, &stripMsg);
+
+		settings->AddMessage("strip", &stripMsg);
+	}
+}
+
+void
+CStripFrameView::WriteState(
+	CIFFWriter &writer,
+	const BMessage *settings)
+{
+	int32 zoom;
+	settings->FindInt32("zoom_value", &zoom);
+	writer << zoom;
+	float scroll;
+	settings->FindFloat("scroll_value", &scroll);
+	writer << scroll;
+
+	int32 i = 0;
+	BMessage stripMsg;
+	while (settings->FindMessage("strip", i, &stripMsg) == B_OK)
+	{
+		// write type string
+		BString str;
+		stripMsg.FindString("type", &str);
+		writer << str.CountChars();
+		char buffer[str.CountChars() + 1];
+		str.CopyInto(buffer, 0, str.CountChars() + 1);
+		writer.MustWrite(buffer, str.CountChars());
+
+		// write proportion
+		float proportion;
+		stripMsg.FindFloat("proportion", &proportion);
+		writer << proportion;
+
+		// read fixed_size
+		int8 fixedSize;
+		stripMsg.FindBool("fixed_size", (bool *)&fixedSize);
+		writer << fixedSize;
+
+		CStripView::WriteState(writer, &stripMsg);
+
+		i++;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CScrollerTarget Implementation
+
+void
+CStripFrameView::AttachedToWindow()
+{
+	AdjustScrollers();
+	CScrollerTarget::AttachedToWindow();
+}
+
+void
+CStripFrameView::FrameResized(
+	float width,
+	float height)
+{
+	BAutolock autoLock(Window());
+	if (!autoLock.IsLocked())
+		return;
+
+	RecalcScrollRange();
+	ArrangeViews();
+	AdjustScrollers();
+}
+
+void
+CStripFrameView::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case CStripView::PROPORTIONS_CHANGED:
+		{
+			UpdateProportions();
+			break;
+		}
+		default:
+		{
+			CScrollerTarget::MessageReceived(message);
+		}
+	}
+}
+
+void
+CStripFrameView::SetScrollValue(
+	float position,
+	orientation posture)
+{
+	if (posture == B_HORIZONTAL)
+	{
+		float scrollDelta = position - scrollValue.x;
+		scrollValue.x = position;
+
+		if (m_ruler)
+			m_ruler->SetScrollValue(position, B_HORIZONTAL);
+
+		for (int32 i = 0; i < m_strips.CountItems(); i++)
+		{
+			strip_info *info = (strip_info *)m_strips.ItemAt(i);
+			CScrollerTarget	*st = dynamic_cast<CScrollerTarget *>(info->container);
+			if (st)
+				st->SetScrollValue(position, B_HORIZONTAL);
+			else
+				info->container->ScrollBy(scrollDelta, 0.0);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
 
 void
 CStripFrameView::ArrangeViews()
@@ -315,6 +539,14 @@ CStripFrameView::ArrangeViews()
 			}
 		}
 	}
+}
+
+void
+CStripFrameView::RecalcScrollRange()
+{
+	SetScrollRange(TimeToViewCoords(Track()->LastEventTime(),
+									Track()->ClockType()) + FrameSize().x,
+				   scrollValue.x, 0.0, 0.0);
 }
 
 void

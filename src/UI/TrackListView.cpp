@@ -166,10 +166,8 @@ CTrackListView::MessageReceived(
 			if (selection >= 0)
 			{
 				CTrackListItem *item = (CTrackListItem *)ItemAt(selection);
-				CLinearWindow *window;
-				window = new CLinearWindow(UScreenUtils::StackOnScreen(540, 370),
-										   m_doc, (CEventTrack *)item->GetTrack());
-				window->Show();
+				if (item)
+					m_doc->ShowWindowFor(item->GetTrack());
 			}
 			break;
 		}

@@ -214,10 +214,10 @@ CVelocityNoteEventHandler		velocityNoteHandler;
 
 CVelocityEditor::CVelocityEditor(
 	BLooper			&inLooper,
-	CTrackEditFrame &inFrame,
+	CStripFrameView &inFrame,
 	BRect			rect )
 	:	CEventEditor(	inLooper, inFrame, rect,
-						"Velocity Strip", false, false )
+						"Velocity", false, false )
 {
 
 	SetHandlerFor(EvtType_Note, &velocityNoteHandler);
@@ -315,7 +315,7 @@ void CVelocityEditor::OnUpdate( BMessage *inMsg )
 	if (inMsg->FindInt8( "channel", 0, &channel ) != B_OK) channel = -1;
 
 	if (trackHint & CTrack::Update_Duration)
-		TrackEditFrame().RecalcScrollRange();
+		FrameView().RecalcScrollRange();
 
 	if (trackHint & (CTrack::Update_SigMap|CTrack::Update_TempoMap))
 	{
