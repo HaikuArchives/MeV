@@ -82,6 +82,10 @@ public:							// BView Implementation
 
 	virtual void				AttachedToWindow();
 
+	virtual void				FrameResized(
+									float width,
+									float height);
+
 	virtual void				GetPreferredSize(
 									float *width,
 									float *height);
@@ -89,11 +93,10 @@ public:							// BView Implementation
 	virtual void				MouseDown(
 									BPoint point);
 
-private:						// Instance Data
+private:						// Internal Operations
 
-	BScrollBar *				m_hScrollBar;
-
-	BScrollBar *				m_vScrollBar;
+	void						_updateScrollBar(
+									orientation posture);
 };
 
 #endif /* __C_ConsoleContainerView_H__ */

@@ -15,6 +15,7 @@
 // Interface Kit
 #include <MenuBar.h>
 #include <MenuItem.h>
+#include <ScrollBar.h>
 #include <View.h>
 // Support Kit
 #include <Debug.h>
@@ -71,6 +72,10 @@ CMixWindow::GetContentSize(
 
 	m_containerView->GetPreferredSize(width, height);
 	*height += KeyMenuBar()->Frame().Height() + 1.0;
+	if (m_containerView->ScrollBar(B_VERTICAL) != NULL)
+		*width += B_V_SCROLL_BAR_WIDTH;
+	if (m_containerView->ScrollBar(B_HORIZONTAL) != NULL)
+		*height += B_H_SCROLL_BAR_HEIGHT;
 }
 
 void

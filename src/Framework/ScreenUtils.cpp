@@ -6,6 +6,8 @@
 
 // Interface Kit
 #include <Screen.h>
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // Constants Initialization
@@ -70,16 +72,21 @@ UScreenUtils::ConstrainToScreen(
 {
 	BRect screenRect = BScreen(id).Frame();
 
+	if (frame.Width() > screenRect.Width())
+		frame.right = frame.left + screenRect.Width() - 10.0;
+	if (frame.Height() > screenRect.Height())
+		frame.bottom = frame.top + screenRect.Height() - 10.0;
+
 	BPoint p = frame.LeftTop();
 	p.x = (p.x < screenRect.left)
-		  ? screenRect.left + 1.0
+		  ? screenRect.left + 5.0
 		  : (p.x > (screenRect.right - frame.Width()))
-		  	? screenRect.right - frame.Width() - 1.0
+		  	? screenRect.right - frame.Width() - 5.0
 		  	: p.x;
 	p.y = p.y < screenRect.top 
-	  	  ? screenRect.top + 1.0
+	  	  ? screenRect.top + 5.0
 	  	  : (p.y > (screenRect.bottom - frame.Height()))
-	  	  	? screenRect.bottom - frame.Height() - 1.0
+	  	  	? screenRect.bottom - frame.Height() - 5.0
 	  	  	: p.y;
 	frame.OffsetTo(p);
 
