@@ -262,7 +262,7 @@ CAssemblyWindow::AddStrip(
 		return true;
 	}
 
-	CTrackWindow::AddStrip(type, proportion);
+	return CTrackWindow::AddStrip(type, proportion);
 }
 
 void
