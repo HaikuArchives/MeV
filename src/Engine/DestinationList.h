@@ -73,7 +73,7 @@ public:
 	void SetMuteFor (int id, bool mute);
 	void SetSoloFor (int id, bool solo);
 	void SetDisableFor (int id, bool disable);
-	
+	void SetDeletedFor (int id, bool deleted);
 	void ReadVCTable (CIFFReader &reader);
 	void WriteVCTable (CIFFWriter &writer);
 private:

@@ -1,5 +1,3 @@
-
-
 //channel manager view
 #include "TextDisplay.h"
 #include "MeVDoc.h"
@@ -27,7 +25,6 @@ enum EInspectorControlIDs {
 	VCTM_NOTIFY			= 'ntfy',
 	VCQUIT 				='vcqt'
 };
-
 CDestinationListView::CDestinationListView(
 	BRect 		inFrame,
 	BLooper		*thelooper,
@@ -81,9 +78,6 @@ CDestinationListView::CDestinationListView(
 	
 	BBox *box=new BBox(Bounds());
 	AddChild(box);
-	
-	
-
 }
 
 void CDestinationListView::AttachedToWindow()
@@ -104,7 +98,6 @@ void CDestinationListView::OnUpdate(BMessage *message)
 }
 void CDestinationListView::Update()
 {
-	
 	int n=m_destMenu->CountItems()-1;
 	while (n>=2)
 	{
@@ -153,12 +146,12 @@ void CDestinationListView::SetTrack( CEventTrack *inTrack )
 		CRefCountObject::Release( track );
 		track = inTrack;
 		if (track) track->Acquire();
-		if (Window())
+		/*if (Window())
 		{
 			Window()->Lock();
 			Update();
 			Window()->Unlock();
-		}
+		}*/
 		Update();
 	}
 }
@@ -167,7 +160,7 @@ void CDestinationListView::SetTrack( CEventTrack *inTrack )
 void CDestinationListView::SetChannel( uint8 inChannel )
 {
 	m_selected_id=inChannel;
-
+	if (m_selected_id==-1) return;
 	int c=0;
 	for (m_destList->First();!m_destList->IsDone();m_destList->Next())
 	{
@@ -242,6 +235,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 						m_modifierMap[m_selected_id]->Quit();
 						m_modifierMap[m_selected_id]=NULL;
 					}
+					m_selected_id=-1;
 				}
 			}
 			break;
@@ -258,10 +252,13 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 				BRect r;
 				r.Set(40,40,300,200);
 				int n=m_destList->NewDest();
-				Update();
 				m_modifierMap[n]=new CDestinationModifier(r,n,m_destList,(BView *)this);
-				m_modifierMap[n]->Show();
-				SetChannel(n);			
+				m_modifierMap[n]->Show();	
+				Update();	
+				SetChannel(n);	
+				BMessage *msg=new BMessage(CHANNEL_CONTROL_ID);
+				msg->AddInt8("channel",n);
+				Window()->PostMessage( msg );
 			}
 			break;
 			case Update_ID:

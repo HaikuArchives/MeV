@@ -1,5 +1,4 @@
 #include "DestinationList.h"
-
 #include "Messenger.h"
 #include "MeVDoc.h"
 #include <stdio.h>
@@ -26,7 +25,7 @@ const rgb_color CDestinationList::m_defaultColorTable[]= {
 };
 CDestinationList::CDestinationList(CMeVDoc *inDoc) : CObservableSubject (),CObserver(* CMidiManager::Instance(),CMidiManager::Instance())
 {
-	count=0;
+    count=0;
     pos=0;
     m_notifier=NULL;
     int c;
@@ -71,8 +70,8 @@ int CDestinationList::NewDest()
 void CDestinationList::RemoveVC (int id)
 {
 	count--;
-	delete (m_tablerep[id]);
-	m_tablerep[id]=NULL;
+	SetDeletedFor(id,true);
+
 }
 Destination *  CDestinationList::operator[](int i)
 {
@@ -84,22 +83,24 @@ Destination *  CDestinationList::get(int i)
 }
 bool CDestinationList::IsDefined(int id)
 {
-	if (m_tablerep[id]!=NULL)
+	if (m_tablerep[id]==NULL)
 	{
-	
-		return true;
-	}
-	else
-	{
-	
+		printf ("not defined\n");
 		return false;
 	}
+	else if (m_tablerep[id]->flags & Destination::deleted)
+	{
+		printf ("not defined\n");
+		return false;
+	}	
+	printf ("defined %d\n",id);
+	return true;	
 }
 
 void CDestinationList::First()
 {
 	pos=0;
-	while (m_tablerep[pos]==NULL)
+	while (!IsDefined(pos))
 	{
 		pos++;
 		if (pos>=Max_Destinations)
@@ -125,7 +126,7 @@ int CDestinationList::CurrentID()
 }
 Destination * CDestinationList::CurrentDest()
 {
-	if (m_tablerep[pos]==NULL)
+	if (!IsDefined(pos))
 	{
 	    Destination *dest=new Destination;
    		dest->name.SetTo("blah");
@@ -150,7 +151,7 @@ Destination * CDestinationList::CurrentDest()
 void CDestinationList::Next()
 {
 	pos++;
-	while (m_tablerep[pos]==NULL)
+	while (!IsDefined(pos))
 	{
 		pos++;
 		if (pos>=Max_Destinations)
@@ -332,40 +333,48 @@ CDestinationList::SetMuteFor(
 
 }
 void 
+CDestinationList::SetDeletedFor(
+	int id,
+	bool deleted)
+{
+	Destination *dest = m_tablerep[id];
+	if (deleted)
+	{
+		printf ("here\n");
+		dest->flags+=Destination::deleted;		
+		dest->m_producer=NULL;	
+		dest->fillColor.red=150;
+		dest->fillColor.green=150;
+		dest->fillColor.blue=150;
+		
+		CUpdateHint hint;
+		hint.AddInt8("channel",id);
+		CObservableSubject::PostUpdate(&hint,NULL);
+		m_doc->PostUpdateAllTracks(&hint);
+	}
+}
+void 
 CDestinationList::SetDisableFor(
 	int id,
 	bool disable)
 {
 	Destination *dest = m_tablerep[id];
-	if (disable)
+	if ((disable)&&(!dest->flags & Destination::disabled))
 	{
-		if (dest->flags & Destination::disabled)
-		{
-		}
-		else
-		{
-			dest->flags+=Destination::disabled;		
-			dest->m_producer=NULL;	
-			CUpdateHint hint;
-			hint.AddInt8("channel",id);
-			CObservableSubject::PostUpdate(&hint,NULL);
-			m_doc->PostUpdateAllTracks(&hint);
-		}
+		dest->flags+=Destination::disabled;		
+		dest->m_producer=NULL;	
+		CUpdateHint hint;
+		hint.AddInt8("channel",id);
+		CObservableSubject::PostUpdate(&hint,NULL);
+		m_doc->PostUpdateAllTracks(&hint);
 	}
-	else
+	else if (dest->flags & Destination::disabled)
 	{
-		if (dest->flags & Destination::disabled)
-		{
-			dest->flags-=Destination::disabled;
-			CUpdateHint hint;
-			hint.AddInt8("channel",id);
-			CObservableSubject::PostUpdate(&hint,NULL);
-			m_doc->PostUpdateAllTracks(&hint);
-			
-		}
-		else
-		{
-		}
+		dest->flags-=Destination::disabled;
+		CUpdateHint hint;
+		hint.AddInt8("channel",id);
+		CObservableSubject::PostUpdate(&hint,NULL);
+		m_doc->PostUpdateAllTracks(&hint);			
 	}	
 }
 

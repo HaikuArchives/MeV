@@ -579,7 +579,13 @@ CLinearNoteEventHandler::Draw(
 
 	Destination *dest = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 
-	if ((dest->flags & Destination::mute) || (dest->flags & Destination::disabled))
+	
+	if (dest->flags & Destination::deleted)
+	{
+		DrawNoteShape(&lEditor, r, DISABLED_BORDER_COLOR,
+				  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR,false);
+	}
+	else if ((dest->flags & Destination::mute) || (dest->flags & Destination::disabled))
 	{
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
 					  dest->fillColor, dest->highlightColor, true,C_MIXED_COLORS);
