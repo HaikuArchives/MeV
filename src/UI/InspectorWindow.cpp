@@ -3,15 +3,17 @@
  * ===================================================================== */
 
 #include "InspectorWindow.h"
-#include "TextSlider.h"
-#include "MeVDoc.h"
-#include "StWindowUtils.h"
+
+#include "BorderView.h"
+#include "DestinationListView.h"
+#include "DocWindow.h"
 #include "EventOp.h"
-#include "StdEventOps.h"
-#include "PlayerControl.h"
-#include "MidiDeviceInfo.h"
 #include "MathUtils.h"
-#include "Junk.h"
+#include "MeVDoc.h"
+#include "PlayerControl.h"
+#include "StWindowUtils.h"
+#include "StdEventOps.h"
+#include "TextSlider.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -22,11 +24,7 @@
 // Constants Initialization
 
 const BRect
-CInspectorWindow::DEFAULT_DIMENSIONS(0.0, 0.0, 640.0, 64.0);
-
-
-
-
+CInspectorWindow::DEFAULT_DIMENSIONS(0.0, 0.0, 445.0, 64.0);
 
 const int					channelBoxWidth = 14,
 						channelBoxHeight = 14;
@@ -138,67 +136,32 @@ CInspectorWindow::CInspectorWindow(
 		m_track(NULL),
 		m_previousValue(-1)
 {
-	BStringView	*stringView;
-
 	CBorderView *bgView = new CBorderView(Bounds(), "", B_FOLLOW_ALL_SIDES,
 										  B_WILL_DRAW, 0, CBorderView::BEVEL_BORDER);
 	AddChild(bgView);
-
-	// Event type view
-	stringView = new BStringView(BRect(18.0, 4.0, 58.0, 17.0), "", "Event");
-	stringView->SetAlignment( B_ALIGN_RIGHT );
-	bgView->AddChild(stringView);
-
-	m_eventTypeView = new CTextDisplay(BRect(60.0, 4.0, 191.0, 17.0), "");
-	bgView->AddChild(m_eventTypeView);
-
-	// Channel name
-	stringView = new BStringView(BRect(15.0, 20.0, 58.0, 33.0), "", "Channel");
-	bgView->AddChild(stringView);
-	stringView->SetAlignment(B_ALIGN_RIGHT);
-
-	m_channelNameView = new CTextDisplay(BRect(60.0, 20.0, 191.0, 33.0), "");
-	bgView->AddChild(m_channelNameView);
-
-//	m_channelControl = new CChannelSelectorView(BRect(410, 3,
-//													  410 + channelBoxWidth * 16 + 2,
-//													  3 + channelBoxHeight * 4 + 2 ),
-//												       m_channelNameView);
-	BRect r;
-	r.Set(410,3,410 + channelBoxWidth * 16 + 2,3 + channelBoxHeight * 4 + 2);
-	m_channelControl = new CDestinationListView(r,m_channelNameView,this);
-	bgView->AddChild(m_channelControl);
-	
-	
-	
 
 	for(int i = 0; i < 3; i++)
 	{
 		static int32 ids[3] = { Slider1_ID, Slider2_ID, Slider3_ID };
 		float y = 8.0 + 18.0 * i;
-		m_vLabel[i] = new BStringView(BRect(192.0, y, 253.0, y + 13.0), "", "Pitch");
+		m_vLabel[i] = new BStringView(BRect(5.0, y, 55.0, y + 13.0), "", "Pitch");
 		bgView->AddChild(m_vLabel[i]);
 		m_vLabel[i]->SetAlignment(B_ALIGN_RIGHT);
-		m_vSlider[i] = new CTextSlider(BRect(253.0, y, 408.0, y + 13.0),
+		m_vSlider[i] = new CTextSlider(BRect(55.0, y, 210.0, y + 13.0),
 									   new BMessage(ids[i]), "");
 		bgView->AddChild(m_vSlider[i]);
 		m_vSlider[i]->SetEnabled(false);
 	}
-	
-	CTimeEditControl *tec;
-	tec = new CTimeEditControl(BRect(16.0, 37.0, 16.0 + 75.0 + 11.0, 61.0), 
-							   new BMessage('strt'));
-	bgView->AddChild(tec);
-	tec = new CTimeEditControl(BRect(16.0 + 75.0 + 3.0 + 11.0, 37.0,
-									 16.0 + 75.0 + 3.0 + 75.0 + 22.0, 61.0),
-							   new BMessage('strt'));
-	tec->SetClockType(ClockType_Real);
-	bgView->AddChild(tec);
 
-		// REM: Get window position from preferences.
-		// REM: When we close inspector, then save position to
-		// 		preferences.
-		// REM: Also save the fact whether the inspector was open or closed.
+	BRect r(215.0, 3.0, 215.0 + channelBoxWidth * 16 + 2.0,
+			3.0 + channelBoxHeight * 4 + 2.0);
+	m_channelControl = new CDestinationListView(r, this);
+	bgView->AddChild(m_channelControl);
+
+	// REM: Get window position from preferences.
+	// REM: When we close inspector, then save position to
+	// 		preferences.
+	// REM: Also save the fact whether the inspector was open or closed.
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +196,10 @@ CInspectorWindow::OnUpdate(
 		StWindowLocker lck(this);
 	
 		// Set the event name
-		m_eventTypeView->SetText(event->NameText());
+		BString title = "Inspector: ";
+		title << event->NameText();
+		SetTitle(title.String());
+
 		if(event->HasProperty(Event::Prop_Channel))
 		{
 			if (channel != m_doc->GetDefaultAttribute(EvAttr_Channel))
@@ -315,13 +281,9 @@ CInspectorWindow::MessageReceived(
 			if(m_doc)
 			{
 				int8 channel;
-				char vcName[Max_Device_Name + 16];
-				if(message->FindInt8("channel", &channel) != B_OK)
-				{
+				if (message->FindInt8("channel", &channel) != B_OK)
 					return;
-				}
-				m_doc->VirtualChannelName(channel, vcName);
-				m_channelNameView->SetText(vcName);
+
 				if((channel >= 0) && (channel <= Max_Destinations) && m_track)
 				{
 					// Set attribute for newly created events
@@ -433,11 +395,13 @@ CInspectorWindow::MessageReceived(
 
 // ---------------------------------------------------------------------------
 // Operations
+
 void
 CInspectorWindow::MenusBeginning()
 {
 
 }
+
 void
 CInspectorWindow::WatchTrack(
 	CEventTrack *track)
@@ -463,7 +427,7 @@ CInspectorWindow::WatchTrack(
 void CInspectorWindow::Clear()
 {
 	// Set the event name
-	m_eventTypeView->SetText("");
+	SetTitle("Inspector: (None)");
 	for (int i = 0; i < 3; i++)
 	{
 		m_vSlider[i]->SetRange(0.0, 0.0);

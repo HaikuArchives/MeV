@@ -30,7 +30,6 @@ enum EInspectorControlIDs {
 
 CDestinationListView::CDestinationListView(
 	BRect 		inFrame,
-	CTextDisplay	*inNameView,
 	BLooper		*thelooper,
 	uint32		inResizingMode,
 	uint32		inFlags )
@@ -40,7 +39,6 @@ CDestinationListView::CDestinationListView(
 	channel = 0;
 	track = NULL;
 	m_destList=NULL;
-	nameView = inNameView;
 	SetFontSize( 9.0 );
 	BRect r;
 	//interface setup

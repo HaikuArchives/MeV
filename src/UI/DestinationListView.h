@@ -58,7 +58,6 @@ private:
         Destination *m_dest;//selected vc. 
         
         uint8                   channel; 
-        CTextDisplay    *nameView; 
         BPopUpMenu              *m_destMenu; 
         BButton                 *m_editButton; 
         BButton                 *m_deleteButton; 
@@ -82,11 +81,10 @@ private:
 public: 
         CEventTrack             *track; 
                 /**     Constructor */ 
-        CDestinationListView(BRect               inFrame, 
-                                                CTextDisplay    *inNameView, 
-                                                BLooper                 *thelooper, 
-                                                uint32          inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT, 
-                                                uint32          inFlags = B_WILL_DRAW ); 
+        CDestinationListView(BRect               inFrame,
+                             BLooper                 *thelooper, 
+                             uint32          inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT, 
+                             uint32          inFlags = B_WILL_DRAW ); 
                                                         
         ~CDestinationListView() { CRefCountObject::Release( track ); } 
                 /*      Select which track we are looking at, so we can draw channel 

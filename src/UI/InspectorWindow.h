@@ -40,17 +40,14 @@
 #ifndef __C_InspectorWindow_H__
 #define __C_InspectorWindow_H__
 
-#include "TextDisplay.h"
+#include "Event.h"
 #include "WindowState.h"
 #include "Observer.h"
-#include "EventEditor.h"
-#include "EventTrack.h"
-#include "MeVApp.h"
-#include "DestinationListView.h"
-//#include "ChannelSelectorView.h"
 
-class CTextDisplay;
+class CDestinationListView;
+class CEventTrack;
 class CMeVDoc;
+class CTextDisplay;
 class CTextSlider;
 
 class CInspectorWindow :
@@ -69,6 +66,8 @@ public:						// Constructor/Destructor
 								CWindowState &state);
 
 public:						// CObserver Implementation
+
+	virtual void            MenusBeginning();
 
 	virtual void			MessageReceived(
 								BMessage *message);
@@ -90,16 +89,16 @@ public:						// Operations
 	void					Clear();
 
 private:					// Instance Data
-	virtual void            MenusBeginning();
-	CMeVDoc					*m_doc;
-	CEventTrack				*m_track;
 
-	CTextDisplay			*m_eventTypeView;
-	CTextDisplay			*m_channelNameView;
-	//CChannelSelectorView	*m_channelControl;
-	CDestinationListView	   *m_channelControl;
-	BStringView				*m_vLabel[3];
-	CTextSlider				*m_vSlider[3];			// Three sliders
+	CMeVDoc *				m_doc;
+	CEventTrack *			m_track;
+
+	CDestinationListView *	m_channelControl;
+
+	// Three generic sliders
+	BStringView	*			m_vLabel[3];
+	CTextSlider	*			m_vSlider[3];			
+
 	int32					m_baseValue[3];
 	int32					m_previousValue;
 	E_EventAttribute		m_editedAttr[3];
