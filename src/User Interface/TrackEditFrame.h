@@ -97,7 +97,7 @@ public:
 		Hide();
 		frameClockType = inType;
 		Show();
-		ruler->Invalidate();
+		Ruler()->Invalidate();
 	}
 
 		/** Get the clock type being viewed. */

@@ -42,74 +42,106 @@
 #include <View.h>
 #include "Scroller.h"
 
-class CStripFrameView : public CScrollerTarget {
+class CStripFrameView :
+	public CScrollerTarget
+{
+
+public:								// Constructor/Destructor
+
+									CStripFrameView(
+										BRect frame,
+										char *name,
+										ulong resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP);
+
+									~CStripFrameView();
+
+public:								// CScrollerTarget Implementation
+
+	virtual void					AttachedToWindow();
+
+	virtual void					Draw(
+										BRect updateRect);
+
+	virtual void					FrameResized(
+										float width,
+										float height);
+
+	virtual void					MouseDown(
+										BPoint point);
+	virtual void					MouseMoved(
+										BPoint point,
+										ulong transit,
+										const BMessage *message);
+	
+public:							// Operations
+
+	bool						AddChildView(
+									BView *inView,
+									int inHeight,
+									int inIndex = -1,
+									bool inFixed = false);
+
+	void						RemoveChildView(
+									BView *view );
+
+	void						SetScrollValue(
+									float inScrollValue,
+									orientation inOrient);
+
+	void						SetRuler(
+									CScrollerTarget *inRuler)
+								{
+									m_ruler = inRuler;
+								}
+
+public:							// Accessors
+
+	virtual ulong				MinimumViewSize(
+									BView *inChild)
+								{
+									return 0;
+								}
+
+	CScrollerTarget *			Ruler() const
+								{
+									return m_ruler;
+								}
+
+	// REM: This is kludged, there should be a parameter.
+	BPoint						FrameSize()
+								{
+									return BPoint( Frame().Width() - 14.0 - 20.0, Frame().Height() );
+								}
+	
+	int32						CountStrips() const
+								{
+									return m_childViews.CountItems();
+								}
+
+	BView *						StripAt(
+									int32 inIndex) const
+								{
+									return (BView *)m_childViews.ItemAt( inIndex );
+								}
+								
+protected:						// Instance Data
+
+	BList						m_childViews;
+
+	BList						m_childInfoList;
+
+	// Optional horizontal ruler frame
+	CScrollerTarget *			m_ruler;
+	
+	void						ArrangeViews();
+
+private:						// Internal Types
+
 	struct ChildInfo {
 		int32		y, h;
 		int32		proportion;		// Ideal proportion
-		bool			fixedSize;		// TRUE if size of item is fixed
+		bool		fixedSize;		// true if size of item is fixed
 	};
-
-protected:
-	BList			childViews;
-	BList			childInfoList;
-	CScrollerTarget	*ruler;			// Optional horizontal ruler frame
-	
-	static uint8	*cursor;
-
-	void ArrangeViews();
-
-protected:
-	void AttachedToWindow()
-	{
-		AdjustScrollers();
-		CScrollerTarget::AttachedToWindow();
-	}
-	
-public:
-
-		// ---------- Constructor
-
-	CStripFrameView(	BRect	frame,
-						char	*name,
-						ulong	resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP );
-	~CStripFrameView();
-
-		// ---------- Child view management
-
-	bool AddChildView(	BView	*inView,
-						int		inHeight,
-						int		inIndex = -1,
-						bool		inFixed = false );
-
-	void RemoveChildView( BView *view );
-
-		// ---------- Hooks
-
-	void Draw( BRect updateRect );
-
-	void MouseDown( BPoint point );
-	void MouseMoved( BPoint point, ulong transit, const BMessage *message );
-	
-	void FrameResized( float width, float height );
-	
-		// ---------- Setters
-
-	void SetScrollValue( float inScrollValue, orientation inOrient );
-	void SetRuler( CScrollerTarget *inRuler ) { ruler = inRuler; }
-
-		// ---------- Getters
-
-	virtual ulong MinimumViewSize( BView *inChild ) { return 0; }
-	CScrollerTarget *Ruler() { return ruler; }
-
-		// REM: This is kludged, there should be a parameter.
-	BPoint FrameSize()
-	{
-		return BPoint( Frame().Width() - 14.0 - 20.0, Frame().Height() );
-	}
-	
-	int32 CountStrips() { return childViews.CountItems(); }
-	BView *StripAt( int32 inIndex ) { return (BView *)childViews.ItemAt( inIndex ); }
 };
 
 #endif /* __C_StripFrameView_H__ */

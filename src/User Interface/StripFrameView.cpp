@@ -10,45 +10,60 @@
 
 #include "MeV.h"
 
-uint8 *CStripFrameView::cursor = NULL;
-
-
 const int		StripDivider_Height = 5;
 
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
 CStripFrameView::CStripFrameView(
-	BRect		rect,
-	char		*name,
-	ulong		resizingMode )
-	: CScrollerTarget(	rect,
-						name,
-						resizingMode,
-						B_WILL_DRAW | B_FRAME_EVENTS )
+	BRect frame,
+	char *name,
+	ulong resizingMode)
+	: CScrollerTarget(frame, name, resizingMode, B_WILL_DRAW | B_FRAME_EVENTS),
+	  m_ruler(NULL)
 {
-	ruler = NULL;
-
-	if (cursor == NULL)
-	{
-		cursor = ResourceUtils::LoadCursor((int32)0);
-	}
-
-	SetViewColor( B_TRANSPARENT_32_BIT );
+	SetViewColor(B_TRANSPARENT_32_BIT);
 }
 
 CStripFrameView::~CStripFrameView()
 {
-	for (int i = 0; i < childInfoList.CountItems(); i++)
+	for (int32 i = 0; i < m_childInfoList.CountItems(); i++)
 	{
-		ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
-		
-		delete childInfo;
+		ChildInfo *childInfo = (ChildInfo *)m_childInfoList.ItemAt(i);	
+		if (childInfo)
+			delete childInfo;
 	}
 }
 
-void CStripFrameView::Draw( BRect updateRect )
+// ---------------------------------------------------------------------------
+// CScrollerTarget Implementation
+
+void
+CStripFrameView::AttachedToWindow()
 {
-	if (childViews.IsEmpty())
+	AdjustScrollers();
+
+	CScrollerTarget::AttachedToWindow();
+}
+
+void
+CStripFrameView::FrameResized(
+	float width,
+	float height)
+{
+	ArrangeViews();
+	Draw(Bounds());
+	AdjustScrollers();
+	Window()->UpdateIfNeeded();
+}
+
+void
+CStripFrameView::Draw(
+	BRect updateRect)
+{
+	if (m_childViews.IsEmpty())
 	{
-			// Fill with gray
+		// Fill with gray
 		SetHighColor( 128, 128, 128 );
 		FillRect( updateRect );
 	}
@@ -57,10 +72,10 @@ void CStripFrameView::Draw( BRect updateRect )
 		float		y;
 		BRect		r( updateRect );
 	
-		for (int i = 1; i < childViews.CountItems(); i++)
+		for (int i = 1; i < m_childViews.CountItems(); i++)
 		{
-			BView		*childView = (BView *)childViews.ItemAt( i );
-			ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
+			BView		*childView = (BView *)m_childViews.ItemAt( i );
+			ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i );
 			
 			if (childInfo->fixedSize == false)
 			{
@@ -95,7 +110,9 @@ void CStripFrameView::Draw( BRect updateRect )
 	}
 }
 
-void CStripFrameView::MouseDown( BPoint point )
+void
+CStripFrameView::MouseDown(
+	BPoint point)
 {
 	ulong		buttons;
 	BView		*prevView,
@@ -112,16 +129,16 @@ void CStripFrameView::MouseDown( BPoint point )
 	
 // buttons = Window()->CurrentMessage()->FindLong( "buttons" );
 
-	for (int i = 0; i < childViews.CountItems() - 1; i++)
+	for (int i = 0; i < m_childViews.CountItems() - 1; i++)
 	{
-		prevView = (BView *)childViews.ItemAt( i );
-		ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i + 1 );
+		prevView = (BView *)m_childViews.ItemAt( i );
+		ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i + 1 );
 		
 		y = prevView->Frame().bottom;
 
-		if (		!childInfo->fixedSize
-			&&	point.y >= y
-			&&	point.y <= y + StripDivider_Height)
+		if (!childInfo->fixedSize
+			&& (point.y >= y)
+			&& (point.y <= y + StripDivider_Height))
 		{
 			selectedStrip = i;
 			stripPos = y;
@@ -131,10 +148,10 @@ void CStripFrameView::MouseDown( BPoint point )
 		}
 	}
 	
-	if (	selectedStrip < 0
-		||	selectedStrip >= childViews.CountItems()) return;
+	if (selectedStrip < 0
+		||	selectedStrip >= m_childViews.CountItems()) return;
 
-	nextView = (BView *)childViews.ItemAt( selectedStrip + 1 );
+	nextView = (BView *)m_childViews.ItemAt( selectedStrip + 1 );
 
 	stripBottomLimit	= nextView->Frame().bottom
 						- StripDivider_Height
@@ -180,16 +197,36 @@ void CStripFrameView::MouseDown( BPoint point )
 	}
 	while (buttons) ;
 
-	for (int i = 0; i < childViews.CountItems(); i++)
+	for (int i = 0; i < m_childViews.CountItems(); i++)
 	{
-		BView		*childView = (BView *)childViews.ItemAt( i );
-		ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
+		BView		*childView = (BView *)m_childViews.ItemAt( i );
+		ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i );
 		
 		childInfo->proportion = childView->Frame().Height();
 	}
 }
 
-bool CStripFrameView::AddChildView(
+void CStripFrameView::MouseMoved(
+	BPoint		point,
+	ulong		transit,
+	const BMessage	* )
+{
+	switch (transit) {
+	case B_ENTERED_VIEW: 
+//		if (cursor != NULL) be_app->SetCursor( cursor );
+		break;
+
+	case B_EXITED_VIEW:
+//		be_app->SetCursor( B_HAND_CURSOR );
+		break;
+	}
+}
+	
+// ---------------------------------------------------------------------------
+// Operations
+
+bool
+CStripFrameView::AddChildView(
 	BView		*inView,
 	int			inHeight,
 	int			inIndex,
@@ -208,11 +245,11 @@ bool CStripFrameView::AddChildView(
 	inView->SetResizingMode( B_FOLLOW_LEFT_RIGHT );
 	
 		// If it's empty, then it's simple
-	if (childViews.IsEmpty())
+	if (m_childViews.IsEmpty())
 	{
-		if (childInfoList.AddItem( newInfo ))
+		if (m_childInfoList.AddItem( newInfo ))
 		{
-			if (childViews.AddItem( inView ))
+			if (m_childViews.AddItem( inView ))
 			{
 				inView->MoveTo( 0.0, 0.0 );
 				AddChild( inView );
@@ -221,24 +258,24 @@ bool CStripFrameView::AddChildView(
 			}
 			else
 			{
-				childInfoList.RemoveItem( newInfo );
+				m_childInfoList.RemoveItem( newInfo );
 			}
 		}
 		return false;
 	}
 
 		// Range-limit the input index
-	if (inIndex < 0 || inIndex < childViews.CountItems())
-		inIndex = childViews.CountItems();
+	if (inIndex < 0 || inIndex < m_childViews.CountItems())
+		inIndex = m_childViews.CountItems();
 	
 		// Add the view into the list.
-	if (childViews.AddItem( inView, inIndex ) == false)
+	if (m_childViews.AddItem( inView, inIndex ) == false)
 	{
 		return false;
 	}
-	else if (childInfoList.AddItem( newInfo ) == false)
+	else if (m_childInfoList.AddItem( newInfo ) == false)
 	{
-		if (childViews.RemoveItem( inView ) == false)
+		if (m_childViews.RemoveItem( inView ) == false)
 		return false;
 	}
 	
@@ -248,17 +285,19 @@ bool CStripFrameView::AddChildView(
 	return true;
 }
 
-void CStripFrameView::RemoveChildView( BView *inView  )
+void
+CStripFrameView::RemoveChildView(
+	BView *inView)
 {
 	int32		index;
 	
-	if ((index = childViews.IndexOf( inView )) >= 0)
+	if ((index = m_childViews.IndexOf( inView )) >= 0)
 	{
-		BView		*childView = (BView *)childViews.ItemAt( index );
-		ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( index );
+		BView		*childView = (BView *)m_childViews.ItemAt( index );
+		ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( index );
 		
-		childViews.RemoveItem( index );
-		childInfoList.RemoveItem( index );
+		m_childViews.RemoveItem( index );
+		m_childInfoList.RemoveItem( index );
 		
 		RemoveChild( childView );
 		delete childView;
@@ -270,7 +309,8 @@ void CStripFrameView::RemoveChildView( BView *inView  )
 	}
 }
 
-void CStripFrameView::ArrangeViews()
+void
+CStripFrameView::ArrangeViews()
 {
 	int			i;
 	float		y = 0;
@@ -279,12 +319,12 @@ void CStripFrameView::ArrangeViews()
 	int32		totalProportion = 0,
 				totalHeight = height;
 	int32		totalChildHeight = 0;
-	int32		childCount = childViews.CountItems();
+	int32		childCount = m_childViews.CountItems();
 
 	for (i = 0; i < childCount; i++)
 	{
-		BView		*childView = (BView *)childViews.ItemAt( i );
-		ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
+		BView		*childView = (BView *)m_childViews.ItemAt( i );
+		ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i );
 		
 		if (childInfo->fixedSize)
 		{
@@ -310,8 +350,8 @@ void CStripFrameView::ArrangeViews()
 	
 	for (i = 0; i < childCount; i++)
 	{
-		BView		*childView = (BView *)childViews.ItemAt( i );
-		ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
+		BView		*childView = (BView *)m_childViews.ItemAt( i );
+		ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i );
 		int32		h;
 
 		if (childInfo->fixedSize)
@@ -345,8 +385,8 @@ void CStripFrameView::ArrangeViews()
 	{
 		for (i = childCount - 1; i >= 0; i--)
 		{
-			BView		*childView = (BView *)childViews.ItemAt( i );
-			ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
+			BView		*childView = (BView *)m_childViews.ItemAt( i );
+			ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i );
 			CStripView	*sv;
 
 			childView->MoveTo( 0, childInfo->y );
@@ -361,8 +401,8 @@ void CStripFrameView::ArrangeViews()
 	{
 		for (i = 0; i < childCount; i++)
 		{
-			BView		*childView = (BView *)childViews.ItemAt( i );
-			ChildInfo	*childInfo = (ChildInfo *)childInfoList.ItemAt( i );
+			BView		*childView = (BView *)m_childViews.ItemAt( i );
+			ChildInfo	*childInfo = (ChildInfo *)m_childInfoList.ItemAt( i );
 			CStripView	*sv;
 
 			childView->ResizeTo(	width, childInfo->h );
@@ -375,31 +415,8 @@ void CStripFrameView::ArrangeViews()
 	}
 }
 
-void CStripFrameView::MouseMoved(
-	BPoint		point,
-	ulong		transit,
-	const BMessage	* )
-{
-	switch (transit) {
-	case B_ENTERED_VIEW: 
-//		if (cursor != NULL) be_app->SetCursor( cursor );
-		break;
-
-	case B_EXITED_VIEW:
-//		be_app->SetCursor( B_HAND_CURSOR );
-		break;
-	}
-}
-	
-void CStripFrameView::FrameResized( float width, float height )
-{
-	ArrangeViews();
-	Draw( Bounds() );
-	AdjustScrollers();
-	Window()->UpdateIfNeeded();
-}
-
-void CStripFrameView::SetScrollValue(
+void
+CStripFrameView::SetScrollValue(
 	float			inScrollValue,
 	orientation		inOrient )
 {
@@ -409,11 +426,12 @@ void CStripFrameView::SetScrollValue(
 	
 		scrollValue.x = inScrollValue;
 		
-		if (ruler) ruler->SetScrollValue( inScrollValue, B_HORIZONTAL );
+		if (m_ruler)
+			m_ruler->SetScrollValue( inScrollValue, B_HORIZONTAL );
 
-		for (int i = 0; i < childViews.CountItems(); i++)
+		for (int i = 0; i < m_childViews.CountItems(); i++)
 		{
-			BView			*childView = (BView *)childViews.ItemAt( i );
+			BView			*childView = (BView *)m_childViews.ItemAt( i );
 			CScrollerTarget	*st = dynamic_cast<CScrollerTarget *>(childView);
 			if (st)
 			{
@@ -423,3 +441,5 @@ void CStripFrameView::SetScrollValue(
 		}
 	}
 }
+
+// END - StripFrameView.cpp

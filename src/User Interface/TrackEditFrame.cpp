@@ -47,7 +47,7 @@ void CTrackEditFrame::ZoomIn()
 	{
 		hZoomStep++;
 		SetScaling();
-		ruler->Invalidate();
+		Ruler()->Invalidate();
 	}
 }
 
@@ -57,7 +57,7 @@ void CTrackEditFrame::ZoomOut()
 	{
 		hZoomStep--;
 		SetScaling();
-		ruler->Invalidate();
+		Ruler()->Invalidate();
 	}
 }
 
