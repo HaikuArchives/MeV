@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * BorderView.h (MeV/User Interface)
+ * BorderView.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -33,6 +33,9 @@
  *  04/15/2000	cell
  *		Merged CBorderView and CBevelBorderView into a single class,
  *		only separated by the border_style argument
+ *	09/12/2000	cell
+ *		Added optional dimming of the button when window is not
+ *		activated (similar to BBorderView).
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,7 +48,8 @@
 #include <View.h>
 
 class CBorderView :
-	public BView {
+	public BView
+{
 
 public:						// Constants
 
@@ -64,19 +68,28 @@ public:						// Constructor/Destructor
 								const char *name,
 								uint32 resizingMode,
 								uint32 flags,
-								const rgb_color *color = 0,
+								bool dimOnDeactivate = true,
+								const rgb_color *color = NULL,
 								border_style style = NORMAL_BORDER);
 
 public:						// BView Implementation
 
-	void					Draw(
+	virtual void			Draw(
 								BRect updateRect);
+
+	virtual void			DrawAfterChildren(
+								BRect updateRect);
+
+	virtual void			WindowActivated(
+								bool active);
 
 private:					// Instance Data
 
 	rgb_color				m_color;
 
 	border_style			m_style;
+
+	bool					m_dimOnDeactivate;
 };
 
 #endif /* __C_BorderView_H__ */

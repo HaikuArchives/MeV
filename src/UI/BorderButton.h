@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * BorderButton.h (MeV/User Interface)
+ * BorderButton.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -32,6 +32,9 @@
  *		General cleanup in preparation for initial SourceForge checkin
  *	04/18/2000	cell
  *		Updated mouse handling to use the new Interface Kit API
+ *	09/12/2000	cell
+ *		Added optional dimming of the button when window is not
+ *		activated (similar to BBorderView).
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -54,12 +57,16 @@ public:							//Constructor/Destructor
 									const char *name,
 									BBitmap	*bitmap,
 									BMessage *message,
+									bool dimOnDeactivate = true,
 									uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP,
 									uint32 flags = B_WILL_DRAW);
 
 public:							// BControl Implementation
 
 	virtual void				Draw(
+									BRect updateRect);
+
+	virtual void				DrawAfterChildren(
 									BRect updateRect);
 
 	virtual void				MouseDown(
@@ -73,6 +80,9 @@ public:							// BControl Implementation
 	virtual void				MouseUp(
 									BPoint point);
 
+	virtual void				WindowActivated(
+									bool active);
+
 private:						// Instance Data
 	
 	BBitmap	*					m_glyphs[2];
@@ -80,6 +90,8 @@ private:						// Instance Data
 	bool						m_pressed;
 
 	bool						m_tracking;
+
+	bool						m_dimOnDeactivate;
 };
 
 #endif /* __C_BorderButton_H__ */

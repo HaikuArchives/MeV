@@ -24,16 +24,21 @@ CBorderButton::CBorderButton(
 	const char *name,
 	BBitmap *bitmap,
 	BMessage *message,
+	bool dimOnDeactivate,
 	uint32 resizingMode,
 	uint32 flags)
 	:	BControl(frame, name, NULL, message, resizingMode, flags),
 		m_pressed(false),
-		m_tracking(false)
+		m_tracking(false),
+		m_dimOnDeactivate(dimOnDeactivate)
 {
 	m_glyphs[0] = bitmap;
 	m_glyphs[1] = NULL;
 
 	SetViewColor(B_TRANSPARENT_COLOR);
+
+	if (m_dimOnDeactivate)
+		SetFlags(Flags() | B_DRAW_ON_CHILDREN);
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +60,20 @@ CBorderButton::Draw(
 		BPoint offset((Bounds().Width() - bitmap->Bounds().Width()) / 2,
 					  (Bounds().Height() - bitmap->Bounds().Height()) / 2);
 		DrawBitmapAsync(bitmap,offset);
+	}
+}
+
+void
+CBorderButton::DrawAfterChildren(
+	BRect updateRect)
+{
+	if (m_dimOnDeactivate && !Window()->IsActive())
+	{
+		SetHighColor(255, 255, 255, 255);
+		SetDrawingMode(B_OP_BLEND);
+		BRect r(Bounds());
+		r.InsetBy(1.0, 1.0);
+		FillRect(r & updateRect);
 	}
 }
 
@@ -126,3 +145,13 @@ CBorderButton::MouseUp(
 	m_tracking = false;
 	Invalidate();
 }
+
+void
+CBorderButton::WindowActivated(
+	bool active)
+{
+	if (m_dimOnDeactivate)
+		Invalidate();
+}
+
+// END - BorderButton.cpp
