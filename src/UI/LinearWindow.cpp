@@ -97,8 +97,6 @@ CLinearWindow::MessageReceived(
 {
 	D_MESSAGE(("CLinearWindow::MessageReceived()\n"));
 
-	CMeVApp &app = *(CMeVApp *)be_app;
-
 	switch (message->what)
 	{
 		case CEventEditor::TOOL_GRID:
@@ -162,43 +160,6 @@ CLinearWindow::MessageReceived(
 			else
 				Track()->SelectAll();
 			break;
-		}
-		case MENU_PLAY:
-		{
-			if (CPlayerControl::IsPlaying(Document()))
-			{
-				CPlayerControl::StopSong(Document());
-				break;
-			}
-			CPlayerControl::PlaySong(Document(), Track()->GetID(), 0,
-									 LocateTarget_Real, -1,
-									 SyncType_SongInternal,
-									 (app.GetLoopFlag() ? PB_Loop : 0) );
-			break;
-		}		
-		case MENU_PLAY_SECTION:
-		{
-			// Start playing a song.
-			CPlayerControl::PlaySong(Document(), Track()->GetID(),
-									 Track()->SectionStart(),
-									 LocateTarget_Metered,
-									 Track()->SectionEnd() - Track()->SectionStart(),
-									 SyncType_SongInternal,
-									 (app.GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
-			break;
-		}
-		case MENU_SET_SECTION:
-		{
-			if (Track()->SelectionType() != CTrack::Select_None)
-			{
-				Track()->SetSection( Track()->MinSelectTime(), Track()->MaxSelectTime() );
-				Track()->NotifyUpdate( CTrack::Update_Section, NULL );
-			}
-			break;
-		}
-		case MENU_PAUSE:
-		{
-		 	break;
 		}
 		default:
 		{

@@ -427,6 +427,43 @@ CTrackWindow::MessageReceived(
 			Document()->Export(message);
 			break;
 		}
+		case MENU_PLAY:
+		{
+			if (CPlayerControl::IsPlaying(Document()))
+			{
+				CPlayerControl::StopSong(Document());
+				break;
+			}
+			// Start playing a song.
+			CMeVApp *app = (CMeVApp *)be_app;
+			CPlayerControl::PlaySong(Document(), 0, 0, LocateTarget_Real, -1,
+									 SyncType_SongInternal,
+									 (app->GetLoopFlag() ? PB_Loop : 0));
+			break;
+		}
+		case MENU_PLAY_SECTION:
+		{	
+			// Start playing a song.
+			CMeVApp *app = (CMeVApp *)be_app;
+			CPlayerControl::PlaySong(Document(), Track()->GetID(),
+									 Track()->SectionStart(),
+									 LocateTarget_Metered,
+									 Track()->SectionEnd() - Track()->SectionStart(),
+									 SyncType_SongInternal,
+									 (app->GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
+			break;
+		}
+		case MENU_SET_SECTION:
+		{
+			StSubjectLock lock(*Track(), Lock_Exclusive);
+			if (Track()->SelectionType() != CTrack::Select_None)
+			{
+				Track()->SetSection(Track()->MinSelectTime(),
+									Track()->MaxSelectTime());
+				Track()->NotifyUpdate(CTrack::Update_Section, NULL);
+			}
+			break;
+		}
 		case CStripView::ADD_STRIP:
 		{
 			BString type;
