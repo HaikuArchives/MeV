@@ -148,8 +148,6 @@ void
 CVelocityEditor::Draw(
 	BRect updateRect)
 {
-	bounds = Bounds();
-
 	SetHighColor(255, 255, 255);
 	FillRect(updateRect);
 
@@ -181,7 +179,6 @@ CVelocityEditor::OnUpdate(
 	BMessage *message)
 {
 	BRect r(Bounds());
-	bounds = r;
 
 	bool selChange = false;
 	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
@@ -285,20 +282,21 @@ CVelocityEditor::MouseMoved(
 {
 	CEventEditor::MouseMoved(point, transit, message);
 
-	if (transit == B_EXITED_VIEW)
+	if (Window()->IsActive())
 	{
-		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
-		TrackWindow()->SetVerticalPositionInfo("");
-		return;
+		if (transit == B_EXITED_VIEW)
+		{
+			TrackWindow()->SetVerticalPositionInfo("");
+		}
+		else
+		{
+			int8 velocity = static_cast<int8>(127 * ((Bounds().bottom - point.y)
+												     / Bounds().Height()));
+			BString text;
+			text << velocity;
+			TrackWindow()->SetVerticalPositionInfo(text);
+		}
 	}
-
-	TrackWindow()->SetHorizontalPositionInfo(Track(),
-											 ViewCoordsToTime(point.x));
-	int8 velocity = static_cast<int8>(127 * ((Bounds().bottom - point.y)
-										     / Bounds().Height()));
-	BString text;
-	text << velocity;
-	TrackWindow()->SetVerticalPositionInfo(text);
 }
 
 void
@@ -315,6 +313,7 @@ CVelocityEditor::StartDrag(
 	m_dragAction = NULL;
 	m_smallestTime = LONG_MAX;
 	m_largestTime = LONG_MIN;
+
 	TrackWindow()->SetHorizontalPositionInfo(Track(), m_dragTime);
 }
 
@@ -323,8 +322,6 @@ CVelocityEditor::DoDrag(
 	BPoint point,
 	ulong buttons)
 {
-	bounds = Bounds();
-
 	if (m_dragType == DragType_Sculpt)
 	{
 		StSubjectLock trackLock(*Track(), Lock_Exclusive);
@@ -355,7 +352,7 @@ CVelocityEditor::DoDrag(
 			}
 
 			m_dragAction = new EventListUndoAction(Track()->Events(), *Track(),
-												   "Edit Velocity");
+												   "Change Velocity");
 			Track()->AddUndoAction(m_dragAction);
 		}
 
@@ -401,8 +398,13 @@ CVelocityEditor::DoDrag(
 
 				if (m_coupleAttackRelease)
 				{
-					evCopy.note.attackVelocity = CLAMP(1L, vel, 127L);
-					evCopy.note.releaseVelocity = CLAMP(1L, vel, 127L);
+					long startTime = ev->Start();
+					if ((startTime >= time1) && (startTime < time2))
+					{
+						short newVelocity = CLAMP(1L, vel, 127L);
+						evCopy.note.attackVelocity = newVelocity;
+						evCopy.note.releaseVelocity = newVelocity;
+					}
 				}
 				else
 				{
@@ -410,7 +412,7 @@ CVelocityEditor::DoDrag(
 					if (buttons & B_PRIMARY_MOUSE_BUTTON)
 					{
 						long startTime = ev->Start();
-						if ((startTime >= time1) && startTime < time2)
+						if ((startTime >= time1) && (startTime < time2))
 						{
 							short newVelocity = (startTime - time1)
 												* velocityDelta / timeDelta

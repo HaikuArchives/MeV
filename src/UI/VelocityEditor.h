@@ -30,6 +30,9 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	09/12/2000	cell
+ *		Added option to couple the control of attack & release velocity
+ *		Added StripLabelView descendant to extend the context menu
  * ---------------------------------------------------------------------
  * To Do:
  *
