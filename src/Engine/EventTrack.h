@@ -57,8 +57,13 @@ const ulong			TrackType_Event	= 'eTrk';
 
 const int			Max_Track_Filters = 8;
 
-	// Since many track types have event lists, we'll define a subclass for that.
-
+/**
+ *	A CTrack that contains events. Since many track types have event 
+ *	lists, we'll define a subclass for that.
+ *	@author	Talin, Christopher Lenz, Curt Malouin
+ *	@todo	Move UI functionality (references to CEventEditor and 
+ *			CEventRenderer) out of this class.
+ */
 class CEventTrack : 
 	public CTrack
 {
