@@ -42,6 +42,9 @@
 #include "Observer.h"
 #include "SignatureMap.h"
 
+// Support Kit
+#include <String.h>
+
 class CMeVDoc;
 class CIFFReader;
 class CIFFWriter;
@@ -121,8 +124,8 @@ public:
 		// ---------- Getters
 
 		/**	Return pointer to track name */
-	const char *Name() { return name; }
-	short GetID() { return trackID; }
+	const char *Name() const { return name; }
+	short GetID() const { return trackID; }
 	bool Muted() { return muted; }
 	bool MutedFromSolo() { return muteFromSolo; }
 	bool Solo() { return solo; }
@@ -158,18 +161,70 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// Undo item for deleting a track
+// UndoAction for deleting a track
 
-class CTrackDeleteUndoAction : public UndoAction {
-	CTrack		*track;
+class CTrackDeleteUndoAction
+	:	public UndoAction
+{
 
-public:
-	CTrackDeleteUndoAction( CTrack *inTrack );
-	~CTrackDeleteUndoAction();
-	int32 Size() { return track->Bytes(); }
-	void Undo();
-	void Redo();
-	const char *Description() const { return "Delete Track"; }
+public:							// Constructor/Destructor
+
+								CTrackDeleteUndoAction(
+									CTrack *track);
+
+								~CTrackDeleteUndoAction();
+
+public:							// UndoAction Implementation
+
+	const char *				Description() const
+								{ return "Delete Track"; }
+
+	void						Redo();
+
+	int32						Size()
+								{ return m_track->Bytes(); }
+
+	void						Undo();
+
+private:						// Instance Data
+
+	CTrack *					m_track;
+
+	int32						m_index;
+};
+
+// ---------------------------------------------------------------------------
+// UndoAction for renaming a track
+
+class CTrackRenameUndoAction
+	:	public UndoAction
+{
+
+public:							// Constructor/Destructor
+
+								CTrackRenameUndoAction(
+									CTrack *track,
+									BString newName);
+
+								~CTrackRenameUndoAction();
+
+public:							// UndoAction Implementation
+
+	const char *				Description() const
+								{ return "Rename Track"; }
+
+	void						Redo();
+
+	int32						Size()
+								{ return m_name.Length(); }
+
+	void						Undo();
+
+private:						// Instance Data
+
+	CTrack *					m_track;
+
+	BString						m_name;
 };
 
 #endif /* __C_Track_H__ */

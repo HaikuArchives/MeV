@@ -8,6 +8,18 @@
 #include "IFFWriter.h"
 #include "IFFReader.h"
 
+// Support Kit
+#include <Debug.h>
+
+// Debugging Macros
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)		// Hook Functions
+#define D_ACCESS(x) //PRINT(x)		// Accessors
+#define D_OPERATION(x) // PRINT(x)	// Operations
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
 CTrack::CTrack( CMeVDoc &inDoc, TClockType &cType, int32 inID, char *inName  )
 	: document( inDoc ),
 		muted(false),
@@ -44,6 +56,9 @@ CTrack::~CTrack()
 {
 	// REM: Delete the signature map.
 }
+
+// ---------------------------------------------------------------------------
+// Operations
 
 void CTrack::SetName( const char *inName )
 {
@@ -124,32 +139,112 @@ void CTrack::WriteTrack( CIFFWriter &writer )
 	writer.WriteChunk( Track_Name_ID, name, strlen( name ) + 1 );
 }
 
+// ---------------------------------------------------------------------------
+// CTrackDeleteUndoAction: Constructor/Destructor
+
+CTrackDeleteUndoAction::CTrackDeleteUndoAction(
+	CTrack *track)
+	:	m_track(track)
+{
+	D_ALLOC(("CTrackDeleteUndoAction::CTrackDeleteUndoAction()\n"));
+
+	for (m_index = 0; m_index < m_track->Document().CountTracks(); m_index++)
+		if (m_track->Document().TrackAt(m_index) == m_track)
+			break;
+
+	if (m_track->Document().tracks.RemoveItem(m_track))
+	{
+		m_track->deleted = true;
+		m_track->Document().SetModified();
+		m_track->Document().NotifyUpdate( CMeVDoc::Update_DelTrack, NULL );
+	}
+}
+
 CTrackDeleteUndoAction::~CTrackDeleteUndoAction()
 {
-	track->Document().tracks.RemoveItem( track );
-	CRefCountObject::Release( track );
+	D_ALLOC(("CTrackDeleteUndoAction::CTrackDeleteUndoAction()\n"));
+
+	CRefCountObject::Release(m_track);
 }
 
-CTrackDeleteUndoAction::CTrackDeleteUndoAction( CTrack *inTrack )
+// ---------------------------------------------------------------------------
+// CTrackDeleteUndoAction: UndoAction Implementation
+
+void
+CTrackDeleteUndoAction::Redo()
 {
-	track = inTrack;
-	track->deleted = true;
-	track->Document().SetModified();
-	track->Document().NotifyUpdate( CMeVDoc::Update_AddTrack, NULL );
+	D_HOOK(("CTrackDeleteUndoAction::Redo()\n"));
+
+	if (m_track->Document().tracks.RemoveItem(m_track))
+	{
+		m_track->deleted = true;
+		m_track->Document().SetModified();
+		m_track->Document().NotifyUpdate(CMeVDoc::Update_DelTrack, NULL);
+	}
+	CRefCountObject::Release(m_track);
 }
 
-void CTrackDeleteUndoAction::Undo()
+void
+CTrackDeleteUndoAction::Undo()
 {
-	track->Acquire();
-	track->deleted = false;
-	track->Document().SetModified();
-	track->Document().NotifyUpdate( CMeVDoc::Update_AddTrack, NULL );
+	D_HOOK(("CTrackDeleteUndoAction::Undo()\n"));
+
+	m_track->Acquire();
+	if (m_track->Document().tracks.AddItem(m_track, m_index))
+	{
+		m_track->deleted = false;
+		m_track->Document().SetModified();
+		m_track->Document().NotifyUpdate(CMeVDoc::Update_AddTrack, NULL);
+	}
 }
 
-void CTrackDeleteUndoAction::Redo()
+// ---------------------------------------------------------------------------
+// CTrackRenameUndoAction: Constructor/Destructor
+
+CTrackRenameUndoAction::CTrackRenameUndoAction(
+	CTrack *track,
+	BString newName)
+	:	m_track(track)
 {
-	track->deleted = true;
-	track->Document().SetModified();
-	track->Document().NotifyUpdate( CMeVDoc::Update_DelTrack, NULL );
-	CRefCountObject::Release( track );
+	D_ALLOC(("CTrackRenameUndoAction::CTrackRenameUndoAction()\n"));
+
+	m_name = m_track->Name();
+	m_track->SetName(newName.String());
+	m_track->Document().SetModified();
+	m_track->NotifyUpdate(CTrack::Update_Name, NULL);
 }
+
+CTrackRenameUndoAction::~CTrackRenameUndoAction()
+{
+	D_ALLOC(("CTrackRenameUndoAction::~CTrackRenameUndoAction()\n"));
+
+}
+
+// ---------------------------------------------------------------------------
+// CTrackRenameUndoAction: UndoAction Implementation
+
+void
+CTrackRenameUndoAction::Redo()
+{
+	D_HOOK(("CTrackRenameUndoAction::Redo()\n"));
+
+	BString oldName = m_track->Name();
+	m_track->SetName(m_name.String());
+	m_name = oldName;
+	m_track->Document().SetModified();
+	m_track->NotifyUpdate(CTrack::Update_Name, NULL);
+}
+
+void
+CTrackRenameUndoAction::Undo()
+{
+	D_HOOK(("CTrackRenameUndoAction::Undo()\n"));
+
+	BString oldName = m_track->Name();
+	m_track->SetName(m_name.String());
+	m_name = oldName;
+	m_track->Document().SetModified();
+	m_track->NotifyUpdate(CTrack::Update_Name, NULL);
+}
+
+// END - Track.cpp
