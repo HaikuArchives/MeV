@@ -88,78 +88,102 @@ public :
 												// of vanished midi port.
 		deleted			= (1<<4)				// only one channel should be in this catagory.
 	};
-		
-	
-public:					//Constructor/Destructor
 
-	CDestination(int32 id,CMeVDoc &inDoc,char *name,bool notify);
-														//the notify is a tempary soloution
-														//to a Segfault in the initial observer on load
-	~CDestination();
+public:							//Constructor/Destructor
 
-public:   				// Serialization
-	
-	virtual void WriteDestination (CIFFWriter &writer);
+								CDestination(
+									int32 id,
+									CMeVDoc &inDoc,
+									char *name,
+									bool notify);
+									//the notify is a tempary soloution
+									//to a Segfault in the initial observer on load
 
-public:					// Accessors
-	
-	bool 				IsValid () const;   //if not disabled or deleted.
-	
-	void 				SetMuted (bool muted);
-	bool				Muted () const;
-						
-	bool 				MutedFromSolo () const;
-						
-	void 				SetSolo (bool solo);
-	bool 				Solo () const;
-						
-	void 				SetName (const char *name);	
-	const char *		Name() const
-						{return m_name.String();}
+	virtual						~CDestination();
 
-	void				SetLatency(int32 microseconds);
-	int32				Latency(uint8 clockType);
-						
-	
-	int32 				GetID() const
-						{return m_id;}
-						
-	void				SetColor (rgb_color color);
-	rgb_color			GetFillColor();
-	rgb_color			GetHighlightColor();
-						
-	void 				SetChannel (uint8 channel);
-	uint8				Channel () const
-						{return m_channel;}
-	
-	void SetConnect (BMidiConsumer *sink, bool connect);
-	bool IsConnected (BMidiConsumer *sink) const;
-	CReconnectingMidiProducer * GetProducer() const
-	{ return m_producer; }
-	
-	void SetDisable (bool disable);
-	
-	void Delete ();
-	
-	void Undelete(int32 originalIndex);
-	
-	
-	bool			 Deleted() const;
+public: 		  				// Serialization
 
-	bool 			 Disabled() const;
-	CMeVDoc & Document()
-			{ return *m_doc; } 
+	virtual void				WriteDestination(
+									CIFFWriter &writer);
+
+public:							// Accessors
+	
+	/** Returns true if not disabled or deleted. */
+	bool 						IsValid () const;
+
+	void 						SetMuted(
+									bool muted);
+	bool						Muted() const
+								{ return m_flags & muted; }
+
+	bool 						MutedFromSolo() const
+								{ return m_flags & mutedFromSolo; }
+
+	void 						SetSolo(
+									bool solo);
+	bool 						Solo() const
+								{ return m_flags & solo; }
+						
+	void 						SetName (const char *name);	
+	const char *				Name() const
+								{ return m_name.String(); }
+
+	void						SetLatency(
+									int32 microseconds);
+	int32						Latency(
+									uint8 clockType)
+								{ return 0; } // nyi
+
+	int32 						GetID() const
+								{ return m_id; }
+
+	void						SetColor(
+									rgb_color color);
+	rgb_color					GetFillColor() const
+								{ return m_fillColor; }
+	rgb_color					GetHighlightColor() const
+								{ return m_highlightColor; }
+
+	void 						SetChannel(uint8 channel);
+	uint8						Channel() const
+								{ return m_channel; }
+
+	void						SetConnect(
+									BMidiConsumer *sink,
+									bool connect);
+	bool						IsConnected(
+									BMidiConsumer *sink) const;
+	CReconnectingMidiProducer *	GetProducer() const
+								{ return m_producer; }
+
+	void						SetDisable(
+									bool disable);
+	bool			 			Disabled()const
+								{ return m_flags & disabled; }
+
+	void						Delete();
+	void						Undelete(
+									int32 originalIndex);
+	bool						Deleted() const
+								{ return m_flags & deleted; }
+
+	CMeVDoc &					Document()
+								{ return *m_doc; } 
 	
 public:							//Hook Functions
+
 	virtual int32				Bytes()
 								{ return sizeof *this; }
 
 public:							//debug function
+
 	void 						PrintSelf();
+
 private:
-	bool _addFlag (int32 flag);
-	bool _removeFlag(int32 flag);	
-	
+
+	bool						_addFlag (int32 flag);
+
+	bool						_removeFlag(int32 flag);	
 	
 private:   	
 	void 					_addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
@@ -214,5 +238,7 @@ private:
 	
 	int32				m_index;
 };
+
 typedef BitSet<Max_Destinations> VBitTable;
+
 #endif /* __C_Destination_H__ */

@@ -1,35 +1,47 @@
 /* ===================================================================== *
  * Destination.cpp (MeV/Engine)
  * ===================================================================== */
-#include "MidiManager.h"
+
 #include "Destination.h"
-#include "MeVDoc.h"
-#include "IFFWriter.h"
+
 #include "IFFReader.h"
-#include "TrackWindow.h"
-#include "ReconnectingMidiProducer.h"
+#include "IFFWriter.h"
 #include "InternalSynth.h"
+#include "MeVDoc.h"
+#include "MidiManager.h"
 #include "Observer.h"
-#include <MidiConsumer.h>
-#include <MidiProducer.h>
+#include "ReconnectingMidiProducer.h"
+#include "TrackWindow.h"
+
+// Interface Kit
 #include <Rect.h>
 #include <Bitmap.h>
 #include <View.h>
+// Midi Kit
+#include <MidiConsumer.h>
+#include <MidiProducer.h>
+// Support Kit
 #include <Debug.h>
+// Standard C++ Library
+#include <iostream>
+
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)		// Hook Functions
 #define D_ACCESS(x) //PRINT(x)		// Accessors
 #define D_OPERATION(x) // PRINT(x)	// Operations
 #define D_SERIALIZE(x) //PRINT(x)		// Serialization
-#include <iostream.h>
+
 // ---------------------------------------------------------------------------
-// Constructor/Destructor
-const rgb_color CDestination::m_defaultColorTable[]= {
-	{255, 64, 64},
-	{64,128,64},
-	{164,32,164},
-	{164,164,32},			
-	{   0, 255, 64 },			
+// Constants Initialization
+
+const rgb_color
+CDestination::m_defaultColorTable[]=
+{
+	{ 255,  64,  64 },
+	{  64, 128,  64 },
+	{ 164,  32, 164 },
+	{ 164, 164,  32 },			
+	{   0, 255,  64 },			
 	{   0, 255,   0 },			
 	{   0, 160, 160 },			
 	{   0, 255, 160 },			
@@ -43,16 +55,13 @@ const rgb_color CDestination::m_defaultColorTable[]= {
 	{ 128, 128,   0 }
 };
 
-CDestination::CDestination (
-			int32 id,
-			CMeVDoc &inDoc,
-			char *name,
-			bool notify)
-			:	
-				m_latency(0)
-				
+CDestination::CDestination(
+	int32 id,
+	CMeVDoc &inDoc,
+	char *name,
+	bool notify)
+	:	m_latency(0)		
 {
-	
 	m_doc=&inDoc;
 	m_flags=0;
 	m_channel=0;
@@ -223,31 +232,6 @@ CDestination::SetMuted (bool muted)
 	Document().PostUpdateAllTracks(&hint);
 	Document().PostUpdate(&hint);
 }
-bool
-CDestination::Muted() const
-{
-	return (m_flags & CDestination::muted);
-}
-bool
-CDestination::Solo() const
-{
-	return (m_flags & CDestination::solo);
-}
-
-bool
-CDestination::Deleted() const
-{
-	return (m_flags & CDestination::deleted);
-}
-bool
-CDestination::Disabled() const
-{
-	return (m_flags & CDestination::disabled);
-}
-bool
-CDestination::MutedFromSolo () const
-{
-}
 
 void
 CDestination::SetSolo (bool solo)
@@ -264,6 +248,7 @@ CDestination::SetName (const char *name)
 	hint.AddInt32 ("DestAttrs",Update_Name);
 	Document().PostUpdate(&hint,NULL);
 }
+
 void 
 CDestination::SetLatency (int32 microseconds)
 {
@@ -273,11 +258,7 @@ CDestination::SetLatency (int32 microseconds)
 	hint.AddInt32 ("DestAttrs",Update_Latency);
 	Document().SetDestinationLatency(GetID(),m_latency);
 }
-int32
-CDestination::Latency (uint8 clockType)
-{
-//	m_producer->Latency();
-}
+
 void
 CDestination::SetColor (rgb_color color)
 {
@@ -303,17 +284,6 @@ CDestination::SetColor (rgb_color color)
 	Document().PostUpdateAllTracks(&hint);
 	Document().PostUpdate(&hint);
 }
-rgb_color
-CDestination::GetFillColor ()
-{
-	return m_fillColor;
-}
- 
-rgb_color
-CDestination::GetHighlightColor ()
-{
-	return m_highlightColor;
-}	
 
 void
 CDestination::SetChannel (uint8 channel)
@@ -419,37 +389,33 @@ CDestination::Undelete(
 bool 
 CDestination::_addFlag(int32 flag)
 {
-	if (m_flags & flag)
+	if (!(m_flags & flag))
 	{
-	//set
-	}
-	else
-	{
-		m_flags^=flag;
+		m_flags ^= flag;
 		return true;
-	}	
+	}
+
+	return false;
 }
 bool 
 CDestination::_removeFlag (int32 flag)
 {
 	if (m_flags & flag)
 	{
-		m_flags^=flag;
+		m_flags ^= flag;
 		return true;
 	}
-	else
-	{
-	//unset
-	}
+
+	return false;
 }
-// debug
+
 void
 CDestination::PrintSelf()
 {
 	printf ("\n");
 	printf ("Name=%s\n",Name());
-	printf ("ID=%d\n",m_id);
-	printf ("IndexOf=%d\n",Document().m_destinations.IndexOf(this));
+	printf ("ID=%ld\n",m_id);
+	printf ("IndexOf=%ld\n",Document().m_destinations.IndexOf(this));
 	printf ("Muted=%d\n",Muted());
 	printf ("Solod=%d\n",Solo());
 	printf ("Deleted=%d\n",Deleted());
@@ -484,3 +450,5 @@ CDestinationDeleteUndoAction::Undo()
 	D_HOOK(("CDestinationDeleteUndoAction::Undo()\n"));
 	m_dest->Undelete(m_index);
 }
+
+// END - Destination.cpp

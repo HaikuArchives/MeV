@@ -289,7 +289,6 @@ void CPlaybackTaskGroup::LocateNextChunk( TimeState &tState )
 
 void CPlaybackTaskGroup::Locate()
 {
-	bool				doneLocating = false;
 	CPlaybackTask	*th[ 2 ];
 	
 	th[ 0 ] = th[ 1 ] = NULL;
@@ -354,8 +353,6 @@ void CPlaybackTaskGroup::Locate()
 
 	if (locateType == LocateTarget_Real)
 	{
-		int32		offset = 0;
-
 			// While seek time has not caught up to actual time,
 			// locate through some number of events, except
 			// if we're near the start of the song there's no need
