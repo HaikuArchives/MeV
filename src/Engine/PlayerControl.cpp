@@ -28,12 +28,20 @@ CPlayerControl::DoAudioFeedback(
 
 	if (doc && demoEvent)
 	{
-		int32 channel = (feedbackAttribute == EvAttr_Channel)
-						? attributeValue
-						: demoEvent->GetVChannel();
-		CMidiDestination *dest = (CMidiDestination *)doc->FindDestination(channel);
-		modEvent->stack.actualPort = dest->Producer();	
-		modEvent->stack.actualChannel = dest->Channel();
+		int32 destID = (feedbackAttribute == EvAttr_Channel)
+					   ? attributeValue
+					   : demoEvent->GetVChannel();
+		if (doc->ReadLock(500))
+		{
+			CMidiDestination *dest = (CMidiDestination *)doc->FindDestination(destID);
+			doc->ReadUnlock();
+			if (dest->ReadLock(500))
+			{
+				modEvent->stack.actualPort = dest->Producer();	
+				modEvent->stack.actualChannel = dest->Channel();
+				dest->ReadUnlock();
+			}
+		}
 	}
 	else
 	{
