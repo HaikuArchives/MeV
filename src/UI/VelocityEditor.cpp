@@ -13,6 +13,9 @@
 
 #include "StripLabelView.h"
 
+// Interface Kit
+#include <MenuItem.h>
+#include <PopUpMenu.h>
 // Gnu C Library
 #include <stdio.h>
 // Support Kit
@@ -91,88 +94,25 @@ protected:						// Accessors
 								{ return (CVelocityEditor *)CEventHandler::Editor(); }
 };
 
-void
-CVelocityNoteEventHandler::Invalidate(
-	const Event &ev) const
+// ---------------------------------------------------------------------------
+// Label View for the Velocity Strip
+
+class CVelocityStripLabelView
+	:	public CStripLabelView
 {
-	Editor()->Invalidate(Extent(ev));
-}
 
-void
-CVelocityNoteEventHandler::Draw(
-	const Event &ev,
-	bool shadowed) const
-{
-	Destination	*dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+public:							// No constructor
 
-	BRect rect(Editor()->Bounds());
-	rect.left = Editor()->TimeToViewCoords(ev.Start());
-	rect.right = Editor()->TimeToViewCoords(ev.Stop());
+								CVelocityStripLabelView(
+									BRect rect);
 
-	BPoint points[4] = { BPoint(0.0, 0.0),
-						 BPoint(0.0, 0.0),
-						 BPoint(0.0, 0.0),
-						 BPoint(0.0, 0.0) };
-	points[0].x = points[1].x = rect.left;
-	points[2].x = points[3].x = rect.right;
-	points[0].y = points[3].y = rect.bottom + 1.0;
-	points[1].y = rect.bottom - (long)(ev.note.attackVelocity * rect.Height())
-								/ 128;
-	points[2].y = rect.bottom - (long)(ev.note.releaseVelocity * rect.Height())
-								/ 128;
-	rect.top = MIN(points[1].y, points[2].y);
+public:							// CStripLabelView Implementation
 
-	if (points[1].y == points[2].y)
-	{
-		// Rects fill faster, so let's use that if we can.
-		if (ev.IsSelected() && Editor()->IsSelectionVisible())
-			Editor()->SetHighColor(0, 0, 255);
-		else
-			Editor()->SetHighColor(0, 0, 0);
-		
-		Editor()->StrokeRect(rect);
-		rect.InsetBy(1.0, 1.0);
-		Editor()->SetHighColor(dest->fillColor);
-		Editor()->SetDrawingMode(B_OP_BLEND);
-		Editor()->FillRect(rect);
-	}
-	else
-	{
-		Editor()->SetHighColor(dest->fillColor);
-		Editor()->SetDrawingMode(B_OP_BLEND);
-		Editor()->FillPolygon(points, 4, rect);
+	virtual void				InitContextMenu();
 
-		Editor()->SetDrawingMode(B_OP_COPY);
-		if (ev.IsSelected() && Editor()->IsSelectionVisible())
-			Editor()->SetHighColor(0, 0, 255);
-		else
-			Editor()->SetHighColor(0, 0, 0);
-		Editor()->StrokePolygon(points, 4, rect, false);
-	}
-	Editor()->SetDrawingMode(B_OP_COPY);
-}
-
-BRect
-CVelocityNoteEventHandler::Extent(
-	const Event &ev) const
-{
-	BRect rect(Editor()->Bounds());
-	rect.left = Editor()->TimeToViewCoords(ev.Start());
-	rect.right = Editor()->TimeToViewCoords(ev.Stop());
-	rect.top = rect.bottom - (MAX(ev.note.attackVelocity,
-								  ev.note.releaseVelocity) * rect.Height()) / 128;
-
-	return rect;
-}
-
-const BCursor *
-CVelocityNoteEventHandler::Cursor(
-	short partCode,
-	int32 editMode,
-	bool dragging) const
-{
-	return CCursorCache::GetCursor(CCursorCache::PENCIL);
-}
+	virtual void				ShowContextMenu(
+									BPoint point);
+};
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -182,16 +122,19 @@ CVelocityEditor::CVelocityEditor(
 	CStripFrameView &frameView,
 	BRect rect)
 	:	CEventEditor(looper, frameView, rect,
-					 "Velocity", false, false)
+					 "Velocity", false, false),
+		m_coupleAttackRelease(true)
 {
 	SetHandlerFor(EvtType_Note, new CVelocityNoteEventHandler(this));
 	SetFlags(Flags() | B_FULL_UPDATE_ON_RESIZE);
 
 	// Make the label view on the left-hand side
-	SetLabelView(new CStripLabelView(BRect(-1.0, -1.0, 20.0, rect.Height() + 1),
-									 "Velocity", B_FOLLOW_TOP_BOTTOM,
-									 B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
+	SetLabelView(new CVelocityStripLabelView(BRect(-1.0, -1.0, 20.0,
+												   rect.Height() + 1)));
 }
+
+// ---------------------------------------------------------------------------
+// CEventEditor Implementation
 
 const BCursor *
 CVelocityEditor::CursorFor(
@@ -311,6 +254,30 @@ CVelocityEditor::OnUpdate(
 }
 
 void
+CVelocityEditor::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case COUPLE_ATTACK_RELEASE:
+		{	
+			m_coupleAttackRelease = !m_coupleAttackRelease;
+			break;
+		}
+		case Update_ID:
+		case Delete_ID:
+		{
+			CObserver::MessageReceived(message);
+			break;
+		}
+		default:
+		{
+			CStripView::MessageReceived(message);
+		}
+	}
+}
+
+void
 CVelocityEditor::MouseMoved(
 	BPoint point,
 	uint32 transit,
@@ -384,7 +351,7 @@ CVelocityEditor::DoDrag(
 					PostUpdate(&hint, true);
 				}
 				m_smallestTime = LONG_MAX;
-				m_largestTime	= LONG_MIN;
+				m_largestTime = LONG_MIN;
 			}
 
 			m_dragAction = new EventListUndoAction(Track()->Events(), *Track(),
@@ -393,10 +360,7 @@ CVelocityEditor::DoDrag(
 		}
 
 		// Compute the time and velocity coords of the mouse.
-		PRINT((" -> point: %f, %f\n", point.x, point.y));
-		PRINT((" -> rect: ")); r.PrintToStream();
 		short vel = static_cast<short>(127 * (r.bottom - point.y) / r.Height());
-		PRINT((" -> new velocity: %d\n", vel));
 		short vel1, vel2;
 		long time = ViewCoordsToTime(point.x);
 		long time1, time2;
@@ -435,36 +399,42 @@ CVelocityEditor::DoDrag(
 				Event evCopy(*ev);
 				bool eventSaved = false;
 
-				// Modify the note based on the button states.	
-				if (buttons & B_PRIMARY_MOUSE_BUTTON)
+				if (m_coupleAttackRelease)
 				{
-					long startTime = ev->Start();
-					if ((startTime >= time1) && startTime < time2)
-					{
-						short newVelocity = (startTime - time1)
-											* velocityDelta / timeDelta
-											+ vel1;
-						PRINT(("new attack velocity = %d\n", newVelocity));
-						evCopy.note.attackVelocity = CLAMP(1L, newVelocity,
-														   127L);
-					}
+					evCopy.note.attackVelocity = CLAMP(1L, vel, 127L);
+					evCopy.note.releaseVelocity = CLAMP(1L, vel, 127L);
 				}
+				else
+				{
+					// Modify the note based on the button states.	
+					if (buttons & B_PRIMARY_MOUSE_BUTTON)
+					{
+						long startTime = ev->Start();
+						if ((startTime >= time1) && startTime < time2)
+						{
+							short newVelocity = (startTime - time1)
+												* velocityDelta / timeDelta
+												+ vel1;
+							evCopy.note.attackVelocity = CLAMP(1L, newVelocity,
+															   127L);
+						}
+					}
+	
+					if (buttons & B_SECONDARY_MOUSE_BUTTON)
+					{
+						long stopTime = ev->Stop();
+						if ((stopTime >= time1) && (stopTime < time2))
+						{
+							int32 newVelocity = (stopTime - time1)
+												* velocityDelta / timeDelta
+												+ vel1;
+							evCopy.note.releaseVelocity = CLAMP(0L, newVelocity,
+																127L);
+							
+						}
+					}
+				}				
 
-				if (buttons & B_SECONDARY_MOUSE_BUTTON)
-				{
-					long stopTime = ev->Stop();
-					if ((stopTime >= time1) && (stopTime < time2))
-					{
-						int32 newVelocity = (stopTime - time1)
-											* velocityDelta / timeDelta
-											+ vel1;
-						PRINT(("new release velocity = %d\n", newVelocity));
-						evCopy.note.releaseVelocity = CLAMP(0L, newVelocity,
-															127L);
-						
-					}
-				}
-				
 				// If the event overlaps the range of time between
 				// smallest <--> largest then it has already been
 				// stored in the undo repository.
@@ -541,6 +511,126 @@ CVelocityEditor::FinishDrag(
 	}
 
 	TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
+}
+
+// ---------------------------------------------------------------------------
+// CVelocityNoteEventHandler: CEventHandler Implementation
+
+void
+CVelocityNoteEventHandler::Invalidate(
+	const Event &ev) const
+{
+	Editor()->Invalidate(Extent(ev));
+}
+
+void
+CVelocityNoteEventHandler::Draw(
+	const Event &ev,
+	bool shadowed) const
+{
+	Destination	*dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+
+	BRect rect(Editor()->Bounds());
+	rect.left = Editor()->TimeToViewCoords(ev.Start());
+	rect.right = Editor()->TimeToViewCoords(ev.Stop());
+
+	BPoint points[4] = { BPoint(0.0, 0.0),
+						 BPoint(0.0, 0.0),
+						 BPoint(0.0, 0.0),
+						 BPoint(0.0, 0.0) };
+	points[0].x = points[1].x = rect.left;
+	points[2].x = points[3].x = rect.right;
+	points[0].y = points[3].y = rect.bottom + 1.0;
+	points[1].y = rect.bottom - (long)(ev.note.attackVelocity * rect.Height())
+								/ 128;
+	points[2].y = rect.bottom - (long)(ev.note.releaseVelocity * rect.Height())
+								/ 128;
+	rect.top = MIN(points[1].y, points[2].y);
+
+	if (points[1].y == points[2].y)
+	{
+		// Rects fill faster, so let's use that if we can.
+		if (ev.IsSelected() && Editor()->IsSelectionVisible())
+			Editor()->SetHighColor(0, 0, 255);
+		else
+			Editor()->SetHighColor(0, 0, 0);
+		
+		Editor()->StrokeRect(rect);
+		rect.InsetBy(1.0, 1.0);
+		Editor()->SetHighColor(dest->fillColor);
+		Editor()->SetDrawingMode(B_OP_BLEND);
+		Editor()->FillRect(rect);
+	}
+	else
+	{
+		Editor()->SetHighColor(dest->fillColor);
+		Editor()->SetDrawingMode(B_OP_BLEND);
+		Editor()->FillPolygon(points, 4, rect);
+
+		Editor()->SetDrawingMode(B_OP_COPY);
+		if (ev.IsSelected() && Editor()->IsSelectionVisible())
+			Editor()->SetHighColor(0, 0, 255);
+		else
+			Editor()->SetHighColor(0, 0, 0);
+		Editor()->StrokePolygon(points, 4, rect, false);
+	}
+	Editor()->SetDrawingMode(B_OP_COPY);
+}
+
+BRect
+CVelocityNoteEventHandler::Extent(
+	const Event &ev) const
+{
+	BRect rect(Editor()->Bounds());
+	rect.left = Editor()->TimeToViewCoords(ev.Start());
+	rect.right = Editor()->TimeToViewCoords(ev.Stop());
+	rect.top = rect.bottom - (MAX(ev.note.attackVelocity,
+								  ev.note.releaseVelocity) * rect.Height()) / 128;
+
+	return rect;
+}
+
+const BCursor *
+CVelocityNoteEventHandler::Cursor(
+	short partCode,
+	int32 editMode,
+	bool dragging) const
+{
+	return CCursorCache::GetCursor(CCursorCache::PENCIL);
+}
+
+// ---------------------------------------------------------------------------
+// CVelocityStripLabelView: Constructor/Destructor
+
+CVelocityStripLabelView::CVelocityStripLabelView(
+	BRect rect)
+	:	CStripLabelView(rect, "Velocity", B_FOLLOW_TOP_BOTTOM,
+						B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE)
+{
+}
+
+// ---------------------------------------------------------------------------
+// CVelocityStripLabelView: CStripLabelView Implementation
+
+void
+CVelocityStripLabelView::InitContextMenu()
+{
+	CStripLabelView::InitContextMenu();
+
+	ContextMenu()->AddSeparatorItem();
+	ContextMenu()->AddItem(new BMenuItem("Couple Attack / Release",
+										 new BMessage(CVelocityEditor::COUPLE_ATTACK_RELEASE)));
+}
+
+void
+CVelocityStripLabelView::ShowContextMenu(
+	BPoint point)
+{
+	BMenuItem *item = ContextMenu()->FindItem(CVelocityEditor::COUPLE_ATTACK_RELEASE);
+	if (item)
+		item->SetMarked(((CVelocityEditor *)StripView())->m_coupleAttackRelease);
+
+	CStripLabelView::ShowContextMenu(point);
 }
 
 // END - VelocityEditor.cpp

@@ -51,6 +51,14 @@ class CVelocityEditor
 	:	public CEventEditor
 {
 	friend class CVelocityNoteEventHandler;
+	friend class CVelocityStripLabelView;
+
+public:							// Constants
+
+	enum messages
+	{
+								COUPLE_ATTACK_RELEASE = 'veeA'
+	};
 
 public:							// Constructor/Destructor
 
@@ -59,7 +67,7 @@ public:							// Constructor/Destructor
 									CStripFrameView &frame,
 									BRect rect);
 
-public:							// CEventEditor Implementaiton
+public:							// CEventEditor Implementation
 
 	void						AttachedToWindow()
 								{ SetViewColor(B_TRANSPARENT_32_BIT); }
@@ -69,6 +77,14 @@ public:							// CEventEditor Implementaiton
 
 	void						Draw(
 									BRect updateRect);
+
+	void						MessageReceived(
+									BMessage *message);
+
+	void						MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
 
 	void						StartDrag(
 									BPoint point,
@@ -80,11 +96,6 @@ public:							// CEventEditor Implementaiton
 									BPoint point,
 									ulong buttons,
 									bool commit);
-
-	void						MouseMoved(
-									BPoint point,
-									uint32 transit,
-									const BMessage *message);
 
 	/** Update message from another observer */
 	void						OnUpdate(
@@ -113,6 +124,8 @@ private:						// Instance Data
 	int32						m_dragVelocity;
 
 	EventListUndoAction *		m_dragAction;
+
+	bool						m_coupleAttackRelease;
 };
 
 #endif /* __C_VelocityEditor_H__ */
