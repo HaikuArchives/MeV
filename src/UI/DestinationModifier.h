@@ -24,7 +24,7 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- * A class that manages the destinations.  
+ * A class that manages the m_destinations.  
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
@@ -41,7 +41,7 @@
 
 #include "MidiManager.h"
 #include "Observer.h"
-
+#include "MeVDoc.h"
 // Application Kit
 #include <Message.h>
 // Interface Kit
@@ -53,7 +53,7 @@
 #include <View.h>
 #include <Window.h>
 
-class Destination;
+class CDestination;
 class CDestinationList;
 
 class CDestinationModifier
@@ -89,7 +89,7 @@ public:							// Constructor/Destructor
 								CDestinationModifier(
 									BRect frame,
 									int32 id,
-									CDestinationList *tm,
+									CMeVDoc *doc,
 									BHandler *parent);
 
 public:							// Operations
@@ -122,11 +122,9 @@ private:						// Internal Operations
 private:						// Instance Data
 
 	//pointer to the currently selected dest.
-	Destination *				m_vc;
+	CDestination *				m_dest;
 
 	int32						m_id;
-
-	CDestinationList *			m_tm;
 
 	CMidiManager *				m_midiManager;	
 
@@ -140,7 +138,7 @@ private:						// Instance Data
 
 	BPopUpMenu *				m_channels;
 
-	BCheckBox *					m_mute;
+	BCheckBox *					m_muted;
 
 	BCheckBox *					m_solo;
 

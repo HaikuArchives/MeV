@@ -41,7 +41,7 @@
 #include "TextDisplay.h" 
 #include "View.h" 
 #include "IconMenuItem.h" 
-#include "DestinationList.h" 
+//#include "DestinationList.h" 
 #include "Observer.h" 
 #include <PopUpMenu.h> 
 #include <Button.h> 
@@ -59,37 +59,37 @@ class CDestinationListView :
 private: 
        // uint8                   m_selected_id; 
         uint8                   m_default_id; 
-        Destination *m_dest;//selected vc. 
-        
+        CDestination *m_dest;//selected vc. 
+        CMeVDoc					*m_doc;
         CEventTrack             *track; 
         uint8                   channel; 
         BPopUpMenu              *m_destMenu; 
         BButton                 *m_editButton; 
         BButton                 *m_deleteButton; 
-        BMenuField		*m_destfield;
-        BCheckBox               *m_mute; 
+        BMenuField				*m_destfield;
+        BCheckBox               *m_muted; 
         BCheckBox               *m_lock; 
-        map <int,CDestinationModifier *> m_modifierMap; 
-        CDestinationList *m_destList;    
-//      +-------------------------------+ +---------+ 
-//      | m_destMenu                      | | editbut. | 
-//      +-------------------------------+ +---------+ 
-//      Port:           ObjektSynth 
-//      Channel:        1 
-//              [x] Mute                                [x] Lock        
+        map <int,CDestinationModifier *> m_modifierMap;  
+
         virtual void AttachedToWindow(); 
         //update the info on selected channel; 
         
 public: 
                 /**     Constructor */ 
-        CDestinationListView(BRect               inFrame,
-                             BLooper                 *thelooper, 
+        CDestinationListView(BRect           inFrame,
+                             BLooper		*looper,
                              uint32          inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT, 
                              uint32          inFlags = B_WILL_DRAW ); 
                                                         
         ~CDestinationListView() { CRefCountObject::Release( track ); } 
                 /*      Select which track we are looking at, so we can draw channel 
                         array properly.*/ 
+                        
+        void SetDocument (CMeVDoc *doc)
+        	{m_doc=doc;}
+        CMeVDoc * Document () const
+        	{return m_doc;}
+        		
         void SetTrack( CEventTrack *inTrack ); 
         void Update(); 
         virtual void MessageReceived(BMessage *msg); 

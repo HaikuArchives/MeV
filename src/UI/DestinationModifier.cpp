@@ -5,7 +5,7 @@
 #include "DestinationModifier.h"
 
 #include "Destination.h"
-#include "DestinationList.h"
+#include "MeVDoc.h"
 #include "DestinationListView.h"
 #include "MidiManager.h"
 #include "IconMenuItem.h"
@@ -22,20 +22,19 @@
 CDestinationModifier::CDestinationModifier(
 	BRect frame,
 	int32 id,
-	CDestinationList *tm,
+	CMeVDoc *doc,
 	BHandler *parent)
-	:	BWindow(frame, "Destination Modifier", B_TITLED_WINDOW,
+	:	BWindow(frame, "CDestination Modifier", B_TITLED_WINDOW,
 				B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
-		CObserver(*this, tm),
-		m_vc(tm->get(id)),
+		CObserver(*this, doc),
+		m_dest(doc->FindDestination(id)),
 		m_id(id),
-		m_tm(tm),
 		m_midiManager(CMidiManager::Instance()),
 		m_parent(parent)
 {
 	BString title;
 	title << "Destination: ";
-	title << m_vc->name.String();
+	title << m_dest->Name();
 	SetTitle(title.String());
 
 	_buildUI();
@@ -82,7 +81,7 @@ CDestinationModifier::MessageReceived(
 		{
 			BString name;
 			name << m_name->Text();
-			m_tm->SetNameFor(m_id, name);
+			m_dest->SetName(name.String());
 			BString title;
 			title << "Destination: ";
 			title << name;
@@ -91,7 +90,7 @@ CDestinationModifier::MessageReceived(
 		}
 		case CHANNEL_SELECTED:
 		{
-			m_tm->SetChannelFor(m_id, message->FindInt8("value"));	
+			m_dest->SetChannel(message->FindInt8("value"));	
 			break;
 		}
 		case PORT_SELECTED:
@@ -99,17 +98,17 @@ CDestinationModifier::MessageReceived(
 			int32 portID;
 			if (message->FindInt32("port_id", &portID) != B_OK)
 				return;
-			m_tm->ToggleConnectFor(m_id, m_midiManager->FindConsumer(portID));
+			m_dest->ToggleConnect(m_midiManager->FindConsumer(portID));
 			break;
 		}
 		case MUTED:
 		{
-			m_tm->SetMuteFor(m_id, m_mute->Value());
+			m_dest->SetMuted(m_muted->Value());
 			break;
 		}
 		case COLOR_CHANGED:
 		{
-			m_tm->SetColorFor(m_id, m_colors->ValueAsColor());
+			m_dest->SetColor(m_colors->ValueAsColor());
 			break;
 		}
 		case Update_ID:
@@ -168,7 +167,7 @@ CDestinationModifier::_buildUI()
 	m_name = new BTextControl(rect, "Name", "Name:", "",
 							  new BMessage(NAME_CHANGED));
 	m_name->SetDivider(maxLabelWidth);
-	m_name->SetText(m_vc->name.String());
+	m_name->SetText(m_dest->Name());
 	m_background->AddChild(m_name);
 
 	// add "Ports" menu
@@ -192,7 +191,7 @@ CDestinationModifier::_buildUI()
 		BMenuItem *item = new BMenuItem(cname.String(), msg);
 		m_channels->AddItem(item);
 	}
-	(m_channels->ItemAt((m_vc->channel)))->SetMarked(true);
+	(m_channels->ItemAt((m_dest->Channel())))->SetMarked(true);
 	menuField = new BMenuField(rect, "Channel", "Channel:", m_channels);
 	menuField->SetDivider(maxLabelWidth);
 	m_background->AddChild(menuField);
@@ -200,9 +199,12 @@ CDestinationModifier::_buildUI()
 	// add "Mute" check-box
 	rect.left = rect.right;
 	rect.right = Bounds().Width() * 0.75;
-	m_mute = new BCheckBox(rect, "Mute", "Mute", new BMessage(MUTED));
-	m_background->AddChild(m_mute);
-	
+	m_muted = new BCheckBox(rect, "Mute", "Mute", new BMessage(MUTED));
+	m_background->AddChild(m_muted);
+	if (m_dest->Muted())
+	{
+		m_muted->SetEnabled(false);
+	}
 	// add "Solo" check-box
 	rect.left = rect.right;
 	rect.right = Bounds().Width() - 5.0;
@@ -210,14 +212,14 @@ CDestinationModifier::_buildUI()
 	m_solo->SetEnabled(false);
 	m_background->AddChild(m_solo);
 
-	// add destination color-control
+	// add CDestination color-control
 	rect.left = Bounds().left + 5.0;
 	rect.top = rect.bottom + 15.0;
 	rect.bottom = Bounds().bottom - 5.0;
 	m_colors = new BColorControl(rect.LeftTop(), B_CELLS_32x8, 4.0,
 								 "Destination Color",
 								 new BMessage(COLOR_CHANGED));
-	m_colors->SetValue(m_vc->fillColor);
+	m_colors->SetValue(m_dest->GetFillColor());
 	m_background->AddChild(m_colors);
 
 	// resize the window to fit the color control
@@ -249,7 +251,7 @@ CDestinationModifier::_populatePortsMenu()
 			BBitmap *icon = m_midiManager->ConsumerIcon(id, B_MINI_ICON);
 			CIconMenuItem *item = new CIconMenuItem(con->Name(), msg, icon);
 			m_midiPorts->AddItem(item);
-			if (m_vc->m_producer->IsConnected(con))
+			if (m_dest->GetProducer()->IsConnected(con))
 			{
 				item->SetMarked(true);
 				countConnections++;
@@ -264,7 +266,7 @@ CDestinationModifier::_populatePortsMenu()
 											m_midiManager->ConsumerIcon(internalSynth->ID(),
 											B_MINI_ICON));
 	m_midiPorts->AddItem(item);
-	if (m_vc->m_producer->IsConnected(internalSynth))
+	if (m_dest->GetProducer()->IsConnected(internalSynth))
 	{
 		item->SetMarked(true);
 		countConnections++;
@@ -274,12 +276,6 @@ CDestinationModifier::_populatePortsMenu()
 void
 CDestinationModifier::_updateStatus()
 {
-	if (m_vc->flags & Destination::disabled)
-	{
-	}
-	else
-	{
-	}
 }
 
 // END - DestinationModifier.cpp
