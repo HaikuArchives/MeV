@@ -104,8 +104,6 @@ public:							// Operations
 									const BRect &rect)
 								{ m_frame = rect; }
 
-private:						// Internal Operations
-
 	void						WindowOpened(
 									CAppWindow *window);
 

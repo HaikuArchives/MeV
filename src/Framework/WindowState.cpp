@@ -94,7 +94,7 @@ CWindowState::WindowOpened(
 		Unlock();
 	}
 }
-	
+
 void
 CWindowState::WindowClosed()
 {
