@@ -69,7 +69,7 @@ long CTempoMapEntry::ConvertMeteredToReal( long mTime ) const
 		// If it's a simple tempo change, then compute it simply
 	if (initialPeriod == finalPeriod || mDuration <= 0 || mTime >= mDuration)
 	{
-		return (double)(mTime - mDuration) * finalPeriod + rEnd;
+		return (long)((double)(mTime - mDuration) * finalPeriod + rEnd);
 	}
 	else
 	{
@@ -91,7 +91,7 @@ long CTempoMapEntry::ConvertRealToMetered( long rTime ) const
 		||	rDuration <= 0
 		||	rTime >= rDuration)
 	{
-		return (rTime - rDuration) / finalPeriod + mEnd;
+		return (long)((rTime - rDuration) / finalPeriod + mEnd);
 	}
 	else
 	{
@@ -127,11 +127,12 @@ void CTempoMapEntry::SetTempo(
 		mOrigin		= prevEntry.ConvertRealToMetered( start );
 		rOrigin		= start;
 		
-		if (periodLog == 0.0) rDuration  = mDuration = 0.0;
+		if (periodLog == 0.0)
+			rDuration  = mDuration = 0;
 		else
 		{
-			rDuration		= duration;
-			mDuration	= (long)(rDuration * periodLog / (finalPeriod - initialPeriod));
+			rDuration = duration;
+			mDuration = (long)(rDuration * periodLog / (finalPeriod - initialPeriod));
 		}
 
 	}
@@ -140,18 +141,20 @@ void CTempoMapEntry::SetTempo(
 		rOrigin		= prevEntry.ConvertMeteredToReal( start );
 		mOrigin		= start;
 
-		if (periodLog == 0.0) rDuration  = mDuration = 0.0;
+		if (periodLog == 0.0)
+			rDuration  = mDuration = 0;
 		else
 		{
-			mDuration	= duration;
-			rDuration		= (long)(mDuration * initialPeriod * (periodRatio - 1.0) / periodLog);
+			mDuration = duration;
+			rDuration = (long)(mDuration * initialPeriod * (periodRatio - 1.0) / periodLog);
 		}
 	}
 	
-	if (rDuration <= 0.0 || mDuration <= 0.0) rDuration = mDuration = 0.0;
-	
-	rEnd				= rOrigin + rDuration;
-	mEnd			= mOrigin + mDuration;
+	if (rDuration <= 0 || mDuration <= 0)
+		rDuration = mDuration = 0;
+
+	rEnd = rOrigin + rDuration;
+	mEnd = mOrigin + mDuration;
 }
 
 // ---------------------------------------------------------------------------

@@ -22,17 +22,11 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  Defines a compiled tempo map entry
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
 #ifndef __C_TempoMap_H__
@@ -42,17 +36,19 @@
 
 #include <OS.h>
 
-	// Conversion factor used in converting quarter notes to milliseconds
+// Conversion factor used in converting quarter notes to milliseconds
 const int32			cTempoFactor = 480000;
 
-	/**	A tempo map entry. Each document has a list of these which are
-		compiled from the tempo change events in the sequence.
-		
-		REM: How do we handle the case of "immediate" tempo changes?
-		Ans: We have a special "immediate" tempo map entry...
-	*/
- 
-class CTempoMapEntry {
+// REM: How do we handle the case of "immediate" tempo changes?
+// Ans: We have a special "immediate" tempo map entry...
+
+/**	A tempo map entry. Each document has a list of these which are
+ *	compiled from the tempo change events in the sequence.
+ *	@author Talin, Christopher Lenz
+ */	
+class CTempoMapEntry
+{
+
 public:
 
 		// The time of the last tempo change in both real and metered
