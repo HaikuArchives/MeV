@@ -29,7 +29,8 @@ CEventEditor::CEventEditor(
 	:	CStripView(inFrame, rect, name, makeScroller, makeMagButtons),
 		CObserver(inLooper, inFrame.Track()),
 		track((CEventTrack *)inFrame.Track()),
-		frame(inFrame)
+		frame(inFrame),
+		ruler(NULL)
 {
 	Init();
 }
@@ -45,9 +46,9 @@ CEventEditor::CEventEditor(
 	:	CStripView(inFrame, rect, name, makeScroller, makeMagButtons),
 		CObserver(inLooper, inTrack),
 		track(inTrack),
-		frame(inFrame)
+		frame(inFrame),
+		ruler(NULL)
 {
-	ruler = NULL;
 	Init();
 }
 	
