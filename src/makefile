@@ -23,23 +23,23 @@ SRCS= \
 	Engine/EventStack.cpp \
 	Engine/EventTask.cpp \
 	Engine/EventTrack.cpp \
-	Engine/MidiDeviceInfo.cpp \
-	Engine/MidiManager.cpp \
 	Engine/PlaybackTask.cpp \
 	Engine/PlaybackTaskGroup.cpp \
 	Engine/Player.cpp \
-	Engine/PortNameMap.cpp \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
 	Engine/VCTableManager.cpp \
+	Midi/InternalSynth.cpp \
+	Midi/MidiDeviceInfo.cpp \
+	Midi/MidiManager.cpp \
+	Midi/PortNameMap.cpp \
 	Support/BeError.cpp \
 	Support/BeFileReader.cpp \
 	Support/Dictionary.cpp \
 	Support/DList.cpp \
 	Support/IFFReader.cpp \
 	Support/IFFWriter.cpp \
-	Support/InternalSynth.cpp \
 	Support/ResourceUtils.cpp \
 	UI/AssemblyRulerView.cpp \
 	UI/AssemblyWindow.cpp \
