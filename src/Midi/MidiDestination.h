@@ -128,6 +128,12 @@ public:							// CDestination Implementation
 									icon_size which,
 									BBitmap *outIcon);
 
+	virtual CConsoleView *		MakeConfigurationView(
+									BRect frame);
+
+	virtual CConsoleView *		MakeMonitorView(
+									BRect frame);
+
 	virtual void				ReadChunk(
 									CIFFReader &reader);
 

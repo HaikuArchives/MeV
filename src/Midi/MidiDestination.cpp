@@ -4,6 +4,7 @@
 
 #include "MidiDestination.h"
 
+#include "DestinationConfigView.h"
 #include "GeneralMidi.h"
 #include "InternalSynth.h"
 #include "MeVDoc.h"
@@ -48,6 +49,8 @@ CMidiDestination::CMidiDestination(
 {
 	D_ALLOC(("CMidiDestination::CMidiDestination()\n"));
 
+	CWriteLock lock(this);
+
 	BString producerName = "MeV: ";
 	producerName << Name();
 	m_producer = new Midi::CReconnectingMidiProducer(producerName.String());
@@ -64,6 +67,8 @@ CMidiDestination::CMidiDestination(
 		m_generalMidi(false)
 {
 	D_ALLOC(("CMidiDestination::CMidiDestination(deserialize)\n"));
+
+	CWriteLock lock(this);
 
 	m_producer = new Midi::CReconnectingMidiProducer("");
 	_updateIcons();
@@ -216,26 +221,6 @@ CMidiDestination::SetChannel(
 // ---------------------------------------------------------------------------
 // CDestination Implementation
 
-void
-CMidiDestination::ColorChanged(
-	rgb_color color)
-{
-	_updateIcons();
-}
-
-void
-CMidiDestination::Deleted()
-{
-	// +++ disconnect
-}
-
-void
-CMidiDestination::Disabled(
-	bool disabled)
-{
-	_updateIcons();
-}
-
 status_t
 CMidiDestination::GetIcon(
 	icon_size which,
@@ -272,20 +257,18 @@ CMidiDestination::GetIcon(
 	return B_OK;
 }
 
-void
-CMidiDestination::Muted(
-	bool muted)
+CConsoleView *
+CMidiDestination::MakeConfigurationView(
+	BRect rect)
 {
-	_updateIcons();
+	return new CDestinationConfigView(rect, this);
 }
 
-void
-CMidiDestination::NameChanged(
-	const char *name)
+CConsoleView *
+CMidiDestination::MakeMonitorView(
+	BRect rect)
 {
-	BString producerName = "MeV: ";
-	producerName << name;
-	m_producer->SetName(producerName.String());
+	return NULL;
 }
 
 void
@@ -336,6 +319,42 @@ CMidiDestination::Serialize(
 	writer.Push(Midi::DESTINATION_SETTINGS_CHUNK);
 	writer << m_channel;
 	writer.Pop();
+}
+
+void
+CMidiDestination::ColorChanged(
+	rgb_color color)
+{
+	_updateIcons();
+}
+
+void
+CMidiDestination::Deleted()
+{
+	// +++ disconnect
+}
+
+void
+CMidiDestination::Disabled(
+	bool disabled)
+{
+	_updateIcons();
+}
+
+void
+CMidiDestination::Muted(
+	bool muted)
+{
+	_updateIcons();
+}
+
+void
+CMidiDestination::NameChanged(
+	const char *name)
+{
+	BString producerName = "MeV: ";
+	producerName << name;
+	m_producer->SetName(producerName.String());
 }
 
 void
