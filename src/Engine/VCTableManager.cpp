@@ -1,9 +1,9 @@
 #include "VCTableManager.h"
 #include "MidiManager.h"
+#include "Messenger.h"
 enum ID {
 	VCTM_NOTIFY='ntfy'
 	};
-#include <stdio.h>
 const rgb_color CVCTableManager::m_defaultColorTable[]= {
 
 	{ 255, 128, 128 },			// Midi Channel 1
@@ -61,7 +61,7 @@ int CVCTableManager::NewVC(char *name)
     		CMidiManager *midiManager=CMidiManager::Instance();
     		m_tablerep[c]=new VChannelEntry;
     		m_tablerep[c]->name.SetTo(name);
-    		m_tablerep[c]->m_producer=midiManager->InternalSynth();
+    		m_tablerep[c]->m_producer=NULL;
     		m_tablerep[c]->channel	= 1;
     		m_tablerep[c]->flags		= VChannelEntry::transposable;   
     		m_tablerep[c]->velocityContour=0;
@@ -105,9 +105,9 @@ void CVCTableManager::First()
 	{
 		pos++;
 		if (pos>=Max_VChannels)
-			{
+		{
 			return;
-			}
+		}
 	}
 }
 bool CVCTableManager::IsDone()
@@ -118,7 +118,7 @@ bool CVCTableManager::IsDone()
 	}
 	else
 	{
-	return false;
+		return false;
 	}
 }
 int CVCTableManager::CurrentID()  
@@ -153,8 +153,8 @@ void CVCTableManager::Next()
 	{
 		pos++;
 		if (pos>=Max_VChannels)
-			{
-			return;
-			}
+		{
+				return;
+		}
 	}
 }

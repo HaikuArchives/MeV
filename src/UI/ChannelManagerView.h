@@ -45,7 +45,6 @@
 #include <StringView.h>
 //stl
 #include <map.h>
-
 #include "VChannelModifier.h"
 class CChannelManagerView : 
 	public BView {
@@ -54,7 +53,7 @@ private:
 	uint8			m_selected_id;
 	uint8			m_default_id;
 	VChannelEntry *m_vc;//selected vc.
-	CEventTrack		*track;
+	
 	uint8			channel;
 	CTextDisplay	*nameView;
 	BPopUpMenu		*m_vcMenu;
@@ -67,9 +66,7 @@ private:
 	BCheckBox		*m_mute;
 	BCheckBox		*m_lock;
 	map <int,CVChannelModifier *> m_modifierMap;
-	CVCTableManager *m_vcTableM;
-	
-	
+	CVCTableManager *m_vcTableM;	
 //	+-------------------------------+ +---------+
 //	| m_vcMenu                      | | editbut. |
 //	+-------------------------------+ +---------+
@@ -79,17 +76,16 @@ private:
 	virtual void AttachedToWindow();
 	//update the info on selected channel;
 public:
+	CEventTrack		*track;
 		/**	Constructor */
 	CChannelManagerView(BRect 		inFrame,
 						CTextDisplay	*inNameView,
-							uint32		inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT,
-							uint32		inFlags = B_WILL_DRAW );
+						uint32		inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT,
+						uint32		inFlags = B_WILL_DRAW );
 							
 	~CChannelManagerView() { CRefCountObject::Release( track ); }
-
-		/**	Select which track we are looking at, so we can draw channel
-			array properly.
-		*/
+		/*	Select which track we are looking at, so we can draw channel
+			array properly.*/
 	void SetTrack( CEventTrack *inTrack );
 	void Update();
 	virtual void MessageReceived(BMessage *msg);

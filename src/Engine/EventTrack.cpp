@@ -1157,7 +1157,12 @@ void CEventTrack::LockChannel( int32 inChannel, bool inLocked )
 		PostUpdate( &hint, NULL );
 	}
 }
-
+void CEventTrack::RefreshChannel(int32 inChannel)
+{
+    CUpdateHint		hint;
+	hint.AddInt8( "channel", inChannel );
+	PostUpdate( &hint, NULL );
+}
 bool CEventTrack::IsChannelLocked( const Event &ev )
 {
 	return (ev.HasProperty( Event::Prop_Channel ) && IsChannelLocked( ev.GetVChannel() ));

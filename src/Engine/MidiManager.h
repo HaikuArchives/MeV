@@ -51,6 +51,7 @@
 #include <String.h>
 #include <Looper.h>
 #include "PortNameMap.h"
+#include "InternalSynth.h"
 class CMidiManager : public BLooper{
 	public:
 		static CMidiManager * Instance();
@@ -69,6 +70,7 @@ class CMidiManager : public BLooper{
 		virtual void MessageReceived(BMessage *msg);
 		void AddInternalSynth();
 		BMidiLocalProducer * InternalSynth();
+		
 	protected:
 		CMidiManager();
 	private:
@@ -83,7 +85,8 @@ class CMidiManager : public BLooper{
 		void _removeConsumer(int32 id);
 		void _handleMidiEvent(BMessage *msg);
 		BMessenger *m_notifier;
-		BMidiLocalProducer *m_isynth;
+		BMidiLocalProducer *m_isynth_source;
+		CInternalSynth *m_isynth_sink;
 		//port name map:
 		//we have the ability to let the user change port name...no problem
 		//but there are names they shouldn't see...like /dev/midi/mo/dev

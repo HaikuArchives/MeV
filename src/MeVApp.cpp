@@ -196,8 +196,8 @@ CMeVApp::CMeVApp()
 	CPlayerControl::InitPlayer();
 	
 	CVCTableManager *vcm;
-	vcm=new CVCTableManager();	
-	vcm->NewVC("zzz");
+	vcm=new CVCTableManager();
+		
 	/*
 		i=2;
 		VChannelEntry	&vc2 = defaultVCTable[ i ];

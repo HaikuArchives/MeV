@@ -36,7 +36,6 @@
 #ifndef __C_VChannelManager_H__
 #define __C_VChannelManager_H__
 #include "VChannel.h"
-#include "Messenger.h"
 //enum ID {
 //	VCTM_NOTIFY='ntfy'
 //	};
@@ -50,7 +49,6 @@ public:
 	void RemoveVC(int id);
 	VChannelEntry * operator[](int i);
 	VChannelEntry * get(int i);
-	
 	bool IsDefined(int id);
 	void First();
 	bool IsDone();
@@ -58,7 +56,6 @@ public:
 	//VChannelEntry * GetVC(int id);
 	VChannelEntry * CurrentVC();
 	int CurrentID();
-	
 	VChannelEntry * m_tablerep[Max_VChannels];
 	int count;
 private:

@@ -3,6 +3,7 @@
 #include <Rect.h>
 #include <MenuField.h>
 #include "MidiManager.h"
+#include "ChannelManagerView.h"
 #include <stdio.h>
 enum EVChannelModifierControlID {
 	NAME_ID='name',
@@ -114,9 +115,8 @@ for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManag
 void
 CVChannelModifier::MenusBeginning()
 {
-Update();
+	Update();
 }
-
 bool 
 CVChannelModifier::QuitRequested()
 {
@@ -135,7 +135,8 @@ CVChannelModifier::MessageReceived(BMessage *msg)
 	case MOD_ID:
 	{
 		m_vc->fillColor=m_colors->ValueAsColor();
-		m_tm->NotifyClients();
+		((CChannelManagerView *) m_parent)->track->RefreshChannel(m_id);
+		
 	}
 	break;
 	case CHANNEL_SELECT:

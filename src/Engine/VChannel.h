@@ -61,7 +61,10 @@ public:
 		transposable	= (1<<0),				// channel is transposable
 		mute			= (1<<1),				// channel is muted
 		muteFromSolo	= (1<<2),				// channel muted because of solo
-		solo			= (1<<3)				// channel is solo'd
+		solo			= (1<<3),				// channel is solo'd
+		disabled		= (1<<4),				// channel disabled because
+												// of vanished midi port.
+		deleted			= (1<<5)				// only one channel should be in this catagory.
 	};
 
 	// REM: Replace with string class
@@ -78,7 +81,7 @@ public:
 												// so the manager knows what is
 												// defined.
 	BString 			name;					// in the future we may not need this.
-	BMidiLocalProducer	   *m_producer;					
+	BMidiLocalProducer *m_producer;					
 	int8				transpose,				// transposition for channel
 						initialTranspose;		// initial transposition value
 

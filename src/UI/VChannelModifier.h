@@ -1,3 +1,5 @@
+#ifndef __C_VChannelModifier_H__
+#define __C_VChannelModifier_H__
 #include <Window.h>
 #include <View.h>
 #include <MenuItem.h>
@@ -9,7 +11,7 @@
 #include "MidiManager.h"
 #include "VCTableManager.h"
 #include <MidiProducer.h>
-class CVChannelModifier:
+class CVChannelModifier :
 	public BWindow {
 
 private:
@@ -37,3 +39,4 @@ public:
 	virtual bool QuitRequested();
 
 };
+#endif

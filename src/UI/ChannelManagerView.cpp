@@ -34,14 +34,12 @@ CChannelManagerView::CChannelManagerView(
 	uint32		inFlags )
 	: BView( inFrame, "ChannelManager", inResizingMode, inFlags )
 {
-	
 	//initialize
 	channel = 0;
 	track = NULL;
 	m_vcTableM=NULL;
 	nameView = inNameView;
 	SetFontSize( 9.0 );
-	
 	BRect r;
 	//interface setup
 		//popup
@@ -50,7 +48,6 @@ CChannelManagerView::CChannelManagerView(
 	BMenuField *menufield;
 	menufield=new BMenuField(r,"vc field","Destination",m_vcMenu);
 	AddChild (menufield);
-	
 			//add new, delete.
 	BMenuItem *new_vc=new BMenuItem ("New",new BMessage (NEW_ID));
 	m_vcMenu->AddItem(new_vc);
@@ -70,7 +67,7 @@ CChannelManagerView::CChannelManagerView(
 	AddChild(m_port);
 	r.Set(45,30,132,42);
 	m_portName=new CTextDisplay(r,"m_portName");
-	m_portName->SetText("no name");
+	m_portName->SetText("no port");
 	AddChild(m_portName);
 		//channel
 	r.Set(132,30,180,42);
@@ -206,7 +203,6 @@ void CChannelManagerView::MessageReceived(BMessage *msg)
 			{
 				if (!m_vcMenu->ItemAt(0)->IsMarked())
 				{
-					Window()->UpdateIfNeeded();
 					if (m_modifierMap[m_selected_id]!=NULL)
 					{
 						m_modifierMap[m_selected_id]->Lock();
@@ -232,9 +228,12 @@ void CChannelManagerView::MessageReceived(BMessage *msg)
 					Update();
 					BMenuItem *select=m_vcMenu->ItemAt(0);
 					select->SetMarked(true);
-					m_modifierMap[m_selected_id]->Lock();	
-					m_modifierMap[m_selected_id]->Quit();
-					m_modifierMap[m_selected_id]=NULL;
+					if (m_modifierMap[m_selected_id]!=NULL)
+					{
+						m_modifierMap[m_selected_id]->Lock();	
+						m_modifierMap[m_selected_id]->Quit();
+						m_modifierMap[m_selected_id]=NULL;
+					}
 				}
 			}
 			break;

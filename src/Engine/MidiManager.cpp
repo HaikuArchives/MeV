@@ -1,6 +1,6 @@
 #include "MidiManager.h"
 #include "PortNameMap.h"
-#include "InternalSynth.h"
+
 #include <MidiProducer.h>
 #include <Messenger.h>
 #include <Debug.h>
@@ -31,7 +31,8 @@ CMidiManager::CMidiManager() : BLooper("MidiHandler")
 	m_roster->StartWatching(&msgr);
 	m_notifier=NULL;
 	m_portNameMap=new CPortNameMap();
-	m_isynth=NULL;
+	m_isynth_source=NULL;
+	m_isynth_sink=NULL;
 	
 }
 void CMidiManager::Notify(BMessenger *msgr)
@@ -54,7 +55,14 @@ BMidiLocalProducer * CMidiManager::GetProducer (BString *name)
 }
 BMidiLocalProducer * CMidiManager::GetProducer (int32 id)
 {
-	return (BMidiLocalProducer *)(m_roster->FindProducer(id,true));
+	if (m_roster->FindProducer(id,true)==m_isynth_source)
+	{
+		return (InternalSynth());
+	}
+	else
+	{
+		return (BMidiLocalProducer *)(m_roster->FindProducer(id,true));
+	}
 }
 void CMidiManager::FirstProducer()
 {
@@ -82,7 +90,9 @@ BString * CMidiManager::CurrentProducerName()
 }
 int32 CMidiManager::CurrentProducerID()
 {
- return (((BMidiProducer *)m_midiProducers.ItemAt(m_pos))->ID());
+
+ 		return (((BMidiProducer *)m_midiProducers.ItemAt(m_pos))->ID());
+
 }
 void
 CMidiManager::MessageReceived(BMessage *msg)
@@ -92,7 +102,7 @@ CMidiManager::MessageReceived(BMessage *msg)
 		case B_MIDI_EVENT:
 			if (m_notifier!=NULL)
 			{	
-			m_notifier->SendMessage(new BMessage (NOTIFY));
+				m_notifier->SendMessage(new BMessage (B_MIDI_EVENT));
 			}
 			_handleMidiEvent(msg);
 			break;
@@ -198,21 +208,25 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 }
 BMidiLocalProducer * CMidiManager::InternalSynth()
 {
-	if (m_isynth)
+	if (m_isynth_sink)
 	{
-		return (m_isynth);
+		return (m_isynth_source);
+	}
+	else
+	{
+		CInternalSynth *m_isynth_sink=new CInternalSynth("Internal Synth");
+		m_isynth_source->Connect(m_isynth_sink);
+		return (m_isynth_source);
 	}
 }
 
 void CMidiManager::AddInternalSynth()
 {
-	if (!m_isynth)
+	if (!m_isynth_source)
 	{
-		CInternalSynth *isynth=new CInternalSynth("Internal Synth");
-		m_isynth=new BMidiLocalProducer("Internal Synth");
-		//m_isynth->Register();
-		m_isynth->Connect(isynth);
-		m_midiProducers.AddItem(m_isynth);
+		m_isynth_source=new BMidiLocalProducer("Internal Synth");
+		//m_isynth->Register();	
+		m_midiProducers.AddItem(m_isynth_source);
 	}
 }
 void CMidiManager::_addConsumer(int32 id)
