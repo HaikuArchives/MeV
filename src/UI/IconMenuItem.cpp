@@ -53,7 +53,7 @@ CIconMenuItem::DrawContent()
 	BMenuItem::DrawContent();
 
 	BPoint where(ContentLocation());
-	where.y = Frame().top;
+	where.y = Frame().top + 1.0;
 	
 	if (m_bitmap)
 	{
