@@ -273,13 +273,32 @@ private:						// Instance Data
 // ---------------------------------------------------------------------------
 // Window about plug-ins
 
-class CAboutPluginWindow : public CAppWindow {
-	BListView		*pList;
-	BTextView		*textView;
+class CAboutPluginWindow
+	:	public CAppWindow
+{
 
-	void MessageReceived( BMessage *msg );
-public:
-	CAboutPluginWindow( CWindowState &inState );
+public:							// Constants
+
+	enum messages
+	{
+								PLUGIN_SELECTED = 'apwA'
+	};
+
+public:							// Constructor/Destructor
+
+								CAboutPluginWindow(
+									CWindowState &state);
+
+public:							// CAppWindow Implementation
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+private:						// Instance Data
+
+	BListView *					pList;
+
+	BTextView *					textView;
 };
 
 // ---------------------------------------------------------------------------

@@ -818,6 +818,9 @@ CMeVApp::UpdateMimeDatabase()
 	delete docType;
 }
 
+// ---------------------------------------------------------------------------
+// Class: CAboutPluginWindow
+
 CAboutPluginWindow::CAboutPluginWindow(
 	CWindowState &inState)
 	:	CAppWindow(inState, inState.Rect(), "About MeV Plug-Ins", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE)
@@ -840,7 +843,7 @@ CAboutPluginWindow::CAboutPluginWindow(
 									140 - B_V_SCROLL_BAR_WIDTH, r.bottom - 1 ),
 									NULL, B_SINGLE_SELECTION_LIST, B_FOLLOW_ALL );
 	
-	pList->SetSelectionMessage( new BMessage( Select_ID ) );
+	pList->SetSelectionMessage( new BMessage(PLUGIN_SELECTED) );
 	
 	BScrollView *sv = new BScrollView(	NULL,
 										pList,
@@ -873,17 +876,22 @@ CAboutPluginWindow::CAboutPluginWindow(
 	textView->SetViewColor( 220, 220, 220 );
 }
 
-void CAboutPluginWindow::MessageReceived( BMessage *msg )
+void
+CAboutPluginWindow::MessageReceived(
+	BMessage *message)
 {
-	switch (msg->what) {
-		case Select_ID: {
+	switch (message->what)
+	{
+		case PLUGIN_SELECTED:
+		{
 			int num = pList->CurrentSelection();
-			MeVPlugIn	*pi = (MeVPlugIn *)((CMeVApp *)be_app)->plugInList.ItemAt( num );
-			textView->SetText( pi->AboutText() ); 
+			MeVPlugIn *pi = (MeVPlugIn *)((CMeVApp *)be_app)->plugInList.ItemAt( num );
+			textView->SetText(pi->AboutText());
 			break;
 		}
-		default: {
-			CAppWindow::MessageReceived( msg );
+		default:
+		{
+			CAppWindow::MessageReceived(message);
 			break;
 		}
 	}
