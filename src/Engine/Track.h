@@ -100,7 +100,7 @@ public:
 		Update_Operators	= (1<<4),			// Operator list changed
 		Update_Section	= (1<<5),			// Update section markers
 		Update_Summary	= (1<<6),			// Track summary info changed...
-		Update_TempoMap	= (1<<7),			// Tempo map changed
+		Update_TempoMap	= (1<<7)			// Tempo map changed
 	};
 
 		// ---------- Constructors
@@ -149,6 +149,15 @@ public:
 // void SetSolo( bool inSolo );
 
 		// ---------- Operations
+
+	/** Delete this track from the document. */
+	void						Delete();
+
+	/** Undelete a previously deleted track.
+		@param originalIndex The Index at which the track was before deletion
+	 */
+	void						Undelete(
+									int32 originalIndex);
 
 	virtual void SelectAll() = 0;
 	virtual void DeleteSelection() = 0;

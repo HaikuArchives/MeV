@@ -160,6 +160,8 @@ typedef enum E_EventType {
 	EvtType_All = ~0							// select all event types
 } TEventType;
 
+typedef uint8 event_type;
+
 	// A number of general functions can operate on more than one attribute
 	// of an event. Here are some enum codes which are used to tell these
 	// functions which attribute to operate on

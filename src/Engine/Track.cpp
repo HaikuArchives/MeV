@@ -65,10 +65,47 @@ CTrack::~CTrack()
 // Operations
 
 void
+CTrack::Delete()
+{
+	if (Document().tracks.RemoveItem(this))
+	{
+		deleted = true;
+		Document().SetModified();
+
+		// Tell everyone that the track has been deleted
+		CUpdateHint hint;
+		hint.AddInt32("TrackID", GetID());
+		hint.AddInt32("TrackAttrs", Update_Name);
+		Document().PostUpdateAllTracks(&hint);
+		Document().NotifyUpdate(CMeVDoc::Update_DelTrack, NULL);
+	}
+}
+
+void
+CTrack::Undelete(
+	int32 originalIndex)
+{
+	if (Document().tracks.AddItem(this, originalIndex))
+	{
+		deleted = false;
+		Document().SetModified();
+
+		// Tell everyone that the track has been re-added
+		CUpdateHint hint;
+		hint.AddInt32("TrackID", GetID());
+		hint.AddInt32("TrackAttrs", Update_Name);
+		Document().PostUpdateAllTracks(&hint);
+		Document().NotifyUpdate(CMeVDoc::Update_AddTrack, NULL);
+	}
+}
+
+void
 CTrack::SetName(
 	const char *name)
 {
 	strncpy(m_name, name, 64);
+
+	Document().SetModified();
 
 	// Tell everyone that the name of the track changed
 	CUpdateHint hint;
@@ -153,7 +190,8 @@ void CTrack::WriteTrack( CIFFWriter &writer )
 
 CTrackDeleteUndoAction::CTrackDeleteUndoAction(
 	CTrack *track)
-	:	m_track(track)
+	:	m_track(track),
+		m_index(-1)
 {
 	D_ALLOC(("CTrackDeleteUndoAction::CTrackDeleteUndoAction()\n"));
 
@@ -161,19 +199,12 @@ CTrackDeleteUndoAction::CTrackDeleteUndoAction(
 		if (m_track->Document().TrackAt(m_index) == m_track)
 			break;
 
-	if (m_track->Document().tracks.RemoveItem(m_track))
-	{
-		m_track->deleted = true;
-		m_track->Document().SetModified();
-		m_track->Document().NotifyUpdate( CMeVDoc::Update_DelTrack, NULL );
-	}
+	m_track->Delete();
 }
 
 CTrackDeleteUndoAction::~CTrackDeleteUndoAction()
 {
 	D_ALLOC(("CTrackDeleteUndoAction::CTrackDeleteUndoAction()\n"));
-
-	CRefCountObject::Release(m_track);
 }
 
 // ---------------------------------------------------------------------------
@@ -184,13 +215,7 @@ CTrackDeleteUndoAction::Redo()
 {
 	D_HOOK(("CTrackDeleteUndoAction::Redo()\n"));
 
-	if (m_track->Document().tracks.RemoveItem(m_track))
-	{
-		m_track->deleted = true;
-		m_track->Document().SetModified();
-		m_track->Document().NotifyUpdate(CMeVDoc::Update_DelTrack, NULL);
-	}
-	CRefCountObject::Release(m_track);
+	m_track->Delete();
 }
 
 void
@@ -198,13 +223,7 @@ CTrackDeleteUndoAction::Undo()
 {
 	D_HOOK(("CTrackDeleteUndoAction::Undo()\n"));
 
-	m_track->Acquire();
-	if (m_track->Document().tracks.AddItem(m_track, m_index))
-	{
-		m_track->deleted = false;
-		m_track->Document().SetModified();
-		m_track->Document().NotifyUpdate(CMeVDoc::Update_AddTrack, NULL);
-	}
+	m_track->Undelete(m_index);
 }
 
 // ---------------------------------------------------------------------------
@@ -219,8 +238,6 @@ CTrackRenameUndoAction::CTrackRenameUndoAction(
 
 	m_name = m_track->Name();
 	m_track->SetName(newName.String());
-	m_track->Document().SetModified();
-	m_track->NotifyUpdate(CTrack::Update_Name, NULL);
 }
 
 CTrackRenameUndoAction::~CTrackRenameUndoAction()
@@ -240,7 +257,6 @@ CTrackRenameUndoAction::Redo()
 	BString oldName = m_track->Name();
 	m_track->SetName(m_name.String());
 	m_name = oldName;
-	m_track->Document().SetModified();
 }
 
 void
@@ -251,7 +267,6 @@ CTrackRenameUndoAction::Undo()
 	BString oldName = m_track->Name();
 	m_track->SetName(m_name.String());
 	m_name = oldName;
-	m_track->Document().SetModified();
 }
 
 // END - Track.cpp
