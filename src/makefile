@@ -17,6 +17,7 @@ SRCS= \
 	Framework/SharedLock.cpp \
 	Framework/Undo.cpp \
 	Framework/WindowState.cpp \
+	Engine/DestinationList.cpp \
 	Engine/Event.cpp \
 	Engine/EventList.cpp \
 	Engine/EventOp.cpp \
@@ -29,7 +30,6 @@ SRCS= \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
-	Engine/VCTableManager.cpp \
 	Midi/InternalSynth.cpp \
 	Midi/MidiDeviceInfo.cpp \
 	Midi/MidiManager.cpp \
@@ -46,8 +46,9 @@ SRCS= \
 	UI/BitmapTool.cpp \
 	UI/BorderButton.cpp \
 	UI/BorderView.cpp \
-	UI/ChannelManagerView.cpp \
 	UI/ContinuousValueEditor.cpp \
+	UI/DestinationListView.cpp \
+	UI/DestinationModifier.cpp \
 	UI/EventEditor.cpp \
 	UI/GridWindow.cpp \
 	UI/IconMenuItem.cpp \
@@ -84,7 +85,6 @@ SRCS= \
 	UI/TrackListWindow.cpp \
 	UI/TrackWindow.cpp \
 	UI/TransportWindow.cpp \
-	UI/VChannelModifier.cpp \
 	UI/VelocityEditor.cpp
 
 #	specify the resource files to use
