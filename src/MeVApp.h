@@ -108,7 +108,6 @@ class CMeVApp : public CDocApp {
 						transportState,
 						midiConfigWinState,
 						appPrefsWinState,
-						aboutWinState,
 						aboutPluginWinState;
 	BWindow				*deviceAttrsWindow,
 						*portAttrsWindow,

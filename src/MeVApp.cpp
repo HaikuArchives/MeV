@@ -24,14 +24,16 @@
 #include "MidiDeviceInfo.h"
 #include "MidiManager.h"
 // User Interface
-#include "AboutWindow.h"
 #include "TrackListWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+// Application Kit
+#include <Roster.h>
 // Interface Kit
+#include <Alert.h>
 #include <Box.h>
 #include <MenuField.h>
 #include <PopUpMenu.h>
@@ -39,6 +41,7 @@
 #include <StringView.h>
 #include <TextControl.h>
 // Storage Kit
+#include <AppFileInfo.h>
 #include <FilePanel.h>
 #include <NodeInfo.h>
 #include <Path.h>
@@ -128,26 +131,6 @@ class CImportRefFilter : public BRefFilter {
 	}
 };
 
-static rgb_color defaultColorTable[ 16 ] = {
-
-	{ 255, 128, 128 },			// Midi Channel 1
-	{ 255, 128,   0 },			// Midi Channel 2
-	{ 255, 255,   0 },			// Midi Channel 3
-	{ 128, 255,   0 },			// Midi Channel 4
-	{   0, 255, 128 },			// Midi Channel 5
-	{   0, 192,   0 },			// Midi Channel 6
-	{   0, 160, 160 },			// Midi Channel 7
-	{   0, 192, 160 },			// Midi Channel 8
-	{ 128, 255, 255 },			// Midi Channel 9
-	{  47, 130, 255 },			// Midi Channel 10
-	{ 128, 128, 255 },			// Midi Channel 11
-	{ 200,   0, 255 },			// Midi Channel 12
-	{ 255,   0, 255 },			// Midi Channel 13
-	{ 255, 128, 255 },			// Midi Channel 14
-	{ 192, 192, 192 },			// Midi Channel 15
-	{ 128, 128,   0 },			// Midi Channel 16
-};
-
 CMeVApp::CMeVApp()
 	:	CDocApp( "application/x-vnd.MeV" ),
 		prefs( "x-vnd.MeV" ),
@@ -170,7 +153,6 @@ CMeVApp::CMeVApp()
 		transportState( BRect( 0.0, 406.0, Transport_Width, Transport_Height ) ),
 		midiConfigWinState( BRect( 40, 40, 500, 400 ) ),
 		appPrefsWinState( BRect( 40, 40, 500, 300 ) ),
-		aboutWinState( BRect( 40, 40, 500, 300 ) ),
 		aboutPluginWinState( BRect( 80, 80, 450, 250 ) )
 {
 		// Iterate through all the plugins...
@@ -181,9 +163,7 @@ CMeVApp::CMeVApp()
 						transportOpen = false,
 						appPrefsOpen = false,
 						midiConfigOpen = false,
-						aboutOpen = false,
 						aboutPlugOpen = false;
-						
 
 	CSplashWindow::DisplayStatus( "Initializing Defaults..." );
 	
@@ -212,7 +192,6 @@ CMeVApp::CMeVApp()
 	importPanel = NULL;
 
 	CSplashWindow::DisplayStatus( "Starting MIDI Player..." );
-	int i=1;
 	CMidiManager *mm=CMidiManager::Instance();
 	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
@@ -299,7 +278,6 @@ CMeVApp::CMeVApp()
 		transportOpen		= ReadWindowState( prefMessage, TRANSPORT_NAME, transportState, false );
 		appPrefsOpen		= ReadWindowState( prefMessage, APP_PREFS_NAME, appPrefsWinState, false );
 		midiConfigOpen	= ReadWindowState( prefMessage, MIDI_CONFIG_NAME, midiConfigWinState, false );
-		aboutOpen		= ReadWindowState( prefMessage, ABOUT_NAME,     aboutWinState, false );
 		aboutPlugOpen		= ReadWindowState( prefMessage, ABOUT_PI_NAME,  aboutPluginWinState, false );
 	}
 	
@@ -643,9 +621,46 @@ void CMeVApp::WatchTrack( CEventTrack *inTrack )
 	mApp->transportState.Unlock();
 }
 
-void CMeVApp::AboutRequested()
+void
+CMeVApp::AboutRequested()
 {
-	new CAboutWindow(aboutWinState);
+	BString aboutText = "MeV (Musical Environment)";
+
+	app_info appInfo;
+	if (GetAppInfo(&appInfo) == B_OK)
+	{
+		BFile appFile(&appInfo.ref, B_READ_ONLY);
+		BAppFileInfo appFileInfo(&appFile);
+		version_info versionInfo;
+		if (appFileInfo.GetVersionInfo(&versionInfo, B_APP_VERSION_KIND) == B_OK)
+			aboutText << " " << versionInfo.short_info;
+	}
+	aboutText << "\n";
+
+	// add url
+	aboutText << "\nThe MeV Homepage:\n";
+	aboutText << "http://mev.sourceforge.net/\n";
+
+	// add team info
+	aboutText << "\nThe MeV Team:\n";
+	aboutText << "Christopher Lenz, ";
+	aboutText << "Claes Johansen, ";
+	aboutText << "Curt Malouin, ";
+	aboutText << "Dan Walton, ";
+	aboutText << "Eric Moon, ";
+	aboutText << "Jamie Krutz, ";
+	aboutText << "Talin\n ";
+
+	// add copyright & legal stuff
+	aboutText << "\nThis Software is distributed under the "
+				 "Mozilla Public License 1.1 on an 'AS IS' "
+				 "basis, WITHOUT WARRANTY OF ANY KIND, either "
+				 "express or implied. See the License for the "
+				 "specific language governing rights and limitations "
+				 "under the License.\n";
+
+	BAlert *alert = new BAlert("About MeV", aboutText.String(), "OK");
+	alert->Go(0);
 }
 
 void CMeVApp::MessageReceived( BMessage *inMsg )
@@ -779,7 +794,6 @@ bool CMeVApp::QuitRequested()
 		WriteWindowState( prefMessage, TRANSPORT_NAME,	transportState );
 		WriteWindowState( prefMessage, APP_PREFS_NAME,	appPrefsWinState );
 		WriteWindowState( prefMessage, MIDI_CONFIG_NAME,midiConfigWinState );
-		WriteWindowState( prefMessage, ABOUT_NAME,		aboutWinState );
 		WriteWindowState( prefMessage, ABOUT_PI_NAME,	aboutPluginWinState );
 		winSettings.Save();
 	}
