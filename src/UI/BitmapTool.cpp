@@ -67,17 +67,8 @@ CBitmapTool::~CBitmapTool()
 {
 	D_ALLOC(("CBitmapTool::~CBitmapTool()\n"));
 
-	if (m_bitmap)
-	{
-		delete m_bitmap;
-		m_bitmap = NULL;
-	}
-
-	if (m_disabledBitmap)
-	{
-		delete m_disabledBitmap;
-		m_disabledBitmap = NULL;
-	}
+	delete m_bitmap;
+	delete m_disabledBitmap;
 }
 
 // ---------------------------------------------------------------------------

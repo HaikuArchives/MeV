@@ -50,17 +50,9 @@ CMenuTool::~CMenuTool()
 {
 	D_ALLOC(("CMenuTool::~CMenuTool()\n"));
 
-	if (m_bitmap)
-	{
-		delete m_bitmap;
-		m_bitmap = NULL;
-	}
-
-	if (m_disabledBitmap)
-	{
-		delete m_disabledBitmap;
-		m_disabledBitmap = NULL;
-	}
+	delete m_bitmap;
+	delete m_disabledBitmap;
+	delete m_menu;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,11 +66,8 @@ CMenuTool::SetBitmap(
 
 	if (bitmap && (bitmap != m_bitmap))
 	{
-		if (m_bitmap && m_disabledBitmap)
-		{
-			delete m_bitmap;
-			delete m_disabledBitmap;
-		}
+		delete m_bitmap;
+		delete m_disabledBitmap;
 
 		m_bitmap = bitmap;
 
@@ -95,24 +84,16 @@ CMenuTool::SetBitmap(
 		{
 			rgb_color color = screen.ColorForIndex(*pos);
 			if ((color.alpha < 255) || (color.red + color.green + color.blue >= 765))
-			{
 				continue;
-			}
 			if (color.red + color.green + color.blue > 384)
-			{
 				*pos = light;
-			}
 			else
-			{
 				*pos = dark;
-			}
 		}
 	}
 
 	if (ToolBar())
-	{
 		ToolBar()->Invalidate();
-	}
 }
 
 // ---------------------------------------------------------------------------

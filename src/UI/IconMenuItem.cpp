@@ -10,8 +10,8 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
-#define D_HOOK(x) //PRINT (x)		// BMenuItem Implementation
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)		// BMenuItem Implementation
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -35,18 +35,14 @@ CIconMenuItem::CIconMenuItem(
 	:	BMenuItem(subMenu, message),
 		m_bitmap(bitmap)
 {
-	D_ALLOC(("CIconMenuItem::CIconMenuItem(%s)\n", label));
+	D_ALLOC(("CIconMenuItem::CIconMenuItem(submenu)\n"));
 }
 
 CIconMenuItem::~CIconMenuItem()
 {
-	D_ALLOC(("CIconMenuItem::~CIconMenuItem()\n"));
+	D_ALLOC(("CIconMenuItem::~CIconMenuItem(%s)\n", Label()));
 
-	if (m_bitmap)
-	{
-		delete m_bitmap;
-		m_bitmap = NULL;
-	}
+	delete m_bitmap;
 }
 
 // ---------------------------------------------------------------------------

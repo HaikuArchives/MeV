@@ -61,9 +61,7 @@ public:									// Constructor/Destructor
 public:									// Accessors
 
 	BPopUpMenu *						Menu() const
-										{
-											return m_menu;
-										}
+										{ return m_menu; }
 
 public:									// Operations
 
