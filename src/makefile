@@ -71,12 +71,14 @@ SRCS= \
 	UI/PitchBendEditor.cpp \
 	UI/PlayPauseButton.cpp \
 	UI/Polygon.cpp \
+	UI/PositionInfoBar.cpp \
 	UI/PreferencesWindow.cpp \
 	UI/QuickKeyMenuItem.cpp \
 	UI/RulerView.cpp \
 	UI/Scroller.cpp \
 	UI/Spinner.cpp \
 	UI/Splitter.cpp \
+	UI/StatusBar.cpp \
 	UI/StdBevels.cpp \
 	UI/StdButton.cpp \
 	UI/StringEditView.cpp \
