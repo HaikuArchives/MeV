@@ -66,7 +66,8 @@ CAssemblyWindow::CAssemblyWindow(
 		*this,
 		stripFrame,
 		(CEventTrack *)document.FindTrack( (int32)0 ),
-		BRect(	0.0, 0.0, rect.Width() - 14, Ruler_Height - 1 ),
+		BRect(0.0, 0.0, rect.Width() - 14, 
+			  CTrackWindow::DEFAULT_RULER_HEIGHT - 1 ),
 		(char *)NULL,
 		B_FOLLOW_LEFT_RIGHT,
 		B_WILL_DRAW );

@@ -46,35 +46,6 @@ CLinearWindow::CLinearWindow(
 	CEventTrack *track )
 	:	CTrackWindow(frame, document, track )
 {
-/*	x += 212.0;
-		// Now, add the menu field for the type of event being added.
-		
-	BMenu		*typeMenu = new BPopUpMenu( "Note" );
-	typeMenu->AddItem( new BMenuItem( "Note",					new BMessage( 3000 + EvtType_Note ) ) );
-	typeMenu->AddItem( new BMenuItem( "Channel Aftertouch",	new BMessage( 3000 + EvtType_ChannelATouch ) ) );
-	typeMenu->AddItem( new BMenuItem( "Polyphonic Aftertouch", new BMessage( 3000 + EvtType_PolyATouch ) ) );
-	typeMenu->AddItem( new BMenuItem( "Control Change",		new BMessage( 3000 + EvtType_Controller ) ) );
-	typeMenu->AddItem( new BMenuItem( "Program Change",		new BMessage( 3000 + EvtType_ProgramChange ) ) );
-	typeMenu->AddItem( new BMenuItem( "Pitch Bend",			new BMessage( 3000 + EvtType_PitchBend ) ) );
-	typeMenu->AddItem( new BMenuItem( "Tempo Change",			new BMessage( 3000 + EvtType_PolyATouch ) ) );
-	typeMenu->AddItem( new BMenuItem( "Nested Track",			new BMessage( 3000 + EvtType_Sequence ) ) );
-	typeMenu->AddItem( new BMenuItem( "Conditional Branch",	new BMessage( 3000 + EvtType_PolyATouch ) ) );
-	typeMenu->AddItem( new BMenuItem( "Branch Label",			new BMessage( 3000 + EvtType_PolyATouch ) ) );
-	typeMenu->AddItem( new BMenuItem( "Repeat",				new BMessage( 3000 + EvtType_Repeat ) ) );
-	typeMenu->AddItem( new BMenuItem( "Time Signature",		new BMessage( 3000 + EvtType_TimeSig ) ) );
-	typeMenu->AddItem( new BMenuItem( "Stop Event",			new BMessage( 3000 + EvtType_Stop ) ) );
-	typeMenu->AddItem( new BMenuItem( "User Event",			new BMessage( 3000 + EvtType_UserEvent ) ) );
-	typeMenu->AddItem( new BMenuItem( "Track End",				new BMessage( 3000 + EvtType_End ) ) );
-	typeMenu->SetTargetForItems( (CDocWindow *)this );
-
-	BMenuField	*newType = new BMenuField(	BRect( x, 1.0, x + 190.0, 24.0 ),
-											"EventType", "Event Type:",
-											typeMenu,
-											B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW );
-	topToolArea->AddChild( newType );
-	newType->SetDivider( 60.0 );
-*/
-	
 	BRect rect(Bounds());
 
 	AddMenuBar();
@@ -102,7 +73,7 @@ CLinearWindow::CLinearWindow(
 
 	// Now, create some strips for test purposes
 	CStripView *sv;
-	rect.top += Ruler_Height;
+	rect.top += CTrackWindow::DEFAULT_RULER_HEIGHT;
 	sv = new CLinearEditor(*this, *stripFrame, rect);
 	stripFrame->AddChildView(sv->TopView(), 80);
 	sv = new CVelocityEditor(*this, *stripFrame, rect);
