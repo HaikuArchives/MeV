@@ -180,7 +180,7 @@ public:							// Midi specific functionality
 									bool connect);
 	bool						IsConnected(
 									BMidiConsumer *sink) const;
-	CReconnectingMidiProducer *	GetProducer() const
+	Midi::CReconnectingMidiProducer *GetProducer() const
 								{ return m_producer; }
 
 	void 						SetChannel(
@@ -241,7 +241,7 @@ private:						// Instance Data
 	//this is the id that that this dest is connected to.
 	int32						m_consumerID;
 
-	CReconnectingMidiProducer *	m_producer;					
+	Midi::CReconnectingMidiProducer *	m_producer;					
 
 private:						// Class Data
 

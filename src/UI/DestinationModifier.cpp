@@ -28,7 +28,7 @@ CDestinationModifier::CDestinationModifier(
 				B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
 		m_dest(doc->FindDestination(id)),
 		m_id(id),
-		m_midiManager(CMidiManager::Instance()),
+		m_midiManager(Midi::CMidiManager::Instance()),
 		m_parent(parent)
 {
 	m_dest->AddObserver(this);
@@ -290,7 +290,7 @@ CDestinationModifier::_populatePortsMenu()
 		}
 	}
 
-	CInternalSynth *internalSynth = m_midiManager->InternalSynth();
+	Midi::CInternalSynth *internalSynth = m_midiManager->InternalSynth();
 	BMessage *msg = new BMessage(PORT_SELECTED);
 	msg->AddInt32("port_id", internalSynth->ID());
 	CIconMenuItem *item = new CIconMenuItem(internalSynth->Name(), msg,

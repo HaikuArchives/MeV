@@ -15,6 +15,8 @@
 // Debugging Macros
 #define D_ROSTER(x) //PRINT(x)	// BMidiRoster Interaction
 
+using namespace Midi;
+
 enum EDestinationModifierControlID {
 	NOTIFY='ntfy'
 	};

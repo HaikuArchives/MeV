@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <iostream.h>
 
+using namespace Midi;
+
 CPortNameMap::CPortNameMap()
 {
 m_map=new BList();

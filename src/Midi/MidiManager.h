@@ -23,11 +23,7 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- *  
- *  
- *  
  *  manages midi ports
- *
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
@@ -68,6 +64,9 @@
 #include "PortNameMap.h"
 #include "InternalSynth.h"
 #include "Observable.h"
+
+namespace Midi
+{
 
 class CMidiManager : public BLooper,public CObservable{
 	public:
@@ -114,4 +113,7 @@ class CMidiManager : public BLooper,public CObservable{
 		BBitmap* _createIcon(const BMessage* msg, icon_size which);
 		//void _addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
 };
-#endif
+
+};
+
+#endif /* __C_MidiManager_H__ */

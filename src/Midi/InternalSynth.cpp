@@ -13,6 +13,8 @@
 #include <Midi.h>
 #include <MidiSynth.h>
 
+using namespace Midi;
+
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 

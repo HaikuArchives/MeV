@@ -72,7 +72,7 @@ CDestination::CDestination(
 {
 	m_name.SetTo(name);
 	m_name << " " << m_id + 1;
-	m_producer = new CReconnectingMidiProducer(m_name.String());
+	m_producer = new Midi::CReconnectingMidiProducer(m_name.String());
 	m_producer->Register();
 
 	SetColor(s_defaultColorTable[id % 15]);
@@ -87,7 +87,7 @@ CDestination::CDestination(
 		m_flags(0),
 		m_channel(0)
 {
-	m_producer = new CReconnectingMidiProducer("");
+	m_producer = new Midi::CReconnectingMidiProducer("");
 
 	char buffer[255];
 	rgb_color color;
@@ -101,7 +101,7 @@ CDestination::CDestination(
 
 	// connect with name
 	if (reader.ReadStr255(buffer, 255) > 0)
-		SetConnect(CMidiManager::Instance()->FindConsumer(buffer), true);
+		SetConnect(Midi::CMidiManager::Instance()->FindConsumer(buffer), true);
 	reader >> m_channel;
 
 	// need the icons first, so...
@@ -328,7 +328,7 @@ CDestination::SetConnect(
 
 	if (sink)
 	{
-		CMidiManager *mm = CMidiManager::Instance();
+		Midi::CMidiManager *mm = Midi::CMidiManager::Instance();
 		if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
 			m_producer->Disconnect(mm->FindConsumer(m_consumerID));
 
@@ -338,7 +338,7 @@ CDestination::SetConnect(
 			if ((sink->GetProperties(&props) == B_OK)
 			 && (props.HasBool("mev:internal_synth")))
 				// init internal synth
-				((CInternalSynth *)sink)->Init();
+				((Midi::CInternalSynth *)sink)->Init();
 			m_producer->Connect(sink);
 			m_consumerID = sink->ID();
 			SetLatency(sink->Latency());

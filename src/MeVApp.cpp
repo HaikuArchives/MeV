@@ -199,7 +199,7 @@ CMeVApp::CMeVApp()
 	m_exportPanel = NULL;
 	m_importPanel = NULL;
 
-	CMidiManager::Instance();
+	Midi::CMidiManager::Instance();
 	CPlayerControl::InitPlayer();
 
 	LoadAddOns();
@@ -268,8 +268,8 @@ CMeVApp::CMeVApp()
 
 CMeVApp::~CMeVApp()
 {
-	CMidiManager *mm = CMidiManager::Instance(); 
-	mm->Die();
+	Midi::CMidiManager::Instance()->Die();
+
 	delete filter;
 	delete m_importFilter;
 

@@ -245,7 +245,7 @@ bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_
 	ASSERT(outName);
 	ASSERT(nameLength > 0);
 
-	BMidiConsumer* consumer = CMidiManager::Instance()->NextConsumer(cookie);
+	BMidiConsumer* consumer = Midi::CMidiManager::Instance()->NextConsumer(cookie);
 	if (consumer)
 	{
 		*outConsumerID = consumer->ID();
@@ -261,7 +261,7 @@ bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_
 
 int MeVDocRef::GetInternalSynthConsumerID()
 {
-	BMidiConsumer* synth = CMidiManager::Instance()->InternalSynth();
+	BMidiConsumer* synth = Midi::CMidiManager::Instance()->InternalSynth();
 	ASSERT(synth);
 	return synth ? synth->ID() : -1;
 }
@@ -272,7 +272,7 @@ int MeVDocRef::NewDestination(const char* name, int consumerID, int channel)
 	CDestination *dest=doc->NewDestination();
 	dest->SetName(name);
 	dest->SetChannel(channel-1);
-	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(consumerID);
+	BMidiConsumer *consumer = Midi::CMidiManager::Instance()->FindConsumer(consumerID);
 	if (consumer)
 		dest->SetConnect(consumer,true);
 	return dest->GetID();

@@ -124,7 +124,7 @@ private:						// Instance Data
 
 	int32						m_id;
 
-	CMidiManager *				m_midiManager;	
+	Midi::CMidiManager *		m_midiManager;	
 
 	BHandler *					m_parent;
 

@@ -43,6 +43,9 @@
 // Storage Kit
 #include <Mime.h>
 
+namespace Midi
+{
+
 class CInternalSynth
 	:	public BMidiLocalConsumer
 {
@@ -106,7 +109,9 @@ public:							// BMidiLocalConsumer Implementation
 
 private:						// Instance Data
 
-    BMidiSynth *m_midiSynth;
+    BMidiSynth *				m_midiSynth;
+};
+
 };
 
 #endif /*__C_InternalSynth_H__ */

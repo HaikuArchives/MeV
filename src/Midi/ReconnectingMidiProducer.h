@@ -1,4 +1,3 @@
-
 /* ===================================================================== *
  * ReconnectingMidiProducer.h (MeV/Midi)
  * ---------------------------------------------------------------------
@@ -23,10 +22,6 @@
  *		Dan Walton
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  a midiproducer that keeps track of all its connections to unregistered 
- *  midiconsumer using names. 
- * ---------------------------------------------------------------------
  * History:
  *	5/19/2000 dwalton
  *		Original implementation
@@ -34,25 +29,63 @@
  * To Do:
  *
  * ===================================================================== */
+
 #ifndef __C_ReconnectingMidiProducer_H__
 #define __C_ReconnectingMidiProducer_H__
+
+// Midi Kit
 #include <MidiProducer.h>
-#include <Bitmap.h>
-#include <GraphicsDefs.h>
+// Storage Kit
 #include <Mime.h>
 
-class CReconnectingMidiProducer: public BMidiLocalProducer
+class BBitmap;
+
+namespace Midi
 {
-	public:
-		CReconnectingMidiProducer(const char *name);
-		void AddToConnectList(const char *name);
-		void RemoveFromConnectList(const char *name);
-		bool IsInConnectList(const char *name) const;
-		BBitmap * GetSmallIcon() const;
-		BBitmap * GetLargeIcon() const;
-		void SetSmallIcon(BBitmap *icon);
-		void SetLargeIcon(BBitmap *icon);
-	private:
-		BBitmap * _createIcon(const BMessage* msg, icon_size which) const;
+
+/**	A midiproducer that keeps track of all its connections to unregistered 
+ *  midiconsumer using names.
+ *	@author	Dan Walton
+ */
+class CReconnectingMidiProducer
+	:	public BMidiLocalProducer
+{
+
+public:							// Constructor/Destructor
+
+								CReconnectingMidiProducer(
+									const char *name);
+
+public:							// Accessors
+
+	BBitmap *					GetSmallIcon() const;
+
+	BBitmap *					GetLargeIcon() const;
+
+	void						SetSmallIcon(
+									BBitmap *icon);
+
+	void						SetLargeIcon(
+									BBitmap *icon);
+
+public:							// Operations
+
+	void						AddToConnectList(
+									const char *name);
+
+	void						RemoveFromConnectList(
+									const char *name);
+
+	bool						IsInConnectList(
+									const char *name) const;
+
+private:						// Internal Operations
+
+	BBitmap *					_createIcon(
+									const BMessage *message,
+									icon_size which) const;
 }; 
-#endif
+
+};
+
+#endif /* __C_ReconnectingMidiProducer_H__ */

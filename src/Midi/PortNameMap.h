@@ -45,6 +45,9 @@
 #include <String.h>
 #include <List.h>
 
+namespace Midi
+{
+
 class CStringTuple {
 	public:
 		BString *name;
@@ -59,6 +62,8 @@ class CPortNameMap {
 		BString * Map(BString *real_name);
 	private:
 		BList *m_map;
+};
+
 };
 
 #endif /* __C_PortNameMap_H__ */
