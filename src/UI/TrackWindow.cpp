@@ -435,6 +435,21 @@ CTrackWindow::MessageReceived(
 			Document()->Export(message);
 			break;
 		}
+		case MENU_UNDO:
+		{
+			Track()->Undo();
+			break;
+		}
+		case MENU_REDO:
+		{
+			Track()->Redo();
+			break;
+		}
+		case MENU_CLEAR:
+		{
+			Track()->DeleteSelection();
+			break;
+		}
 		case MENU_PLAY:
 		{
 			if (CPlayerControl::IsPlaying(Document()))
@@ -561,8 +576,6 @@ CTrackWindow::MessageReceived(
 		}
 		case B_KEY_DOWN:
 		{
-			PRINT((" B_KEY_DOWN\n"));
-
 			int32 key;
 			message->FindInt32("raw_char", &key);
 			int32 modifiers;
@@ -583,6 +596,11 @@ CTrackWindow::MessageReceived(
 			CDocWindow::MessageReceived(message);
 			break;
 		}			
+		case B_SELECT_ALL:
+		{
+			Track()->SelectAll();
+			break;
+		}
 		case 'echo':
 		{
 			int32 attr, delta, value;

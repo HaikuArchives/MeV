@@ -93,28 +93,6 @@ CAssemblyWindow::MessageReceived(
 {
 	switch (message->what)
 	{
-		case MENU_UNDO:
-		{
-			Track()->Undo();
-			break;
-		}
-		case MENU_REDO:
-		{
-			Track()->Redo();
-			break;
-		}
-		case MENU_CLEAR:
-		{
-			ActiveTrack()->DeleteSelection();
-			Document()->SetModified();
-			break;
-		}
-		case B_SELECT_ALL:
-		{
-			if (CurrentFocus()) DispatchMessage( message, CurrentFocus() );
-			else Track()->SelectAll();
-			break;
-		}
 		case CEventEditor::TOOL_GRID:
 		{
 			D_MESSAGE((" -> TOOL_GRID\n"));

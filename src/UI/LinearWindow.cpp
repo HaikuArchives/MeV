@@ -110,30 +110,6 @@ CLinearWindow::MessageReceived(
 			m_toolStates[0] = message->what;
 			break;
 		}
-		case MENU_UNDO:
-		{
-			Track()->Undo();
-			break;
-		}
-		case MENU_REDO:
-		{
-			Track()->Redo();
-			break;
-		}
-		case MENU_CLEAR:
-		{
-			Track()->DeleteSelection();
-			Document()->SetModified();
-			break;
-		}
-		case B_SELECT_ALL:
-		{
-			if (CurrentFocus())
-				DispatchMessage(message, CurrentFocus());
-			else
-				Track()->SelectAll();
-			break;
-		}
 		default:
 		{
 			CTrackWindow::MessageReceived(message);
