@@ -124,6 +124,7 @@ public:
 	const char *Name() { return name; }
 	short GetID() { return trackID; }
 	bool Muted() { return muted; }
+	bool MutedFromSolo() { return muteFromSolo; }
 	bool Solo() { return solo; }
 	bool Recording() { return recording; }
 	long LastEventTime() { return lastEventTime; }

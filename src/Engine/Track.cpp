@@ -9,7 +9,15 @@
 #include "IFFReader.h"
 
 CTrack::CTrack( CMeVDoc &inDoc, TClockType &cType, int32 inID, char *inName  )
-	: document( inDoc )
+	: document( inDoc ),
+		muted(false),
+		muteFromSolo(false),
+		solo(false),
+		recording(false),
+		deleted(false),
+		lastEventTime(0),
+		logicalLength(0),
+		clockType(cType)
 {
 		// REM: Calculate a unique track ID.
 	if (inID < 0) trackID = document.GetUniqueTrackID();
@@ -24,13 +32,6 @@ CTrack::CTrack( CMeVDoc &inDoc, TClockType &cType, int32 inID, char *inName  )
 		{	0, 1000, 10000 },
 	};
 		
-	muted		= false;
-	recording	= false;
-	deleted		= false;
-	clockType	= cType;
-	
-	lastEventTime = logicalLength = 0;
-	
 	strcpy( name, inName ? inName : "Untitled Track" );
 
 		// Initialize the signature map.
