@@ -7,7 +7,7 @@
 #include "MeVDoc.h"
 #include "EventTrack.h"
 #include "Event.h"
-#include "Destination.h"
+#include "MidiDestination.h"
 #include "InternalSynth.h"
 #include "MidiManager.h"
 
@@ -253,31 +253,40 @@ int MeVDocRef::GetInternalSynthConsumerID()
 	return synth ? synth->ID() : -1;
 }
 
-int MeVDocRef::NewDestination(const char* name, int consumerID, int channel)
+int
+MeVDocRef::NewDestination(
+	const char *name,
+	int consumerID,
+	int channel)
 {
-	CMeVDoc* doc=reinterpret_cast<CMeVDoc*>(data);
-	CDestination *dest=doc->NewDestination();
+	CMeVDoc *doc = reinterpret_cast<CMeVDoc *>(data);
+	CDestination *dest = doc->NewDestination();
 	dest->SetName(name);
-	dest->SetChannel(channel-1);
-	BMidiConsumer *consumer = Midi::CMidiManager::Instance()->FindConsumer(consumerID);
-	if (consumer)
-		dest->SetConnect(consumer,true);
-	return dest->ID();
 
+	// +++ move this midi-specific stuff outta here
+	using namespace Midi;
+	((CMidiDestination *)dest)->SetChannel(channel - 1);
+	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(consumerID);
+	if (consumer)
+		((CMidiDestination *)dest)->SetConnect(consumer,true);
+
+	return dest->ID();
 }
 
-int MeVDocRef::GetChannelForDestination(int destinationID)
+int
+MeVDocRef::GetChannelForDestination(
+	int destinationID)
 {
-	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
+	CMeVDoc *doc = reinterpret_cast<CMeVDoc *>(data);
 	if (doc->IsDefinedDest(destinationID))
 	{
-		CDestination *dest=doc->FindDestination(destinationID);
-		return dest->Channel();
+		// +++ move this midi-specific stuff outta here
+		using namespace Midi;
+		CDestination *dest = doc->FindDestination(destinationID);
+		return ((CMidiDestination *)dest)->Channel();
 	}
-	else 
-	{
-		return -1;
-	}
+
+	return -1;
 }
 
 void MeVDocRef::AddEventOperator( EventOp *inOper )

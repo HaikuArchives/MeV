@@ -7,7 +7,7 @@
 #include "CursorCache.h"
 #include "EventTrack.h"
 #include "Idents.h"
-#include "Destination.h"
+#include "MidiDestination.h"
 #include "PlayerControl.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
@@ -422,7 +422,8 @@ CLinearEditor::DisplayPitchInfo(
 
 	int32 destID = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
 	CDestination *dest = TrackWindow()->Document()->FindDestination(destID);
-	if ((dest == NULL) || (!dest->GetNoteName(note, text)))
+	if ((dest == NULL)
+	 || (!((Midi::CMidiDestination *)dest)->GetNoteName(note, text)))
 		snprintf(text, NOTE_NAME_LENGTH, "%d", note);
 
 	TrackWindow()->SetVerticalPositionInfo(text);

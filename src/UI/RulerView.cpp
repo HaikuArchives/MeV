@@ -10,6 +10,8 @@
 #include "ResourceUtils.h"
 #include "StripFrameView.h"
 
+// Interface Kit
+#include <Bitmap.h>
 // Support Kit
 #include <Debug.h>
 

@@ -4,8 +4,8 @@
 
 #include "PlayerControl.h"
 
-#include "Destination.h"
 #include "MeVDoc.h"
+#include "MidiDestination.h"
 #include "PlaybackTask.h"
 #include "Player.h"
 
@@ -19,6 +19,8 @@ CPlayerControl::DoAudioFeedback(
 	uint8 attributeValue,
 	const Event *demoEvent)
 {
+	using namespace Midi;
+
 	Event fbEvents[3];
 	Event *modEvent = &fbEvents[0];
 	Event *noteStart = &fbEvents[1];
@@ -29,8 +31,8 @@ CPlayerControl::DoAudioFeedback(
 		int32 channel = (feedbackAttribute == EvAttr_Channel)
 						? attributeValue
 						: demoEvent->GetVChannel();
-		CDestination	*dest = doc->FindDestination(channel);
-		modEvent->stack.actualPort = dest->GetProducer();	
+		CMidiDestination *dest = (CMidiDestination *)doc->FindDestination(channel);
+		modEvent->stack.actualPort = dest->Producer();	
 		modEvent->stack.actualChannel = dest->Channel();
 	}
 	else

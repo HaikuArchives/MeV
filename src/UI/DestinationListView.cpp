@@ -5,6 +5,7 @@
 #include "DestinationListView.h"
 
 #include "DestinationModifier.h"
+#include "EventTrack.h"
 #include "IconMenuItem.h"
 #include "MathUtils.h"
 #include "MeVDoc.h"
@@ -19,7 +20,11 @@
 // Interface kit
 #include <Bitmap.h>
 #include <Box.h>
+#include <Button.h>
 #include <MenuField.h>
+#include <PopUpMenu.h>
+// Storage Kit
+#include <Mime.h>
 // Support Kit
 #include <Debug.h>
 
@@ -206,7 +211,7 @@ CDestinationListView::SubjectUpdated(
 	}
 
 	// part selection changed ?
-	StSubjectLock lock(*m_track, Lock_Shared);
+	CReadLock lock(m_track);
 	if (m_track && (m_track->SelectionType() != CTrack::Select_None))
 	{
 		const Event *event = m_track->CurrentEvent();
@@ -214,7 +219,7 @@ CDestinationListView::SubjectUpdated(
 		{
 			int32 destID = event->GetVChannel();
 
-			StSubjectLock lock(*m_doc, Lock_Exclusive);
+			CWriteLock lock(m_doc);
 			m_doc->SetDefaultAttribute(EvAttr_Channel, destID);
 			int32 index = m_doc->IndexOf(m_doc->FindDestination(destID));
 
@@ -414,7 +419,13 @@ CDestinationListView::DestinationAdded(
 		BMessage *message = new BMessage(DESTINATION_SELECTED);
 		dest->ReadLock();
 		message->AddInt32("destination_id", dest->ID());
-		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
+		BBitmap	*icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
+										  B_MINI_ICON - 1.0), B_CMAP8);
+		if (dest->GetIcon(B_MINI_ICON, icon) != B_OK)
+		{
+			delete icon;
+			icon = NULL;
+		}
 		CIconMenuItem *item = new CIconMenuItem(dest->Name(),
 												message, icon);
 		dest->ReadUnlock();
@@ -444,7 +455,13 @@ CDestinationListView::DestinationChanged(
 		BMessage *message = new BMessage(DESTINATION_SELECTED);
 		dest->ReadLock();
 		message->AddInt32("destination_id", dest->ID());
-		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
+		BBitmap	*icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
+										  B_MINI_ICON - 1.0), B_CMAP8);
+		if (dest->GetIcon(B_MINI_ICON, icon) != B_OK)
+		{
+			delete icon;
+			icon = NULL;
+		}
 		item = new CIconMenuItem(dest->Name(), message, icon);
 		dest->ReadUnlock();
 		item->SetTarget(this);

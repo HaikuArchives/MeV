@@ -39,23 +39,16 @@
 #ifndef __C_VChannelModifier_H__
 #define __C_VChannelModifier_H__
 
-#include "WindowState.h"
-#include "MidiManager.h"
-#include "MeVDoc.h"
+#include "AppWindow.h"
 
-// Application Kit
-#include <Message.h>
-// Interface Kit
-#include <ColorControl.h> 
-#include <MenuItem.h>
-#include <PopUpMenu.h>
-#include <StringView.h>
-#include <TextControl.h>
-#include <View.h>
-#include <Window.h>
+namespace Midi
+{
+	class CMidiDestination;
+	class CMidiManager;
+};
 
-class CDestination;
 class CDestinationList;
+class CMeVDoc;
 
 class CDestinationModifier
 	:	public CAppWindow
@@ -120,7 +113,7 @@ private:						// Internal Operations
 private:						// Instance Data
 
 	//pointer to the currently selected dest.
-	CDestination *				m_dest;
+	Midi::CMidiDestination *	m_dest;
 
 	int32						m_id;
 

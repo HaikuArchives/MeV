@@ -5,6 +5,7 @@
 #include "EventTask.h"
 
 #include "MeVApp.h"
+#include "MidiDestination.h"
 #include "MidiDeviceInfo.h"
 #include "PlaybackTaskGroup.h"
 #include "Player.h"
@@ -75,9 +76,10 @@ CEventTask::PlayEvent(
 	CEventStack &stack,
 	long origin)
 {
+	using namespace Midi;
 
 	CPlayer::ChannelState *chState = NULL;
-	CDestination *dest = NULL;
+	CMidiDestination *dest = NULL;
 
 	Event stackedEvent(ev);
 
@@ -87,14 +89,14 @@ CEventTask::PlayEvent(
 	// filter event though virtual channel table
 	if  (group.Document()->IsDefinedDest(ev.note.vChannel))
 	{
-		dest = group.Document()->FindDestination(ev.common.vChannel);
+		dest = (CMidiDestination *)group.Document()->FindDestination(ev.common.vChannel);
 		chState = &thePlayer.m_portInfo[0].channelStates[dest->Channel()];
 		
 		// Process a copy of the event event through the filters...
 		((CEventTrack *)track)->FilterEvent(stackedEvent);
 
 		// assign actual port
-		stackedEvent.stack.actualPort =(BMidiLocalProducer *) dest->GetProducer();
+		stackedEvent.stack.actualPort = dest->Producer();
 		stackedEvent.stack.actualChannel = dest->Channel();
 		stackedEvent.stack.start -= (dest->Latency() / 1000);
 	}

@@ -37,22 +37,16 @@
 #ifndef __C_DestinationListView_H__ 
 #define __C_DestinationListView_H__ 
 
-#include "DestinationModifier.h" 
-#include "EventTrack.h" 
-#include "TextDisplay.h" 
-#include "IconMenuItem.h"
-#include "Observer.h" 
+#include "Observer.h"
 
-// Application Kit
-#include <Looper.h> 
 // Interface Kit
-#include <Button.h> 
-#include <CheckBox.h> 
-#include <MenuField.h>
-#include <PopUpMenu.h> 
-#include <StringView.h> 
-//stl 
+#include <View.h>
+// Standard Template Library
 #include <map.h> 
+
+class CDestinationModifier;
+class CMeVDoc;
+class CEventTrack;
 
 class CDestinationListView
 	:	public BView,

@@ -7,8 +7,6 @@
 #include "AssemblyWindow.h"
 #include "BeFileWriter.h"
 #include "BeFileReader.h"
-#include "Destination.h"
-#include "Destination.h"
 #include "EventOp.h"
 #include "EventTrack.h"
 #include "Idents.h"
@@ -17,6 +15,7 @@
 #include "LinearWindow.h"
 #include "MeVDocIconBits.h"
 #include "MeVFileID.h"
+#include "MidiDestination.h"
 #include "MidiDeviceInfo.h"
 #include "OperatorWindow.h"
 #include "PlayerControl.h"
@@ -471,8 +470,10 @@ CMeVDoc::IsDefinedDest(
 CDestination *
 CMeVDoc::NewDestination()
 {
-	CDestination *dest = new CDestination('MIDI', m_destinations.CountItems(),
-										  "Untitled Destination", this);
+	using namespace Midi;
+	CMidiDestination *dest = new CMidiDestination(m_destinations.CountItems(),
+												  "Untitled Destination",
+												  this);
 	m_destinations.AddItem(dest);
 
 	CUpdateHint hint;
@@ -725,6 +726,7 @@ CMeVDoc::Serialize(
 	{
 		writer.Push(DESTINATION_CHUNK);
 		writer << dest->Type();
+		CReadLock lock(dest);
 		dest->Serialize(writer);
 		writer.Pop();
 	}
@@ -839,7 +841,9 @@ CMeVDoc::_readEnvironment(
 				reader >> type;
 				if (type == 'MIDI')
 				{
-					CDestination *dest = new CDestination(this);
+					using namespace Midi;
+					CMidiDestination *dest = new CMidiDestination(this);
+					CWriteLock lock(dest);
 					reader.Push();
 					while (reader.NextChunk())
 						dest->ReadChunk(reader);

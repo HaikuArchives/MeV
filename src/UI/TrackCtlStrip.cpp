@@ -5,6 +5,7 @@
 #include "TrackCtlStrip.h"
 
 #include "CursorCache.h"
+#include "MidiDestination.h"
 #include "EventTrack.h"
 #include "Idents.h"
 #include "MeVApp.h"
@@ -870,7 +871,8 @@ CProgramChangeEventHandler::GetProgramName(
 	const Event &ev,
 	char *outName) const
 {
-	CDestination *dest = Document()->FindDestination(ev.GetVChannel());
+	using namespace Midi;
+	CMidiDestination *dest = (CMidiDestination *)Document()->FindDestination(ev.GetVChannel());
 	uint16 bank = (ev.programChange.bankMSB << 7) | ev.programChange.bankLSB;
 	if (!dest->GetProgramName(bank, ev.programChange.program, outName))
 		sprintf(outName, "Program %d", ev.programChange.program);

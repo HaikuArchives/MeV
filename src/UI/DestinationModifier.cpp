@@ -4,7 +4,7 @@
 
 #include "DestinationModifier.h"
 
-#include "Destination.h"
+#include "MidiDestination.h"
 #include "MeVDoc.h"
 #include "DestinationListView.h"
 #include "MidiManager.h"
@@ -12,11 +12,17 @@
 
 #include <stdio.h>
 // Interface Kit
+#include <CheckBox.h>
+#include <ColorControl.h>
 #include <MenuField.h>
+#include <PopUpMenu.h>
+#include <TextControl.h>
 // Midi Kit
 #include <MidiConsumer.h>
 // Support Kit
 #include <Debug.h>
+
+using namespace Midi;
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -28,7 +34,7 @@ CDestinationModifier::CDestinationModifier(
 	BHandler *parent)
 	:	CAppWindow(frame, "CDestination Modifier", B_TITLED_WINDOW,
 				B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
-		m_dest(doc->FindDestination(id)),
+		m_dest((CMidiDestination *)doc->FindDestination(id)),
 		m_id(id),
 		m_midiManager(Midi::CMidiManager::Instance()),
 		m_parent(parent)
@@ -289,7 +295,7 @@ CDestinationModifier::_populatePortsMenu()
 												icon);
 		m_midiPorts->AddItem(item);
 		StSubjectLock lock(*m_dest, Lock_Shared);
-		if (m_dest->GetProducer()->IsConnected(consumer))
+		if (m_dest->IsConnected(consumer))
 			item->SetMarked(true);
 	}
 

@@ -8,6 +8,7 @@
 #include "DestinationListView.h"
 #include "DocWindow.h"
 #include "EventOp.h"
+#include "EventTrack.h"
 #include "MathUtils.h"
 #include "MeVDoc.h"
 #include "PlayerControl.h"
