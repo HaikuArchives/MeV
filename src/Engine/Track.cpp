@@ -20,8 +20,12 @@
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
-CTrack::CTrack( CMeVDoc &inDoc, TClockType &cType, int32 inID, char *inName  )
-	: document( inDoc ),
+CTrack::CTrack(
+	CMeVDoc &inDoc,
+	TClockType &cType,
+	int32 inID,
+	char *name)
+	:	document(inDoc),
 		muted(false),
 		muteFromSolo(false),
 		solo(false),
@@ -44,7 +48,7 @@ CTrack::CTrack( CMeVDoc &inDoc, TClockType &cType, int32 inID, char *inName  )
 		{	0, 1000, 10000 },
 	};
 		
-	strcpy( name, inName ? inName : "Untitled Track" );
+	strcpy(m_name, name ? name : "Untitled Track");
 
 		// Initialize the signature map.
 	sigMap.entries		= (cType != ClockType_Metered ? absSigMap : relSigMap);
@@ -60,26 +64,31 @@ CTrack::~CTrack()
 // ---------------------------------------------------------------------------
 // Operations
 
-void CTrack::SetName( const char *inName )
+void
+CTrack::SetName(
+	const char *name)
 {
-	strncpy( name, inName, sizeof name - 1 );
-	name[ sizeof name - 1 ] = '\0';
-	
-		// Tell everyone that the name of the track changed
-	NotifyUpdate( Update_Name, NULL );
+	strncpy(m_name, name, 64);
+
+	// Tell everyone that the name of the track changed
+	CUpdateHint hint;
+	hint.AddInt32("TrackID", GetID());
+	hint.AddInt32("TrackAttrs", Update_Name);
+	document.PostUpdateAllTracks(&hint);
+	document.PostUpdate(&hint, NULL);
 }
 
-	/**	Notify all observers (including possibly observers of the document
-		as well) that some attributes of this track have changed. */
-void CTrack::NotifyUpdate( int32 inHintBits, CObserver *source )
+void
+CTrack::NotifyUpdate(
+	int32 hintBits,
+	CObserver *source)
 {
-	CUpdateHint		hint;
+	CUpdateHint hint;
+	hint.AddInt32("TrackID", GetID());
+	hint.AddInt32("TrackAttrs", hintBits);
 	
-	hint.AddInt32( "TrackID", GetID() );
-	hint.AddInt32( "TrackAttrs", inHintBits );
-	
-	PostUpdate( &hint, source );
-	document.PostUpdate( &hint, source );
+	PostUpdate(&hint, source);
+	document.PostUpdate(&hint, source);
 }
 
 	/**	Add update hint bits to an update message. */
@@ -116,8 +125,8 @@ void CTrack::ReadTrackChunk( CIFFReader &reader )
 		break;
 		
 	case Track_Name_ID:
-		reader.MustRead( name, MIN( reader.ChunkLength(), sizeof name ) );
-		name[ sizeof name - 1 ] = '\0';
+		reader.MustRead(m_name, MIN(reader.ChunkLength(), sizeof(m_name)));
+		m_name[sizeof(m_name - 1)] = '\0';
 		break;
 	}
 }
@@ -136,7 +145,7 @@ void CTrack::WriteTrack( CIFFWriter &writer )
 	writer << flags << clock;
 	writer.Pop();
 
-	writer.WriteChunk( Track_Name_ID, name, strlen( name ) + 1 );
+	writer.WriteChunk(Track_Name_ID, m_name, strlen(m_name) + 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -232,7 +241,6 @@ CTrackRenameUndoAction::Redo()
 	m_track->SetName(m_name.String());
 	m_name = oldName;
 	m_track->Document().SetModified();
-	m_track->NotifyUpdate(CTrack::Update_Name, NULL);
 }
 
 void
@@ -244,7 +252,6 @@ CTrackRenameUndoAction::Undo()
 	m_track->SetName(m_name.String());
 	m_name = oldName;
 	m_track->Document().SetModified();
-	m_track->NotifyUpdate(CTrack::Update_Name, NULL);
 }
 
 // END - Track.cpp

@@ -49,14 +49,15 @@ class CMeVDoc;
 class CIFFReader;
 class CIFFWriter;
 
-class CTrack : public CObservableSubject {
-
+class CTrack
+	:	public CObservableSubject
+{
 	friend class CTrackDeleteUndoAction;
 
-private:
+private:						// Instance Data
+
 	short			trackID;				// id number of this track
-// string			name;
-	char			name[ 64 ];				// name of the track
+	char			m_name[64];				// name of the track
 	CMeVDoc			&document;				// pointer to parent document
 	
 	bool			muted;						// track is muted
@@ -124,7 +125,7 @@ public:
 		// ---------- Getters
 
 		/**	Return pointer to track name */
-	const char *Name() const { return name; }
+	const char *Name() const { return m_name; }
 	short GetID() const { return trackID; }
 	bool Muted() { return muted; }
 	bool MutedFromSolo() { return muteFromSolo; }
@@ -142,7 +143,7 @@ public:
 	
 		// ---------- Setters
 
-	void SetName( const char *inName );
+	void SetName( const char *name );
 	void SetMuted( bool inMute ) { muted = inMute; NotifyUpdate( Update_Flags, NULL ); }
 	void SetRecording( bool inRecord ) { recording = inRecord; NotifyUpdate( Update_Flags, NULL ); }
 // void SetSolo( bool inSolo );
