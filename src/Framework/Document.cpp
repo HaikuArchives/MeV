@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * Document.cpp (MeV/Application Framework)
+ * Document.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "DocApp.h"
@@ -13,203 +13,234 @@
 // Storage Kit
 #include <FilePanel.h>
 
-int32		CDocument::newDocCount = 0;
+// ---------------------------------------------------------------------------
+//	Class Data Initialization
+
+int32
+CDocument::s_newDocCount = 0;
 
 // ---------------------------------------------------------------------------
-//	Document methods
+//	Constructor/Destructor
 
-CDocument::CDocument( CDocApp &inApp ) : app( inApp )
+CDocument::CDocument(
+	CDocApp &app)
+	:	app(app),
+		m_modified(false),
+		m_named(false),
+		m_valid(false),
+		m_savePanel(NULL)
 {
-	char			name[ 32 ];
+	char name[32];
 
-	app.AddDocument( this );
-	modified		= false;
-	named		= false;
-	valid			= false;
-	savePanel		= NULL;
+	app.AddDocument(this);
 	
-		//	Get a unique name
-	if (++newDocCount == 1)
-		sprintf( name, "./Untitled" );
-	else sprintf( name, "./Untitled-%ld", newDocCount );
+	//	Get a unique name
+	if (++s_newDocCount == 1)
+		sprintf(name, "./Untitled");
+	else
+		sprintf(name, "./Untitled-%ld", s_newDocCount);
 	
-		//	Um, where should the default directory be?
-		//	A preferences item?
-	docLocation.SetTo( name );
+	//	Um, where should the default directory be?
+	//	A preferences item?
+	m_entry.SetTo(name);
 }
 
-CDocument::CDocument( CDocApp &inApp, entry_ref &inRef )
-	: app( inApp ), docLocation( &inRef )
+CDocument::CDocument(
+	CDocApp &app,
+	entry_ref &ref)
+	:	m_entry(&ref),
+		app(app),
+		m_modified(false),
+		m_named(true),
+		m_valid(false),
+		m_savePanel(NULL)
 {
-	app.AddDocument( this );
-	modified		= false;
-	named		= true;
+	app.AddDocument(this);
 }
 
 CDocument::~CDocument()
 {
-	delete savePanel;
-	app.RemoveDocument( this );
+	if (m_savePanel)
+		delete m_savePanel;
+	app.RemoveDocument(this);
 }
 
-long CDocument::GetUniqueWindowNum()
-{
-	long			trialID = 1,
-				prevID = -1;
+// ---------------------------------------------------------------------------
+// Hook Functions
 
-		//	Loop until we can run through the entire list
-		//	without a collision.
+BFilePanel *
+CDocument::CreateSavePanel()
+{
+	BMessage message(B_SAVE_REQUESTED);
+	message.AddPointer("Document", this);
+
+	// Create a new save panel
+	BMessenger messenger(NULL, be_app);
+	BFilePanel *panel = new BFilePanel(B_SAVE_PANEL, &messenger,
+									   NULL, B_FILE_NODE, false, &message);
+
+	// Set the save panel to point to the directory from where we loaded.
+	BEntry entry;
+	if (m_entry.GetParent(&entry) == B_NO_ERROR)
+	{
+		panel->SetPanelDirectory(&entry);
+	}
+
+	return panel;
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+status_t
+CDocument::GetName(
+	char *name) const
+{
+	return m_entry.GetName(name);
+}
+
+status_t
+CDocument::GetEntry(
+	BEntry *entry) const
+{
+	if (m_entry.InitCheck() == B_OK)
+	{
+		*entry = m_entry;
+		return B_OK;
+	}
+
+	return m_entry.InitCheck();
+}
+
+status_t
+CDocument::SetEntry(
+	const BEntry *entry)
+{
+	m_entry = *entry;
+	status_t error = m_entry.InitCheck();
+	if (error)
+	{
+		m_named = false;
+		return error;
+	}
+
+	m_named = true;
+	return B_OK;
+}
+
+// ---------------------------------------------------------------------------
+// Operations
+
+void
+CDocument::AddWindow(
+	CDocWindow *window)
+{
+	int32 plainWindowCount = 0;
+	StSubjectLock(*this, Lock_Exclusive);
+
+	m_windows.AddItem(window);
+	for (int32 i = 0; i < CountWindows(); i++)
+	{
+		CDocWindow *window = WindowAt(i);
+		if (window->WindowNumber() >= 0)
+			plainWindowCount++;
+	}
+
+	if (plainWindowCount > 1)
+	{
+		for (int i = 0; i < CountWindows(); i++)
+		{
+			CDocWindow *window = WindowAt(i);
+			if (window->WindowNumber() == 0)
+			{
+				window->SetWindowNumber(CalcUniqueWindowNumber());
+				window->RecalcWindowTitle();
+			}
+		}
+	}
+}
+
+void
+CDocument::RemoveWindow(
+	CDocWindow *window)
+{
+	StSubjectLock(*this, Lock_Exclusive);
+
+	int32 plainWindowCount = 0;
+	m_windows.RemoveItem(window);
+	for (int32 i = 0; i < CountWindows(); i++)
+	{
+		CDocWindow *window = WindowAt(i);
+		if (window->WindowNumber() >= 0)
+			plainWindowCount++;
+	}
+	
+	if (plainWindowCount == 1)
+	{
+		for (int32 i = 0; i < CountWindows(); i++)
+		{
+			CDocWindow *window = WindowAt(i);
+			if (window->WindowNumber() > 0)
+			{
+				window->SetWindowNumber(0);
+				window->RecalcWindowTitle();
+			}
+		}
+	}
+
+	//	If there are any other observers hanging on to this, then
+	//	ask them to please observe something else.
+	if (CountWindows() == 0)
+	{
+		RequestDelete();
+		Application()->RemoveDocument(this);
+	}
+}
+
+void
+CDocument::Save()
+{
+	if (m_named == false)
+		SaveAs();
+	else
+		SaveDocument();
+}
+
+void
+CDocument::SaveAs()
+{
+	if (m_savePanel == NULL)
+		m_savePanel = CreateSavePanel();
+	CRefCountObject::Acquire();
+	m_savePanel->Show();
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+long
+CDocument::CalcUniqueWindowNumber()
+{
+	long trialID = 1, prevID = -1;
+
+	//	Loop until we can run through the entire list
+	//	without a collision.
 	while (trialID != prevID)
 	{
 		prevID = trialID;
 
-			//	If we collide, then increase the ID by one
-		for (int i = 0; i < windows.CountItems(); i++)
+		//	If we collide, then increase the ID by one
+		for (int i = 0; i < CountWindows(); i++)
 		{
-			CDocWindow		*w = (CDocWindow *)windows.ItemAt( i );
-			
-			if (w->windowNumber <= 0) continue;
-			if (trialID == w->windowNumber) trialID++;
+			CDocWindow *window = WindowAt(i);
+			if (window->WindowNumber() <= 0)
+				continue;
+			if (trialID == window->WindowNumber())
+				trialID++;
 		}
 	}
 
 	return trialID;
 }
 
-void CDocument::AddWindow( CDocWindow *inWin )
-{
-	int32				plainWindowCount = 0;
-
-	StSubjectLock( *this, Lock_Exclusive );
-
-	windows.AddItem( inWin );
-	for (int i = 0; i < windows.CountItems(); i++)
-	{
-		CDocWindow		*w = (CDocWindow *)windows.ItemAt( i );
-		w->updateMenus = true;
-		if (w->windowNumber >= 0) plainWindowCount++;
-	}
-
-	if (plainWindowCount > 1)
-	{
-		for (int i = 0; i < windows.CountItems(); i++)
-		{
-			CDocWindow		*w = (CDocWindow *)windows.ItemAt( i );
-
-			if (w->windowNumber == 0)
-			{
-				w->windowNumber = GetUniqueWindowNum();
-				w->RecalcWindowTitle();
-			}
-		}
-	}
-}
-
-void CDocument::RemoveWindow( CDocWindow *inWin )
-{
-	int32				plainWindowCount = 0;
-
-	StSubjectLock( *this, Lock_Exclusive );
-
-	windows.RemoveItem( inWin );
-	for (int i = 0; i < windows.CountItems(); i++)
-	{
-		CDocWindow		*w = (CDocWindow *)windows.ItemAt( i );
-		
-		if (w->windowNumber >= 0) plainWindowCount++;
-		
-		w->updateMenus = true;
-	}
-	
-	if (plainWindowCount == 1)
-	{
-		for (int i = 0; i < windows.CountItems(); i++)
-		{
-			CDocWindow		*w = (CDocWindow *)windows.ItemAt( i );
-		
-			if (w->windowNumber > 0)
-			{
-				w->windowNumber = 0;
-				w->RecalcWindowTitle();
-			}
-		}
-	}
-
-		//	If there are any other observers hanging on to this, then
-		//	ask them to please observe something else.
-	if (windows.CountItems() == 0) RequestDelete();
-}
-
-bool CDocument::GetName( char *outName )
-{
-	return (docLocation.GetName( outName ) == B_NO_ERROR);
-}
-
-void CDocument::BuildWindowMenu( BMenu *inMenu, CDocWindow *inSelected )
-{
-	StSubjectLock( *this, Lock_Shared );
-	
-	for (int i = 0; i < windows.CountItems(); i++)
-	{
-		CDocWindow		*w = (CDocWindow *)windows.ItemAt( i );
-		BMenuItem		*mi;
-		
-		mi = new BMenuItem( w->Title(), new BMessage( Activate_ID ), 0, 0 );
-		mi->SetTarget( w );
-		if (w == inSelected) mi->SetMarked( true );
-
-		inMenu->AddItem( mi );
-	}
-}
-
-void CDocument::Save()
-{
-	if (named == false)
-	{
-		SaveAs();
-		return;
-	}
-	
-	SaveDocument();
-}
-
-void CDocument::SaveAs()
-{
-	if (savePanel == NULL) savePanel = CreateSavePanel();
-	CRefCountObject::Acquire();
-	savePanel->Show();
-}
-
-BFilePanel *CDocument::CreateSavePanel()
-{
-	BMessage		saveMsg( B_SAVE_REQUESTED );
-	BFilePanel		*savePanel;
-		
-	saveMsg.AddPointer( "Document", this );
-
-		// Create a new save panel
-	savePanel = new BFilePanel(	B_SAVE_PANEL,
-							((CDocApp *)be_app)->Messenger(),
-							NULL, B_FILE_NODE, false, &saveMsg );
-
-		// Set the save panel to point to the directory from where we loaded.
-	BEntry		pEntry;
-	
-	if (docLocation.GetParent( &pEntry ) == B_NO_ERROR)
-	{
-		savePanel->SetPanelDirectory( &pEntry );
-	}
-	
-	return savePanel;
-}
-
-#if 0
-OnDocNameChanged()
-{
-	StSubjectLock	this;
-
-		//	REM: Iterate through all windows and call OnDocNameChanged...
-		//	Or, is that better done through the observer mechanism? Probably!
-	OnDocNameChanged();
-}
-#endif
+// END - Document.cpp

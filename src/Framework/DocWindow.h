@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * DocWindow.h (MeV)
+ * DocWindow.h (MeV/Framework)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -38,63 +38,113 @@
 #ifndef __C_DocWindow_H__
 #define __C_DocWindow_H__
 
-#include "Document.h"
 #include "WindowState.h"
 
-const uint32			Select_ID = '#SEL';		//	We lost selection
-const uint32			Activate_ID = '#ACT';		//	Activate this window
+const uint32 Select_ID		= '#SEL';		//	We lost selection
+const uint32 Activate_ID	= '#ACT';		//	Activate this window
+
+class CDocument;
+class CToolBar;
 
 class CDocWindow :
 	public CAppWindow
 {
+	friend class CDocument;
 
-	static CDocWindow	*activeDocWin;
-	friend class			CDocument;
+public:							// Constructor/Destructor
 
-protected:
-	void CalcWindowTitle(const char *inTypeName);
-	void RecalcWindowTitle();
-	
-protected:
+								CDocWindow(
+									BRect frame,
+									CDocument *document,
+									const char *inWinTypeName = NULL,
+									window_type = B_DOCUMENT_WINDOW,
+									uint32 flags = 0);
 
-	CDocument		&document;
-	BMenuBar			*menus;					//	Pointer to menu bar
-	BMenu			*windowMenu;				//	Menu of opened/openable windows.
-	bool				updateMenus;				//	True means refigure windows menu
-	int16			windowNumber;			//	Which # view of document is this
-	int16			windowMenuStart;			//	Start item of window menu
+								CDocWindow(
+									CWindowState &state,
+									CDocument *document,
+									const char	*inWinTypeName = NULL,
+									window_type = B_DOCUMENT_WINDOW,
+									uint32 flags = 0);
 
-	bool QuitRequested();
-	void WindowActivated( bool active );
-	void MessageReceived( BMessage *msg );
-	void MenusBeginning();
-	
-	void BuildWindowMenu( BMenu *inMenu );
-	
-public:
+	virtual						~CDocWindow();
 
-		/**	Constructor. */
-	CDocWindow(	BRect		frame,
-				CDocument	&inDocument,
-				const char	*inWinTypeName = NULL,
-				window_type = B_DOCUMENT_WINDOW, uint32 flags = 0 );
-	CDocWindow(	CWindowState	&inState,
-				CDocument	&inDocument,
-				const char	*inWinTypeName = NULL,
-				window_type = B_DOCUMENT_WINDOW, uint32 flags = 0 );
-	virtual ~CDocWindow();
+public:							// Accessors
 
-		/**	Returns a pointer to the document for this DocWindow. */
-	CDocument *Document() { document.Acquire(); return &document; }
+	// Return the document window which has the active token
+	static CDocWindow *			ActiveDocWindow()
+								{ return s_activeDocWin; }
+
+	// Returns a pointer to the document for this DocWindow
+	virtual CDocument *			Document();
 	
-		/**	Acquires the active selection token. */
-	void AcquireSelectToken();
+	// Return true if this window has the active selection token
+	bool						HasSelectToken()
+								{ return (this == s_activeDocWin); }
 	
-		/**	Return true if this window has the active selection token */
-	bool HasSelectToken() { return this == activeDocWin; }
+	// set and get the current toolbar
+	CToolBar *					ToolBar() const
+								{ return m_toolBar; }
+	void						SetToolBar(
+									CToolBar *toolBar);
+
+	BMenu *						WindowMenu() const
+								{ return m_windowMenu; }
+	void						SetWindowMenu(
+									BMenu *menu)
+								{ m_windowMenu = menu; }
+
+	int32						WindowNumber() const
+								{ return m_windowNumber; }
+
+public:							// Operations
+
+	// Acquires the active selection token
+	void						AcquireSelectToken();
 	
-		/**	Return the document window which has the active token. */
-	static CDocWindow *ActiveDocWindow() { return activeDocWin; }
+public:							// CAppWindow Implementation
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				MenusBeginning();
+	
+	virtual bool				QuitRequested();
+
+	virtual void				WindowActivated(
+									bool active);
+
+protected:						// Internal Operations
+
+	void						CalcWindowTitle(
+									const char *inTypeName);
+
+	void						RecalcWindowTitle();
+	
+	void						SetWindowNumber(
+									int32 number)
+								{ m_windowNumber = number; }
+
+	void						UpdateWindowMenu();
+
+private:						// Instance Data
+
+	CDocument *					m_document;
+
+	CToolBar *					m_toolBar;
+
+	// Menu of opened/openable windows
+	BMenu *						m_windowMenu;
+
+	//	Which # view of document is this
+	int16						m_windowNumber;
+
+	//	Start item of window menu
+	int16						m_windowMenuStart;
+
+private:						// Class Data
+
+	static CDocWindow *			s_activeDocWin;
 };
 
 #endif /* __C_DocWindow_H__ */

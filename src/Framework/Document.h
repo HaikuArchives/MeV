@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * Document.h (MeV/Application Framework)
+ * Document.h (MeV/Framework)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -39,80 +39,121 @@
 #define __C_Document_H__
 
 #include "Observer.h"
-#include <AppKit.h>
-#include <Resources.h>
+//#include <AppKit.h>
+//#include <Resources.h>
+
+// Storage Kit
+#include <Entry.h>
 
 class CDocApp;
 class CDocWindow;
 
-class CDocument : public CObservableSubject {
+class CDocument
+	:	public CObservableSubject
+{
+	friend class CDocApp;
+								
+public:							// Constructor/Destructor
 
-	friend class		CDocWindow;
-	friend class		CDocApp;
+								CDocument(
+									CDocApp &app);
 
-		//	List of open windows relating to this document
-	BList				windows;
-	CDocApp			&app;
-	BFilePanel		*savePanel;
+								CDocument(
+									CDocApp &app,
+									entry_ref &ref);
 
-	bool				modified;				// The document has been modified
-	bool				named;				// The document has been given a file name
+	virtual						~CDocument();
+
+public:							// Hook Functions
+
+	// Override this to change the way the save file panel is created
+	virtual BFilePanel *		CreateSavePanel();
+
+	// Low-level function to actually write the document data
+	virtual void				SaveDocument() = 0;
+
+public:							// Accessors
+
+	virtual CDocApp *			Application() const
+								{ return &app; }
+
+	const BEntry &				DocLocation()
+								{ return m_entry; }
+
+	// Returns true if document is correctly initialized
+	bool						InitCheck()
+								{ return m_valid; }
+
+	//	name must be at least B_FILE_NAME_LENGTH
+	status_t					GetName(
+									char *name) const;
+	status_t					GetEntry(
+									BEntry *entry) const;
+	status_t					SetEntry(
+									const BEntry *entry);
+
+	// Returns true if document has unsaved modifications
+	bool						Modified()
+								{ return m_modified; }
+	// Used to set the modification state of the document
+	void						SetModified(
+									bool modified = true)
+								{ m_modified = modified; }
+
+	// Returns TRUE if document has ever been saved
+	bool						Named()
+								{ return m_named; }
+
+	void						SetValid(
+									bool valid = true)
+								{ m_valid = valid; }
+
+public:							// Operations
+
+	void						AddWindow(
+									CDocWindow *window);
+	int32						CountWindows() const
+								{ return m_windows.CountItems(); }
+	void						RemoveWindow(
+									CDocWindow *window);
+	CDocWindow *				WindowAt(
+									int32 index) const
+								{ return static_cast<CDocWindow *>(m_windows.ItemAt(index)); }
+
+	// Call this to save the document to it's current location
+	void						Save();
+	// Call this to save the document to a new location
+	void						SaveAs();
+
+private:						// Internal Operations
+
+	int32						CalcUniqueWindowNumber();
 	
-	BEntry			docLocation;			//	Location of this doc in hierarchy
+private:						// Instance Data
 
-	static int32		newDocCount;
+	//	Location of this doc in hierarchy
+	BEntry						m_entry;
 
-	long GetUniqueWindowNum();
+	CDocApp &					app;
+
+	//	List of open windows relating to this document
+	BList						m_windows;
+
+	// true if the document has been modified
+	bool						m_modified;				
+
+	// true if the document has been given a file name
+	bool						m_named;
 	
-	void AddWindow   ( CDocWindow *inWindow );
-	void RemoveWindow( CDocWindow *inWindow );
+	// true if the constructor initialized OK
+	bool						m_valid;
 
-protected:
-	bool				valid;				// The constructor initialized OK
+	// the file panel for saving this document
+	BFilePanel *				m_savePanel;
 
-public:
-	//	CDocument();
-	CDocument( CDocApp &inApp );
-	CDocument( CDocApp &inApp, entry_ref &ref );
-	virtual ~CDocument();
-	
-		// ---------- Window list control
+private:						// Class Data
 
-	void BuildWindowMenu( BMenu *inMenu, CDocWindow *inSelected );
-	
-		// ---------- Getters
-
-	int32 WindowCount() { return windows.CountItems(); }
-	bool GetName( char *outName );	//	outName must be at least B_FILE_NAME_LENGTH
-	bool InitCheck() { return valid; }
-	
-		// ---------- Setters
-
-		/** Used to set the modification state of the document. */
-	void SetModified( bool inModified = true )
-		{ modified = inModified; }
-		
-		/** Returns true if document has unsaved modifications. */
-	bool Modified() { return modified; }
-	
-		/** Returns TRUE if document has ever been saved. */
-	bool Named() { return named; }
-
-		// ---------- Document saving
-		
-	const BEntry &DocLocation() { return docLocation; }
-
-		/** Low-level function to actually write the document data. */
-	virtual void SaveDocument() = 0;
-
-		/** Call this to save the document to it's current location */
-	void Save();
-		
-		/** Call this to save the document to a new location. */
-	void SaveAs();
-	
-		/** Override this to change the way the save file panel is created. */
-	virtual BFilePanel *CreateSavePanel();
+	static int32				s_newDocCount;
 };
 
 #endif /* __C_Document_H__ */

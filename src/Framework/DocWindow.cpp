@@ -1,195 +1,271 @@
 /* ===================================================================== *
- * DocWindow.cpp (MeV/Application Framework)
+ * DocWindow.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "DocWindow.h"
 
-// Gnu C Library
-#include <stdio.h>
-#include <string.h>
+#include "DocApp.h"
+#include "Document.h"
+#include "ToolBar.h"
+
 // Interface Kit
 #include <Alert.h>
 #include <Menu.h>
 #include <MenuItem.h>
+// Support Kit
+#include <Debug.h>
+#include <String.h>
 
-CDocWindow	*CDocWindow::activeDocWin;
+// ---------------------------------------------------------------------------
+// Class Data Initialization
+
+CDocWindow *
+CDocWindow::s_activeDocWin = NULL;
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
 
 CDocWindow::CDocWindow(
 	BRect frame,
-	CDocument &inDocument,
+	CDocument *document,
 	const char *inTypeName,
-	window_type wType,
+	window_type type,
 	uint32 flags)
-	: CAppWindow(frame, NULL, wType, 0 ),
-	  document( inDocument )
+	:	CAppWindow(frame, NULL, type, 0),
+		m_document(document),
+		m_toolBar(NULL),
+		m_windowMenu(NULL),
+		m_windowMenuStart(-1)
 {
-	windowMenu = NULL;
-	windowMenuStart = -1;
+	CalcWindowTitle(inTypeName);
 
-	CalcWindowTitle( inTypeName );
-	document.Acquire();
-	document.AddWindow( this );
-	updateMenus = true;
+	m_document->Acquire();
+	m_document->AddWindow(this);
 }
 
 CDocWindow::CDocWindow(
-	CWindowState &inState,
-	CDocument &inDocument,
+	CWindowState &state,
+	CDocument *document,
 	const char *inTypeName,
-	window_type wType,
-	uint32 flags )
-	: CAppWindow( inState, inState.Rect(), NULL, wType, 0 ),
-	  document( inDocument )
+	window_type type,
+	uint32 flags)
+	:	CAppWindow(state, state.Rect(), NULL, type, 0),
+		m_document(document),
+		m_toolBar(NULL),
+		m_windowMenu(NULL),
+		m_windowMenuStart(-1)
 {
-	windowMenu = NULL;
-	windowMenuStart = -1;
+	CalcWindowTitle(inTypeName);
 
-	CalcWindowTitle( inTypeName );
-	document.Acquire();
-	document.AddWindow( this );
-	updateMenus = true;
+	m_document->Acquire();
+	m_document->AddWindow(this);
 }
 
 CDocWindow::~CDocWindow()
 {
-	document.RemoveWindow( this );
-	CRefCountObject::Release( &document );
-	be_app->Lock();
-	if (this == activeDocWin) activeDocWin = NULL;
-	be_app->Unlock();
+	m_document->RemoveWindow(this);
+	CRefCountObject::Release(m_document);
+	if (be_app->Lock())
+	{
+		if (this == s_activeDocWin)
+			s_activeDocWin = NULL;
+		be_app->Unlock();
+	}
 }
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+CDocument *
+CDocWindow::Document()
+{
+	m_document->Acquire();
+	return m_document;
+}
+
+void
+CDocWindow::SetToolBar(
+	CToolBar *toolBar)
+{
+	if (m_toolBar && (m_toolBar != toolBar))
+	{
+		RemoveChild(m_toolBar);
+		delete m_toolBar;
+		m_toolBar = NULL;
+	}
+
+	m_toolBar = toolBar;
+	if (m_toolBar)
+		AddChild(m_toolBar);
+}
+
+// ---------------------------------------------------------------------------
+// Operations
+
+void
+CDocWindow::WindowActivated(
+	bool active)
+{
+	CAppWindow::WindowActivated(active);
+
+	if (active)
+		AcquireSelectToken();
+}
+
+// ---------------------------------------------------------------------------
+// CAppWindow Implementation
+
+void
+CDocWindow::MenusBeginning()
+{
+	UpdateWindowMenu();
+	CAppWindow::MenusBeginning();
+}
+
+void
+CDocWindow::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case Activate_ID:
+		{
+			Activate();
+			break;
+		}
+		default:
+		{
+			CAppWindow::MessageReceived(message);
+		}
+	}
+}
+
+bool
+CDocWindow::QuitRequested()
+{
+	if (m_document->CountWindows() == 1)
+	{
+		if (m_document->Modified())
+		{
+			long result;
+	
+			char fileName[B_FILE_NAME_LENGTH];
+			m_document->GetName(fileName);
+	
+			BString text = "Save changes to '";
+			text << fileName << "' ?";
+	
+			BAlert *alert = new BAlert("Quit", text.String(), "Don't Save",
+									   "Cancel", "Save",
+									   B_WIDTH_AS_USUAL, B_OFFSET_SPACING,
+									   B_WARNING_ALERT); 
+			alert->SetShortcut(1, B_ESCAPE);
+			result = alert->Go();
+			
+			if (result == 1)
+				return false;
+			if (result == 2)
+				m_document->Save();
+		}
+	}
+
+	return CAppWindow::QuitRequested();
+}
+
+void
+CDocWindow::AcquireSelectToken()
+{
+	if (be_app->Lock())
+	{
+		if (this != ActiveDocWindow())
+		{
+			if (ActiveDocWindow())
+			{
+				BMessage message(Select_ID);
+				message.AddBool("active", false);
+				BMessenger messenger(NULL, ActiveDocWindow());
+				messenger.SendMessage(&message);
+			}
+			s_activeDocWin = this;
+	
+			BMessage message(Select_ID);
+			message.AddBool("active", true);
+			PostMessage(&message, this);
+		}
+		be_app->Unlock();
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
 
 void
 CDocWindow::CalcWindowTitle(
 	const char *inTypeName)
 {
-	char				name[ B_FILE_NAME_LENGTH + 32 ];
-	document.GetName( name );
+	char name[B_FILE_NAME_LENGTH + 32];
+	m_document->GetName(name);
 
 	if (inTypeName)
 	{
-		strncat( name, ": ", sizeof name );
-		strncat( name, inTypeName, sizeof name );
-		windowNumber = -1;
-		SetTitle( name );
+		strncat(name, ": ", sizeof(name));
+		strncat(name, inTypeName, sizeof(name));
+		m_windowNumber = -1;
+		SetTitle(name);
 	}
 	else
 	{
-		windowNumber = 0;
-		SetTitle( name );
+		m_windowNumber = 0;
+		SetTitle(name);
 	}
 }
 
-void CDocWindow::RecalcWindowTitle()
+void
+CDocWindow::RecalcWindowTitle()
 {
-	char				name[ B_FILE_NAME_LENGTH ];
-	char				title[ B_FILE_NAME_LENGTH + 16 ];
-	document.GetName( name );
+	char fileName[B_FILE_NAME_LENGTH];
+	m_document->GetName(fileName);
 
-	if (windowNumber > 0)
+	if (m_windowNumber > 0)
 	{
-		sprintf( title, "%s:%d", name, windowNumber );
-		SetTitle( title );
+		BString title = fileName;
+		title << ":" << m_windowNumber;
+		SetTitle(title.String());
 	}
 	else
 	{
-		SetTitle( name );
+		SetTitle(fileName);
 	}
 }
 
-void CDocWindow::BuildWindowMenu( BMenu *inMenu )
+void
+CDocWindow::UpdateWindowMenu()
 {
-	if (inMenu != NULL)
+	if (m_windowMenu != NULL)
 	{
-		if (windowMenuStart < 0)
+		if (m_windowMenuStart < 0)
 		{
-			windowMenuStart = inMenu->CountItems();
+			m_windowMenuStart = m_windowMenu->CountItems();
 		}
 		else
 		{
-			BMenuItem		*mi;
-			
-			while ((mi = inMenu->RemoveItem( windowMenuStart ))) delete mi;
+			BMenuItem *item;
+			while ((item = m_windowMenu->RemoveItem(m_windowMenuStart)))
+				delete item;
 		}
+
+		for (int i = 0; i < Document()->CountWindows(); i++)
+		{
+			CDocWindow *window = Document()->WindowAt(i);
+			BMenuItem *item = new BMenuItem(window->Title(),
+											new BMessage(Activate_ID));
+			item->SetTarget(window);
+			if (window == this)
+				item->SetMarked(true);
 	
-		document.BuildWindowMenu( inMenu, this );
-		updateMenus = false;
-	}
-}
-
-void CDocWindow::MessageReceived( BMessage *msg )
-{
-	if (msg->what == Activate_ID)	Activate();
-	else CAppWindow::MessageReceived( msg );
-}
-
-void CDocWindow::MenusBeginning()
-{
-	if (updateMenus) BuildWindowMenu( windowMenu );
-
-	CAppWindow::MenusBeginning();
-}
-
-bool CDocWindow::QuitRequested()
-{
-	if (document.WindowCount() == 1 && document.Modified())
-	{
-		BAlert		*alert;
-		long			result;
-		char			fName[ B_FILE_NAME_LENGTH ];
-		char			text[ 64 + B_FILE_NAME_LENGTH ];
-		
-		document.GetName( fName );
-		sprintf( text, "Save changes to the document \"%s\"?", fName );
-
-		alert = new BAlert(  NULL, text,
-							"Don't Save",
-							"Cancel",
-							"Save",
-							B_WIDTH_AS_USUAL, B_INFO_ALERT); 
-		alert->SetShortcut( 1, B_ESCAPE );
-		result = alert->Go();
-		
-		if (result == 0) return CAppWindow::QuitRequested();
-		if (result == 1) return false;
-		if (result == 2)
-		{
-				// Here's where we have to save the document
-			document.Save();
-			return true;
+			m_windowMenu->AddItem(item);
 		}
-		return false;
 	}
-	return CAppWindow::QuitRequested();
 }
 
-	/**	Acquires the active selection token. */
-void CDocWindow::AcquireSelectToken()
-{
-	be_app->Lock();
-	if (this != activeDocWin)
-	{
-		if (activeDocWin)
-		{
-			BMessage		msg( Select_ID );
-			
-			msg.AddBool( "active", false );
-			
-			activeDocWin->PostMessage( &msg, activeDocWin );
-		}
-		activeDocWin = this;
-
-		BMessage		msg( Select_ID );
-		msg.AddBool( "active", true );
-		PostMessage( &msg, this );
-	}
-
-	be_app->Unlock();
-}
-
-void CDocWindow::WindowActivated( bool active )
-{
-	CAppWindow::WindowActivated( active );
-
-	if (active) AcquireSelectToken();
-}
+// END - DocWindow.cpp

@@ -1,9 +1,11 @@
 /* ===================================================================== *
- * DocApp.cpp (MeV/Application Framework)
+ * DocApp.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "DocApp.h"
 
+// Application Kit
+#include <Roster.h>
 // Interface Kit
 #include <Alert.h>
 #include <Bitmap.h>
@@ -12,158 +14,154 @@
 #include <Resources.h>
 
 // ---------------------------------------------------------------------------
-//	Document Application methods
+// Constructor/Destructor
 
-CDocApp::CDocApp( const char *inSignature ) : BApplication( inSignature )
+CDocApp::CDocApp(
+	const char *signature)
+	:	BApplication(signature),
+		m_openPanel(NULL)
 {
-	app_info info;
-	be_app->GetAppInfo( &info );
-	openPanel = NULL;
-
-	// Get the parent directory of the application
-	BEntry appEntry( &info.ref );
-	appEntry.GetParent( &appDir );
-
-	// Get the resource file of the application
-	resFile = new BResources();
-	BFile appFile( &info.ref, B_READ_ONLY );
-	resFile->SetTo( &appFile );
-
-	messenger = new BMessenger( this );
 }
 
 CDocApp::~CDocApp()
 {
-	delete messenger;
-	delete openPanel;
-}
-
-void CDocApp::AddDocument( CDocument *inDoc ) 
-{
-	documents.AddItem( inDoc );
-}
-
-	//	Remove a document. If all documents removed, then
-	//	quit the application...
-void CDocApp::RemoveDocument( CDocument *inDoc )
-{
-	documents.RemoveItem( inDoc );
-	if (documents.CountItems() == 0)
+	if (m_openPanel)
 	{
-		PostMessage( B_QUIT_REQUESTED );
+		delete m_openPanel;
+		m_openPanel = NULL;
 	}
 }
 
-	//	Process icons which were dropped on the app.
-void CDocApp::RefsReceived( BMessage *inMsg )
-{ 
-	uint32		type;
-	int32		count;
-	entry_ref	ref;
+// ---------------------------------------------------------------------------
+// Hook Functions
 
-	inMsg->GetInfo( "refs", &type, &count );
-	if (type == B_REF_TYPE)
+BFilePanel *
+CDocApp::CreateOpenPanel()
+{
+	// Create a new load panel
+	BMessenger messenger(NULL, this);
+	BFilePanel *panel = new BFilePanel(B_OPEN_PANEL, &messenger,
+									   NULL, B_FILE_NODE, false);
+
+	return panel;
+}
+
+// ---------------------------------------------------------------------------
+// Operations
+
+void
+CDocApp::AddDocument(
+	CDocument *doc) 
+{
+	m_documents.AddItem(doc);
+}
+
+void
+CDocApp::OpenDocument()
+{
+	if (m_openPanel == NULL)
+		m_openPanel = CreateOpenPanel();
+	m_openPanel->Show();
+}
+
+void
+CDocApp::RemoveDocument(
+	CDocument *doc)
+{
+	m_documents.RemoveItem(doc);
+	if (CountDocuments() == 0)
 	{
-		for ( long i = --count; i >= 0; i-- )
-		{
-			if ( inMsg->FindRef( "refs", i, &ref ) == B_OK )
-			{
-				CRefCountObject::Release( NewDocument( true, &ref ) );
-			}
-		}
+		PostMessage(B_QUIT_REQUESTED);
 	}
 }
 
-	//	If no documents are open, then open a blank one.
-void CDocApp::ReadyToRun()
+void
+CDocApp::Error(
+	char *errorMsg)
 {
-	if (documents.CountItems() == 0)
-	{
-		CDocument	*doc = NewDocument( true, NULL );
-		
-			//	Release reference because newly created window has a ref.
-		CRefCountObject::Release( doc );
-	}
-}
-
-	//	Error message routine
-void CDocApp::Error( char *inErrMsg )
-{
-	BAlert		*alert;
-		
-	alert = new BAlert(  NULL, inErrMsg,
-						"OK",
-						NULL,
-						NULL,
-						B_WIDTH_AS_USUAL, B_WARNING_ALERT); 
+	BAlert *alert;
+	alert = new BAlert(NULL, errorMsg, "OK", NULL, NULL,
+					   B_WIDTH_AS_USUAL, B_WARNING_ALERT); 
 	alert->Go();
 }
 
-void CDocApp::MessageReceived( BMessage *inMsg )
+// ---------------------------------------------------------------------------
+// BApplication Implementation
+
+void
+CDocApp::MessageReceived(
+	BMessage *message)
 {
-	if (	inMsg->what == B_SAVE_REQUESTED
-		|| inMsg->what == B_CANCEL)
+	switch (message->what)
 	{
-		void			*docPtr;
-		
-		if (inMsg->FindPointer( "Document", &docPtr ) != B_NO_ERROR)
+		case B_CANCEL:
 		{
-			BApplication::MessageReceived( inMsg );
-			return;
-		}
-	
-		entry_ref		eref;
-		const char		*name;
-		CDocument	*doc = (CDocument *)docPtr;
-			
-		if (inMsg->what == B_SAVE_REQUESTED)
-		{
-			if (inMsg->FindRef( "directory", 0, &eref ) == B_OK
-				&& inMsg->FindString( "name", 0, &name ) == B_OK)
+			CDocument *doc;
+			if (message->FindPointer("Document",
+									 reinterpret_cast<void **>(&doc)) == B_OK)
 			{
-				BDirectory	dir( &eref );
-				if (dir.InitCheck() != B_NO_ERROR) return;
-	
-				doc->docLocation.SetTo( &dir, name );
-				doc->named = true;
-				doc->SaveDocument();
+				CRefCountObject::Release( doc );
+			}
+			break;
+		}
+		case B_SAVE_REQUESTED:
+		{
+			CDocument *doc;
+			if (message->FindPointer("Document",
+									 reinterpret_cast<void **>(&doc)) == B_OK)
+			{
+				entry_ref directory;
+				const char *name;
+				if ((message->FindRef("directory", 0, &directory) == B_OK)
+				 && (message->FindString("name", 0, &name ) == B_OK))
+				{
+					BDirectory dir(&directory);
+					if (dir.InitCheck() != B_NO_ERROR)
+						return;
+					BEntry entry(&dir, name);
+					doc->SetEntry(&entry);
+					doc->Save();
+				}
+			}
+			break;
+		}
+		default:
+		{
+			BApplication::MessageReceived(message);
+		}
+	}
+}
+
+void
+CDocApp::ReadyToRun()
+{
+	if (CountDocuments() == 0)
+	{
+		CDocument *doc = NewDocument(true, NULL);
+		// Release reference because newly created window has a ref
+		CRefCountObject::Release(doc);
+	}
+}
+
+void
+CDocApp::RefsReceived(
+	BMessage *message)
+{ 
+	uint32 type;
+	int32 count;
+	entry_ref ref;
+
+	message->GetInfo("refs", &type, &count);
+	if (type == B_REF_TYPE)
+	{
+		for (int32 i = 0; i < count; i++)
+		{
+			if (message->FindRef("refs", i, &ref) == B_OK)
+			{
+				CRefCountObject::Release(NewDocument(true, &ref));
 			}
 		}
-		else
-		{
-				// Panel is hidden, release document
-			CRefCountObject::Release( doc );
-		}
 	}
-	else BApplication::MessageReceived( inMsg );
 }
 
-void CDocApp::OpenDocument()
-{
-	if (openPanel == NULL) openPanel = CreateOpenPanel();
-	openPanel->Show();
-}
-
-BFilePanel *CDocApp::CreateOpenPanel()
-{
-	BFilePanel		*openPanel;
-	entry_ref			ref;
-	
-	appDir.GetRef( &ref );
-		
-		// Create a new load panel
-	openPanel = new BFilePanel(	B_OPEN_PANEL, Messenger(),
-							&ref, B_FILE_NODE, false );
-
-#if 0
-		// Set the save panel to point to the directory from where we loaded.
-	BEntry		pEntry;
-	
-	if (docLocation.GetParent( &pEntry ) == B_NO_ERROR)
-	{
-		savePanel->SetPanelDirectory( &pEntry );
-	}
-#endif
-	
-	return openPanel;
-}
+// END - DocApp.cpp

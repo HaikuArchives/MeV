@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * DocApp.h (MeV/Application Framework)
+ * DocApp.h (MeV/Framework)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -50,36 +50,63 @@ class BResources;
 class CDocApp : 
 	public BApplication
 {
+
+public:							// Constructor/Destructor
+								CDocApp(
+									const char *signature);
+
+								~CDocApp();
 	
-protected:
+public:							// Hook Functions
 
-	BResources		*resFile;
-	BMessenger		*messenger;
-	BList				documents;
-	BFilePanel		*openPanel;
-	BEntry			appDir;
+	virtual	CDocument *			NewDocument(
+									bool showWindow = true,
+									entry_ref *ref = NULL) = 0;
 
-	void RefsReceived( BMessage *inMsg );
-	void ReadyToRun();
+	// Override this to change the way the open file panel is created
+	virtual BFilePanel *		CreateOpenPanel();
 
-	void MessageReceived( BMessage *inMsg );
+public:							// Operations
 
-public:
-	CDocApp( const char *inSignature );
-	~CDocApp();
-	
-	void AddDocument( CDocument *inDoc );
-	void RemoveDocument( CDocument *inDoc );
-	BMessenger *Messenger() { return messenger; }
-	void OpenDocument();
+	void						AddDocument(
+									CDocument *doc);
+	int32						CountDocuments() const
+								{ return m_documents.CountItems(); }
+	virtual CDocument *			DocumentAt(
+									int32 index) const
+								{ return static_cast<CDocument *>(m_documents.ItemAt(index)); }
+	int32						IndexOf(
+									CDocument *doc) const
+								{ return m_documents.IndexOf(doc); }
+	void						OpenDocument();
+	//	Remove a document. If all documents removed, then
+	//	quit the application...
+	void						RemoveDocument(
+									CDocument *doc);
 
-	virtual CDocument *NewDocument( bool inShowWindow = true, entry_ref *inRef = NULL ) = 0;
+	// Global error message function
+	static void					Error(
+									char *errorMsg);
 
-		/**	Global error message function */
-	static void Error( char *inErrMsg );
+public:							// BApplication Implementation
 
-		/** Override this to change the way the open file panel is created. */
-	virtual BFilePanel *CreateOpenPanel();
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	//	If no documents are open, then open a blank one
+	virtual void				ReadyToRun();
+
+	//	Process icons which were dropped on the app
+	virtual void				RefsReceived(
+									BMessage *message);
+
+protected:						// Instance Data
+
+	// the list of open documents
+	BList						m_documents;
+
+	// the file panel used to open documents
+	BFilePanel *				m_openPanel;
 };
 
 #endif /* __C_DocApp_H__ */
