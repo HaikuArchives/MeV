@@ -113,6 +113,8 @@ public:							// Accessors
 	
 public:							// Operations
 
+	void						HelpRequested();
+
 	/**	Tell the inspector to watch the current event on this track. */
 	static void					WatchTrack(
 									CEventTrack *track);

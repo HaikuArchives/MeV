@@ -342,6 +342,29 @@ CMeVApp::ActiveTrack()
 // Operations
 
 void
+CMeVApp::HelpRequested()
+{
+	app_info appInfo;
+	if (GetAppInfo(&appInfo) != B_OK)
+		return;
+
+	BEntry entry(&appInfo.ref);
+	BPath path;
+	if ((entry.GetPath(&path) != B_OK)
+	 || (path.GetParent(&path) != B_OK))
+		return;
+
+	path.Append("docs/index.html");
+	entry.SetTo(path.Path());
+	if (entry.InitCheck() != B_OK)
+		return;
+
+	entry_ref ref;
+	entry.GetRef(&ref);
+	be_roster->Launch(&ref);
+}
+
+void
 CMeVApp::WatchTrack(
 	CEventTrack *inTrack)
 {
@@ -663,6 +686,11 @@ CMeVApp::MessageReceived(
 {
 	switch (message->what)
 	{
+		case MENU_HELP:
+		{
+			HelpRequested();
+			break;
+		}
 		case MENU_ABOUT_PLUGINS:
 		{
 			CAboutPluginWindow *window = new CAboutPluginWindow(aboutPluginWinState);
