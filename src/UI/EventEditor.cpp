@@ -255,7 +255,7 @@ CEventEditor::DrawEchoEvents(
 		 ev;
 		 ev = marker.NextItemInRange(Track()->MinSelectTime(), Track()->MaxSelectTime()))
 	{
-		if (ev->IsSelected() && !Track()->IsChannelLocked(*ev))
+		if (ev->IsSelected())
 		{
 			Event evCopy(*(Event *)ev);
 			(*echoOp)(evCopy, clockType);
@@ -723,8 +723,6 @@ CEventEditor::DoLassoTracking(
 			const CEventRenderer *renderer(RendererFor(*ev));
 			if (renderer == m_nullEventRenderer)
 				continue;
-			if (Track()->IsChannelLocked(*ev))
-				continue;
 
 			BRect extent(renderer->Extent(*ev));
 
@@ -809,8 +807,6 @@ CEventEditor::DoRectangleTracking(
 		{
 			const CEventRenderer *renderer(RendererFor(*ev));
 			if (renderer == m_nullEventRenderer)
-				continue;
-			if (Track()->IsChannelLocked(*ev))
 				continue;
 
 			BRect extent(renderer->Extent(*ev));
@@ -909,15 +905,10 @@ CEventEditor::PickEvent(
 
 	// For each event that overlaps the current view, draw it.
 	for (ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
+		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		// Don't allow picking of events on locked channels...
-		if (Track()->IsChannelLocked(*ev))
-			continue;
-		
 		long dist = RendererFor(*ev)->Pick(*ev, pickPt, partCode);
-
 		if ((dist < bestPick) && (dist >= 0))
 		{
 			bestPick = dist;

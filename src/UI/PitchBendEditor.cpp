@@ -201,21 +201,13 @@ CPitchBendEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
-	bool locked = Editor()->Track()->IsChannelLocked(ev.GetVChannel());
 	CDestination *dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
 	BRect r;
 
 	if (shadowed)
-	{
-		if (locked)
-			return;
 		Editor()->SetDrawingMode( B_OP_BLEND );
-	}
 	
-	if (locked)
-		Editor()->SetHighColor(192, 192, 192);
-	else
-		Editor()->SetHighColor(dest->Color());
+	Editor()->SetHighColor(dest->Color());
 		
 	if ((ev.Duration() > 0) && (ev.pitchBend.updatePeriod > 0))
 	{
@@ -239,9 +231,7 @@ CPitchBendEventRenderer::Draw(
 		Editor()->FillEllipse(r);
 
 		r.InsetBy(-1.0, -1.0);
-		if (locked)
-			Editor()->SetHighColor(128, 128, 128);
-		else if (ev.IsSelected() && !shadowed && Editor()->IsSelectionVisible())
+		if (ev.IsSelected() && !shadowed && Editor()->IsSelectionVisible())
 			Editor()->SetHighColor(0, 0, 255);
 		else
 			Editor()->SetHighColor(0, 0, 0);
@@ -253,15 +243,10 @@ CPitchBendEventRenderer::Draw(
 	r.right = r.left + 4.0;
 	r.bottom = r.top + 4.0;
 	
-	if (locked)
-		Editor()->SetHighColor(192, 192, 192);
-	else
-		Editor()->SetHighColor(dest->Color());
+	Editor()->SetHighColor(dest->Color());
 	Editor()->FillEllipse(r);
 	
-	if (locked)
-		Editor()->SetHighColor(128, 128, 128);
-	else if (ev.IsSelected() && !shadowed && Editor()->IsSelectionVisible())
+	if (ev.IsSelected() && !shadowed && Editor()->IsSelectionVisible())
 		Editor()->SetHighColor(0, 0, 255);
 	else
 		Editor()->SetHighColor(0, 0, 0);

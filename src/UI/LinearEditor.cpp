@@ -287,30 +287,16 @@ CLinearEditor::Draw(
 	// REM: We should be able to figure out the maximum and minimum pitch of notes 
 	// which are in the update rect.
 
-	// For each event that overlaps the current view, draw it. (locked channels first)
+	// For each event that overlaps the current view, draw it.
 	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
-		 ev = marker.NextItemInRange(startTime, stopTime))
-	{
-		if ((ev->Command() == EvtType_Note)
-		 && ((ev->note.pitch < minPitch) || (ev->note.pitch > maxPitch)))
-			continue;
-
-		if (Track()->IsChannelLocked(*ev))
-			RendererFor(*ev)->Draw(*ev, false);
-	}
-
-	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
+		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
 		if ((ev->Command() == EvtType_Note)
 		 && ((ev->note.pitch < minPitch) || (ev->note.pitch > maxPitch)))
 		 	continue;
 
-		if (!Track()->IsChannelLocked(*ev))
-			RendererFor(*ev)->Draw(*ev, false);
+		RendererFor(*ev)->Draw(*ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();

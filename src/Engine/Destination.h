@@ -239,6 +239,4 @@ private:
 	int32						m_index;
 };
 
-typedef BitSet<Max_Destinations> VBitTable;
-
 #endif /* __C_Destination_H__ */

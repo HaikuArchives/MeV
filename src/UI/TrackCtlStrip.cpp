@@ -1237,23 +1237,11 @@ CTrackCtlStrip::Draw(
 	EventMarker marker(Track()->Events());
 
 	// For each event that overlaps the current view, draw it.
-	// (locked channels first)
 	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
+		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (Track()->IsChannelLocked(*ev))
-			RendererFor(*ev)->Draw(*ev, false);
-	}
-
-	// For each event that overlaps the current view, draw it.
-	// (unlocked channels overdraw!)
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
-		 ev = marker.NextItemInRange(startTime, stopTime))
-	{
-		if (!Track()->IsChannelLocked(*ev))
-			RendererFor(*ev)->Draw(*ev, false);
+		RendererFor(*ev)->Draw(*ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();

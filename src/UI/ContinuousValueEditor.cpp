@@ -72,23 +72,12 @@ CContinuousValueEditor::Draw(
 	StSubjectLock trackLock(*Track(), Lock_Shared);
 	EventMarker marker(Track()->Events());
 
-	// For each event that overlaps the current view, draw it. (locked channels first)
+	// For each event that overlaps the current view, draw it.
 	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
+		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (ev->HasProperty(Event::Prop_Channel)
-		 && Track()->IsChannelLocked(ev->GetVChannel()))
-			RendererFor(*ev)->Draw(*ev, false);
-	}
-
-	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
-		 ev;
-		 ev = marker.NextItemInRange(startTime, stopTime))
-	{
-		if (!Track()->IsChannelLocked(ev->GetVChannel()
-		 || !ev->HasProperty(Event::Prop_Channel)))
+		if (!ev->HasProperty(Event::Prop_Channel))
 			RendererFor(*ev)->Draw(*ev, false);
 	}
 

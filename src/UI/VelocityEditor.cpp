@@ -164,8 +164,7 @@ CVelocityEditor::Draw(
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
 		// Only draw events for non-locked channels...
-		if ((ev->Command() != EvtType_Note)
-		 || (Track()->IsChannelLocked(*ev)))
+		if (ev->Command() != EvtType_Note)
 			continue;
 
 		RendererFor(*ev)->Draw(*ev, false);
@@ -304,9 +303,6 @@ CVelocityEditor::DoDrag(
 			 ev;
 			 ev = marker.NextItemInRange(time1, time2))
 		{
-			if (Track()->IsChannelLocked(*ev))
-				continue;
-
 			if (ev->Command() == EvtType_Note)
 			{
 				Event evCopy(*ev);

@@ -234,27 +234,6 @@ public:							// Operations
 			master track issues. */
 	void AddUndoAction( UndoAction *inAction );
 
-	/** Test if a channel is locked... */
-	bool						IsChannelLocked(
-									int32 channel) const
-								{ return lockedChannels[channel]; }
-
-	/** Lock or unlock a channel */
-	void						LockChannel(
-									int32 channel,
-									bool locked = true);
-
-	/** TRUE if this event is "locked" (but only if the event even 
-		has a channel.)
-	*/
-	bool						IsChannelLocked(
-									const Event &ev) const;
-
-	/** TRUE if any event in this track is using this channel. */
-	bool						IsChannelUsed(
-									int32 channel) const
-								{ return usedChannels[channel]; }
-
 public:							// CSerializable Implementation
 
 	/**	Write the track to the MeV file. */
@@ -289,10 +268,6 @@ private:						// Instance Data
 	
 	bool				validSigMap;
 	
-	VBitTable		usedChannels,
-					selectedChannels,
-					lockedChannels;
-	
 	void RecalcSigMap();
 
 		// For operations on master tracks... 
@@ -301,16 +276,30 @@ private:						// Instance Data
 
 };
 
-	/**	A hint which takes it's parameters from the current selection. */
-class CEventSelectionUpdateHint : public CUpdateHint {
-public:
-	CEventSelectionUpdateHint( const CEventTrack &inTrack, bool inSelChangeOnly = false );
+/**	A hint which takes it's parameters from the current selection. */
+class CEventSelectionUpdateHint
+	:	public CUpdateHint
+{
+
+public:							// Constructor/Destructor
+
+								CEventSelectionUpdateHint(
+									const CEventTrack &track,
+									bool selChangeOnly = false);
+
 };
 
-	/**	A hint which takes it's parameters from a single event. */
-class CEventUpdateHint : public CUpdateHint {
-public:
-	CEventUpdateHint( const CEventTrack &inTrack, const Event &inEvent );
+/**	A hint which takes it's parameters from a single event. */
+class CEventUpdateHint
+	:	public CUpdateHint
+{
+
+public:							// Constructor/Destructor
+
+								CEventUpdateHint(
+									const CEventTrack &track,
+									const Event &event);
+
 };
 
 #endif /* __C_EventTrack_H__ */

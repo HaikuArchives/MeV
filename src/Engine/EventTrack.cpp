@@ -93,10 +93,6 @@ void CEventTrack::SummarizeSelection()
 	prevMinorUnitDur = Ticks_Per_QtrNote;
 	prevMajorUnitDur = Ticks_Per_QtrNote * 4;
 
-		// Reset the bit-arrays of channels used and channels selected
-	usedChannels.Clear();
-	selectedChannels.Clear();
-
 		// Loop through every event in the sequence and compile summary information
 	for (	ev = marker.First();
 			ev;
@@ -109,12 +105,6 @@ void CEventTrack::SummarizeSelection()
 		if (ev->HasProperty( Event::Prop_Duration ))
 			last = ev->Stop();
 		else last = first;
-
-			// If this event has a channel, then mark channel as used
-		if (ev->HasProperty( Event::Prop_Channel ))
-		{
-			usedChannels.Set( ev->common.vChannel );
-		}
 
 		switch (ev->Command()) {
 		case EvtType_End:
@@ -162,10 +152,6 @@ void CEventTrack::SummarizeSelection()
 
 		if (ev->IsSelected())
 		{
-				// If this event has a channel, then include channel in selection
-			if (ev->HasProperty( Event::Prop_Channel ))
-				selectedChannels.Set( ev->common.vChannel );
-
 				// Add the event to the selection range
 			minSelectTime = MIN( minSelectTime, first );
 			maxSelectTime = MAX( maxSelectTime, last );
@@ -341,11 +327,10 @@ void CEventTrack::SelectAll( CEventEditor *inEditor )
 	{
 		for (const Event *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
 		{
-			if (IsChannelLocked( *ev )) continue;
 			if (!ev->IsSelected())
 			{
 				((Event *)ev)->SetSelected( true );
-				(inEditor->HandlerFor(*ev))->Invalidate(*ev);
+				(inEditor->RendererFor(*ev))->Invalidate(*ev);
 			}
 		}
 	}
@@ -353,7 +338,6 @@ void CEventTrack::SelectAll( CEventEditor *inEditor )
 	{
 		for (const Event *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
 		{
-			if (IsChannelLocked( *ev )) continue;
 			((Event *)ev)->SetSelected( true );
 		}
 	}
@@ -384,7 +368,7 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 			if (ev->IsSelected())
 			{
 				((Event *)ev)->SetSelected( false );
-				(inEditor->HandlerFor(*ev))->Invalidate(*ev);
+				(inEditor->RendererFor(*ev))->Invalidate(*ev);
 			}
 		}
 	}
@@ -602,9 +586,9 @@ void CEventTrack::ModifySelectedEvents(
 				// Invalidate the new and old positions of the event
 			if (inEditor != NULL)
 			{
-				const CEventHandler *handler = inEditor->HandlerFor(*ev);
-				handler->Invalidate(*ev);
-				handler->Invalidate(newEv);
+				const CEventRenderer *renderer = inEditor->RendererFor(*ev);
+				renderer->Invalidate(*ev);
+				renderer->Invalidate(newEv);
 			}
 
 				// replace the event in the sequence.
@@ -633,10 +617,10 @@ void CEventTrack::ModifySelectedEvents(
 
 			if (inEditor != NULL)
 			{
-				const CEventHandler	*handler = inEditor->HandlerFor(*ev);
-				handler->Invalidate(*ev);
+				const CEventRenderer *renderer = inEditor->RendererFor(*ev);
+				renderer->Invalidate(*ev);
 				op(*ev, clockType);
-				handler->Invalidate(*ev);
+				renderer->Invalidate(*ev);
 			}
 			else
 			{
@@ -808,7 +792,7 @@ void CEventTrack::CopySelectedEvents(
 		op( *ev, clockType );
 		if (inEditor != NULL)
 		{
-			(inEditor->HandlerFor(*ev))->Invalidate(*ev);
+			(inEditor->RendererFor(*ev))->Invalidate(*ev);
 		}
 	}
 
@@ -1010,67 +994,6 @@ void CEventTrack::AddUndoAction( UndoAction *inAction )
 	}
 }
 
-CEventSelectionUpdateHint::CEventSelectionUpdateHint(
-	const CEventTrack &track,
-	bool selChangeOnly)
-{
-	if (track.CountItems())
-	{
-		AddInt32("MinTime", track.MinSelectTime());
-		AddInt32("MaxTime", track.MaxSelectTime());
-	}
-	if (selChangeOnly)
-	{
-		AddBool("SelChange", true);
-	}
-}
-
-CEventUpdateHint::CEventUpdateHint(
-	const CEventTrack &track,
-	const Event &event)
-{
-	AddInt32("MinTime", event.Start());
-	AddInt32("MaxTime", event.Stop());
-}
-
-void CEventTrack::LockChannel( int32 inChannel, bool inLocked )
-{
-	if (IsChannelLocked( inChannel ) != inLocked)
-	{
-		lockedChannels.Set( inChannel, inLocked );
-		CUpdateHint		hint;
-		
-		if (inLocked == false)
-		{
-			StSubjectLock					lock( *this, Lock_Exclusive );
-		
-			EventMarker					marker( events );
-			const Event					*ev;
-	
-				// For each event, select it.
-			for (	ev = marker.FirstItemInRange( MinSelectTime(), MaxSelectTime() );
-					ev;
-					ev = marker.NextItemInRange( MinSelectTime(), MaxSelectTime() ) )
-			{
-				if (ev->GetVChannel() == inChannel)
-					((Event *)ev)->SetSelected( false );
-			}
-	
-			SummarizeSelection();
-		}			
-	
-		hint.AddInt8( "channel", inChannel );
-		PostUpdate( &hint, NULL );
-	}
-}
-
-bool
-CEventTrack::IsChannelLocked(
-	const Event &ev) const
-{
-	return (ev.HasProperty(Event::Prop_Channel) && IsChannelLocked(ev.GetVChannel()));
-}
-
 // ---------------------------------------------------------------------------
 // CSerializable Implementation
 
@@ -1123,6 +1046,35 @@ CEventTrack::Serialize(
 	}
 
 	// +++ we need to write the operators to the track. We need IDs and keys...
+}
+
+// ---------------------------------------------------------------------------
+// CEventSelectionUpdateHint Implementation
+
+CEventSelectionUpdateHint::CEventSelectionUpdateHint(
+	const CEventTrack &track,
+	bool selChangeOnly)
+{
+	if (track.CountItems())
+	{
+		AddInt32("MinTime", track.MinSelectTime());
+		AddInt32("MaxTime", track.MaxSelectTime());
+	}
+	if (selChangeOnly)
+	{
+		AddBool("SelChange", true);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CEventUpdateHint Implementation
+
+CEventUpdateHint::CEventUpdateHint(
+	const CEventTrack &track,
+	const Event &event)
+{
+	AddInt32("MinTime", event.Start());
+	AddInt32("MaxTime", event.Stop());
 }
 
 // END - EventTrack.cpp
