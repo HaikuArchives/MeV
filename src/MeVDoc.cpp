@@ -523,7 +523,7 @@ void CMeVDoc::ReplaceTempoMap( CTempoMapEntry *entries, int length )
 	/**	Add an operator to the document's list of operators. */
 void CMeVDoc::AddOperator( EventOp *inOp )
 {
-	StSubjectLock	myLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 
 	if (!operators.HasItem( inOp ))
 	{
@@ -535,7 +535,7 @@ void CMeVDoc::AddOperator( EventOp *inOp )
 	/**	Delete an operator to the document's list of operators. */
 void CMeVDoc::RemoveOperator( EventOp *inOp )
 {
-	StSubjectLock	myLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 
 	if (operators.HasItem( inOp ))
 	{
@@ -548,7 +548,7 @@ void CMeVDoc::RemoveOperator( EventOp *inOp )
 	/**	Set an operator active / inactive. */
 void CMeVDoc::SetOperatorActive( EventOp *inOp, bool enabled )
 {
-	StSubjectLock	myLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 
 	if (enabled)
 	{
@@ -650,7 +650,7 @@ CMeVDoc::SaveDocument()
 {
 	D_SERIALIZE(("CMeVDoc::SaveDocument()\n"));
 
-	StSubjectLock lock(*this, Lock_Shared);
+	CReadLock lock(this);
 
 	BFile file(&DocLocation(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
 	CBeFileWriter writer(file);

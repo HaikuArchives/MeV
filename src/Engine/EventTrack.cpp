@@ -429,7 +429,7 @@ void
 CEventTrack::DeleteEvent(
 	const CEvent *which)
 {
-	StSubjectLock lock(*this, Lock_Exclusive);
+	CWriteLock lock(this);
 	CEventUpdateHint hint(*this, *which);
 
 	// Create a new undo action to record all of the changes
@@ -485,7 +485,7 @@ CEventTrack::DeleteEvent(
 
 void CEventTrack::DeleteSelection()
 {
-	StSubjectLock					lock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 	EventListUndoAction			*undoAction = NULL;
 	CEventSelectionUpdateHint		hint( *this );
 	uint8						eventsModified[ 127 ];
@@ -555,7 +555,7 @@ void CEventTrack::ModifySelectedEvents(
 	const char			*inActionLabel,
 	int32				inAggregateAction )
 {
-	StSubjectLock			trackLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 	EventListUndoAction	*undoAction = NULL;
 	TClockType			clockType = ClockType();
 	uint8				eventsModified[ 127 ];
@@ -711,7 +711,7 @@ void CEventTrack::CreateEvent(
 	CEvent				&newEv,
 	const char			*inActionLabel )
 {
-	StSubjectLock			trackLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 	EventListUndoAction	*undoAction = NULL;
 		// Initialize an event marker for this track.
 	long					prevTrackDuration = LastEventTime(),
@@ -788,7 +788,7 @@ void CEventTrack::CopySelectedEvents(
 	EventOp				&op,
 	const char			*inActionLabel )
 {
-	StSubjectLock			trackLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 	EventListUndoAction	*undoAction = NULL;
 	TClockType			clockType = ClockType();
 		// Initialize an event marker for this track.
@@ -943,7 +943,7 @@ void CEventTrack::CompileOperators()
 {
 	int			i;
 
-	StSubjectLock			trackLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 	
 		// Release ref counts on all old filters.
 	for (i = 0; i < m_filterCount; i++)
@@ -980,7 +980,7 @@ void CEventTrack::CompileOperators()
 	/**	Set an operator active / inactive. */
 void CEventTrack::SetOperatorActive( EventOp *inOp, bool enabled )
 {
-	StSubjectLock			trackLock( *this, Lock_Exclusive );
+	CWriteLock lock(this);
 
 	if (enabled)
 	{

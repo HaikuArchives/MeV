@@ -280,7 +280,7 @@ CLinearEditor::Draw(
 	DrawGridLines(updateRect);
 
 	// Initialize an event marker for this track.
-	StSubjectLock trackLock(*Track(), Lock_Shared);
+	CReadLock lock(Track());
 	EventMarker marker(Track()->Events());
 
 	// REM: We should be able to figure out the maximum and minimum pitch of notes 

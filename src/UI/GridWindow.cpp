@@ -87,7 +87,7 @@ CGridWindow::MessageReceived(
 		{
 			if (m_track)
 			{
-				StSubjectLock lock(*m_track, Lock_Exclusive);
+				CWriteLock lock(m_track);
 				m_track->SetTimeGridSize(m_intervalControl->Value());
 			}
 			break;

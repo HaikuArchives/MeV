@@ -1232,7 +1232,7 @@ CTrackCtlStrip::Draw(
 	DrawGridLines(updateRect);
 
 	// Initialize an event marker for this track.
-	StSubjectLock trackLock(*Track(), Lock_Shared);
+	CReadLock lock(Track());
 	EventMarker marker(Track()->Events());
 
 	// For each event that overlaps the current view, draw it.
@@ -1299,7 +1299,7 @@ CTrackCtlStrip::MessageReceived(
 			if (m_dragType == DragType_DropTarget)
 			{
 				// Initialize an event marker for this track.
-				StSubjectLock trackLock(*Track(), Lock_Exclusive);
+				CWriteLock lock(Track());
 				long prevTrackDuration = Track()->LastEventTime();
 					
 				// Creating a new event
@@ -1324,7 +1324,7 @@ CTrackCtlStrip::MessageReceived(
 					return;
 				
 				// Initialize an event marker for this track.
-				StSubjectLock trackLock(*Track(), Lock_Exclusive);
+				CWriteLock lock(Track());
 
 				// Invalidate the new event and insert it into the track.
 				Track()->DeselectAll(this);
@@ -1473,7 +1473,7 @@ CTrackCtlStrip::SubjectUpdated(
 	{
 		// change on some other track; dispatch change to every track
 		// instance in the current bounds
-		StSubjectLock trackLock(*Track(), Lock_Shared);
+		CReadLock lock(Track());
 		EventMarker	marker(Track()->Events());
 		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
@@ -1501,7 +1501,7 @@ CTrackCtlStrip::SubjectUpdated(
 	}
 	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
 	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
+		CReadLock lock(Track());
 		EventMarker	marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
@@ -1518,7 +1518,7 @@ CTrackCtlStrip::SubjectUpdated(
 	}
 	else if (selChange)
 	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
+		CReadLock lock(Track());
 		EventMarker marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
@@ -1531,7 +1531,7 @@ CTrackCtlStrip::SubjectUpdated(
 	}
 	else
 	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
+		CReadLock lock(Track());
 		EventMarker marker(Track()->Events());
 
 		// Funny bit of code here. Because of the fact that track control

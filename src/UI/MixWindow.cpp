@@ -48,7 +48,7 @@ CMixWindow::CMixWindow(
 
 	int32 index = 0;
 	CDestination *destination = NULL;
-	StSubjectLock lock(*Document(), Lock_Shared);
+	CReadLock lock(Document());
 	while ((destination = Document()->GetNextDestination(&index)) != NULL)
 		_destinationAdded(destination);
 	m_containerView->Pack();

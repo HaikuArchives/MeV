@@ -293,7 +293,7 @@ CRulerView::MouseMoved(
 				if (message->FindInt32("which", &which) != B_OK)
 					return;
 
-				StSubjectLock lock(*m_track, Lock_Exclusive);
+				CWriteLock lock(m_track);
 				int32 time = m_frameView->ViewCoordsToTime(point.x, m_track->ClockType());
 				if (m_track->GridSnapEnabled())
 				{

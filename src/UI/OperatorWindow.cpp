@@ -282,7 +282,7 @@ void COperatorWindow::MessageReceived( BMessage *msg )
 
 void COperatorWindow::SetTrack( CEventTrack *inViewTrack )
 {
-	StSubjectLock	lock( *inViewTrack, Lock_Shared );
+	CReadLock lock(inViewTrack);
 	StWindowLocker	wLock( this );
 
 	if (watchTrack != inViewTrack)

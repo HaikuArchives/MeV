@@ -147,7 +147,7 @@ CTrackWindow::SetPendingOperation(
 	EventOp *inOp)
 {
 	// Forward messages about changing selection to child views.
-	StSubjectLock stLock(*ActiveTrack(), Lock_Shared);
+	CReadLock lock(ActiveTrack());
 
 	for (int32 i = 0; i < stripFrame->CountStrips(); i++)
 	{
@@ -172,7 +172,7 @@ CTrackWindow::FinishTrackOperation(
 	int32 inCommit)
 {
 	// Forward messages about changing selection to child views.
-	StSubjectLock stLock(*ActiveTrack(), Lock_Exclusive);
+	CWriteLock lock(ActiveTrack());
 
 	for (int32 i = 0; i < stripFrame->CountStrips(); i++)
 	{
@@ -491,7 +491,7 @@ CTrackWindow::MessageReceived(
 		}
 		case MENU_SET_SECTION:
 		{
-			StSubjectLock lock(*Track(), Lock_Exclusive);
+			CWriteLock lock(Track());
 			if (Track()->SelectionType() != CTrack::Select_None)
 			{
 				Track()->SetSection(Track()->MinSelectTime(),

@@ -366,7 +366,7 @@ CEventTask::_stackEvent(
 				if (tr == NULL)
 					break;
 	
-				StSubjectLock lock(*tr, Lock_Shared);
+				CReadLock lock(tr);
 				for (p = this; p != NULL; p = p->Parent())
 				{
 					// Don't allow tracks to call each other recursively.

@@ -184,8 +184,7 @@ CDocument::AddWindow(
 {
 	D_WINDOW(("CDocument::AddWindow(%s)\n", window->Name()));
 
-	StSubjectLock lock(*this, Lock_Exclusive);
-
+	CWriteLock lock(this);
 	AddObserver(window);
 	if (window->IsMasterWindow())
 		m_masterWindow = window;

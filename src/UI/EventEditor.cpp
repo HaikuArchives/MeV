@@ -159,7 +159,7 @@ CEventEditor::DoDrag(
 		case DragType_CopyEvents:
 		case DragType_Create:
 		{
-			StSubjectLock trackLock(*Track(), Lock_Exclusive);
+			CWriteLock lock(Track());
 			long newTimeDelta, newValueDelta;
 			EventOp	*newValueOp, *newTimeOp, *newDragOp;
 			const CEvent	*dragEvent;
@@ -251,7 +251,7 @@ CEventEditor::DoDrag(
 		}
 		case DragType_Erase:
 		{
-			StSubjectLock trackLock(*Track(), Lock_Exclusive);
+			CWriteLock lock(Track());
 			EventMarker marker(Track()->Events());
 			short partCode;
 			const CEvent *event = PickEvent(marker, point, partCode);
@@ -375,10 +375,8 @@ CEventEditor::FinishDrag(
 	bool commit)
 {
 	// Initialize an event marker for this Track().
-	StSubjectLock trackLock(*Track(), Lock_Exclusive);
-
 	TrackWindow()->Document()->SetActiveMaster(Track());
-
+	CWriteLock lock(Track());
 	int32 editMode = TrackWindow()->CurrentTool();
 	EventMarker marker(Track()->Events());
 	short partCode;
@@ -453,7 +451,7 @@ CEventEditor::FinishDrag(
 void
 CEventEditor::InvalidateSelection()
 {
-	StSubjectLock trackLock(*Track(), Lock_Shared);
+	CReadLock lock(Track());
 	EventMarker marker(Track()->Events());
 	const CEvent *ev;
 
@@ -472,7 +470,7 @@ CEventEditor::InvalidateSelection(
 	EventOp &inOp)
 {
 	const CEvent	*ev;
-	StSubjectLock trackLock( *Track(), Lock_Shared );
+	CReadLock lock(Track());
 	EventMarker	marker( Track()->Events() );
 	TClockType clockType = Track()->ClockType();
 
@@ -700,7 +698,7 @@ CEventEditor::SubjectUpdated(
 	}
 	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
 	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
+		CReadLock lock(Track());
 		EventMarker	marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
@@ -717,7 +715,7 @@ CEventEditor::SubjectUpdated(
 	}
 	else if (selChange)
 	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
+		CReadLock lock(Track());
 		EventMarker marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.

@@ -302,9 +302,9 @@ void MeVDocRef::EnableEventOperator( EventOp *inOper, bool inEnabled )
 
 MeVTrackHandle MeVDocRef::NewEventTrack( TClockType inClockType )
 {
-	CMeVDoc		*doc = (CMeVDoc *)data;
-	StSubjectLock	myLock( *doc, Lock_Exclusive );
-	CTrack		*track = doc->NewTrack( TrackType_Event, inClockType );
+	CMeVDoc *doc = (CMeVDoc *)data;
+	CWriteLock lock(doc);
+	CTrack *track = doc->NewTrack( TrackType_Event, inClockType );
 	
 	if (track != NULL)
 		return new MeVTrackRef(data, track);
@@ -315,9 +315,9 @@ MeVTrackHandle MeVDocRef::NewEventTrack( TClockType inClockType )
 
 MeVTrackHandle MeVDocRef::FindTrack( int32 inTrackID )
 {
-	CMeVDoc		*doc = (CMeVDoc *)data;
-	StSubjectLock	myLock( *doc, Lock_Shared );
-	CTrack		*track = doc->FindTrack( inTrackID );
+	CMeVDoc *doc = (CMeVDoc *)data;
+	CReadLock lock(doc);
+	CTrack *track = doc->FindTrack( inTrackID );
 	
 	if (track != NULL)
 		return new MeVTrackRef(data, track);
@@ -327,9 +327,9 @@ MeVTrackHandle MeVDocRef::FindTrack( int32 inTrackID )
 
 MeVTrackHandle MeVDocRef::FindTrack( char *inTrackName )
 {
-	CMeVDoc		*doc = (CMeVDoc *)data;
-	StSubjectLock	myLock( *doc, Lock_Shared );
-	CTrack		*track = doc->FindTrack( inTrackName );
+	CMeVDoc *doc = (CMeVDoc *)data;
+	CReadLock lock(doc);
+	CTrack *track = doc->FindTrack( inTrackName );
 	
 	return track ? new MeVTrackRef(data, track) : NULL;
 }
@@ -337,7 +337,7 @@ MeVTrackHandle MeVDocRef::FindTrack( char *inTrackName )
 MeVTrackHandle MeVDocRef::ActiveMasterTrack()
 {
 	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
-	StSubjectLock lock(*doc, Lock_Shared);
+	CReadLock lock(doc);
 	CTrack* track = doc->ActiveMaster();
 	
 	return track ? new MeVTrackRef(data, track) : NULL;
@@ -346,7 +346,7 @@ MeVTrackHandle MeVDocRef::ActiveMasterTrack()
 MeVTrackHandle MeVDocRef::FirstTrack()
 {
 	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
-	StSubjectLock lock(*doc, Lock_Shared);
+	CReadLock lock(doc);
 	CTrack* track = doc->FindNextHigherTrackID( 0 );
 	
 	return track ? new MeVTrackRef(data, track) : NULL;
@@ -413,9 +413,7 @@ bool MeVTrackRef::NextTrack()
 	CTrack*  track = reinterpret_cast<CTrack*>(trackData);
 	CMeVDoc* doc   = reinterpret_cast<CMeVDoc*>(docData);
 
-	StSubjectLock docLock(*doc, Lock_Shared);
-	if (!docLock.LockValid())
-		return false;
+	CReadLock lock(doc);
 	
 	int32 index = doc->tracks.IndexOf(track);
 	if (index >= 0 && doc->tracks.CountItems() > index + 1)

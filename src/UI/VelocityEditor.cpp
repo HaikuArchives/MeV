@@ -154,7 +154,7 @@ CVelocityEditor::Draw(
 	DrawGridLines(updateRect);
 
 	// Initialize an event marker for this track.
-	StSubjectLock trackLock(*Track(), Lock_Shared);
+	CReadLock lock(Track());
 	EventMarker marker(Track()->Events());
 
 	// For each event that overlaps the current view, draw it.
@@ -248,7 +248,7 @@ CVelocityEditor::DoDrag(
 {
 	if (m_dragType == DragType_Sculpt)
 	{
-		StSubjectLock trackLock(*Track(), Lock_Exclusive);
+		CWriteLock lock(Track());
 		BRect r(Bounds());
 
 		// If no undo record has been created yet, or someone did another

@@ -239,7 +239,7 @@ CDestinationListView::MessageReceived(
 			if (m_track && (destID <= Max_Destinations))
 			{
 				uint8 channel = static_cast<uint8>(destID);
-				StSubjectLock lock(*m_doc, Lock_Exclusive);
+				CWriteLock lock(m_doc);
 				// Set attribute for newly created events
 				m_doc->SetDefaultAttribute(EvAttr_Channel, channel);
 				if (m_track->SelectionType() != CEventTrack::Select_None)

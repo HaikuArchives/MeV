@@ -70,7 +70,7 @@ CContinuousValueEditor::Draw(
 	DrawHorizontalGrid(updateRect);
 
 	// Initialize an event marker for this track.
-	StSubjectLock trackLock(*Track(), Lock_Shared);
+	CReadLock lock(Track());
 	EventMarker marker(Track()->Events());
 
 	// For each event that overlaps the current view, draw it.

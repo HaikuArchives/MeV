@@ -133,33 +133,31 @@ public:							// Operations
 	void						SetCurrentEvent(
 									EventMarker &marker);
 	
-		/**	Undo the undoable action, if any. */
-	bool Undo()
-	{
-		StSubjectLock	myLock( *this );
+	/**	Undo the undoable action, if any. */
+	bool						Undo()
+								{
+									CWriteLock lock(this);
+									DeselectAll(NULL, false);
+									if (CTrack::Undo())
+									{
+										SummarizeSelection();
+										return true;
+									}
+									return false;
+								}
 
-		DeselectAll( NULL, false );
-		if (CTrack::Undo())
-		{
-			SummarizeSelection();
-			return true;
-		}
-		return false;
-	}
-
-		/**	Redo the redoable action, if any. */
-	bool Redo()
-	{
-		StSubjectLock	myLock( *this );
-
-		DeselectAll( NULL, false );
-		if (CTrack::Redo())
-		{
-			SummarizeSelection();
-			return true;
-		}
-		return false;
-	}
+	/**	Redo the redoable action, if any. */
+	bool						Redo()
+								{
+									CWriteLock lock(this);
+									DeselectAll(NULL, false);
+									if (CTrack::Redo())
+									{
+										SummarizeSelection();
+										return true;
+									}
+									return false;
+								}
 	
 		/**	Select all events. */
 	void SelectAll(	CEventEditor *inEditor );		// Active editor window, or NULL
