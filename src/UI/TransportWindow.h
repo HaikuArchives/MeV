@@ -41,11 +41,14 @@
 #include "AppWindow.h"
 #include "Observer.h"
 
+class CEventTrack;
+class CLoopButton;
+class CMeVDoc;
+class CPlayPauseButton;
 class CTempoEditControl;
 class CTimeEditControl;
 class CTextSlider;
-class CEventTrack;
-class CMeVDoc;
+class CTransportButton;
 
 class CTransportWindow
 	:	public CAppWindow
@@ -88,9 +91,12 @@ private:						// Instance Data
 
 	CEventTrack *				m_track;
 
-	BControl *					m_playButton;
-	BControl *					m_stopButton;
-	BControl *					m_pauseButton;
+	CTransportButton *			m_skipBackButton;
+	CTransportButton *			m_stopButton;
+	CPlayPauseButton *			m_playPauseButton;
+	CTransportButton *			m_recordButton;
+	CTransportButton *			m_skipForwardButton;
+	CLoopButton *				m_loopButton;
 
 	CTempoEditControl *			m_tempoCtl;
 

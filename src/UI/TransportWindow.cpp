@@ -4,32 +4,34 @@
 
 #include "TransportWindow.h"
 
-#include "BorderButton.h"
 #include "BorderView.h"
 #include "EventTrack.h"
 #include "Idents.h"
+#include "LoopButton.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "PlayerControl.h"
+#include "PlayPauseButton.h"
 #include "ResourceUtils.h"
 #include "StdButton.h"
 #include "TempoEditControl.h"
 #include "TimeEditControl.h"
+#include "TransportButton.h"
 
 // Gnu C Library
 #include <stdio.h>
 // Interface Kit
+#include <Bitmap.h>
 #include <StringView.h>
 // Support Kit
 #include <Autolock.h>
 #include <Debug.h>
 
-enum {
-	Btn_Height	= 17,
-	Btn_Height2	= 24,
-	Thin_Width	= 23,
-	Thick_Width	= 46,
-};
+// Debugging Macros
+#define D_ALLOC(x) PRINT(x)		// Constructor/Destructor
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
 
 CTransportWindow::CTransportWindow(
 	BPoint pos,
@@ -40,70 +42,98 @@ CTransportWindow::CTransportWindow(
 					"Transport",
 					B_FLOATING_WINDOW,
 					B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
-					| B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
+					| B_NOT_RESIZABLE | B_NOT_ZOOMABLE
+					| B_ASYNCHRONOUS_CONTROLS,
 					B_CURRENT_WORKSPACE),
 	m_document(NULL),
 	m_track(NULL)
 {
-	BView *bg;
+	D_ALLOC(("CTransportWindow::CTransportWindow()\n"));
+
 	BRect rect(Bounds());
-	float x, y;
+	BBitmap *bitmap;
 
 	rect.right++;
-	bg = new CBorderView(rect, NULL, B_FOLLOW_ALL_SIDES, B_WILL_DRAW, 
-						 false, NULL, CBorderView::BEVEL_BORDER);
+	rect.bottom++;
+	BView *bg = new CBorderView(rect, NULL, B_FOLLOW_ALL_SIDES, B_WILL_DRAW, 
+						 		false, NULL, CBorderView::BEVEL_BORDER);
 	AddChild(bg);
 
-	x = 5.0;
-	y = 5.0;
-	BControl *bb;
+	// add transport buttons
+	bitmap = ResourceUtils::LoadImage("SkipBack");
+	rect.SetLeftTop(BPoint(5.0, 5.0));
+	rect.SetRightBottom(rect.LeftTop() + bitmap->Bounds().RightBottom());
+	m_skipBackButton = new CTransportButton(rect, "Skip Backward",
+						 					bitmap,
+						 					ResourceUtils::LoadImage("SkipBack_Disabled"),
+						 					ResourceUtils::LoadImage("SkipBack_Pressed"),
+											new BMessage(MENU_LOCATE_START));
+	bg->AddChild(m_skipBackButton);
 
-	bb = new CBorderButton(
-		BRect( x, y, x + Thin_Width, y + Btn_Height ),
-		"ToStart", ResourceUtils::LoadImage("Begin"),
-		new BMessage(MENU_LOCATE_START), false);
-	bg->AddChild( bb );
-	x += Thin_Width;
+	bitmap = ResourceUtils::LoadImage("Stop");
+	rect.SetLeftTop(rect.RightTop() + BPoint(5.0, 0.0));
+	rect.SetRightBottom(rect.LeftTop() + bitmap->Bounds().RightBottom());
+	m_stopButton = new CTransportButton(rect, "Stop",
+				 						bitmap,
+						 				ResourceUtils::LoadImage("Stop_Disabled"),
+						 				ResourceUtils::LoadImage("Stop_Pressed"),
+										new BMessage(MENU_STOP));
+	bg->AddChild(m_stopButton);
 
-	bb = new CBorderButton(
-		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Play FromStart", ResourceUtils::LoadImage("PlayBeg"),
-		new BMessage(MENU_PLAY_FROM_START), false);
-	bg->AddChild( bb );
-	x += Thick_Width;
+	bitmap = ResourceUtils::LoadImage("PlayPause");
+	rect.SetLeftTop(rect.RightTop() + BPoint(5.0, 0.0));
+	rect.SetRightBottom(rect.LeftTop() + bitmap->Bounds().RightBottom());
+	m_playPauseButton = new CPlayPauseButton(rect, "Play/Pause",
+						 					 bitmap,
+						 					 ResourceUtils::LoadImage("PlayPause_Disabled"),
+						 					 ResourceUtils::LoadImage("PlayPause_Pressed"),
+											 ResourceUtils::LoadImage("PlayPause_Playing"),
+						 					 ResourceUtils::LoadImage("PlayPause_Pressed"),
+											 ResourceUtils::LoadImage("PlayPause_Paused"),
+						 					 ResourceUtils::LoadImage("PlayPause_Pressed"),
+											 new BMessage(MENU_PLAY));
+	bg->AddChild(m_playPauseButton);
 
-	bb = new CPushOnButton(
-		BRect( x, y, x + Thick_Width, y + Btn_Height),
-		"Play", ResourceUtils::LoadImage("Play"), new BMessage(MENU_PLAY));
-	bg->AddChild( bb );
-	m_playButton = bb;
-	x += Thick_Width;
+	bitmap = ResourceUtils::LoadImage("Record");
+	rect.SetLeftTop(rect.RightTop() + BPoint(5.0, 0.0));
+	rect.SetRightBottom(rect.LeftTop() + bitmap->Bounds().RightBottom());
+	m_recordButton = new CTransportButton(rect, "Record",
+				 						  bitmap,
+						 				  ResourceUtils::LoadImage("Record_Disabled"),
+						 				  ResourceUtils::LoadImage("Record_Pressed"),
+										  new BMessage(MENU_STOP));
+	bg->AddChild(m_recordButton);
+	m_recordButton->SetEnabled(false);
 
-	bb = new CBorderButton(
-		BRect( x, y, x + Thin_Width, y + Btn_Height ),
-		"ToEnd", ResourceUtils::LoadImage("End"),
-		new BMessage(MENU_LOCATE_END), false);
-	bg->AddChild( bb );
-	x += Thin_Width;
+	bitmap = ResourceUtils::LoadImage("SkipForward");
+	rect.SetLeftTop(rect.RightTop() + BPoint(5.0, 0.0));
+	rect.SetRightBottom(rect.LeftTop() + bitmap->Bounds().RightBottom());
+	m_skipForwardButton = new CTransportButton(rect, "Skip Forward",
+						 					   bitmap,
+						 					   ResourceUtils::LoadImage("SkipForward_Disabled"),
+						 					   ResourceUtils::LoadImage("SkipForward_Pressed"),
+											   new BMessage(MENU_LOCATE_END));
+	m_skipForwardButton->SetEnabled(false);
+	bg->AddChild(m_skipForwardButton);
 
-	bb = new CPushOnButton(
-		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Stop", ResourceUtils::LoadImage("Stop"), new BMessage(MENU_STOP));
-	bg->AddChild( bb );
-	m_stopButton = bb;
-	x += Thick_Width + 3;
-
-	bb = new CToggleButton(
-		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Pause", ResourceUtils::LoadImage("Pause"), new BMessage(MENU_PAUSE));
-	bg->AddChild( bb );
-	m_pauseButton = bb;
-	x += Thick_Width;
+	bitmap = ResourceUtils::LoadImage("LoopOff");
+	rect.left = rect.right + 5.0;
+	rect.top = rect.top + rect.Height() / 2.0 - bitmap->Bounds().bottom / 2.0;
+	rect.right = rect.left + bitmap->Bounds().right;
+	rect.bottom = rect.top + bitmap->Bounds().bottom;
+	m_loopButton = new CLoopButton(rect, "Loop",
+						 		   bitmap,
+						 		   ResourceUtils::LoadImage("LoopOff_Disabled"),
+						 		   ResourceUtils::LoadImage("LoopOff_Pressed"),
+						 		   ResourceUtils::LoadImage("LoopOn"),
+						 		   ResourceUtils::LoadImage("LoopOn_Pressed"),
+								   new BMessage('loop'));
+	bg->AddChild(m_loopButton);
 
 	// create time edit control
 	rect = Bounds();
 	rect.left += 5.0;
-	rect.top = m_playButton->Frame().bottom + 5.0;
+	rect.top = m_playPauseButton->Frame().bottom + 5.0;
 	rect.right = rect.left + 86;
 	rect.bottom = rect.top + 24;
 	m_timeCtl = new CTimeEditControl(rect, new BMessage('strt'));
@@ -111,8 +141,8 @@ CTransportWindow::CTransportWindow(
 
 	// create tempo edit control
 	rect.OffsetBy(rect.Width(), 0.0);
-	BMessage *message = new BMessage(CTempoEditControl::TEMPO_CHANGED);
-	m_tempoCtl = new CTempoEditControl(rect, message);
+	m_tempoCtl = new CTempoEditControl(rect,
+									   new BMessage(CTempoEditControl::TEMPO_CHANGED));
 
 	// find preferred sizes
 	float timeWidth, timeHeight;
@@ -126,14 +156,14 @@ CTransportWindow::CTransportWindow(
 	m_tempoCtl->ResizeTo(maxWidth, maxHeight);
 	bg->AddChild(m_timeCtl);
 	bg->AddChild(m_tempoCtl);
-	if ((2 * maxWidth + 15.0) < m_pauseButton->Frame().right)
+	if ((2 * maxWidth + 15.0) < m_loopButton->Frame().right)
 	{
-		m_tempoCtl->MoveTo(m_pauseButton->Frame().right - maxWidth,
+		m_tempoCtl->MoveTo(m_loopButton->Frame().right - maxWidth,
 						   m_tempoCtl->Frame().top);
 	}
 
 	// resize window to preferred
-	maxWidth = m_pauseButton->Frame().right;
+	maxWidth = m_loopButton->Frame().right;
 	if (m_tempoCtl->Frame().right > maxWidth)
 		maxWidth = m_tempoCtl->Frame().right;
 	maxWidth += 5.0;
@@ -153,12 +183,28 @@ CTransportWindow::SetButtons()
 															 pbState);
 		bool isPlaying = pbStateValid & pbState.running;
 
-		m_playButton->SetEnabled(true);
-		m_playButton->SetValue(isPlaying);
+		m_skipBackButton->SetEnabled(true);
+		m_playPauseButton->SetEnabled(true);
+		if (isPlaying)
+		{
+			if (CPlayerControl::PauseState(m_document))
+				m_playPauseButton->SetPaused();
+			else
+				m_playPauseButton->SetPlaying();
+		}
+		else
+		{
+			m_playPauseButton->SetStopped();
+			m_timeCtl->SetTime(0L, 0);
+		}
+
 		m_stopButton->SetEnabled(true);
-		m_stopButton->SetValue(!isPlaying);
-		m_pauseButton->SetEnabled(true);
-		m_pauseButton->SetValue(CPlayerControl::PauseState(m_document));
+
+		m_loopButton->SetEnabled(true);
+		if (dynamic_cast<CMeVApp *>(be_app)->GetLoopFlag())
+			m_loopButton->SetLooping(true);
+		else
+			m_loopButton->SetLooping(false);
 
 		m_timeCtl->SetDocument(m_document);
 		if (isPlaying)
@@ -174,12 +220,10 @@ CTransportWindow::SetButtons()
 	}
 	else
 	{
-		m_playButton->SetEnabled(false);
-		m_playButton->SetValue(false);
+		m_skipBackButton->SetEnabled(false);
+		m_playPauseButton->SetEnabled(false);
 		m_stopButton->SetEnabled(false);
-		m_stopButton->SetValue(true);
-		m_pauseButton->SetEnabled(false);
-		m_pauseButton->SetValue(false);
+		m_loopButton->SetEnabled(false);
 
 		m_timeCtl->Stopped();
 		m_timeCtl->SetDocument(NULL);
@@ -198,17 +242,24 @@ CTransportWindow::MessageReceived(
 
 	switch(message->what)
 	{
-		case MENU_PLAY_FROM_START:
+		case MENU_LOCATE_START:
 		{
-			// REM: Add ability to play individual track...
-			CPlayerControl::PlaySong(m_document, 0, 0,
-									 LocateTarget_Real, -1,
-									 SyncType_SongInternal, 0);
+			PlaybackState	pbState;
+			if ((CPlayerControl::GetPlaybackState(m_document, pbState))
+			 && pbState.running)
+			{
+				bool paused = CPlayerControl::PauseState(m_document);
+				// REM: Add ability to play individual track...
+				CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real, -1, SyncType_SongInternal, 0);
+				if (paused)
+					CPlayerControl::SetPauseState(m_document, true);
+			}
+			SetButtons();
 			break;
 		}
 		case MENU_PLAY:
 		{
-			PlaybackState pbState;
+			PlaybackState	pbState;
 			if ((CPlayerControl::GetPlaybackState(m_document, pbState))
 			 && pbState.running)
 			{
@@ -232,11 +283,7 @@ CTransportWindow::MessageReceived(
 											 -1, SyncType_SongInternal, 0);
 				}
 			}
-			break;
-		}
-		case MENU_PAUSE:
-		{
-			CPlayerControl::SetPauseState(m_document, m_pauseButton->Value());
+			SetButtons();
 			break;
 		}
 		case MENU_LOCATE_END:
@@ -247,6 +294,8 @@ CTransportWindow::MessageReceived(
 		case MENU_STOP:
 		{
 			CPlayerControl::StopSong(m_document);
+			m_timeCtl->SetTime(0L, 0);
+			SetButtons();
 			break;
 		}
 		case CTempoEditControl::TEMPO_CHANGED:
@@ -257,6 +306,12 @@ CTransportWindow::MessageReceived(
 			CPlayerControl::SetTempo(m_document, tempo);
 			break;
 		}	
+		case 'loop':
+		{
+			((CMeVApp *)be_app)->SetLoopFlag(m_loopButton->IsLooping());
+			SetButtons();
+			break;
+		}
 		case Player_ChangeTransportState:
 		{
 			SetButtons();
