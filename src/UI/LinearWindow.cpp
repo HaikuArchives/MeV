@@ -81,17 +81,6 @@ CLinearWindow::CLinearWindow(
 // CTrackWindow Implementation
 
 void
-CLinearWindow::MenusBeginning()
-{
-	CTrackWindow::MenusBeginning();
-
-	BMenuItem *item;
-
-	item = KeyMenuBar()->FindItem("Set Section");
-	item->SetEnabled(Track()->SelectionType() != CTrack::Select_None);
-}
-
-void
 CLinearWindow::MessageReceived(
 	BMessage* message)
 {

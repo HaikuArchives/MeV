@@ -67,8 +67,6 @@ public:							// Accessors
 
 public:							// CTrackWindow Implementation
 
-	virtual void				MenusBeginning();
-
 	virtual void				MessageReceived(
 									BMessage *message);
 

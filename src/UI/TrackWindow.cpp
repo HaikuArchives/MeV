@@ -333,9 +333,17 @@ CTrackWindow::MenusBeginning()
 		item->SetEnabled(false);
 	}
 	
-	// Set up Clear menu
+	// Set up 'Edit' menu
 	item = KeyMenuBar()->FindItem(MENU_CLEAR);
 	item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
+
+	// Set up 'Play' menu
+	item = KeyMenuBar()->FindItem(MENU_PLAY_SECTION);
+	if (item)
+		item->SetEnabled(Track()->SectionStart() < Track()->SectionEnd());
+	item = KeyMenuBar()->FindItem(MENU_SET_SECTION);
+	if (item)
+		item->SetEnabled(Track()->SelectionType() != CTrack::Select_None);
 
 	// Set up 'View' menu
 	item = KeyMenuBar()->FindItem("Add Strip");
@@ -411,7 +419,7 @@ CTrackWindow::MessageReceived(
 				break;
 			}
 			// Start playing a song.
-			CMeVApp *app = (CMeVApp *)be_app;
+			CMeVApp *app = Document()->Application();
 			CPlayerControl::PlaySong(Document(), 0, 0, LocateTarget_Real, -1,
 									 SyncType_SongInternal,
 									 (app->GetLoopFlag() ? PB_Loop : 0));
@@ -419,8 +427,8 @@ CTrackWindow::MessageReceived(
 		}
 		case MENU_PLAY_SECTION:
 		{	
-			// Start playing a song.
-			CMeVApp *app = (CMeVApp *)be_app;
+			// Start playing a section.
+			CMeVApp *app = Document()->Application();
 			CPlayerControl::PlaySong(Document(), Track()->GetID(),
 									 Track()->SectionStart(),
 									 LocateTarget_Metered,
