@@ -95,15 +95,28 @@ public:							// Constructor/Destructor
 
 	virtual						~CDocWindow();
 
+public:							// Hook Functions
+
+	/**	Returns a pointer to the document of this window. 
+	 *	You may override this method to return your CDocument 
+	 *	subclass.
+	 */
+	virtual CDocument *			Document();
+	
+	/**	Implement this method to return the size of the content that
+	 *	is being displayed by this window. The default implementation
+	 *	returns the current window bounds.
+	 */
+	virtual void				GetContentSize(
+									float *width,
+									float *height) const;
+
 public:							// Accessors
 
 	/**	Return the document window which has the active token.	*/
 	static CDocWindow *			ActiveDocWindow()
 								{ return s_activeDocWin; }
 
-	/**	Returns a pointer to the document for this DocWindow.	*/
-	virtual CDocument *			Document();
-	
 	/**	Return true if this window has the active selection token.	*/
 	bool						HasSelectToken()
 								{ return (this == s_activeDocWin); }
@@ -133,6 +146,10 @@ public:							// Operations
 	
 public:							// CAppWindow Implementation
 
+	virtual void				FrameResized(
+									float width,
+									float height);
+
 	virtual void				MessageReceived(
 									BMessage *message);
 
@@ -145,6 +162,11 @@ public:							// CAppWindow Implementation
 
 	virtual void				WindowActivated(
 									bool active);
+
+	virtual void				Zoom(
+									BPoint origin,
+									float width,
+									float height);
 
 protected:						// Internal Operations
 
@@ -179,6 +201,12 @@ private:						// Instance Data
 	BString						m_name;
 
 	bool						m_waitingToQuit;
+
+	bool						m_zoomed;
+
+	bool						m_zooming;
+
+	BRect						m_manualSize;
 
 private:						// Class Data
 

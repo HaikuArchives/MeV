@@ -10,12 +10,14 @@
 #include "ResourceUtils.h"
 #include "ToolBar.h"
 #include "WindowState.h"
+#include "ScreenUtils.h"
 
 // Interface Kit
 #include <Alert.h>
 #include <Menu.h>
 #include <MenuBar.h>
 #include <MenuItem.h>
+#include <Screen.h>
 #include <ScrollBar.h>
 // Storage Kit
 #include <Directory.h>
@@ -25,7 +27,7 @@
 #include <String.h>
 
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
-#define D_HOOK(x) //PRINT(x)			// CAppWindow Implementation
+#define D_HOOK(x) PRINT(x)			// CAppWindow Implementation
 
 // ---------------------------------------------------------------------------
 // Class Data Initialization
@@ -50,7 +52,9 @@ CDocWindow::CDocWindow(
 		m_windowMenu(NULL),
 		m_windowMenuStart(-1),
 		m_name(inTypeName),
-		m_waitingToQuit(false)
+		m_waitingToQuit(false),
+		m_zoomed(false),
+		m_zooming(false)
 {
 	D_ALLOC(("CDocWindow::CDocWindow(rect)\n"));
 
@@ -73,7 +77,9 @@ CDocWindow::CDocWindow(
 		m_windowMenu(NULL),
 		m_windowMenuStart(-1),
 		m_name(inTypeName),
-		m_waitingToQuit(false)
+		m_waitingToQuit(false),
+		m_zoomed(false),
+		m_zooming(false)
 {
 	D_ALLOC(("CDocWindow::CDocWindow(state)\n"));
 
@@ -101,13 +107,26 @@ CDocWindow::~CDocWindow()
 }
 
 // ---------------------------------------------------------------------------
-// Accessors
+// Hook Functions
 
 CDocument *
 CDocWindow::Document()
 {
 	return m_document;
 }
+
+void
+CDocWindow::GetContentSize(
+	float *width,
+	float *height) const
+{
+	BRect rect(Bounds());
+	*width = rect.Width();
+	*height = rect.Height();
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
 
 void
 CDocWindow::SetToolBar(
@@ -165,6 +184,19 @@ CDocWindow::AcquireSelectToken()
 
 // ---------------------------------------------------------------------------
 // CAppWindow Implementation
+
+void
+CDocWindow::FrameResized(
+	float width,
+	float height)
+{
+	D_HOOK(("CDocWindow::FrameResized()\n"));
+
+	if (!m_zooming)
+		m_zoomed = false;
+	else
+		m_zooming = false;
+}
 
 void
 CDocWindow::MenusBeginning()
@@ -344,6 +376,40 @@ CDocWindow::WindowActivated(
 
 	if (active)
 		AcquireSelectToken();
+}
+
+void
+CDocWindow::Zoom(
+	BPoint origin,
+	float width,
+	float height)
+{
+	D_HOOK(("CDocWindow::Zoom()\n"));
+
+	m_zooming = true;
+
+	BScreen screen(this);
+	if (!screen.Frame().Contains(Frame()))
+		m_zoomed = false;
+
+	if (!m_zoomed)
+	{
+		// resize to the ideal size
+		m_manualSize = Bounds();
+		m_zoomed = true;
+		GetContentSize(&width, &height);
+		BRect rect(Frame().LeftTop(),
+				   Frame().LeftTop() + BPoint(width, height));
+		rect = UScreenUtils::ConstrainToScreen(rect);
+		MoveTo(rect.LeftTop());
+		ResizeTo(rect.Width(), rect.Height());
+	}
+	else
+	{
+		// resize to the most recent manual size
+		ResizeTo(m_manualSize.Width(), m_manualSize.Height());
+		m_zoomed = false;
+	}
 }
 
 // ---------------------------------------------------------------------------
