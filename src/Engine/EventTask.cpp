@@ -84,19 +84,27 @@ CEventTask::PlayEvent(
 	int32 duration = stackedEvent.common.duration;
 
 	// filter event though virtual channel table
-	if (ev.HasProperty(Event::Prop_Channel)
-	 && group.m_destlist->IsDefined(ev.note.vChannel))
+	if (group.m_destlist->IsDefined(ev.note.vChannel))
 	{
+		// assign actual destination
 		dest = group.m_destlist->get(ev.common.vChannel);
-		chState = &thePlayer.m_portInfo[0].channelStates[dest->channel];
-		
-		// Process a copy of the event event through the filters...
-		((CEventTrack *)track)->FilterEvent(stackedEvent);
-
-		// assign actual port
 		stackedEvent.stack.actualPort = dest->m_producer;
-		stackedEvent.stack.actualChannel = dest->channel;
+
+		if (ev.HasProperty(Event::Prop_Channel))
+		{
+			// assign actual channel
+			stackedEvent.stack.actualChannel = dest->channel;
+			chState = &thePlayer.m_portInfo[0].channelStates[dest->channel];
+		}
 	}
+	else
+	{
+		stackedEvent.stack.actualPort = NULL;
+		stackedEvent.stack.actualChannel = 0;
+	}
+
+	// Process a copy of the event event through the filters...
+	((CEventTrack *)track)->FilterEvent(stackedEvent);
 
 	// Modify the stack
 	stackedEvent.stack.start += origin;
@@ -272,18 +280,6 @@ CEventTask::PlayEvent(
 		{
 			stack.Push( stackedEvent );
 			break;
-	
-			// Global control events
-			// case evtTypeStop:							// stop the sequencer
-			// case evtTypeGo:								// start the sequencer
-			// case evtTypeLocate:							// locate to "duration" time
-			// case evtTypeCue:							// trigger a cue point
-			// case evtTypeMTCCue:							// trigger an MTC cue point
-			// case evtTypeMuteVChannel:					// mute a vChannel
-			// case evtTypeMuteTrack:						// mute a track
-			// case evtTypeSpliceIn:						// a "splice" event for overdub
-			// case evtTypeSpliceOut:						// a "splice" event for overdub
-			// 	break;
 		}
 		case EvtType_Repeat:							// repeat a section
 		{
@@ -296,21 +292,13 @@ CEventTask::PlayEvent(
 			CPlaybackTask	*p;
 	
 			if (tr == NULL) break;
-	#if USE_SHARED_LOCKS
-			tr->Lock( Lock_Shared );
-	#else
-			tr->Lock();
-	#endif
+			tr->Lock(Lock_Shared);
 			for (p = this; p != NULL; p = p->Parent())
 			{
-					// Don't allow tracks to call each other recursively.
+				// Don't allow tracks to call each other recursively.
 				if (p->Track() == tr)
 				{
-	#if USE_SHARED_LOCKS
-					tr->Unlock( Lock_Shared );
-	#else
-					tr->Unlock();
-	#endif
+					tr->Unlock(Lock_Shared);
 					return;
 				}
 			}
@@ -356,11 +344,7 @@ CEventTask::PlayEvent(
 				}
 				th->transposition = ev.sequence.transposition;
 			}
-	#if USE_SHARED_LOCKS
-			tr->Unlock( Lock_Shared );
-	#else
-			tr->Unlock();
-	#endif
+			tr->Unlock(Lock_Shared);
 			break;
 		}
 	}
