@@ -1499,37 +1499,38 @@ void
 CTrackCtlStrip::MouseMoved(
 	BPoint point,
 	uint32 transit,
-	const BMessage *dragMsg)
+	const BMessage *message)
 {
-	CEventEditor::MouseMoved(point, transit, dragMsg);
+	CEventEditor::MouseMoved(point, transit, message);
 
-	if (transit == B_EXITED_VIEW)
+	if (Window()->IsActive())
 	{
-		if (m_dragType == DragType_DropTarget)
+		if ((transit == B_EXITED_VIEW) || (transit == B_OUTSIDE_VIEW))
 		{
-			HandlerFor(m_newEv)->Invalidate(m_newEv);
-			m_dragType = DragType_None;
+			if (m_dragType == DragType_DropTarget)
+			{
+				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				m_dragType = DragType_None;
+			}
+		
+			TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
+			return;
 		}
-	
-		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
-		return;
+		else
+		{
+			TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));	
+		}
 	}
-
-	TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));
-	bounds = Bounds();
-	
-	StSubjectLock trackLock(*Track(), Lock_Shared);
-	EventMarker marker(Track()->Events());
 
 	// If there's a drag message, and we're not already doing another kind of
 	// dragging...
-	if ((dragMsg != NULL)
+	if ((message != NULL)
 	 &&	(m_dragType == DragType_None || m_dragType == DragType_DropTarget))
 	{
 		// Check the message type to see if the message is acceptable.
 		int32 msgType;
-		if ((dragMsg->what == MeVDragMsg_ID)
-		 &&	(dragMsg->FindInt32("Type", 0, &msgType) == B_OK))
+		if ((message->what == MeVDragMsg_ID)
+		 &&	(message->FindInt32("Type", 0, &msgType) == B_OK))
 		{
 			switch (msgType)
 			{
@@ -1537,8 +1538,8 @@ CTrackCtlStrip::MouseMoved(
 				{
 					int32 trackID;
 					void *dragDoc;
-					if ((dragMsg->FindInt32("TrackID", 0, &trackID) == B_OK)
-					 && (dragMsg->FindPointer("Document", 0, &dragDoc) == B_OK)
+					if ((message->FindInt32("TrackID", 0, &trackID) == B_OK)
+					 && (message->FindPointer("Document", 0, &dragDoc) == B_OK)
 					 &&	(dragDoc == TrackWindow()->Document()))
 					{
 						CTrack *track = TrackWindow()->Document()->FindTrack(trackID);
@@ -1570,8 +1571,9 @@ CTrackCtlStrip::MouseMoved(
 							m_newEv = dragEv;
 							HandlerFor(m_newEv)->Invalidate(m_newEv);
 
-							TrackWindow()->SetHorizontalPositionInfo(Track(),
-																	 time);
+							if (Window()->IsActive())
+								TrackWindow()->SetHorizontalPositionInfo(Track(),
+																		 time);
 							m_dragType = DragType_DropTarget;
 						}
 						return;
