@@ -69,17 +69,30 @@ public:							// Constructor/Destructor
 									int32 id,
 									char *name);
 
+public:							// Accessors
+
+	/** Returns the count of the number of events in this track */
+	int32						CountEvents() const
+								{ return events.TotalItems(); }
+
+	long						MinSelectTime() const
+								{ return minSelectTime; }
+	long						MaxSelectTime() const
+								{ return maxSelectTime; }
+	
+	const Event *				CurrentEvent()
+								{ return currentEvent.Peek(0); }
+
+	/** Gain access to the event list. */
+	EventList &					Events()
+								{ return events; }
+								
+	uint32						TrackType() const
+								{ return TrackType_Event; }
+
 public:							// Operations
 
 	void SummarizeSelection();
-	
-		/** Returns the count of the number of events in this track */
-	int32 CountItems() const { return events.TotalItems(); }
-
-	uint32 TrackType() const { return TrackType_Event; }
-
-	long MinSelectTime() const { return minSelectTime; }
-	long MaxSelectTime() const { return maxSelectTime; }
 	
 		/**	Indicates that a signature event has been moved. */
 	void InvalidateSigMap() { validSigMap = false; }
@@ -183,11 +196,6 @@ public:							// Operations
 		return Select_Subset;
 	}
 
-	const Event *CurrentEvent() { return currentEvent.Peek( 0 ); }
-
-		// Gain access to the event list. (Throws exception if not locked).
-	EventList		&Events() { return events; }
-	
 		// Filter an event through the filters assigned to this track
 	void FilterEvent( Event &ioEv );
 	
@@ -244,36 +252,53 @@ public:							// CSerializable Implementation
 	virtual void				ReadChunk(
 									CIFFReader &reader);
 	
+private:						// Internal Operations
+
+	int32						Bytes()
+								{ return sizeof *this + CountEvents() * sizeof(Event); }
+
+	void						RecalcSigMap();
+
+	CEventTrack *				Sibling();
+
 private:						// Instance Data
 
-	EventList		events;					// List of events for this class
-	EventMarker		currentEvent;			// for single-event selection
-	long				selectionCount;			// number of selected events
+	/** List of events for this part. */
+	EventList					events;
 
-	long				minSelectTime,			// start time of selection
-					maxSelectTime;			// end time of selection
+	/** For single-event selection. */
+	EventMarker					currentEvent;
+
+	/** Number of selected events. */
+	long						selectionCount;
+
+	/** Start time of selection. */
+	long						minSelectTime;
+
+	/** End time of selection. */
+	long						maxSelectTime;
 					
-	long				timeGridSize;			// gridsnap size for time
-	bool				gridSnapEnabled;			// grid snap is enabled.
+	/** Gridsnap size for time. */
+	long						timeGridSize;
 
-		// "Aggregate" actions are when multiple indpendent events are
-		// aggregated into a single UNDO. (arrow-key editing, for example)
-	UndoAction		*prevAggregateUndo;		// previous aggregate undo action
-	int32			prevAggregateAction;		// previous aggregate action code
+	/** Grid snap is enabled. */
+	bool						gridSnapEnabled;
+
+	/** Previous aggregate undo action.
+	 *	Aggregate actions are when multiple indpendent events are
+	 *	aggregated into a single UNDO. (arrow-key editing, for example) */
+	UndoAction *				prevAggregateUndo;		
+
+	/** Previous aggregate action code. */
+	int32						prevAggregateAction;
 					
-	BList			operators;				// Operators specific to this track
+	/** Operators specific to this track. */
+	BList						operators;
 
-	EventOp			*filters[ Max_Track_Filters ];
-	int32			filterCount;
-	
-	bool				validSigMap;
-	
-	void RecalcSigMap();
+	EventOp *					filters[Max_Track_Filters];
+	int32						filterCount;
 
-		// For operations on master tracks... 
-	CEventTrack *Sibling();
-	int32 Bytes() { return sizeof *this + events.TotalItems() * sizeof(Event); }
-
+	bool						validSigMap;
 };
 
 /**	A hint which takes it's parameters from the current selection. */

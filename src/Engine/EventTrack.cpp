@@ -1055,7 +1055,7 @@ CEventSelectionUpdateHint::CEventSelectionUpdateHint(
 	const CEventTrack &track,
 	bool selChangeOnly)
 {
-	if (track.CountItems())
+	if (track.CountEvents())
 	{
 		AddInt32("MinTime", track.MinSelectTime());
 		AddInt32("MaxTime", track.MaxSelectTime());

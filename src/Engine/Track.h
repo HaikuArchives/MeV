@@ -68,15 +68,42 @@ public:							// Constants
 		Select_Subset,						// use select bits for each item
 	};
 
-	enum ETrackUpdateHintBits {
-		Update_Name		= (1<<0),			// Track name changed
-		Update_Duration	= (1<<1),			// Track duration changed
-		Update_Flags		= (1<<2),			// Muted / recording flag
-		Update_SigMap	= (1<<3),			// Signature map changed
-		Update_Operators	= (1<<4),			// Operator list changed
-		Update_Section	= (1<<5),			// Update section markers
-		Update_Summary	= (1<<6),			// Track summary info changed...
-		Update_TempoMap	= (1<<7)			// Tempo map changed
+	enum update_hints
+	{
+		/** Track name changed. */
+		Update_Name			= (1 << 0),
+
+		/** Track duration changed. */
+		Update_Duration		= (1 << 1),
+
+		/** Muted/Recording flag. */
+		Update_Flags		= (1 << 2),
+
+		/** Signature map changed. */
+		Update_SigMap		= (1 << 3),
+
+		/** Operator list changed. */
+		Update_Operators	= (1 << 4),
+
+		/** Update section markers. */
+		Update_Section		= (1 << 5),
+
+		/** Track summary info changed. */
+		Update_Summary		= (1 << 6),
+
+		/** Tempo map changed. */
+		Update_TempoMap		= (1 << 7),
+
+		/** Part starts using a destination, ie an event assigned to a 
+		 *	destination not yet in use by this track has been added.
+		 */
+		Update_AddDest		= (1 << 8),
+
+		/** Part stops using a destination. This usually means that the
+		 *	last event using that destination has been deleted from the 
+		 * 	part.
+		 */
+		Update_DelDest		= (1 << 9)
 	};
 
 	enum flags {
