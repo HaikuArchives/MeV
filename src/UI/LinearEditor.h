@@ -148,7 +148,7 @@ private:						// Instance Data
 // Piano keyboard view
 
 class CPianoKeyboardView
-	:	public BView
+	:	public CStripLabelView
 {
 
 public:							// Constructor/Destructor

@@ -88,17 +88,22 @@ void CContinuousValueEditor::Draw( BRect updateRect )
 	}
 	
 	EventOp	*echoOp = PendingOperation();
-	if (echoOp == NULL) echoOp = dragOp;
+	if (echoOp == NULL)
+		echoOp = DragOperation();
 
 	if (IsSelectionVisible())
 	{
-		if	   (dragType == DragType_Create)		DrawCreateEcho( startTime, stopTime );
-		else if (echoOp != NULL)				DrawEchoEvents( startTime, stopTime );
-		else if (dragType == DragType_Select)		DrawSelectRect();
-		else if (dragType == DragType_Lasso)		DrawLasso();
+		if (m_dragType == DragType_Create)
+			DrawCreateEcho( startTime, stopTime );
+		else if (echoOp != NULL)
+			DrawEchoEvents( startTime, stopTime );
+		else if (m_dragType == DragType_Select)
+			DrawSelectRect();
+		else if (m_dragType == DragType_Lasso)
+			DrawLasso();
 	}
 
-	DrawPBMarkers( pbMarkers, pbCount, updateRect, false );
+	DrawPlaybackMarkers(m_pbMarkers, m_pbCount, updateRect, false);
 }
 
 // ---------------------------------------------------------------------------

@@ -59,7 +59,7 @@ protected:
 	void SetScrollValue( float inScrollValue, orientation inOrient )
 	{
 		CStripView::SetScrollValue( inScrollValue, inOrient );
-		labelView->ScrollTo( 0.0, scrollValue.y );
+		LabelView()->ScrollTo( 0.0, scrollValue.y );
 	}
 
 	void MouseMoved(

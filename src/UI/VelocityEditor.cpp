@@ -7,6 +7,8 @@
 #include "MeVDoc.h"
 #include "MathUtils.h"
 #include "ResourceUtils.h"
+// StripView
+#include "StripLabelView.h"
 
 // ---------------------------------------------------------------------------
 // Note handler class for linear editor
@@ -210,22 +212,13 @@ CVelocityEditor::CVelocityEditor(
 	:	CEventEditor(	inLooper, inFrame, rect,
 						"Velocity Strip", false, false )
 {
-	handlers[ EvtType_Note ]	= &velocityNoteHandler;
+	SetHandlerFor(EvtType_Note, &velocityNoteHandler);
+	SetFlags(Flags() | B_FULL_UPDATE_ON_RESIZE);
 
-	SetFlags( Flags() | B_FULL_UPDATE_ON_RESIZE );
-
-		// Make the label view on the left-hand side
-	labelView = new CLabelView(	BRect(	- 1.0,
-										- 1.0,
-										20.0,
-										rect.Height() + 1 ),
-								"Velocity",
-								B_FOLLOW_TOP_BOTTOM,
-								B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
-
-	ResizeBy( -21.0, 0.0 );
-	MoveBy( 21.0, 0.0 );
-	TopView()->AddChild( labelView );
+	// Make the label view on the left-hand side
+	SetLabelView(new CStripLabelView(BRect(-1.0, -1.0, 20.0, rect.Height() + 1),
+									 "Velocity", B_FOLLOW_TOP_BOTTOM,
+									 B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 }
 
 void CVelocityEditor::Draw( BRect updateRect )
@@ -313,7 +306,8 @@ void CVelocityEditor::OnUpdate( BMessage *inMsg )
 	
 	if (inMsg->FindInt8( "channel", 0, &channel ) != B_OK) channel = -1;
 
-	if (trackHint & CTrack::Update_Duration) frame.RecalcScrollRange();
+	if (trackHint & CTrack::Update_Duration)
+		TrackEditFrame().RecalcScrollRange();
 
 	if (trackHint & (CTrack::Update_SigMap|CTrack::Update_TempoMap))
 	{
@@ -356,8 +350,10 @@ void CVelocityEditor::OnUpdate( BMessage *inMsg )
 void CVelocityEditor::MouseMoved(
 	BPoint		point,
 	ulong		transit,
-	const BMessage	* )
+	const BMessage	*message)
 {
+	CEventEditor::MouseMoved(point, transit, message);
+
 	if (transit == B_EXITED_VIEW)
 	{
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
@@ -376,7 +372,7 @@ void CVelocityEditor::StartDrag( BPoint point, ulong buttons )
 
 	dragTime		= ViewCoordsToTime( point.x );
 	dragVelocity	= 127 * (r.bottom - point.y) / r.Height();
-	dragType		= DragType_Sculpt;
+	m_dragType		= DragType_Sculpt;
 	dragAction	= NULL;
 	smallestTime = LONG_MAX;
 	largestTime	= LONG_MIN;
@@ -387,7 +383,7 @@ bool CVelocityEditor::DoDrag( BPoint point, ulong buttons )
 {
 	bounds = Bounds();
 
-	if (dragType == DragType_Sculpt )
+	if (m_dragType == DragType_Sculpt )
 	{
 		StSubjectLock		trackLock( *Track(), Lock_Exclusive );
 		BRect			r( Bounds() );

@@ -11,6 +11,8 @@
 #include "MidiDeviceInfo.h"
 #include "PlayerControl.h"
 #include "ResourceUtils.h"
+// StripView
+#include "StripLabelView.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -226,7 +228,7 @@ void CRepeatEventHandler::Draw(
 
 	rEditor.SetDrawingMode( B_OP_COPY );
 
-	if (shadowed && rEditor.dragOp != NULL)
+	if (shadowed && rEditor.m_dragOp != NULL)
 	{
 		rEditor.SetDrawingMode( B_OP_BLEND );
 		grad = ltBlues;
@@ -336,9 +338,9 @@ void CSequenceEventHandler::Draw(
 
 	rEditor.SetDrawingMode( B_OP_COPY );
 
-	if (shadowed && rEditor.dragOp != NULL)
+	if (shadowed && rEditor.m_dragOp != NULL)
 	{
-		rEditor.SetDrawingMode( B_OP_BLEND );
+		rEditor.SetDrawingMode(B_OP_BLEND);
 		grad = ltBlues;
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
@@ -689,11 +691,14 @@ void CProgramChangeEventHandler::Draw(
 		r.bottom -= 1.0;
 	}
 
-	if (shadowed && rEditor.dragOp != NULL) rEditor.SetDrawingMode( B_OP_BLEND );
-	else rEditor.SetDrawingMode( B_OP_OVER );
+	if (shadowed && rEditor.m_dragOp != NULL)
+		rEditor.SetDrawingMode(B_OP_BLEND);
+	else
+		rEditor.SetDrawingMode(B_OP_OVER);
 	
-		// A test -- don't show the existing event if we're adjusting via slider.
-	if (!shadowed && rEditor.PendingOperation() != NULL) return;
+	// A test -- don't show the existing event if we're adjusting via slider.
+	if (!shadowed && rEditor.PendingOperation() != NULL)
+		return;
 
 	rEditor.DrawBitmapAsync( horn, BPoint( r.left, (r.top + r.bottom - hornRect.Height())/2 ) );
 	
@@ -937,18 +942,24 @@ void CTempoEventHandler::Draw(
 	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
 	r.bottom	= r.top + rEditor.barHeight - 2;
 
-	if (shadowed && rEditor.dragOp != NULL) rEditor.SetDrawingMode( B_OP_BLEND );
-	else rEditor.SetDrawingMode( B_OP_OVER );
+	if (shadowed && rEditor.m_dragOp != NULL)
+		rEditor.SetDrawingMode(B_OP_BLEND);
+	else
+		rEditor.SetDrawingMode(B_OP_OVER);
 	
-		// A test -- don't show the existing event if we're adjusting via slider.
-	if (!shadowed && rEditor.PendingOperation() != NULL) return;
+	// A test -- don't show the existing event if we're adjusting via slider.
+	if (!shadowed && rEditor.PendingOperation() != NULL)
+		return;
 
 	if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
-		if (shadowed) rEditor.SetHighColor( 0, 0, 0 );
-		else rEditor.SetHighColor( 0, 0, 255 );
+		if (shadowed)
+			rEditor.SetHighColor( 0, 0, 0 );
+		else
+			rEditor.SetHighColor( 0, 0, 255 );
 	}
-	else rEditor.SetHighColor( 192, 192, 192 );
+	else
+		rEditor.SetHighColor( 192, 192, 192 );
 
 	rEditor.FillRect( BRect( r.left, r.top, r.right, r.top + 2.0 ) );
 
@@ -1116,31 +1127,23 @@ CTrackCtlStrip::CTrackCtlStrip(
 	char				*inName )
 	:	CEventEditor(	inLooper, inFrame, rect, inTrack, inName, true, true )
 {
-	handlers[ EvtType_End ]				= &gEndEventHandler;
-	handlers[ EvtType_ProgramChange ]	= &programChangeEventHandler;
-	handlers[ EvtType_Repeat ]			= &repeatEventHandler;
-	handlers[ EvtType_Sequence ]		= &sequenceEventHandler;
-	handlers[ EvtType_TimeSig ]			= &timeSigEventHandler;
-	handlers[ EvtType_Tempo]			= &tempoEventHandler;
+	SetHandlerFor(EvtType_End, &gEndEventHandler);
+	SetHandlerFor(EvtType_ProgramChange, &programChangeEventHandler);
+	SetHandlerFor(EvtType_Repeat, &repeatEventHandler);
+	SetHandlerFor(EvtType_Sequence, &sequenceEventHandler);
+	SetHandlerFor(EvtType_TimeSig, &timeSigEventHandler);
+	SetHandlerFor(EvtType_Tempo, &tempoEventHandler);
 
 	barHeight		= 16;
 	CalcZoom();
 	SetZoomTarget( (CObserver *)this );
 
 		// Make the label view on the left-hand side
-	labelView = new CLabelView(	BRect(	- 1.0,
-										- 1.0,
-										20.0,
-										rect.Height() + 1 ),
-								inName,
-								B_FOLLOW_TOP_BOTTOM,
-								B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
+	SetLabelView(new CStripLabelView(BRect(-1.0, -1.0, 20.0, rect.Height() + 1),
+									 inName, B_FOLLOW_TOP_BOTTOM,
+									 B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 
-	ResizeBy( -21.0, 0.0 );
-	MoveBy( 21.0, 0.0 );
-	TopView()->AddChild( labelView );
-
-	SetFlags( Flags() | B_PULSE_NEEDED );
+	SetFlags(Flags() | B_PULSE_NEEDED);
 }
 
 // ---------------------------------------------------------------------------
@@ -1201,21 +1204,25 @@ void CTrackCtlStrip::Draw( BRect updateRect )
 	}
 	
 	EventOp	*echoOp = PendingOperation();
-	if (echoOp == NULL) echoOp = dragOp;
+	if (echoOp == NULL) echoOp = DragOperation();
 
-	if (dragType == DragType_DropTarget)
+	if (m_dragType == DragType_DropTarget)
 	{
 		DrawCreateEcho( startTime, stopTime );
 	}
 	else if (IsSelectionVisible())
 	{	
-		if (dragType == DragType_Create)	DrawCreateEcho( startTime, stopTime );
-		else if (echoOp != NULL)			DrawEchoEvents( startTime, stopTime );
-		else if (dragType == DragType_Select)	DrawSelectRect();
-		else if (dragType == DragType_Lasso)	DrawLasso();
+		if (m_dragType == DragType_Create)
+			DrawCreateEcho( startTime, stopTime );
+		else if (echoOp != NULL)
+			DrawEchoEvents( startTime, stopTime );
+		else if (m_dragType == DragType_Select)
+			DrawSelectRect();
+		else if (m_dragType == DragType_Lasso)
+			DrawLasso();
 	}
 
-	DrawPBMarkers( pbMarkers, pbCount, updateRect, false );
+	DrawPlaybackMarkers(m_pbMarkers, m_pbCount, updateRect, false);
 }
 
 	// REM: Here's where we process both new events and playback markers
@@ -1378,7 +1385,7 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 		
 	case MeVDragMsg_ID:
 	
-		if (dragType == DragType_DropTarget)
+		if (m_dragType == DragType_DropTarget)
 		{
 				// Initialize an event marker for this track.
 			StSubjectLock		trackLock( *Track(), Lock_Exclusive );
@@ -1386,8 +1393,8 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 				
 				// Creating a new event
 			Track()->DeselectAll( this );
-			Handler( newEv ).Invalidate( *this, newEv );
-			Track()->CreateEvent( this, newEv, "Create Event" );
+			Handler(m_newEv).Invalidate(*this, m_newEv);
+			Track()->CreateEvent( this, m_newEv, "Create Event" );
 
 			if (prevTrackDuration != Track()->LastEventTime())
 				RecalcScrollRangeH();
@@ -1409,11 +1416,11 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 
 				// Invalidate the new event and insert it into the track.
 			Track()->DeselectAll( this );
-			Handler( newEv ).Invalidate( *this, newEv );
-			Track()->CreateEvent( this, newEv, "Create Event" );
+			Handler( m_newEv ).Invalidate( *this, m_newEv );
+			Track()->CreateEvent( this, m_newEv, "Create Event" );
 		}
 
-		dragType = DragType_None;
+		m_dragType = DragType_None;
 //		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
 		Window()->Activate();
 		break;
@@ -1437,16 +1444,18 @@ void CTrackCtlStrip::MouseMoved(
 	ulong			transit,
 	const BMessage	*dragMsg )
 {
+	CEventEditor::MouseMoved(point, transit, dragMsg);
+
 	const Event		*ev;
 	short			partCode;
 	const uint8		*newCursor;
 
 	if (transit == B_EXITED_VIEW)
 	{
-		if (dragType == DragType_DropTarget)
+		if (m_dragType == DragType_DropTarget)
 		{
-			Handler( newEv ).Invalidate( *this, newEv );
-			dragType = DragType_None;
+			Handler( m_newEv ).Invalidate( *this, m_newEv );
+			m_dragType = DragType_None;
 		}
 	
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
@@ -1463,7 +1472,7 @@ void CTrackCtlStrip::MouseMoved(
 		// If there's a drag message, and we're not already doing another kind of
 		// dragging...
 	if (		dragMsg != NULL
-		&&	(dragType == DragType_None || dragType == DragType_DropTarget))
+		&&	(m_dragType == DragType_None || m_dragType == DragType_DropTarget))
 	{
 		int32			msgType;
 
@@ -1506,16 +1515,16 @@ void CTrackCtlStrip::MouseMoved(
 					if (tk == NULL) tk = Track();
 					dragEv.SetDuration( tk->LogicalLength() );
 					
-					if (		dragType != DragType_DropTarget
-						||	memcmp( &dragEv, &newEv, sizeof newEv ) != 0)
+					if (		m_dragType != DragType_DropTarget
+						||	memcmp( &dragEv, &m_newEv, sizeof m_newEv ) != 0)
 					{
-						if (dragType == DragType_DropTarget)
-							Handler( newEv ).Invalidate( *this, newEv );
-						newEv = dragEv;
-						Handler( newEv ).Invalidate( *this, newEv );
+						if (m_dragType == DragType_DropTarget)
+							Handler( m_newEv ).Invalidate( *this, m_newEv );
+						m_newEv = dragEv;
+						Handler( m_newEv ).Invalidate( *this, m_newEv );
 
 						TrackWindow()->DisplayMouseTime( Track(), time );
-						dragType = DragType_DropTarget;
+						m_dragType = DragType_DropTarget;
 					}
 //					be_app->HideCursor();
 					return;
@@ -1562,60 +1571,60 @@ bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
 	CTrack		*tk;
 
 		// Initialize a new event.
-	newEv.SetCommand( inType );
+	m_newEv.SetCommand( inType );
 	
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
-	time = Handler( newEv ).QuantizeDragTime(
+	time = Handler( m_newEv ).QuantizeDragTime(
 		*this,
-		newEv,
+		m_newEv,
 		0,
 		BPoint( 0.0, 0.0 ),
 		point,
 		true );
 
 	TrackWindow()->DisplayMouseTime( Track(), time );
-	newEv.SetStart( time );
-	newEv.SetDuration( TrackWindow()->NewEventDuration() );
-	newEv.SetVChannel( 0 );
+	m_newEv.SetStart( time );
+	m_newEv.SetDuration( TrackWindow()->NewEventDuration() );
+	m_newEv.SetVChannel( 0 );
 
-	switch (newEv.Command()) {
+	switch (m_newEv.Command()) {
 	case EvtType_End:
-		newEv.SetDuration( 0 );
+		m_newEv.SetDuration( 0 );
 		break;
 
 	case EvtType_Sequence:
-		newEv.sequence.vPos = point.y / barHeight;
-		newEv.sequence.transposition	= doc.GetDefaultAttribute( EvAttr_Transposition );
-		newEv.sequence.sequence		= doc.GetDefaultAttribute( EvAttr_SequenceNumber );
-		newEv.sequence.flags			= 0;
-		tk = doc.FindTrack( newEv.sequence.sequence );
+		m_newEv.sequence.vPos = point.y / barHeight;
+		m_newEv.sequence.transposition	= doc.GetDefaultAttribute( EvAttr_Transposition );
+		m_newEv.sequence.sequence		= doc.GetDefaultAttribute( EvAttr_SequenceNumber );
+		m_newEv.sequence.flags			= 0;
+		tk = doc.FindTrack( m_newEv.sequence.sequence );
 		if (tk == NULL) tk = Track();
-		newEv.SetDuration( tk->LogicalLength() );
+		m_newEv.SetDuration( tk->LogicalLength() );
 		break;
 
 	case EvtType_TimeSig:
-		newEv.sigChange.vPos = point.y / barHeight;
-		newEv.sigChange.numerator		= doc.GetDefaultAttribute( EvAttr_TSigBeatCount );
-		newEv.sigChange.denominator	= doc.GetDefaultAttribute( EvAttr_TSigBeatSize );
+		m_newEv.sigChange.vPos = point.y / barHeight;
+		m_newEv.sigChange.numerator		= doc.GetDefaultAttribute( EvAttr_TSigBeatCount );
+		m_newEv.sigChange.denominator	= doc.GetDefaultAttribute( EvAttr_TSigBeatSize );
 		break;
 
 	case EvtType_Repeat:
-		newEv.repeat.vPos = point.y / barHeight;
-		newEv.repeat.repeatCount		= doc.GetDefaultAttribute( EvAttr_RepeatCount );
+		m_newEv.repeat.vPos = point.y / barHeight;
+		m_newEv.repeat.repeatCount		= doc.GetDefaultAttribute( EvAttr_RepeatCount );
 		break;
 
 	case EvtType_ProgramChange:
-		newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
-		newEv.programChange.vPos		= point.y / barHeight;
-		newEv.programChange.program	= doc.GetDefaultAttribute( EvAttr_Program );
-		newEv.SetAttribute( EvAttr_ProgramBank, doc.GetDefaultAttribute( EvAttr_ProgramBank ) );
+		m_newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
+		m_newEv.programChange.vPos		= point.y / barHeight;
+		m_newEv.programChange.program	= doc.GetDefaultAttribute( EvAttr_Program );
+		m_newEv.SetAttribute( EvAttr_ProgramBank, doc.GetDefaultAttribute( EvAttr_ProgramBank ) );
 		break;
 
 	case EvtType_Tempo:
-		newEv.SetVChannel( 0 );
-		newEv.tempo.vPos		= point.y / barHeight;
-		newEv.tempo.newTempo	= CPlayerControl::Tempo( &doc ) * 1000.0;
+		m_newEv.SetVChannel( 0 );
+		m_newEv.tempo.vPos		= point.y / barHeight;
+		m_newEv.tempo.newTempo	= CPlayerControl::Tempo( &doc ) * 1000.0;
 		break;
 
 	default:

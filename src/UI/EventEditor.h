@@ -46,306 +46,309 @@
 #include "Observer.h"
 // User Interface
 #include "BorderView.h"
-#include "Polygon.h"
 #include "StripView.h"
 #include "TrackWindow.h"
+// Standard Template Library
+#include <map>
 
 class CAbstractEventHandler;
+class CEventTrack;
+class CPolygon;
+class CTrackEditFrame;
+class EventOp;
 
-const int			Max_PB_Markers = 8;
+const unsigned int MAX_PLAYBACK_MARKERS = 8;
 
 class CEventEditor :
 	public CStripView,
 	public CObserver
 {
 	friend class		CEndEventHandler;
-	
-public:								// Constructor/Destructor
 
-									CEventEditor(
-										BLooper	&inLooper,
-										CTrackEditFrame	&inFrame,
-										BRect rect,
-										const char *name,
-										bool makeScroller = false,
-										bool makeMagButtons = false);
-					
-									CEventEditor(
-										BLooper &inLooper,
-										CTrackEditFrame &inFrame,
-										BRect rect,
-										CEventTrack *inTrack,
-										const char *name,
-										bool makeScroller = false,
-										bool makeMagButtons = false );
-	
-	virtual								~CEventEditor();
-
-protected:
-
-	CEventTrack		*track;				// Which track we're editing
-	CTrackEditFrame	&frame;
-	BView			*labelView;
-	CPolygon			*lassoPoints;
-
-		// Dragging variables
-	BPoint			clickPos;		// initial click position
-	short			clickPart;		// which part was clicked
-	short			dragType;		// What kind of drag
-	long				timeDelta,		// time-dragging offset
-					valueDelta;		// value dragging offset
-	Event			newEv;			// Newly-created event
-
-		// For drag selection -- used by subclasses
-	BPoint			anchorPos,				// For drag selection
-					cursorPos;
-
-		// For showing playback markers...					
-	int32			pbMarkers[ Max_PB_Markers ];	// Playback markers
-	int32			pbCount;						// Number of playback markers
-
-		// Individual strips can have rulers as well.
-	CScrollerTarget	*ruler;
-	
-		// Used for subclasses which are dragging events
-	EventOp			*dragOp;					// Drag operator
-
-		/** Return the address of our parent track edit window. */
-	CTrackWindow *TrackWindow() { return dynamic_cast<CTrackWindow *>(Window()); }
-
-		/** Array of handlers for each event type. */
-	CAbstractEventHandler *handlers[ EvtType_Count ];
-	
-	void Init();
-
-public:
+public:							// Constants
 
 	enum EDragTypes {
 		DragType_None = 0,
 		DragType_Select,				// Dragging selection rect
-		DragType_Lasso,				// Selection lasso
+		DragType_Lasso,					// Selection lasso
 		DragType_TimeSelect,			// Selecting time regions
 		DragType_Events,				// Dragging selected events
 		DragType_CopyEvents,			// Dragging and copying selected events
 		DragType_Create,				// Dragging a newly-created event
+		DragType_Erase,					// Dragging the eraser
 		DragType_Sculpt,				// Drag-editing of cartesian events
 		DragType_DropTarget,			// The drop target of a drag & drop operation
 		
 		DragType_Count
 	};
 
-		// ---------- Getters
+public:							// Constructor/Destructor
 
-		/**	Returns the address of the track associated with this editor. */
-	CEventTrack *Track() { return track; }
+								CEventEditor(
+									BLooper	&looper,
+									CTrackEditFrame	&frame,
+									BRect rect,
+									const char *name,
+									bool makeScroller = false,
+									bool makeMagButtons = false);
 
-		/** Returns the document associated with this editor. */
-	CMeVDoc &Document() const
-	{
-		return ((CTrackWindow *)Window())->Document();
-	}
+								CEventEditor(
+									BLooper &looper,
+									CTrackEditFrame &frame,
+									BRect rect,
+									CEventTrack *track,
+									const char *name,
+									bool makeScroller = false,
+									bool makeMagButtons = false );
 	
-		// ---------- Subclass helpers
+	virtual						~CEventEditor();
 
-	const Event *PickEvent(
-		EventMarker		&resultMarker,
-		const BPoint	&pickPt,
-		short			&resultPartCode );
+public:							// Hook Functions
 
-		// Helps subclasses in picking events
-	long PickDurationEvent( 
-			const Event		&ev,
-			int				yTop,
-			int				yBottom,
-			BPoint			pickPt,
-			short			&partCode );
+	// Construct a new event
+	virtual bool				ConstructEvent(
+									BPoint point)
+								{ return false; }
 
-		// ---------- Hooks
+	// Hook functions called by dragging code.
+	// Called each time mouse moves.
+	virtual bool				DoDrag(
+									BPoint point,
+									ulong buttons);
 
-	void MouseDown( BPoint point );
+	// Do additional audio feedback or selection for this event
+	virtual void				DoEventFeedback(
+									const Event &ev)
+								{ }
 
-		/**	Hook functions called by dragging code.
-			Called whem mouse is first pressed.
-		*/
-	virtual void StartDrag( BPoint point, ulong buttons );
+	// Draw standard grid lines representing time
+	virtual void				DrawGridLines(
+									BRect updateRect);
 
-		/**	Hook functions called by dragging code.
-			Called each time mouse moves.
-		*/
-	virtual bool DoDrag( BPoint point, ulong buttons );
-
-		/**	Hook functions called by dragging code.
-			Called when mouse is released
-		*/
-	virtual void FinishDrag( BPoint point, ulong buttons, bool commit );
+	// Hook functions called by dragging code.
+	// Called when mouse is released
+	virtual void				FinishDrag(
+									BPoint point,
+									ulong buttons,
+									bool commit);
 	
-		/** Construct a new event */
-	virtual bool ConstructEvent( BPoint point ) { return false; }
-
-		/**	Update message from another observer */
-	virtual void OnUpdate( BMessage * )
-	{
-		Invalidate();
-	}
+	// Invalidate all selected events
+	virtual void				InvalidateSelection();
 	
-		/** Do additional audio feedback or selection for this event.. */
-	virtual void DoEventFeedback( const Event &ev ) {}
+	// Invaludate all selected events -- with a displacement
+	virtual void				InvalidateSelection(
+									EventOp &inDisplacement);
 
-		/** Remove any feedback artifacts for this event. */
-	virtual void KillEventFeedback() {}
+	// Remove any feedback artifacts for this event
+	virtual void				KillEventFeedback()
+								{ }
 	
-		/**	Returns TRUE if this editor supports "shadowing"
-			of events being dragged in the inspector window. */
-	virtual bool SupportsShadowing() { return false; }
+	// Hook functions called by dragging code.
+	// Called when mouse is first pressed.
+	virtual void				StartDrag(
+									BPoint point,
+									ulong buttons);
 
-		/**	Draw standard grid lines representing time. */
-	virtual void DrawGridLines( BRect updateRect );
+	// Returns TRUE if this editor supports "shadowing"
+	// of events being dragged in the inspector window.
+	virtual bool				SupportsShadowing()
+								{ return false; }
 
-		/**	Look up a handler for a given event. */
-	virtual const CAbstractEventHandler &Handler( const Event &ev ) const
-	{
-		return *handlers[ ev.Command() ];
-	}
+public:							// Accessors
+
+	void						SetHandlerFor(
+									TEventType eventType,
+									CAbstractEventHandler *handler)
+								{ m_handlers[eventType] = handler; }
+
+	// Look up a handler for a given event
+	const CAbstractEventHandler &Handler(
+									const Event &ev)
+								{ return *HandlerFor(ev); }
+
+	CAbstractEventHandler *		HandlerFor(
+									const Event &ev) const;
+
+	// Return the pending operation for this window
+	EventOp *					DragOperation()
+								{ return m_dragOp; }
+	EventOp *					PendingOperation()
+								{ return TrackWindow()->PendingOperation(); }
+
+	// Add an individual ruler to this strip
+	void						SetRuler(
+									CScrollerTarget *ruler);
 	
-		/**	Invalidate all selected events. */
-	virtual void InvalidateSelection();
+	CTrackEditFrame	&			TrackEditFrame() const
+								{ return m_frame; }
+
+	// Returns the address of the track associated with this editor
+	CEventTrack *				Track() const
+								{ return m_track; }
+
+	// Return the address of our parent track edit window
+	CTrackWindow *				TrackWindow() const
+								{ return dynamic_cast<CTrackWindow *>(Window()); }
+
+	// Returns the document associated with this editor
+	CMeVDoc &					Document() const
+								{ return TrackWindow()->Document(); }
+
+public:							// Operations
+
+	// Helps subclasses in picking events
+	long						PickDurationEvent( 
+									const Event &ev,
+									int yTop,
+									int yBottom,
+									BPoint pickPt,
+									short &partCode);
+	const Event *				PickEvent(
+									EventMarker &resultMarker,
+									const BPoint &pickPt,
+									short &resultPartCode);
+
+	// Return the time of the nearest grid line to the given time
+	int32						SnapToGrid(
+									int32 inTime,
+									bool inInitial = false);
+
+	// Conversion between time and coords
+	virtual double				TimeToViewCoords(
+									long timeVal) const;
+	virtual long				ViewCoordsToTime(
+									double relPos) const;
+
+protected:						// Internal Operations
+
+	// Add a point to the current lasso operation
+	void						AddLassoPoint(
+									BPoint &point);
+
+	// Draw the echo of a created event being dragged
+	void						DrawCreateEcho(
+									int32 startTime,
+									int32 stopTime);
+
+	// Draw the echo of a bunch of events being dragged
+	void						DrawEchoEvents(
+									int32 startTime,
+									int32 stopTime);
+
+	// Draw the Lasso poly
+	void						DrawLasso();
+
+	// Draw markers showing playback position
+	void						DrawPlaybackMarkers(
+									int32 *inArray,
+									int32 inCount,
+									BRect inUpdateRect,
+									bool inErase);
 	
-		/**	Invaludate all selected events -- with a displacement */
-	virtual void InvalidateSelection( EventOp &inDisplacement );
+	// Draw selection rectangle
+	void						DrawSelectRect();
+
+	// Select all events within the current selection rectangle
+	void						DoRectangleSelection();
+
+	// Select all events within the current lasso region
+	void						DoLassoSelection();
+
+	// Done with lassoing...
+	void						FinishLasso();
+
+	// Return TRUE if there's a lasso in progress...
+	bool						IsLassoInProgress()
+								{ return m_lasso != NULL; }
+
+	// Test for a rect inside the polygon
+	bool						IsRectInLasso(
+									const BRect &inExtent,
+									bool inInclusive) const;
+
+	// Get the current lasso frame
+	BRect						LassoFrame() const;
+
+	// Adjust the scroll range of this frame to match track
+	void						RecalcScrollRangeH()
+								{ m_frame.RecalcScrollRange(); }
 	
-		/**	Return the pending operation for this window. */
-	EventOp *PendingOperation() { return TrackWindow()->PendingOperation(); }
+	// Update the markers showing playback position
+	void						UpdatePBMarkers();
 
-		/** Draw the echo of a created event being dragged */
-	void DrawCreateEcho( int32 startTime, int32 stopTime );
+public:							// CStripView Implementation
 
-		/** Draw the echo of a bunch of events being dragged */
-	void DrawEchoEvents( int32 startTime, int32 stopTime );
+	virtual void				MouseDown(
+									BPoint point);
 
-		/**	Return the current grid-snap setting in time units. */
-// long TimeGridSize() { return Track()->TimeGridSize(); }
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
 
-		/**	Return the time of the nearest grid line to the given time. */
-	int32 SnapToGrid( int32 inTime, bool inInitial = false );
+	virtual void				MouseUp(
+									BPoint point);
 
-		/**	Convert a unit of time to horizontal pixel coords. */
-	virtual double TimeToViewCoords( long timeVal )
-	{
-		return frame.TimeToViewCoords( timeVal, track->ClockType() );
-	}
+	virtual void				SetScrollValue(
+									float position,
+									orientation orientation);
 
-		/**	Convert a horizontal pixel coordinate to unit of time. */
-	virtual long ViewCoordsToTime( double relPos )
-	{
-		return frame.ViewCoordsToTime( relPos, track->ClockType() );
-	}
+public:							// CObserver Implementation
+
+	// Update message from another observer
+	virtual void				OnUpdate(
+									BMessage *message)
+								{ Invalidate(); }
+
+protected:						// Instance Data
+
+	// Which track we're editing
+	CEventTrack *				m_track;
+
+	CTrackEditFrame	&			m_frame;
+
+	BView *						m_labelView;
+
+	// Individual strips can have rulers as well
+	CScrollerTarget *			m_ruler;
 	
-		/**	Adjust the scroll range of this frame to match track. */
-	void RecalcScrollRangeH()
-	{
-		frame.RecalcScrollRange();
-	}
+	// Array of handlers for each event type
+	typedef map<TEventType, CAbstractEventHandler *> handler_map;
+	handler_map					m_handlers;
+
+	CPolygon *					m_lasso;
+
+	// initial click position
+	BPoint						m_clickPos;
 	
-		// ---------- Setters
+	// which part was clicked
+	short						m_clickPart;
 
-	void SetScrollValue( float inScrollValue, orientation inOrient )
-	{
-		CStripView::SetScrollValue( inScrollValue, inOrient );
-		if (ruler)
-			ruler->ScrollTo( scrollValue.x, 0.0 );
-	}
+	// What kind of drag
+	short						m_dragType;
 
-		// ---------- Rulers and markers
+	// time-dragging offset
+	long						m_timeDelta;
+	// value dragging offset
+	long						m_valueDelta;
 
-		/**	Add an individual ruler to this strip. */
-	void SetRuler( CScrollerTarget *inRuler );
-	
-		/** Update the markers showing playback position. */
-	void UpdatePBMarkers();
+	// Newly-created event
+	Event						m_newEv;
 
-		/** Draw markers showing playback position */
-	void DrawPBMarkers( int32 *inArray, int32 inCount, BRect inUpdateRect, bool inErase );
-	
-		// ---------- Selection rectangle operations
+	// For drag selection
+	BPoint						m_anchorPos;
+	BPoint						m_cursorPos;
 
-		/** Draw selection rectangle */
-	void DrawSelectRect();
+	// Playback markers
+	int32						m_pbMarkers[MAX_PLAYBACK_MARKERS];
+	// Number of playback markers
+	int32						m_pbCount;
 
-		/** Select all events within the current selection rectangle */
-	void DoRectangleSelection();
+	// Drag operator
+	EventOp *					m_dragOp;
 
-		// ---------- Lasso operations
-		
-		/**	Add a point to the current lasso operation. */
-	void AddLassoPoint( BPoint &inPoint );
-	
-		/**	Return TRUE if there's a lasso in progress... */
-	bool IsLassoInProgress() { return lassoPoints != NULL; }
-
-		/**	Get the current lasso frame */
-	BRect LassoFrame() { return lassoPoints->Frame(); }
-	
-		/**	Draw the Lasso poly. */
-	void DrawLasso();
-
-		/**	Test for a rect inside the polygon */
-	bool IsRectInLasso( const BRect &inExtent, bool inInclusive )
-	{
-		if (lassoPoints == NULL) return false;
-		else return lassoPoints->RectInPoly( inExtent, inInclusive );
-	}
-	
-		/**	Done with lassoing... */
-	void FinishLasso()
-	{
-		DrawLasso();
-		delete lassoPoints;
-		lassoPoints = NULL;
-	}
-
-		/** Select all events within the current lasso region */
-	void DoLassoSelection();
-};
-
-// ---------------------------------------------------------------------------
-// Label views are used by editor strips
-
-class CLabelView : public CBorderView {
-	BFont		labelFont;
-
-public:
-	CLabelView(	BRect			rect,
-				const char		*name,
-				const rgb_color	&inFill,
-				const rgb_color	&inBorder,
-				ulong			resizeFlags,
-				ulong			flags )
-		:	CBorderView( rect, name, resizeFlags, flags, &inFill),
-			labelFont( be_bold_font )
-	{
-		labelFont.SetRotation( -90.0 );
-		SetFont( &labelFont );
-// 	SetFontName( "Arial MT Bold" );
-	}
-
-	CLabelView(	BRect			rect,
-				const char		*name,
-				ulong			resizeFlags,
-				ulong			flags )
-		:	CBorderView( rect, name, resizeFlags, flags ),
-			labelFont( be_bold_font )
-	{
-		labelFont.SetRotation( -90.0 );
-		SetFont( &labelFont );
-// 	SetFontName( "Arial MT Bold" );
-	}
-
-	void Draw( BRect updateRect );
-
-	const Event *PickEvent(
-				EventMarker		&resultMarker,
-				const BPoint	&pickPt,
-				short			&resultPartCode );
+	// is currently dragging
+	bool						m_dragging;
 };
 
 // ---------------------------------------------------------------------------

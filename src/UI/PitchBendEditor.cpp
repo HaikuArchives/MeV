@@ -3,11 +3,17 @@
  * ===================================================================== */
 
 #include "PitchBendEditor.h"
-#include "VChannel.h"
+
+// Application
 #include "MeVApp.h"
 #include "MeVDoc.h"
+// Engine
+#include "VChannel.h"
 #include "PlayerControl.h"
 #include "StdEventOps.h"
+// StripView
+#include "StripLabelView.h"
+// Support
 #include "MathUtils.h"
 #include "ResourceUtils.h"
 
@@ -15,6 +21,7 @@
 #include <float.h>
 // Support Kit
 #include <Beep.h>
+#include <Debug.h>
 
 enum E_PitchBendParts {
 	Part_Whole = 0,				// the whole event, when start and stop are superimposed
@@ -431,7 +438,7 @@ CPitchBendEditor::CPitchBendEditor(
 	BRect			rect )
 	:	CContinuousValueEditor(	inLooper, inFrame, rect, "Pitch Bend Editor" )
 {
-	handlers[ EvtType_PitchBend ]	= &pitchBendHandler;
+	SetHandlerFor(EvtType_PitchBend, &pitchBendHandler);
 
 	minValue		= 0 - 0x2000;
 	maxValue 	= 0x3fff - 0x2000;
@@ -442,20 +449,12 @@ CPitchBendEditor::CPitchBendEditor(
 	CalcZoom();
 	SetZoomTarget( (CObserver *)this );
 
-		// Make the label view on the left-hand side
-	labelView = new CLabelView(	BRect(	- 1.0,
-									- 1.0,
-									20.0,
-									rect.Height() + 1 ),
-								"Pitch Bend",
-								B_FOLLOW_TOP_BOTTOM,
-								B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
-								
-	ResizeBy( -21.0, 0.0 );
-	MoveBy( 21.0, 0.0 );
-	TopView()->AddChild( labelView );
+	// Make the label view on the left-hand side
+	SetLabelView(new CStripLabelView(BRect(-1.0, -1.0, 20.0, rect.Height() + 1),
+									 "Pitch Bend", B_FOLLOW_TOP_BOTTOM,
+									 B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 
-	SetFlags( Flags() | B_PULSE_NEEDED );
+	SetFlags(Flags() | B_PULSE_NEEDED);
 }
 
 // ---------------------------------------------------------------------------
@@ -623,34 +622,36 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 	int32		time;
 	CMeVDoc		&doc = Document();
 
-		// Initialize a new event.
-	newEv.SetCommand( TrackWindow()->GetNewEventType( EvtType_PitchBend ) );
-	
-		// Compute the difference between the original
-		// time and the new time we're dragging the events to.
-	time = Handler( newEv ).QuantizeDragTime(
-		*this,
-		newEv,
-		0,
-		BPoint( 0.0, 0.0 ),
-		point,
-		true );
-	TrackWindow()->DisplayMouseTime( Track(), time );
+	// Initialize a new event
+	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_PitchBend));
 
-	newEv.SetStart( time );
-	newEv.SetDuration( 0 );
-	newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
+	// Compute the difference between the original
+	// time and the new time we're dragging the events to.
+	time = Handler(m_newEv).QuantizeDragTime(*this, m_newEv, 0,
+											 BPoint(0.0, 0.0), point,
+											 true);
+	TrackWindow()->DisplayMouseTime(Track(), time);
 
-	switch (newEv.Command()) {
-	case EvtType_PitchBend:
-		newEv.pitchBend.targetBend = newEv.pitchBend.startBend = ViewCoordsToValue( point.y, true ) + 0x2000;
-		newEv.pitchBend.updatePeriod =  doc.GetDefaultAttribute( EvAttr_UpdatePeriod );
-		break;
+	m_newEv.SetStart(time);
+	m_newEv.SetDuration(0);
+	m_newEv.SetVChannel(doc.GetDefaultAttribute(EvAttr_Channel));
 
-	default:
-		beep();
-		return false;
+	switch (m_newEv.Command())
+	{
+		case EvtType_PitchBend:
+		{
+			m_newEv.pitchBend.targetBend = m_newEv.pitchBend.startBend = ViewCoordsToValue(point.y, true) + 0x2000;
+			m_newEv.pitchBend.updatePeriod =  doc.GetDefaultAttribute(EvAttr_UpdatePeriod);
+			break;
+		}
+		default:
+		{
+			beep();
+			return false;
+		}
 	}
 
 	return true;
 }
+
+// END - PitchBendEditor.cpp

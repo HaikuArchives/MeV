@@ -46,19 +46,16 @@ CLinearEditor::CLinearEditor(
 		m_verticalZoom(1),
 		m_whiteKeyStep(8)
 {
-	handlers[EvtType_Note] = &linearNoteHandler;
-	handlers[EvtType_End] = &gEndEventHandler;
+	SetHandlerFor(EvtType_Note, &linearNoteHandler);
+	SetHandlerFor(EvtType_End, &gEndEventHandler);
 
 	CalcZoom();
 	SetZoomTarget( (CObserver *)this );
 
 	// Make the label view on the left-hand side
-	labelView = new CPianoKeyboardView(BRect(0.0, 0.0, 20.0, rect.Height()),
-									   this, B_FOLLOW_TOP_BOTTOM,
-									   B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE);
-	ResizeBy(-21.0, 0.0);
-	MoveBy(21.0, 0.0);
-	TopView()->AddChild(labelView);
+	SetLabelView(new CPianoKeyboardView(BRect(0.0, 0.0, 20.0, rect.Height()),
+										this, B_FOLLOW_TOP_BOTTOM,
+										B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 
 	SetFlags(Flags() | B_PULSE_NEEDED);
 }
@@ -83,31 +80,32 @@ CLinearEditor::ConstructEvent(
 	int32 time;
 	CMeVDoc &doc = Document();
 
-	// Initialize a new event.
-	newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_Note));
+	// Initialize a new event
+	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_Note));
 			
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
-	time = Handler(newEv).QuantizeDragTime(*this, newEv, 0,
-										   BPoint(0.0, 0.0), point, true);
+	time = HandlerFor(m_newEv)->QuantizeDragTime(*this, m_newEv, 0,
+												 BPoint(0.0, 0.0), point,
+												 true);
 	TrackWindow()->DisplayMouseTime(Track(), time);
 
-	newEv.SetStart(time);
-	newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
-	newEv.SetVChannel(doc.GetDefaultAttribute(EvAttr_Channel));
+	m_newEv.SetStart(time);
+	m_newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
+	m_newEv.SetVChannel(doc.GetDefaultAttribute(EvAttr_Channel));
 
-	switch (newEv.Command())
+	switch (m_newEv.Command())
 	{
 		case EvtType_End:
 		{
-			newEv.SetDuration(0);
+			m_newEv.SetDuration(0);
 			break;
 		}
 		case EvtType_Note:
 		{
-			newEv.note.pitch = ViewCoordsToPitch(point.y, true);
-			newEv.note.attackVelocity = doc.GetDefaultAttribute(EvAttr_AttackVelocity);
-			newEv.note.releaseVelocity = doc.GetDefaultAttribute(EvAttr_ReleaseVelocity);
+			m_newEv.note.pitch = ViewCoordsToPitch(point.y, true);
+			m_newEv.note.attackVelocity = doc.GetDefaultAttribute(EvAttr_AttackVelocity);
+			m_newEv.note.releaseVelocity = doc.GetDefaultAttribute(EvAttr_ReleaseVelocity);
 			break;
 		}
 		default:
@@ -130,7 +128,7 @@ CLinearEditor::DoEventFeedback(
 			
 	// If it has a pitch, then show that pitch
 	if (event.HasAttribute(EvAttr_Pitch))
-		((CPianoKeyboardView *)labelView)->SetSelectedKey(event.note.pitch);
+		((CPianoKeyboardView *)LabelView())->SetSelectedKey(event.note.pitch);
 }
 
 void
@@ -194,7 +192,7 @@ CLinearEditor::Draw(
 			continue;
 
 		if (Track()->IsChannelLocked(*ev))
-			Handler(*ev).Draw(*this, *ev, false);
+			HandlerFor(*ev)->Draw(*this, *ev, false);
 	}
 
 	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
@@ -207,18 +205,18 @@ CLinearEditor::Draw(
 		 	continue;
 
 		if (!Track()->IsChannelLocked(*ev))
-			Handler(*ev).Draw(*this, *ev, false);
+			HandlerFor(*ev)->Draw(*this, *ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();
 	if (echoOp == NULL)
-		echoOp = dragOp;
+		echoOp = DragOperation();
 
 	if (!IsSelectionVisible())
 	{
 		// Do nothing...
 	}
-	else if (dragType == DragType_Create)
+	else if (m_dragType == DragType_Create)
 	{
 		DrawCreateEcho(startTime, stopTime);
 	}
@@ -226,22 +224,22 @@ CLinearEditor::Draw(
 	{
 		DrawEchoEvents(startTime, stopTime);
 	}
-	else if (dragType == DragType_Select)
+	else if (m_dragType == DragType_Select)
 	{
 		DrawSelectRect();
 	}
-	else if (dragType == DragType_Lasso)
+	else if (m_dragType == DragType_Lasso)
 	{
 		DrawLasso();
 	}
 
-	DrawPBMarkers(pbMarkers, pbCount, updateRect, false);
+	DrawPlaybackMarkers(m_pbMarkers, m_pbCount, updateRect, false);
 }
 
 void
 CLinearEditor::KillEventFeedback()
 {
-	((CPianoKeyboardView *)labelView)->SetSelectedKey(-1);
+	((CPianoKeyboardView *)LabelView())->SetSelectedKey(-1);
 }
 
 void
@@ -260,7 +258,7 @@ CLinearEditor::MessageReceived(
 				Hide();
 				SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
 							   (sValue * m_whiteKeyStep) - (r.Height()) / 2);
-				labelView->Invalidate();
+				LabelView()->Invalidate();
 				Show();
 			}
 			break;
@@ -276,7 +274,7 @@ CLinearEditor::MessageReceived(
 				Hide();
 				SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
 							   (sValue * m_whiteKeyStep) - (r.Height()) / 2);
-				labelView->Invalidate();
+				LabelView()->Invalidate();
 				Show();
 			}
 			break;
@@ -301,6 +299,8 @@ CLinearEditor::MouseMoved(
 	uint32 transit,
 	const BMessage *message)
 {
+	CEventEditor::MouseMoved(point, transit, message);
+
 	if (transit == B_EXITED_VIEW)
 	{
 		TrackWindow()->DisplayMouseTime(NULL, 0);
@@ -331,7 +331,8 @@ CLinearEditor::OnUpdate(
 
 	if (message->FindBool("SelChange", 0, &flag) == B_OK)
 	{
-		if (!IsSelectionVisible()) return;
+		if (!IsSelectionVisible())
+			return;
 		selChange = flag;
 	}
 
@@ -347,14 +348,20 @@ CLinearEditor::OnUpdate(
 
 	if (message->FindInt32("MinTime", 0, &minTime) == B_OK)
 	{
-		r.left = TimeToViewCoords(minTime) - 1.0;
+		if (minTime == LONG_MIN)
+			r.left = Bounds().left;
+		else
+			r.left = TimeToViewCoords(minTime) - 1.0;
 	}
 	else
 		minTime = 0;
 
 	if (message->FindInt32("MaxTime", 0, &maxTime) == B_OK)
 	{
-		r.right = TimeToViewCoords(maxTime) + 1.0;
+		if (maxTime == LONG_MAX)
+			r.right = Bounds().right;
+		else
+			r.right = TimeToViewCoords(maxTime) + 1.0;
 	}
 	else
 		maxTime = LONG_MAX;
@@ -382,7 +389,7 @@ CLinearEditor::OnUpdate(
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
 			if (ev->HasProperty(Event::Prop_Channel) && ev->GetVChannel() == channel)
-				Handler(*ev).Invalidate(*this, *ev);
+				HandlerFor(*ev)->Invalidate(*this, *ev);
 		}
 	}
 	else if (selChange)
@@ -395,7 +402,7 @@ CLinearEditor::OnUpdate(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			Handler(*ev).Invalidate(*this, *ev);
+			HandlerFor(*ev)->Invalidate(*this, *ev);
 		}
 	}
 	else
@@ -419,7 +426,7 @@ CLinearEditor::SetScrollValue(
 	orientation inOrient)
 {
 	CStripView::SetScrollValue(inScrollValue, inOrient);
-	labelView->ScrollTo(0.0, scrollValue.y);
+	LabelView()->ScrollTo(0.0, scrollValue.y);
 }
 
 // ---------------------------------------------------------------------------
@@ -686,7 +693,7 @@ CPianoKeyboardView::CPianoKeyboardView(
 	CLinearEditor *editor,
 	uint32 resizeFlags,
 	uint32 flags)
-	:	BView(frame, "PianoKeyboardView", resizeFlags, flags),
+	:	CStripLabelView(frame, "PianoKeyboardView", resizeFlags, flags),
 		m_editor(editor),
 		m_selectedKey(-1)
 {
@@ -745,14 +752,15 @@ CPianoKeyboardView::Draw(
 
 	// Draw horizontal grid lines.
 	// REM: This needs to be faster.
-	for (	yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
-			yPos >= updateRect.top;
-			yPos -= wh, lineCt++, key++ )
+	for (yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
+		 yPos >= updateRect.top;
+		 yPos -= wh, lineCt++, key++)
 	{
-		if (lineCt >= 7) lineCt = 0;
+		if (lineCt >= 7)
+			lineCt = 0;
 
 		// Fill solid rectangle with gridline
-		if (yPos <= updateRect.bottom + wh + bl)
+		if (yPos <= (updateRect.bottom + wh + bl))
 		{
 			rect = BRect(updateRect.left, yPos, updateRect.right, yPos);
 			StrokeLine(rect.LeftTop(), rect.RightTop(), B_SOLID_LOW);
@@ -773,20 +781,22 @@ CPianoKeyboardView::Draw(
 	// Draw black keys
 	// REM: This needs to be faster.
 	SetLowColor(148, 148, 255, 255);
-	for (	yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
-			yPos >= updateRect.top;
-			yPos -= wh, lineCt++, key++ )
+	for (yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
+		 yPos >= updateRect.top;
+		 yPos -= wh, lineCt++, key++ )
 	{
-		if (lineCt >= 7) lineCt = 0;
-
-		if (black[ lineCt ]) key++;
+		if (lineCt >= 7)
+			lineCt = 0;
+		if (black[lineCt])
+			key++;
 
 		// Fill solid rectangle with gridline
-		if (yPos <= updateRect.bottom + wh + bl)
+		if (yPos <= (updateRect.bottom + wh + bl))
 		{
-			if (black[ lineCt ])
+			if (black[lineCt])
 			{
-				rect = BRect(r.left, yPos - wh - bl, r.left + 11, yPos - wh + bl);
+				rect = BRect(r.left, yPos - wh - bl,
+							 r.left + 11, yPos - wh + bl);
 				bRegion.Include(rect);
 
 				if (m_selectedKey == key)
