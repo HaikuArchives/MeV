@@ -3,6 +3,8 @@
  * ===================================================================== */
 
 #include "Spinner.h"
+// User Interface
+#include "StdBevels.h"
 
 // Standard Template Library
 #include <algorithm>
@@ -31,83 +33,63 @@ void CSpinner::AttachedToWindow()
 //	if (Parent()) SetViewColor( Parent()->ViewColor() );
 }
 
-void CSpinner::Draw( BRect inInvalRect )
+void
+CSpinner::Draw(
+	BRect updateRect)
 {
-	BRect	r( Bounds() );
-	float	yMid = floor((r.top + r.bottom + 1)/2),
-			xMid = floor((r.left + r.right + 1)/2);
-	bool		dim = !IsEnabled();
-	
-	if (dim)				SetHighColor( 160, 160, 160 );
-	else					SetHighColor( 110, 110, 110 );
-	
-	FillRect( BRect( r.left + 1, r.top, r.right - 1, r.top ) );
-	FillRect( BRect( r.left + 1, r.bottom, r.right - 1, r.bottom ) );
-	FillRect( BRect( r.left + 1, yMid, r.right - 1, yMid ) );
-	FillRect( BRect( r.left, r.top + 1, r.left, r.bottom - 1 ) );
-	FillRect( BRect( r.right, r.top + 1, r.right, r.bottom - 1 ) );
+	BRect upperRect(Bounds());
+	upperRect.bottom = floor((Bounds().Height() + 1.0) / 2.0);
+	BRect lowerRect(Bounds());
+	lowerRect.top = upperRect.bottom + 1.0;
+	BRect arrowRect;
+	rgb_color arrowColor;
 
-	for (int i = 0; i < 2; i++)
+	if (!IsEnabled())
 	{
-		BRect	r( Bounds() );
-		bool		highlight;
-		
-		if (i == 0)
-		{
-			r.bottom = yMid;
-			highlight = (lit == Inc_Lit);
-		}
-		else
-		{
-			r.top = yMid;
-			highlight = (lit == Dec_Lit);
-		}
-
-		r.InsetBy( 1.0, 1.0 );
-
-		if (dim)				SetHighColor( 240, 240, 240 );
-		else if (!highlight)	SetHighColor( 255, 255, 255 );
-		else					SetHighColor( 190, 190, 190 );
-
-		FillRect( BRect( r.left, r.top, r.right, r.top ) );
-		FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
-	
-		if (dim)				SetHighColor( 210, 210, 210 );
-		else if (highlight)	SetHighColor( 230, 230, 230 );
-		else					SetHighColor( 190, 190, 190 );
-
-		FillRect( BRect( r.left, r.bottom, r.right, r.bottom ) );
-		FillRect( BRect( r.right, r.top, r.right, r.bottom ) );
-
-		if (highlight)
-		{
-			r.InsetBy( 1.0, 1.0 );
-			SetHighColor( 200, 200, 200 );
-			FillRect( r );
-		}
-		
-		float	y = floor( (r.top + r.bottom) / 2 );
-		
-		if (dim)		SetHighColor( 160, 160, 160 );
-		else			SetHighColor( 148, 148, 148 );
-		for (int j = 1; j >= 0; j--)
-		{
-			if (i == 0)
-			{
-				FillTriangle(	BPoint( xMid - 2.0 + j, y + 2.0 + j ),
-								BPoint( xMid + j, y - 3.0 + j ),
-								BPoint( xMid + 2.0 + j, y + 2.0 + j ) );
-			}
-			else
-			{
-				FillTriangle(	BPoint( xMid - 2.0 + j, y - 2.0 + j ),
-								BPoint( xMid + j, y + 3.0 + j ),
-								BPoint( xMid + 2.0 + j, y - 2.0 + j ) );
-			}
-			if (dim)		SetHighColor( 127, 127, 127 );
-			else			SetHighColor( 0, 0, 0 );
-		}
+		StdBevels::DrawBorderBevel(this, upperRect, StdBevels::DIMMED_BEVEL);
+		StdBevels::DrawBorderBevel(this, lowerRect, StdBevels::DIMMED_BEVEL);
+		arrowColor = tint_color(ui_color(B_PANEL_BACKGROUND_COLOR),
+								B_LIGHTEN_1_TINT);
 	}
+	else
+	{
+		StdBevels::DrawBorderBevel(this, upperRect, (lit == Inc_Lit) ?
+													StdBevels::DEPRESSED_BEVEL :
+													StdBevels::NORMAL_BEVEL);
+		StdBevels::DrawBorderBevel(this, lowerRect, (lit == Dec_Lit) ?
+													StdBevels::DEPRESSED_BEVEL :
+													StdBevels::NORMAL_BEVEL);
+		arrowColor = tint_color(ui_color(B_PANEL_BACKGROUND_COLOR),
+								B_DARKEN_3_TINT);
+	}
+
+	// draw inc arrow
+	arrowRect = upperRect;
+	arrowRect.InsetBy(arrowRect.Width() / 2.0,
+					  arrowRect.Height() / 2.0 - 1.0);
+	BeginLineArray(3);
+	AddLine(arrowRect.LeftTop(), arrowRect.RightTop(), arrowColor);
+	arrowRect.InsetBy(-1.0, 0.0);
+	arrowRect.top += 1.0;
+	AddLine(arrowRect.LeftTop(), arrowRect.RightTop(), arrowColor);
+	arrowRect.InsetBy(-1.0, 0.0);
+	arrowRect.top += 1.0;
+	AddLine(arrowRect.LeftTop(), arrowRect.RightTop(), arrowColor);
+	EndLineArray();
+
+	// draw inc arrow
+	arrowRect = lowerRect;
+	arrowRect.InsetBy(arrowRect.Width() / 2.0 - 2.0,
+					  arrowRect.Height() / 2.0 - 1.0);
+	BeginLineArray(3);
+	AddLine(arrowRect.LeftTop(), arrowRect.RightTop(), arrowColor);
+	arrowRect.InsetBy(1.0, 0.0);
+	arrowRect.top += 1.0;
+	AddLine(arrowRect.LeftTop(), arrowRect.RightTop(), arrowColor);
+	arrowRect.InsetBy(1.0, 0.0);
+	arrowRect.top += 1.0;
+	AddLine(arrowRect.LeftTop(), arrowRect.RightTop(), arrowColor);
+	EndLineArray();
 }
 
 void CSpinner::SetValue( int32 inValue )

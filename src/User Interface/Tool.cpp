@@ -120,7 +120,7 @@ CTool::SetValue(
 
 	if (value != m_value)
 	{
-		if (m_radioMode && (m_value == B_CONTROL_ON))
+		if (m_radioMode && m_forceSelection && (m_value == B_CONTROL_ON))
 		{
 			return;
 		}

@@ -30,6 +30,9 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/30/2000	cell
+ *		Removed internal CImageAndTextMenuItem class, now using the new
+ *		CIconMenuItem class for the same thing
  * ---------------------------------------------------------------------
  * To Do:
  *

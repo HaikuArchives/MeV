@@ -17,6 +17,7 @@
 #include "PitchBendEditor.h"
 // User Interface
 #include "BitmapTool.h"
+#include "IconMenuItem.h"
 #include "MenuTool.h"
 #include "ToolBar.h"
 
@@ -35,59 +36,6 @@
 #define D_ALLOC(x) //PRINT (x)			// Constructor/Destructor
 #define D_MESSAGE(x) //PRINT (x)		// MessageReceived()
 #define D_INTERNAL(x) //PRINT (x)		// Internal Operations
-
-
-class CImageAndTextMenuItem : 
-	public BMenuItem
-{
-	
-	const BBitmap			*bitmap;
-	BPoint				imageSize;
-	
-public:
-
-	CImageAndTextMenuItem(	const char	*inLabel,
-							const BBitmap	 *inBitmap,
-							BPoint		inSize,
-							BMessage		*inMessage,
-							char			inShortcutKey = 0,
-							uint32		inModifiers = 0)
-		: BMenuItem( inLabel, inMessage, inShortcutKey, inModifiers )
-	{
-		bitmap = inBitmap;
-		imageSize = inSize;
-	}
-
-	void DrawContent()
-	{
-		BRect		r( Frame() );
-		BFont		font;
-		font_height	fh;
-		
-		Menu()->GetFont( &font );
-		font.GetHeight( &fh );
-
-		Menu()->MovePenTo( r.left + imageSize.x + 4, (r.bottom + r.top - fh.descent + fh.ascent)/2 );
-		Menu()->SetDrawingMode( B_OP_OVER );
-		Menu()->DrawString( Label() );
-		
-		if (bitmap != NULL)
-		{
-			BRect	br( bitmap->Bounds() );
-
-			Menu()->DrawBitmapAsync(	bitmap,
-									BPoint(	r.left + (imageSize.x - br.Width())/2,
-											(r.top + r.bottom - br.Height())/2 ) );
-		}
-	}
-
-	void GetContentSize( float *width, float *height )
-	{
-		BMenuItem::GetContentSize( width, height );
-		*width += imageSize.x + 4;
-		*height = MAX( *height, imageSize.y );
-	}
-};
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -505,43 +453,36 @@ CLinearWindow::AddToolBar()
 	D_INTERNAL(("CLinearWindow::AddToolBar()\n"));
 
 	// make the pop up menu for 'Create' tool
-	BPoint size(20.0, 16.0);
 	BPopUpMenu *createMenu = new BPopUpMenu("", false, false);
+	createMenu->SetFont(be_plain_font);
 	BMessage *message = new BMessage(NEW_EVENT_TYPE_CHANGED);
 	message->AddInt32("type", EvtType_Count);
-	createMenu->AddItem(new CImageAndTextMenuItem("Default",
-												  ResourceUtils::LoadImage("PencilTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("Default", message,
+										  ResourceUtils::LoadImage("PencilTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_ProgramChange);
-	createMenu->AddItem(new CImageAndTextMenuItem("Program Change",
-												  ResourceUtils::LoadImage("ProgramTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("Program Change", message,
+										  ResourceUtils::LoadImage("ProgramTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_Sequence);
-	createMenu->AddItem(new CImageAndTextMenuItem("Nested Track",
-												  ResourceUtils::LoadImage("TrackTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("Nested Track", message,
+										  ResourceUtils::LoadImage("TrackTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_Repeat);
-	createMenu->AddItem(new CImageAndTextMenuItem("Repeat",
-												  ResourceUtils::LoadImage("RepeatTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("Repeat", message,
+										  ResourceUtils::LoadImage("RepeatTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_TimeSig);
-	createMenu->AddItem(new CImageAndTextMenuItem("Time Signature",
-												  ResourceUtils::LoadImage("TimeSigTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("Time Signature", message,
+										  ResourceUtils::LoadImage("TimeSigTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_SysEx);
-	createMenu->AddItem(new CImageAndTextMenuItem("System Exclusive",
-												  ResourceUtils::LoadImage("SysExTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("System Exclusive", message,
+										  ResourceUtils::LoadImage("SysExTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_End);
-	createMenu->AddItem(new CImageAndTextMenuItem("Track End",
-												  ResourceUtils::LoadImage("EndTool"),
-												  size, message));
+	createMenu->AddItem(new CIconMenuItem("Track End", message,
+										  ResourceUtils::LoadImage("EndTool")));
 	createMenu->SetTargetForItems((CDocWindow *)this);
 
 
@@ -572,7 +513,7 @@ CLinearWindow::AddToolBar()
 											ResourceUtils::LoadImage("TextTool"),
 											new BMessage(TOOL_TEXT)));
 	tool->SetEnabled(false);
-	m_toolBar->SetRadioMode(2, 4);
+	m_toolBar->MakeRadioGroup("Select", "Text", true);
 
 	AddChild(m_toolBar);
 }

@@ -76,7 +76,7 @@ public:
 	~CTextDisplay() { if (text) free( text ); }
 
 		/*	Change the text being displayed. */
-	void SetText( char *inText, bool inRefresh = true )
+	void SetText(const char *inText, bool inRefresh = true )
 	{
 		if (text) free( text );
 		text = strdup( inText );

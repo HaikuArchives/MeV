@@ -30,9 +30,13 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/30/2000	cell
+ *		Updated the drawing routines to make use of StdBevels & the
+ *		LineArray API
  * ---------------------------------------------------------------------
  * To Do:
- *
+ *	- update mouse handling to use SetMouseEventMask() etc
+ *	- Implementation clean-up
  * ===================================================================== */
 
 #ifndef __C_Spinner_H__
@@ -41,33 +45,64 @@
 // Interface Kit
 #include <Control.h>
 
-class CSpinner : public BControl {
-	int32			minVal,
-					maxVal;
-	uint8			lit;
-	BPoint			mousePos;
+class CSpinner :
+	public BControl
+{
 
-protected:
+public:							// Constants
 
 	enum {
-		Inc_Lit = 1,
-		Dec_Lit = 2
+								Inc_Lit = 1,
+								Dec_Lit = 2
 	};
 
-	void MouseDown( BPoint point );
-	static long drag_entry( void *arg );
-	long Drag();
-	void UpdateValue( int32 inValue );
-	void Draw( BRect inInvalRect );
-	void AttachedToWindow();
+public:							// Constructor/Destructor
 
-public:
-	CSpinner( BRect frame, const char *name, BMessage *msg,
-		uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP,
-		uint32 flags = B_WILL_DRAW );
-	
-	void SetRange( int32 inMIN, int32 inMAX );
-	void SetValue( int32 inValue );
+								CSpinner(
+									BRect frame,
+									const char *name,
+									BMessage *message,
+									uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP,
+									uint32 flags = B_WILL_DRAW);
+
+public:							// Operations
+
+	void						SetRange(
+									int32 minValue,
+									int32 maxValue);
+
+public:							// BControl Implementation
+
+	virtual void				AttachedToWindow();
+	virtual void				Draw(
+									BRect updateRect);
+	virtual void				MouseDown(
+									BPoint point);
+
+	void						SetValue(
+									int32 value);
+
+private:						// Instance Data
+
+	int32						minVal;
+
+	int32						maxVal;
+
+	uint8						lit;
+
+	BPoint						mousePos;
+
+protected:						// Internal Operations
+
+	void						UpdateValue(
+									int32 value);
+
+protected:						// Thread Management
+
+	static long					drag_entry(
+									void *arg);
+
+	long						Drag();
 };
 
 #endif /* __C_Spinner_H__ */

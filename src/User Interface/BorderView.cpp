@@ -14,7 +14,7 @@ CBorderView::CBorderView(
 	uint32 flags,
 	const rgb_color *color,
 	border_style style)
-	:	BView(frame, name, resizingMode, flags),
+	:	BView(frame, name, resizingMode, flags | B_FULL_UPDATE_ON_RESIZE),
 		m_style(style)
 {
 	if (!color)

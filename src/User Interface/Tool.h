@@ -146,9 +146,11 @@ public:									// Operations
 										}
 	
 	void								SetRadioMode(
-											bool radioMode = true)
+											bool radioMode = true,
+											bool forceSelection = true)
 										{
 											m_radioMode = radioMode;
+											m_forceSelection = forceSelection;
 										}
 
 	void								SetValue(
@@ -169,6 +171,8 @@ private:								// Instance Data
 	bool								m_selected;
 
 	bool								m_radioMode;
+
+	bool								m_forceSelection;
 };
 
 #endif /* __C_Tool_H__ */

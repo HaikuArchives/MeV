@@ -170,25 +170,23 @@ CToolBar::RemoveTool(
 }
 
 void
-CToolBar::SetRadioMode(
-	int32 index,
-	int32 count)
+CToolBar::MakeRadioGroup(
+	const char *fromItem,
+	const char *toItem,
+	bool forceSelection)
 {
-	D_OPERATION(("CToolBar::SetRadioMode(%ld, %ld)\n", index, count));
+	D_OPERATION(("CToolBar::MakeRadioGroup(%s, %s)\n", fromItem, toItem));
 
-	for (int32 i = 0; i < count; i++)
+	int32 index = IndexOf(FindTool(fromItem));
+	CTool *tool = ToolAt(index);
+	while (tool)
 	{
-		CTool *tool = ToolAt(index++);
-		if (tool)
+		tool->SetRadioMode(true, forceSelection);
+		if (strcmp(tool->Name(), toItem) == 0)
 		{
-			D_OPERATION((" -> SetRadioMode() for tool '%s'\n", tool->Name()));
-			tool->SetRadioMode();
-		}
-		else
-		{
-			// radio mode groups don't span across separators
 			break;
 		}
+		tool = tool->NextTool();
 	}
 }
 
@@ -293,7 +291,7 @@ CToolBar::Draw(
 	FillRegion(&backgroundRegion, B_SOLID_LOW);
 
 	BRect rect(Bounds());
-	BeginLineArray(4);
+	BeginLineArray(5);
 	AddLine(rect.LeftTop(), rect.LeftBottom(),
 			tint_color(ui_color(B_PANEL_BACKGROUND_COLOR), B_LIGHTEN_MAX_TINT));
 	AddLine(rect.LeftTop(), rect.RightTop(),
@@ -303,6 +301,8 @@ CToolBar::Draw(
 	rect.bottom--;
 	AddLine(rect.LeftBottom(), rect.RightBottom(),
 			tint_color(ui_color(B_PANEL_BACKGROUND_COLOR), B_DARKEN_1_TINT));
+	AddLine(rect.RightTop(), rect.RightBottom(),
+			tint_color(ui_color(B_PANEL_BACKGROUND_COLOR), B_DARKEN_3_TINT));
 	EndLineArray();
 }
 
@@ -312,6 +312,8 @@ CToolBar::GetPreferredSize(
 	float *height)
 {
 	D_HOOK(("CToolBar::GetPreferredSize()\n"));
+
+	*width = *height = 0.0;
 
 	for (int32 i = 0; i < m_toolList.CountItems(); i++)
 	{

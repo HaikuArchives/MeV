@@ -5,13 +5,14 @@
 #include "GridWindow.h"
 #include "BorderView.h"
 #include "EventTrack.h"
-#include "TimeIntervalEditor.h"
+#include "TimeIntervalControl.h"
+//#include "TimeIntervalEditor.h"
 
 // ---------------------------------------------------------------------------
 // Constants Initialization
 
 const BRect
-CGridWindow::DEFAULT_DIMENSIONS(0.0, 0.0, 210.0, 50.0);
+CGridWindow::DEFAULT_DIMENSIONS(0.0, 0.0, 500.0, 100.0);
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -28,18 +29,26 @@ CGridWindow::CGridWindow(
 				   B_WILL_ACCEPT_FIRST_CLICK | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 				   B_CURRENT_WORKSPACE),
 		CObserver(*this, NULL),
-		m_intervalEditor(NULL),
+		m_intervalControl(NULL),
 		m_track(NULL)
 {
-	CBorderView *bgView = new CBorderView(Bounds(), "", B_FOLLOW_ALL_SIDES,
+	CBorderView *bgView = new CBorderView(Bounds(), "", B_FOLLOW_NONE,
 										  B_WILL_DRAW, 0, CBorderView::BEVEL_BORDER);
 	AddChild(bgView);
 
-	m_intervalEditor = new CTimeIntervalEditor(Bounds().InsetByCopy(5.0, 5.0),
-											   "GridEdit",
-											   new BMessage(GRID_INTERVAL_CHANGED));
-	bgView->AddChild(m_intervalEditor);
-	m_intervalEditor->SetTarget(dynamic_cast<BWindow *>(this));
+	m_intervalControl = new CTimeIntervalControl(Bounds().InsetByCopy(5.0, 5.0),
+												"GridEdit",
+												new BMessage(GRID_INTERVAL_CHANGED),
+												B_FOLLOW_ALL_SIDES);
+	bgView->AddChild(m_intervalControl);
+
+	// resize to preferred size
+	float width, height;
+	m_intervalControl->GetPreferredSize(&width, &height);
+	ResizeTo(width + 10.0, height + 10.0);
+	bgView->SetResizingMode(B_FOLLOW_ALL_SIDES);
+
+	m_intervalControl->SetTarget(dynamic_cast<BWindow *>(this));
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +64,7 @@ CGridWindow::MessageReceived(
 		{
 			if(m_track)
 			{
-				m_track->SetTimeGridSize(m_intervalEditor->Value());
+				m_track->SetTimeGridSize(m_intervalControl->Value());
 			}
 			break;
 		}
@@ -85,7 +94,7 @@ CGridWindow::OnUpdate(
 {
 	if(m_track)
 	{
-		m_intervalEditor->SetValue(m_track->TimeGridSize());
+		m_intervalControl->SetValue(m_track->TimeGridSize());
 	}
 }
 
@@ -101,7 +110,7 @@ CGridWindow::WatchTrack(
 		m_track = track;
 		if(m_track && Lock())
 		{
-			m_intervalEditor->SetValue(m_track->TimeGridSize());
+			m_intervalControl->SetValue(m_track->TimeGridSize());
 			Unlock();
 		}
 		SetSubject(m_track);

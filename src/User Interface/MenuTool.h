@@ -57,6 +57,13 @@ public:									// Constructor/Destructor
 
 										~CMenuTool();
 
+public:									// Accessors
+
+	BPopUpMenu *						Menu() const
+										{
+											return m_menu;
+										}
+
 public:									// Operations
 
 	void								SetBitmap(

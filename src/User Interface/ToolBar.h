@@ -103,9 +103,15 @@ public:									// Operations
 	CTool *								RemoveTool(
 											int32 index);
 
-	void								SetRadioMode(
-											int32 index,
-											int32 count);
+	// Will set the items from 'fromItem' to 'toItem' to radio mode,
+	// ie only one of them can be turned on at once; if 'toItem' is
+	// NULL (default), the radio group will either extend until the
+	// separator or the end of the toolbar; the 'forceSelection' arg
+	// determines whether the group _must_ have one tool turned on
+	void								MakeRadioGroup(
+											const char *fromItem,
+											const char *toItem = NULL,
+											bool forceSelection = true);
 
 public:									// BControl Implementation
 

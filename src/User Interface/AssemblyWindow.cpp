@@ -848,7 +848,7 @@ CAssemblyWindow::AddToolBar()
 											ResourceUtils::LoadImage("EraserTool"),
 											new BMessage(TOOL_ERASE)));
 	tool->SetEnabled(false);
-	toolBar->SetRadioMode(2, 2);
+	toolBar->MakeRadioGroup("Select", "Eraser", true);
 	
 	AddChild(toolBar);
 }

@@ -44,7 +44,7 @@
 #include "WindowState.h"
 
 class CEventTrack;
-class CTimeIntervalEditor;
+class CTimeIntervalControl;
 
 	// Floating preference editors for editor windows...
 	// 	Grid size with track...
@@ -91,7 +91,7 @@ public:						// Operations
 
 private:					// Instance Data
 
-	CTimeIntervalEditor		*m_intervalEditor;
+	CTimeIntervalControl	*m_intervalControl;
 
 	CEventTrack				*m_track;
 };
