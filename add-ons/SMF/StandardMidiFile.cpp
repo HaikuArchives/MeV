@@ -237,7 +237,6 @@ void CStandardMidiFile::OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetec
 	{
 		SetInitialTempo(doc);
 		doc->ShowWindow();
-		ReleaseDocument( doc );
 	}
 }
 
@@ -378,22 +377,17 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 		TClockType clockType;
 		uint16 numTracks;
 		if (CountTracks(doc, numTracks, clockType) < B_OK || numTracks == 0)
-		{
-			ReleaseDocument(doc);
 			return;
-		}
 
 		if ((error = entry.InitCheck()) < B_OK)
 		{
 			ShowError(LookupErrorText(error));
-			ReleaseDocument(doc);
 			return;
 		}
 		
 		if ((error = file.SetTo(&entry, B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE)) < B_OK)
 		{
 			ShowError(LookupErrorText(error));
-			ReleaseDocument(doc);
 			return;
 		}
 		
@@ -402,10 +396,7 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 		
 		// write header
 		if (WriteHeaderChunk(writer, numTracks + 1, clockType) < B_OK)
-		{
-			ReleaseDocument(doc);
 			return;
-		}
 		
 		// write tempo track
 		{
@@ -431,8 +422,6 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 			
 			if (WriteTrack(writer, doc, track) < B_OK)
 			{
-				doc->ReleaseTrack(track);
-				ReleaseDocument(doc);
 				return;
 			}
 		}
@@ -449,8 +438,6 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 	catch (...)
 	{
 	}
-	
-	ReleaseDocument(doc);
 }
 
 // ---------------------------------------------------------------------------
