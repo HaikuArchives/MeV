@@ -251,7 +251,8 @@ public:
 	void SetScrollValue( float inScrollValue, orientation inOrient )
 	{
 		CStripView::SetScrollValue( inScrollValue, inOrient );
-		if (ruler) ruler->ScrollTo( scrollValue.x, 0.0 );
+		//if (ruler) ruler->ScrollTo( scrollValue.x, 0.0 );
+		// hangs MeV.. claes didn´t like this
 	}
 
 		// ---------- Rulers and markers
