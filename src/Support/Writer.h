@@ -86,16 +86,16 @@ public:							// Operations
 		implemented by subclasses.
 	*/
 	virtual bool				Write(
-									void *buffer,
+									const void *buffer,
 									int32 length) = 0;
 
 	void						WriteStr255(
-									char *buffer,
+									const char *buffer,
 									int32 length);
 
 	/**	Write exactly 'inLength' bytes, or toss an exception. */
 	virtual void				MustWrite(
-									void *buffer,
+									const void *buffer,
 									int32 length)
 								{ Write(buffer, length); }
 

@@ -119,7 +119,7 @@ int32 CIFFWriter::ChunkID()
 	return pos - stack->id;
 }
 
-bool CIFFWriter::Write( void *buffer, int32 length )
+bool CIFFWriter::Write(const void *buffer, int32 length )
 {
 		// Clip length to maximum chunk length
 	if (length > limit - pos) return false;
@@ -130,14 +130,14 @@ bool CIFFWriter::Write( void *buffer, int32 length )
 	return true;
 }
 
-void CIFFWriter::MustWrite( void *buffer, int32 inLength )
+void CIFFWriter::MustWrite(const void *buffer, int32 inLength )
 {
 		// Write chunk data
 	writer.MustWrite( buffer, inLength );
 	pos += inLength;
 }
 
-bool CIFFWriter::WriteChunk( int32 chunkID, void *buffer, int32 length )
+bool CIFFWriter::WriteChunk( int32 chunkID, const void *buffer, int32 length )
 {
 	uint32			chunkHeader[ 2 ];
 	

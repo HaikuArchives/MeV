@@ -89,13 +89,13 @@ public:
 
 		/**	Write out data into a chunk (Overrides the CWriter function).
 		*/
-	bool Write( void *buffer, int32 length );
+	bool Write(const void *buffer, int32 length );
 
 		/**	Write exactly 'inLength' bytes, or toss an exception. */
-	void MustWrite( void *buffer, int32 inLength );
+	void MustWrite(const void *buffer, int32 inLength );
 
 		/**	Push, write, and pop and entire chunk all at once. */
-	bool WriteChunk( int32 chunkID, void *buffer, int32 length );
+	bool WriteChunk(int32 chunkID, const void *buffer, int32 length );
 	
 		/** Seek not supported. */
 	bool Seek( uint32 inFilePos ) { return false; }

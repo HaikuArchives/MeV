@@ -33,14 +33,14 @@ public:
 		/**	Main writing function. This is pure virtual, and must be
 			implemented by subclasses.
 		*/
-	bool Write( void *buffer, int32 inLength )
+	bool Write(const void *buffer, int32 inLength )
 	{
 		CheckBeError( file.Write( buffer, inLength ) );
 		return true;
 	}
 
 		/**	Write exactly 'inLength' bytes, or toss an exception. */
-	void MustWrite( void *buffer, int32 inLength )
+	void MustWrite(const void *buffer, int32 inLength )
 	{
 		CheckBeError( file.Write( buffer, inLength ) );
 	}

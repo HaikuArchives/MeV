@@ -9,7 +9,7 @@
 
 void
 CWriter::WriteStr255(
-	char *buffer,
+	const char *buffer,
 	int32 length)
 {
 	if (length > 255)
