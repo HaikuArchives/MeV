@@ -1,9 +1,11 @@
 /* ===================================================================== *
- * Observer.cpp (MeV/Application Framework)
+ * Observer.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "Observer.h"
+
 #include "AppHelp.h"
+#include "Observable.h"
 
 // Application Kit
 #include <Looper.h>
@@ -13,127 +15,90 @@
 // ---------------------------------------------------------------------------
 //	CObserver: Construction & Destruction
 
-CObserver::CObserver( BLooper &inLooper, CObservableSubject *inSubject )
-	:	BHandler( "CObserver" ),
-		subject( inSubject )
+CObserver::CObserver(
+	BLooper &looper,
+	CObservableSubject *subject)
+	:	BHandler("Observer"),
+		m_subject(subject)
 {
-		//	Add us to the looper, and add us to the list of observers for the subject
-	inLooper.Lock();
-	inLooper.AddHandler( this );
-	if (subject) subject->AddObserver( *this );
-	inLooper.Unlock();
+	// Add us to the looper, and add us to the list of observers for the subject
+	looper.Lock();
+	looper.AddHandler(this);
+	if (subject)
+		subject->AddObserver(*this);
+	looper.Unlock();
 }
 
 CObserver::~CObserver()
 {
-		//	Remove us from the looper and the observer's subject list.
-	if (subject)
+	//	Remove us from the looper and the observer's subject list.
+	if (m_subject)
 	{
-		subject->RemoveObserver( *this );
-		CRefCountObject::Release( subject );
+		m_subject->RemoveObserver(*this);
+		CRefCountObject::Release(m_subject);
 	}
-	ASSERT( Looper() );
-	Looper()->RemoveHandler( this );
+
+	Looper()->RemoveHandler(this);
 }
 
-void CObserver::SetSubject( CObservableSubject *inSubject )
+// ---------------------------------------------------------------------------
+//	Operations
+
+void
+CObserver::SetSubject(
+	CObservableSubject *subject)
 {
-	if (inSubject != subject)
+	if (subject != m_subject)
 	{
 		Looper()->Lock();
-		if (subject)
+		if (m_subject)
 		{
-			subject->RemoveObserver( *this );
-			CRefCountObject::Release( subject );
+			m_subject->RemoveObserver(*this);
+			CRefCountObject::Release(m_subject);
 		}
-		subject = inSubject;
-		if (subject) subject->AddObserver( *this );
+		m_subject = subject;
+		if (m_subject)
+			m_subject->AddObserver(*this);
 		Looper()->Unlock();
 	}
 }
 
-// ---------------------------------------------------------------------------
-//	CObserver: Message handling
-
-	//	Post an update hint to the other observers
-void CObserver::PostUpdate( CUpdateHint *inHint, bool inExcludeOriginal )
+void
+CObserver::PostUpdate(
+	CUpdateHint *hint,
+	bool excludeOriginal)
 {
-	if (subject) subject->PostUpdate( inHint, inExcludeOriginal ? this : NULL );
-}
-
-	//	Receive an update message from the other observers and dispatch
-void CObserver::MessageReceived( BMessage *inMessage )
-{
-	switch (inMessage->what) {
-	case Update_ID:
-
-			//	Notify that subject has changed.
-		OnUpdate( inMessage );
-		break;
-		
-	case Delete_ID:
-
-			//	Request observers to let go of observable.
-		OnDeleteRequested( inMessage );
-		break;
-
-	default:
-		BHandler::MessageReceived( inMessage );
-		break;
-	};
-}
-	
-// ---------------------------------------------------------------------------
-//	CObservableSubject: Construction & Destruction
-
-CObservableSubject::CObservableSubject()
-{
-}
-
-CObservableSubject::~CObservableSubject()
-{
+	if (m_subject)
+		m_subject->PostUpdate(hint, excludeOriginal ? this : NULL );
 }
 
 // ---------------------------------------------------------------------------
-//	CObservableSubject: Observer list management
+//	BHandler Implementation
 
-void CObservableSubject::AddObserver( CObserver &inObserver )
+void
+CObserver::MessageReceived(
+	BMessage *message)
 {
-	StSubjectLock	myLock( *this, Lock_Exclusive );
-	Acquire();
-	CheckSuccess( observers.AddItem( &inObserver ) );
-}
-
-void CObservableSubject::RemoveObserver( CObserver &inObserver )
-{
-	StSubjectLock	myLock( *this, Lock_Exclusive );
-	CheckSuccess( observers.RemoveItem( &inObserver ) );
-}
-
-// ---------------------------------------------------------------------------
-//	CObservableSubject: Update messaging
-
-void CObservableSubject::PostUpdate( CUpdateHint *inHint, CObserver *inExcludeObserver )
-{
-	int32 count = observers.CountItems();
-	StSubjectLock myLock(*this, Lock_Shared);
-
-	//	For each observer, send them a copy of the message.
-	for (int i = 0; i < count; i++)
+	switch (message->what)
 	{
-		CObserver *ob = (CObserver *)observers.ItemAt(i);
-		if (ob != inExcludeObserver)
-			BMessenger(ob).SendMessage(inHint);
+		case Update_ID:
+		{	
+			// Notify that subject has changed.
+			OnUpdate(message);
+			break;
+		}	
+		case Delete_ID:
+		{
+			// Request observers to let go of observable.
+			OnDeleteRequested(message);
+			break;
+		}
+		default:
+		{
+			BHandler::MessageReceived(message);
+			break;
+		}
 	}
 }
 
-	/*	Request to delete. This means asking all observers to
-		release the subject, so that the subject's reference count
-		will go to zero and the subject will be deleted.
-	*/
-void CObservableSubject::RequestDelete()
-{
-	CUpdateHint		msg( Delete_ID );
-	
-	PostUpdate( &msg, NULL );
-}
+// END - Observer.cpp
