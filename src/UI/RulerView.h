@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * RulerView.h (MeV/User Interface)
+ * RulerView.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -18,13 +18,9 @@
  *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ * Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Ruler View, associated with track editr frames
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -32,6 +28,8 @@
  *		General cleanup in preparation for initial SourceForge checkin
  *	04/21/2000	cell
  *		Separated from TradkEditFrame.h
+ *	09/29/2000	cell
+ *		Merged with subclass CAssemblyRulerView
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,32 +38,79 @@
 #ifndef __C_RulerView_H__
 #define __C_RulerView_H__
 
+#include "Observer.h"
 #include "Scroller.h"
 
+class CEventTrack;
 class CStripFrameView;
 
+/**
+ *	Ruler View, associated with track edit frames
+ *	@author		Talin, Christopher Lenz
+ *	@package	UI
+ */
 class CRulerView :
-	public CScrollerTarget
+	public CScrollerTarget,
+	public CObserver
 {
+
+public:							// Constants
+
+	enum messages
+	{
+								MARKER_MOVED = 'mARm'
+	};
 
 public:							// Constructor/Destructor
 
 								CRulerView(
 									BRect frame,
 									const char *name,
+									BLooper &looper,
 									CStripFrameView *frameView,
+									CEventTrack	*track,
 									ulong resizingModeMask,
-									ulong flags );
+									ulong flags);
 
 public:							// Operations
+
+	void						ShowMarkers(
+									bool show);
+
+public:							// BScrollerTarget Implementation
+
+	virtual void				Draw(
+									BRect updateRect);
+
+	virtual void				MouseDown(
+									BPoint point);
+	
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
+
+	virtual void				MouseUp(
+									BPoint point);
 
 	void						SetScrollValue(
 									float scrollValue,
 									orientation which);
 
+public:							// CObserver Implementation
+
+	virtual void				OnUpdate(
+									BMessage *message);
+
 protected:						// Instance Data
 
+	CEventTrack *				m_track;
+
 	CStripFrameView *			m_frameView;
+
+	bool						m_showMarkers;
+
+	BBitmap *					m_markerBitmap;
 };
 
-#endif /* __C_TrackEditFrame_H__ */
+#endif /* __C_RulerView_H__ */

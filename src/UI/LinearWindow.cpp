@@ -4,7 +4,6 @@
 
 #include "LinearWindow.h"
 
-#include "AssemblyRulerView.h"
 #include "BitmapTool.h"
 #include "BorderButton.h"
 #include "BorderView.h"
@@ -18,18 +17,11 @@
 #include "PlayerControl.h"
 #include "QuickKeyMenuItem.h"
 #include "ResourceUtils.h"
+#include "RulerView.h"
 #include "TextDisplay.h"
 #include "ToolBar.h"
 #include "TrackCtlStrip.h"
 #include "VelocityEditor.h"
-//#include "RecordStrip.h"
-// User Interface
-//#include "BitmapTool.h"
-//#include "IconMenuItem.h"
-//#include "MenuTool.h"
-//#include "ToolBar.h"
-//=======
-
 
 // Gnu C Library
 #include <stdio.h>
@@ -461,12 +453,13 @@ CLinearWindow::AddFrameView(
 									 (char *)NULL, track, B_FOLLOW_ALL);
 
 	CScrollerTarget	*ruler;
-	ruler = new CAssemblyRulerView(*this, stripFrame, (CEventTrack *)track,
-								   BRect(frame.left + 21, frame.top,
-										 frame.right - 14, 
-										 frame.top + DEFAULT_RULER_HEIGHT - 1),
-								   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
-								   B_WILL_DRAW);
+	ruler = new CRulerView(BRect(frame.left + 21.0, frame.top,
+								 frame.right - 14.0,
+								 frame.top + DEFAULT_RULER_HEIGHT - 1.0),
+						   NULL,
+						   *this, stripFrame, (CEventTrack *)track,
+						   B_FOLLOW_LEFT_RIGHT,
+						   B_WILL_DRAW);
 
 	BView *pad;
 	rgb_color fill = ui_color(B_PANEL_BACKGROUND_COLOR);

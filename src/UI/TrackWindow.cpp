@@ -4,7 +4,6 @@
 
 #include "TrackWindow.h"
 
-#include "AssemblyRulerView.h"
 #include "BorderButton.h"
 #include "EventEditor.h"
 #include "EventTrack.h"

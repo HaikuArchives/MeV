@@ -4,7 +4,6 @@
 
 #include "AssemblyWindow.h"
 
-#include "AssemblyRulerView.h"
 #include "BitmapTool.h"
 #include "BorderButton.h"
 #include "DataSnap.h"
@@ -17,6 +16,7 @@
 #include "PlayerControl.h"
 #include "QuickKeyMenuItem.h"
 #include "ResourceUtils.h"
+#include "RulerView.h"
 #include "ScreenUtils.h"
 #include "Splitter.h"
 #include "ToolBar.h"
@@ -241,7 +241,7 @@ CAssemblyWindow::AddStrip(
 	rect.top = ToolBar()->Frame().bottom + 1.0;
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
 
-	CAssemblyRulerView *ruler = NULL;
+	CRulerView *ruler = NULL;
 	CStripView *strip = NULL;
 
 	if (type == "Metered")
@@ -249,24 +249,24 @@ CAssemblyWindow::AddStrip(
 		strip = new CTrackCtlStrip(*this, *stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack(1),
 								   "Metered");
-		ruler = new CAssemblyRulerView(*this, stripFrame,
-									   (CEventTrack *)Document()->FindTrack(1),
-									   BRect(0.0, -1.0, rect.Width(),
-									   		 CTrackWindow::DEFAULT_RULER_HEIGHT),
-									   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
-									   B_WILL_DRAW);
+		ruler = new CRulerView(BRect(0.0, -1.0, rect.Width(),
+									 CTrackWindow::DEFAULT_RULER_HEIGHT),
+							   "", *this, stripFrame,
+							   (CEventTrack *)Document()->FindTrack(1),
+							   B_FOLLOW_LEFT_RIGHT,
+							   B_WILL_DRAW);
 	}
 	else if (type == "Real")
 	{
 		strip = new CTrackCtlStrip(*this, *stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack((int32)0),
 								   "Real");
-		ruler = new CAssemblyRulerView(*this, stripFrame,
-									   (CEventTrack *)Document()->FindTrack((int32)0),
-									   BRect(0.0, -1.0, rect.Width(), 
-									   		 CTrackWindow::DEFAULT_RULER_HEIGHT),
-									   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
-									   B_WILL_DRAW);
+		ruler = new CRulerView(BRect(0.0, -1.0, rect.Width(), 
+									 CTrackWindow::DEFAULT_RULER_HEIGHT),
+							   NULL, *this, stripFrame,
+							   (CEventTrack *)Document()->FindTrack((int32)0),
+							   B_FOLLOW_LEFT_RIGHT,
+							   B_WILL_DRAW);
 		ruler->ShowMarkers(false);
 	}
 
