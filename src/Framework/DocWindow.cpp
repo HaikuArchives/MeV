@@ -14,7 +14,9 @@
 // Interface Kit
 #include <Alert.h>
 #include <Menu.h>
+#include <MenuBar.h>
 #include <MenuItem.h>
+#include <ScrollBar.h>
 // Storage Kit
 #include <Directory.h>
 #include <Entry.h>
@@ -115,7 +117,18 @@ CDocWindow::SetToolBar(
 
 	m_toolBar = toolBar;
 	if (m_toolBar)
+	{
 		AddChild(m_toolBar);
+
+		float minWidth, maxWidth, minHeight, maxHeight;
+		GetSizeLimits(&minWidth, &maxWidth, &minHeight, &maxHeight);
+		minWidth = 100.0;
+		if (KeyMenuBar() != NULL)
+			minHeight = KeyMenuBar()->Frame().Height();
+		minHeight += m_toolBar->Frame().Height();
+		minHeight += B_H_SCROLL_BAR_HEIGHT + 2.0;
+		SetSizeLimits(minWidth, maxWidth, minHeight, maxHeight);
+	}
 }
 
 // ---------------------------------------------------------------------------
