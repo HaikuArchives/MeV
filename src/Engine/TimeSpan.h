@@ -50,9 +50,9 @@ public:							// Constructors/Destructor
 	/** Constructor with initialization */
 								CTimeSpan(
 									const CTime &start,
-									const CTime &duration)
+									const CTime &end)
 									:	m_start(start),
-										m_duration(duration)
+										m_end(end)
 								{ }
 
 public:							// Overloaded Operators
@@ -86,17 +86,23 @@ public:							// Accessors
 	/**	Returns true if the specified time is contained by this interval. */
 	bool						Contains(
 									const CTime &time) const;
-	/**	Returns true if the specified interval is completely contained 
+	/**	Returns true if the specified time span is completely contained 
 	 *	by this interval.
 	 */
 	bool						Contains(
-									const CTimeSpan &interval) const;
+									const CTimeSpan &other) const;
 
-	const CTime	&				Duration() const
-								{ return m_duration; }
+	/**	Returns true if the specified time span is intersects this 
+	 *	interval.
+	 */
+	bool						Intersects(
+									const CTimeSpan &other) const;
+
+	CTime						Duration() const
+								{ return m_end - m_start; }
 	CTime						End() const
-								{ return m_start + m_duration; }
-	const CTime &				Start() const
+								{ return m_end; }
+	CTime						Start() const
 								{ return m_start; }
 
 public:							// Operations
@@ -130,13 +136,13 @@ public:							// Operations
 	/**	Initializes the object to new start and duration values. */
 	void						SetTo(
 									CTime start,
-									CTime duration);
+									CTime end);
 
 private:
 
 	CTime						m_start;
 
-	CTime						m_duration;
+	CTime						m_end;
 };
 
 inline const CTimeSpan &
@@ -144,7 +150,7 @@ CTimeSpan::operator=(
 	const CTimeSpan &other)
 {
 	m_start = other.m_start;
-	m_duration = other.m_duration;
+	m_end = other.m_end;
 	return *this;
 }
 
@@ -154,8 +160,8 @@ CTimeSpan::operator|=(
 {
 	if (m_start < other.m_start)
 		m_start = other.m_start;
-	if (m_duration > other.m_duration)
-		m_duration = other.m_duration;
+	if (m_end > other.m_end)
+		m_end = other.m_end;
 
 	return *this;
 }
@@ -166,8 +172,8 @@ CTimeSpan::operator&=(
 {
 	if (m_start > other.m_start)
 		m_start = other.m_start;
-	if (m_duration < other.m_duration)
-		m_duration = other.m_duration;
+	if (m_end < other.m_end)
+		m_end = other.m_end;
 
 	return *this;
 }
@@ -176,14 +182,14 @@ inline bool
 CTimeSpan::operator==(
 	const CTimeSpan &other) const
 {
-	return (m_start == other.m_start) && (m_duration == other.m_duration);
+	return (m_start == other.m_start) && (m_end == other.m_end);
 }
 
 inline bool
 CTimeSpan::operator!=(
 	const CTimeSpan &other) const
 {
-	return (m_start != other.m_start) || (m_duration != other.m_duration);
+	return (m_start != other.m_start) || (m_end != other.m_end);
 }
 
 inline CTimeSpan
@@ -192,8 +198,8 @@ CTimeSpan::operator|(
 {
 	return CTimeSpan(m_start > other.m_start ? m_start
 											 : other.m_start,
-					 m_duration > other.m_duration ? other.m_duration
-					 							   : m_duration);
+					 m_end > other.m_end ? other.m_end
+					 					 : m_end);
 }
 
 inline CTimeSpan
@@ -202,8 +208,8 @@ CTimeSpan::operator&(
 {
 	return CTimeSpan(m_start > other.m_start ? other.m_start
 											 : m_start,
-					 m_duration > other.m_duration ? m_duration
-					 							   : other.m_duration);
+					 m_end > other.m_end ? m_end
+					 					 : other.m_end);
 }
 
 #endif /* __C_TimeSpan_H__ */

@@ -16,9 +16,16 @@ CTimeSpan::Contains(
 
 bool
 CTimeSpan::Contains(
-	const CTimeSpan &interval) const
+	const CTimeSpan &other) const
 {
-	return (interval.Start() >= Start()) && (interval.End() <= End());
+	return (other.Start() >= Start()) && (other.End() <= End());
+}
+
+bool
+CTimeSpan::Intersects(
+	const CTimeSpan &other) const
+{
+	return (other.Start() <= End()) || (other.End() >= Start());
 }
 
 // ---------------------------------------------------------------------------
@@ -29,12 +36,14 @@ CTimeSpan::OffsetBy(
 	CTime time)
 {
 	m_start += time;
+	m_end += time;
 }
 
 void
 CTimeSpan::OffsetTo(
 	CTime time)
 {
+	m_end += (time - m_start);
 	m_start = time;
 }
 
@@ -42,21 +51,22 @@ void
 CTimeSpan::SetDuration(
 	CTime duration)
 {
-	m_duration = duration;
+	m_end = m_start + duration;
 }
 
 void
 CTimeSpan::SetEnd(
 	CTime end)
 {
-	if (m_start > end)
+	// assign & normalize if necessary
+	if (end < m_start)
 	{
-		m_duration = m_start - end;
+		m_end = m_start;
 		m_start = end;
 	}
 	else
 	{
-		m_duration = end - m_start;
+		m_end = end;
 	}
 }
 
@@ -64,15 +74,14 @@ void
 CTimeSpan::SetStart(
 	CTime start)
 {
-	CTime end = End();
-	if (start > end)
+	// assign & normalize if necessary
+	if (start > m_end)
 	{
-		m_duration = start - end;
-		m_start = end;
+		m_start = m_end;
+		m_end = start;
 	}
 	else
 	{
-		m_duration = end - start;
 		m_start = start;
 	}
 }
@@ -80,10 +89,18 @@ CTimeSpan::SetStart(
 void
 CTimeSpan::SetTo(
 	CTime start,
-	CTime duration)
+	CTime end)
 {
-	m_start = start;
-	m_duration = duration;
+	if (start > end)
+	{
+		m_start = end;
+		m_end = start;
+	}
+	else
+	{
+		m_start = start;
+		m_end = end;
+	}
 }
 
 // END -- TimeSpan.cpp
