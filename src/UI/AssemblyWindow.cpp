@@ -207,7 +207,7 @@ CAssemblyWindow::MessageReceived(
 			m_toolStates[0] = message->what;
 			break;
 		}
-		case Select_ID:
+		case CDocWindow::SELECTED:
 		{
 			bool active = false;	
 			message->FindBool("active", 0, &active);

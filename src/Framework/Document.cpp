@@ -128,8 +128,26 @@ CDocument::SetEntry(
 		return error;
 	}
 
-	m_named = true;
+	SetNamed();
 	return B_OK;
+}
+
+void
+CDocument::SetNamed()
+{
+	char name[B_FILE_NAME_LENGTH];
+	if (m_entry.GetName(name) != B_OK)
+		return;
+
+	BMessage message(NAME_CHANGED);
+	message.AddString("name", name);
+
+	for (int32 i = 0; i < CountWindows(); i++)
+	{
+		WindowAt(i)->PostMessage(&message);
+	}
+
+	m_named = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -158,7 +176,7 @@ CDocument::AddWindow(
 			if (window->WindowNumber() == 0)
 			{
 				window->SetWindowNumber(CalcUniqueWindowNumber());
-				window->RecalcWindowTitle();
+				window->CalcWindowTitle();
 			}
 		}
 	}
@@ -187,7 +205,7 @@ CDocument::RemoveWindow(
 			if (window->WindowNumber() > 0)
 			{
 				window->SetWindowNumber(0);
-				window->RecalcWindowTitle();
+				window->CalcWindowTitle();
 			}
 		}
 	}

@@ -40,8 +40,8 @@
 
 #include "WindowState.h"
 
-const uint32 Select_ID		= '#SEL';		//	We lost selection
-const uint32 Activate_ID	= '#ACT';		//	Activate this window
+// Support Kit
+#include <String.h>
 
 class CDocument;
 class CToolBar;
@@ -50,6 +50,17 @@ class CDocWindow :
 	public CAppWindow
 {
 	friend class CDocument;
+
+public:							// Constants
+
+	enum messages
+	{
+								/** Activate this window */
+								ACTIVATE = 'dwdA',
+
+								/** We lost selection */
+								SELECTED
+	};
 
 public:							// Constructor/Destructor
 
@@ -117,10 +128,8 @@ public:							// CAppWindow Implementation
 protected:						// Internal Operations
 
 	void						CalcWindowTitle(
-									const char *inTypeName);
+									const char *documentName = NULL);
 
-	void						RecalcWindowTitle();
-	
 	void						SetWindowNumber(
 									int32 number)
 								{ m_windowNumber = number; }
@@ -141,6 +150,9 @@ private:						// Instance Data
 
 	//	Start item of window menu
 	int16						m_windowMenuStart;
+
+	// the 'sub-name' of the window, ie the part after the colon
+	BString						m_name;
 
 private:						// Class Data
 

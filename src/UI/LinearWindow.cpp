@@ -257,11 +257,11 @@ CLinearWindow::MessageReceived(
 		{
 		 	break;
 		}
-		case Select_ID:
+		case CDocWindow::SELECTED:
 		{
-			bool		active = false;
-			message->FindBool( "active", 0, &active );
-			UpdateActiveSelection( active );
+			bool active = false;
+			message->FindBool("active", 0, &active);
+			UpdateActiveSelection(active);
 			break;
 		}		
 		default:

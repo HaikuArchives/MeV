@@ -35,9 +35,10 @@ CDocWindow::CDocWindow(
 		m_document(document),
 		m_toolBar(NULL),
 		m_windowMenu(NULL),
-		m_windowMenuStart(-1)
+		m_windowMenuStart(-1),
+		m_name(inTypeName)
 {
-	CalcWindowTitle(inTypeName);
+	CalcWindowTitle();
 
 	m_document->Acquire();
 	m_document->AddWindow(this);
@@ -53,9 +54,10 @@ CDocWindow::CDocWindow(
 		m_document(document),
 		m_toolBar(NULL),
 		m_windowMenu(NULL),
-		m_windowMenuStart(-1)
+		m_windowMenuStart(-1),
+		m_name(inTypeName)
 {
-	CalcWindowTitle(inTypeName);
+	CalcWindowTitle();
 
 	m_document->Acquire();
 	m_document->AddWindow(this);
@@ -128,9 +130,18 @@ CDocWindow::MessageReceived(
 {
 	switch (message->what)
 	{
-		case Activate_ID:
+		case ACTIVATE:
 		{
 			Activate();
+			break;
+		}
+		case CDocument::NAME_CHANGED:
+		{
+			const char *name;
+			if (message->FindString("name", &name) == B_OK)
+				CalcWindowTitle(name);
+			else
+				CalcWindowTitle();
 			break;
 		}
 		default:
@@ -192,14 +203,14 @@ CDocWindow::AcquireSelectToken()
 		{
 			if (ActiveDocWindow())
 			{
-				BMessage message(Select_ID);
+				BMessage message(SELECTED);
 				message.AddBool("active", false);
 				BMessenger messenger(NULL, ActiveDocWindow());
 				messenger.SendMessage(&message);
 			}
 			s_activeDocWin = this;
 	
-			BMessage message(Select_ID);
+			BMessage message(SELECTED);
 			message.AddBool("active", true);
 			PostMessage(&message, this);
 		}
@@ -212,41 +223,21 @@ CDocWindow::AcquireSelectToken()
 
 void
 CDocWindow::CalcWindowTitle(
-	const char *inTypeName)
+	const char *documentName)
 {
-	char name[B_FILE_NAME_LENGTH + 32];
-	m_document->GetName(name);
-
-	if (inTypeName)
-	{
-		strncat(name, ": ", sizeof(name));
-		strncat(name, inTypeName, sizeof(name));
-		m_windowNumber = -1;
-		SetTitle(name);
-	}
+	char docName[B_FILE_NAME_LENGTH];
+	if (documentName == NULL)
+		m_document->GetName(docName);
 	else
-	{
-		m_windowNumber = 0;
-		SetTitle(name);
-	}
-}
+		strncpy(docName, documentName, B_FILE_NAME_LENGTH);
 
-void
-CDocWindow::RecalcWindowTitle()
-{
-	char fileName[B_FILE_NAME_LENGTH];
-	m_document->GetName(fileName);
+	BString title = docName;
+	if (m_name.CountChars() > 0)
+		title << ": " << m_name;
+//	if (m_windowNumber > 0)
+//		title << " [" << m_windowNumber + 1 << "]";
 
-	if (m_windowNumber > 0)
-	{
-		BString title = fileName;
-		title << ":" << m_windowNumber;
-		SetTitle(title.String());
-	}
-	else
-	{
-		SetTitle(fileName);
-	}
+	SetTitle(title.String());
 }
 
 void
@@ -269,7 +260,7 @@ CDocWindow::UpdateWindowMenu()
 		{
 			CDocWindow *window = Document()->WindowAt(i);
 			BMenuItem *item = new BMenuItem(window->Title(),
-											new BMessage(Activate_ID));
+											new BMessage(ACTIVATE));
 			item->SetTarget(window);
 			if (window == this)
 				item->SetMarked(true);

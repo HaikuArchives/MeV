@@ -53,6 +53,13 @@ class CDocument
 {
 	friend class CDocApp;
 								
+public:							// Constants
+
+	enum messages
+	{
+								NAME_CHANGED = 'docA'
+	};
+
 public:							// Constructor/Destructor
 
 								CDocument(
@@ -105,9 +112,10 @@ public:							// Accessors
 									bool modified = true)
 								{ m_modified = modified; }
 
-	// Returns TRUE if document has ever been saved
+	// Returns true if document has ever been saved
 	bool						Named()
 								{ return m_named; }
+	void						SetNamed();
 
 	void						SetValid(
 									bool valid = true)
