@@ -12,6 +12,8 @@
 // Support Kit
 #include <Debug.h>
 
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
+
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
@@ -52,6 +54,25 @@ CEventTrack::CEventTrack(
 
 	// Compile list of track operators
 	CompileOperators();
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+CDestination *
+CEventTrack::GetNextUsedDestination(
+	long *index) const
+{
+	ASSERT(IsReadLocked());
+
+	used_destinations_map::const_iterator dest = m_destinations.begin();
+	for (long i = 0; i < *index; i++)
+		dest++;
+	(*index)++;
+	if (dest != m_destinations.end())
+		return dest->first;
+	else
+		return NULL;
 }
 
 // ---------------------------------------------------------------------------
@@ -418,22 +439,24 @@ CEventTrack::DeleteEvent(
 	{
 		if (ev == which)
 		{
-			// Remember what event types we changed
-			uint8 eventType = ev->Command();
+			// make a copy of the event
+			Event evCopy(*ev);
 
 			// Delete from original list
 			marker.Remove(1, undoAction);
 
+			_eventRemoved(&evCopy);
+
 			// If the delete event was a time signature event, then
 			// go head and invalidate the track's signature map.
-			if (eventType == EvtType_TimeSig)
+			if (evCopy.Command() == EvtType_TimeSig)
 				InvalidateSigMap();
-
+		
 			// If the deleted event was a tempo change event, then
 			// go head and invalidate the document's tempo map.
-			else if (eventType == EvtType_Tempo)
+			else if (evCopy.Command() == EvtType_Tempo)
 				InvalidateTempoMap();
-
+		
 			// REM: We should be smarter about this update...
 			SummarizeSelection();
 			PostUpdate(&hint, NULL);
@@ -470,41 +493,45 @@ void CEventTrack::DeleteSelection()
 		// If the operations did not effect the ordering of
 		// events, then things are much simpler.
 	
-		// For each selected event.
-	for (	const Event *ev = marker.FirstItemInRange( MinSelectTime(), MaxSelectTime() );
-			ev; )
+	// For each selected event.
+	for (const Event *ev = marker.FirstItemInRange(MinSelectTime(), MaxSelectTime());
+		 ev != NULL;
+		 )
 	{
-		Event		newEv;
-	
 		if (ev->IsSelected())
 		{
-				// Remember what event types we changed
-			eventsModified[ ev->Command() ] = true;
-
-			marker.Remove( 1, undoAction );	// Delete from original list
-			ev = (ConstEventPtr)marker;		// Increment to next event
-			
+			// Remember what event types we changed
+			eventsModified[ev->Command()] = true;
+			Event evCopy(*ev);
+			// Delete from original list
+			marker.Remove(1, undoAction);
+			_eventRemoved(&evCopy);
+			// Increment to next event
+			ev = (const Event *)marker;
 		}
 		else
 		{
-			ev = (Event *)marker.Seek( 1 );
+			ev = (const Event *)marker.Seek(1);
 		}
 	}
 
-		// If the delete event was a time signature event, then
-		// go head and invalidate the track's signature map.
-	if (eventsModified[ EvtType_TimeSig ]) InvalidateSigMap();
+	// If the delete event was a time signature event, then
+	// go head and invalidate the track's signature map.
+	if (eventsModified[EvtType_TimeSig])
+		InvalidateSigMap();
 
-		// If the deleted event was a tempo change event, then
-		// go head and invalidate the document's tempo map.
-	if (eventsModified[ EvtType_Tempo ]) InvalidateTempoMap();
+	// If the deleted event was a tempo change event, then
+	// go head and invalidate the document's tempo map.
+	if (eventsModified[EvtType_Tempo])
+		InvalidateTempoMap();
 
-		// REM: We should be smarter about this update...
+	// REM: We should be smarter about this update...
 	SummarizeSelection();
-	PostUpdate( &hint, NULL );
+	PostUpdate(&hint);
 
-		// Add the undo action to the undo list for this observable
-	if (undoAction) AddUndoAction( undoAction );
+	// Add the undo action to the undo list for this observable
+	if (undoAction)
+		AddUndoAction(undoAction);
 	Document().SetModified();
 }
 
@@ -741,6 +768,8 @@ void CEventTrack::CreateEvent(
 
 		PostUpdate(&hint, inEditor);
 	}
+
+	_eventAdded(&newEv);
 }
 
 	// Change some attribute of all of the selected events.
@@ -994,6 +1023,85 @@ void CEventTrack::AddUndoAction( UndoAction *inAction )
 	}
 }
 
+void
+CEventTrack::_eventAdded(
+	const Event *ev)
+{
+	D_INTERNAL(("CEventTrack::_eventAdded()\n"));
+
+	// update list of used destinations if necessary
+	if (ev->HasProperty(Event::Prop_Channel))
+	{
+		CDestination *dest = Document().FindDestination(ev->GetVChannel());
+		
+		if (m_destinations.find(dest) == m_destinations.end())
+		{
+			D_INTERNAL((" -> destination %s now in use by track %s\n",
+				   		dest->Name(), Name()));
+
+			m_destinations[dest] = 1;
+
+			CUpdateHint hint;
+			hint.AddInt32("TrackAttrs", Update_AddDest);
+			hint.AddInt32("DestID", dest->ID());
+			PostUpdate(&hint);
+		}
+		else
+		{
+			m_destinations[dest]++;
+		}
+	}
+}
+
+void
+CEventTrack::_eventRemoved(
+	const Event *ev)
+{
+	D_INTERNAL(("CEventTrack::_eventRemoved()\n"));
+
+	// update list of used destinations if necessary
+	if (ev->HasProperty(Event::Prop_Channel))
+	{
+		CDestination *dest = Document().FindDestination(ev->GetVChannel());
+		m_destinations[dest]--;
+		if (m_destinations[dest] == 0)
+		{
+			D_INTERNAL((" -> destination %s no longer in use by track %s\n",
+				   		dest->Name(), Name()));
+
+			m_destinations.erase(dest);
+
+			CUpdateHint hint;
+			hint.AddInt32("TrackAttrs", Update_DelDest);
+			hint.AddInt32("DestID", dest->ID());
+			PostUpdate(&hint);
+		}
+	}
+}
+
+void
+CEventTrack::_initUsedDestinations()
+{
+	D_INTERNAL(("CEventTrack::_initUsedDestinations()\n"));
+	ASSERT((IsReadLocked()));
+
+	// Check the destination of each event
+	EventMarker	marker(events);
+	for (Event *ev = (Event *)marker.First();
+		 ev != NULL;
+		 ev = (Event *)marker.Seek(1))
+	{
+		if (ev->HasProperty(Event::Prop_Channel))
+		{
+			CDestination *dest = Document().FindDestination(ev->GetVChannel());
+			if (m_destinations.find(dest) == m_destinations.end())
+				m_destinations[dest] = 0;
+			else
+				m_destinations[dest]++;
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // CSerializable Implementation
 
@@ -1015,6 +1123,7 @@ CEventTrack::ReadChunk(
 			CWriteLock lock(this);
 			ReadEventList(reader, events);
 			SummarizeSelection();
+			_initUsedDestinations();
 			break;
 		}
 		default:

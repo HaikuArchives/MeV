@@ -46,11 +46,14 @@
 #include "EventOp.h"
 #include "Destination.h"
 
-const ulong			TrackType_Event	= 'eTrk';
+// Standard Template Library
+#include <map>
 
 class CMeVDoc;
 class CEventEditor;
 class EventOp;
+
+const ulong			TrackType_Event	= 'eTrk';
 
 const int			Max_Track_Filters = 8;
 
@@ -89,6 +92,13 @@ public:							// Accessors
 								
 	uint32						TrackType() const
 								{ return TrackType_Event; }
+
+	/**	Returns the destinations in use by this part. Start calling this
+	 *	function with a pointer to an integer set to zero. The part has to
+	 *	be read-locked when you call this!
+	 */
+	CDestination *				GetNextUsedDestination(
+									long *index) const;
 
 public:							// Operations
 
@@ -244,15 +254,23 @@ public:							// Operations
 
 public:							// CSerializable Implementation
 
-	/**	Write the track to the MeV file. */
-	virtual void				Serialize(
-									CIFFWriter &writer);
-
 	/** Read one chunk from the MeV file. */
 	virtual void				ReadChunk(
 									CIFFReader &reader);
 	
+	/**	Write the track to the MeV file. */
+	virtual void				Serialize(
+									CIFFWriter &writer);
+
 private:						// Internal Operations
+
+	void						_eventAdded(
+									const Event *ev);
+
+	void						_eventRemoved(
+									const Event *ev);
+
+	void						_initUsedDestinations();
 
 	int32						Bytes()
 								{ return sizeof *this + CountEvents() * sizeof(Event); }
@@ -299,6 +317,12 @@ private:						// Instance Data
 	int32						filterCount;
 
 	bool						validSigMap;
+
+	/**	A map of the destinations used by this part. The key is a 
+	 *	pointer to the destination, while the value contains the 
+	 *	number of events using that destination. */
+	typedef map<CDestination *, unsigned long> used_destinations_map;
+	used_destinations_map		m_destinations;
 };
 
 /**	A hint which takes it's parameters from the current selection. */
