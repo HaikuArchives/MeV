@@ -49,6 +49,9 @@
 #include <ByteOrder.h>
 #include <String.h>
 
+class CTime;
+class CTimeSpan;
+
 /**	An abstract class representing a writeable stream of bytes.
 	You make subclasses for files, strings, packets, etc.
 */
@@ -100,16 +103,19 @@ public:							// Operations
 								{ Write(buffer, length); }
 
 	/**	Writes a 16-bit integer, or throws an exception.
-		Also byte-swaps the integer if requested.
-	*/
+	 *	Also byte-swaps the integer if requested. */
 	void						MustWriteInt16(
 									int16 value);
 
 	/**	Writes a 32-bit integer, or throws an exception.
-		Also byte-swaps the integer if requested.
-	*/
+	 *	Also byte-swaps the integer if requested. */
 	void						MustWriteInt32(
 									int32 value);
+
+	/**	Writes a 64-bit integer, or throws an exception.
+	 *	Also byte-swaps the integer if requested. */
+	void						MustWriteInt64(
+									int64 value);
 
 	/**	Seek to a specific position in the file.
 		Not supported by all stream types.
@@ -182,6 +188,14 @@ public:							// Overloaded Operators
 	CWriter &					operator<<(
 									BString d)
 								{ MustWrite(&d, d.Length()); return *this; }
+
+	/** Stream output operator to write a CTime */
+	CWriter &					operator<<(
+									CTime time);
+
+	/** Stream output operator to write a CTimeSpan */
+	CWriter &					operator<<(
+									const CTimeSpan &span);
 
 private:						// Internal Operations
 

@@ -4,8 +4,10 @@
 
 #include "Writer.h"
 
+#include "TimeSpan.h"
+
 // ---------------------------------------------------------------------------
-// CWriter Implementation
+// CWriter: Operations
 
 void
 CWriter::WriteStr255(
@@ -41,6 +43,17 @@ CWriter::MustWriteInt32(
 }
 
 void
+CWriter::MustWriteInt64(
+	int64 value)
+{
+#if __LITTLE_ENDIAN
+	if (m_convertByteOrder)
+		value = htonl(value);
+#endif
+	MustWrite(&value, sizeof(value));
+}
+
+void
 CWriter::MustSwapAndWrite(
 	void *ptr,
 	long bytes)
@@ -60,6 +73,9 @@ CWriter::MustSwapAndWrite(
 	MustWrite(ptr, bytes);
 }
 
+// ---------------------------------------------------------------------------
+// CWriter: Overloaded Operators
+
 CWriter &
 CWriter::operator<<(
 	rgb_color color)
@@ -68,6 +84,25 @@ CWriter::operator<<(
 	MustWrite(&color.green, sizeof(color.green));
 	MustWrite(&color.blue, sizeof(color.blue));
 	MustWrite(&color.alpha, sizeof(color.alpha));
+
+	return *this;
+}
+
+CWriter &
+CWriter::operator<<(
+	CTime time)
+{
+	MustWriteInt64(time.Microseconds());
+
+	return *this;
+}
+
+CWriter &
+CWriter::operator<<(
+	const CTimeSpan &span)
+{
+	MustWriteInt64(span.Start().Microseconds());
+	MustWriteInt64(span.Duration().Microseconds());
 
 	return *this;
 }

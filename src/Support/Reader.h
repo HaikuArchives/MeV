@@ -47,6 +47,9 @@
 #include <ByteOrder.h>
 #include <String.h>
 
+class CTime;
+class CTimeSpan;
+
 /**	An abstract class representing a readable stream of bytes.
 	You make subclasses for files, strings, packets, etc.
 */
@@ -107,14 +110,16 @@ public:							// Operations
 								{ Read(buffer, length, false); }
 
 	/**	Returns a 16-bit integer, or throws an exception.
-		Also byte-swaps the integer if requested.
-	*/
+	 *	Also byte-swaps the integer if requested. */
 	int16						MustReadInt16();
 
 	/**	Returns a 32-bit integer, or throws an exception.
-		Also byte-swaps the integer if requested.
-	*/
+	 *	Also byte-swaps the integer if requested. */
 	int32						MustReadInt32();
+
+	/**	Returns a 64-bit integer, or throws an exception.
+	 *	Also byte-swaps the integer if requested. */
+	int64						MustReadInt64();
 
 public:
 	
@@ -194,6 +199,14 @@ public:							// Overloaded Operators
 	CReader &					operator>>(
 									BString &d)
 								{ MustRead (&d, d.Length()); return *this;}
+
+	/** Stream read operator to read a CTime. */
+	CReader &					operator>>(
+									CTime &time);
+
+	/** Stream read operator to read a CTimeSpan. */
+	CReader &					operator>>(
+									CTimeSpan &span);
 
 private:						// Internal Operations
 

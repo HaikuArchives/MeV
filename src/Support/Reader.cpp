@@ -4,6 +4,8 @@
 
 #include "Reader.h"
 
+#include "TimeSpan.h"
+
 // ---------------------------------------------------------------------------
 // CReader Implementation
 
@@ -51,6 +53,19 @@ CReader::MustReadInt32()
 	return v;
 }
 
+int64
+CReader::MustReadInt64()
+{
+	int64 v;
+
+	MustRead(&v, sizeof(v));
+#if __LITTLE_ENDIAN
+		if (m_convertByteOrder)
+			v = ntohl(v);
+#endif
+	return v;
+}
+
 void
 CReader::MustReadAndSwap(
 	void *ptr,
@@ -70,6 +85,9 @@ CReader::MustReadAndSwap(
 #endif
 }
 
+// ---------------------------------------------------------------------------
+// CReader Implementation: Overloaded Operators
+
 CReader &
 CReader::operator>>(
 	rgb_color &color)
@@ -78,6 +96,26 @@ CReader::operator>>(
 	MustRead(&color.green, sizeof(color.green));
 	MustRead(&color.blue, sizeof(color.blue));
 	MustRead(&color.alpha, sizeof(color.alpha));
+
+	return *this;
+}
+
+CReader &
+CReader::operator>>(
+	CTime &time)
+{
+	time = MustReadInt64();
+
+	return *this;
+}
+
+CReader &
+CReader::operator>>(
+	CTimeSpan &span)
+{
+	CTime start = MustReadInt64();
+	CTime duration = MustReadInt64();
+	span.SetTo(start, duration);
 
 	return *this;
 }
