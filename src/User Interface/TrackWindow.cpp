@@ -84,7 +84,7 @@ CTrackWindow::MenusBeginning()
 	const char *description;
 
 	// Set up Undo menu
-	item = KeyMenuBar()->FindItem("Undo");
+	item = KeyMenuBar()->FindItem(MENU_UNDO);
 	description = NULL;
 	if (Track()->CanUndo())
 	{
@@ -107,7 +107,7 @@ CTrackWindow::MenusBeginning()
 	}
 
 	// Set up Redo menu
-	item = KeyMenuBar()->FindItem("Redo");
+	item = KeyMenuBar()->FindItem(MENU_REDO);
 	description = NULL;
 	if (Track()->CanRedo())
 	{
