@@ -93,6 +93,9 @@ public:							// BApplication Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
+	/** checks if all documents have been properly closed. */
+	virtual bool				QuitRequested();
+
 	//	If no documents are open, then open a blank one
 	virtual void				ReadyToRun();
 

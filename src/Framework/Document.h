@@ -84,6 +84,11 @@ public:							// Accessors
 	bool						InitCheck()
 								{ return m_valid; }
 
+	/** Returns true if the document is currently being saved.
+		ie, if it has an open save panel */
+	bool						IsSaving() const
+								{ return m_saving; }
+
 	//	name must be at least B_FILE_NAME_LENGTH
 	status_t					GetName(
 									char *name) const;
@@ -150,6 +155,9 @@ private:						// Instance Data
 
 	// the file panel for saving this document
 	BFilePanel *				m_savePanel;
+
+	/** true if the a save panel is open for the document. */
+	bool						m_saving;
 
 private:						// Class Data
 

@@ -12,6 +12,8 @@
 #include <MenuItem.h>
 // Storage Kit
 #include <FilePanel.h>
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 //	Class Data Initialization
@@ -28,7 +30,8 @@ CDocument::CDocument(
 		m_modified(false),
 		m_named(false),
 		m_valid(false),
-		m_savePanel(NULL)
+		m_savePanel(NULL),
+		m_saving(false)
 {
 	char name[32];
 
@@ -53,7 +56,8 @@ CDocument::CDocument(
 		m_modified(false),
 		m_named(true),
 		m_valid(false),
-		m_savePanel(NULL)
+		m_savePanel(NULL),
+		m_saving(false)
 {
 	app.AddDocument(this);
 }
@@ -190,7 +194,7 @@ CDocument::RemoveWindow(
 
 	//	If there are any other observers hanging on to this, then
 	//	ask them to please observe something else.
-	if (CountWindows() == 0)
+	if ((CountWindows() == 0) && !IsSaving())
 	{
 		RequestDelete();
 		Application()->RemoveDocument(this);
@@ -200,6 +204,7 @@ CDocument::RemoveWindow(
 void
 CDocument::Save()
 {
+	m_saving = true;
 	if (m_named == false)
 		SaveAs();
 	else

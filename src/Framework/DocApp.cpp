@@ -12,6 +12,8 @@
 // Storage Kit
 #include <FilePanel.h>
 #include <Resources.h>
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -102,6 +104,8 @@ CDocApp::MessageReceived(
 			{
 				CRefCountObject::Release( doc );
 			}
+			RemoveDocument(doc);
+			PostMessage(B_QUIT_REQUESTED);
 			break;
 		}
 		case B_SAVE_REQUESTED:
@@ -123,6 +127,8 @@ CDocApp::MessageReceived(
 					doc->Save();
 				}
 			}
+			RemoveDocument(doc);
+			PostMessage(B_QUIT_REQUESTED);
 			break;
 		}
 		default:
@@ -130,6 +136,18 @@ CDocApp::MessageReceived(
 			BApplication::MessageReceived(message);
 		}
 	}
+}
+
+bool
+CDocApp::QuitRequested()
+{
+	for (int32 i = 0; i < CountDocuments(); i++)
+	{
+		if (DocumentAt(i)->IsSaving())
+			return false;
+	}
+
+	return true;
 }
 
 void
