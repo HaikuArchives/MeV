@@ -40,28 +40,6 @@ inline CAbstractReader &operator>>( CAbstractReader& reader, rgb_color &outColor
 	return reader;
 }
 
-int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength );
-int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength )
-{
-	uint8			sLength;
-	int32			actual;
-	
-	inReader >> sLength;
-	actual = sLength < inMaxLength - 1 ? sLength : inMaxLength - 1;
-	inReader.MustRead( outBuffer, actual );
-	outBuffer[ actual ] = 0;
-	if (actual < sLength) inReader.Skip( sLength - actual );
-	return actual;
-}
-
-void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength );
-void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength )
-{
-	if (inLength > 255) inLength = 255;
-	outWriter << (uint8)inLength;
-	outWriter.MustWrite( inBuffer, inLength );
-}
-
 void CMeVDoc::Init()
 {
 	masterRealTrack = NULL;
@@ -378,7 +356,6 @@ void CMeVDoc::PostUpdateAllTracks( CUpdateHint *inHint )
 {
 	masterRealTrack->PostUpdate( inHint );
 	masterMeterTrack->PostUpdate( inHint );
-
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
 		CTrack		*track = (CTrack *)tracks.ItemAt( i );

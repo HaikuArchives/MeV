@@ -157,7 +157,7 @@ public:
 		/**	Stream output operator to write a double */
 	CAbstractWriter &operator<<( double d ) { MustSwapAndWrite( &d, sizeof d ); return *this; }
 		/** Stream output operator to write a BString */
-	CAbstractWriter &operator<<( char  *d ) { MustWrite( &d, sizeof d ); return *this; }
+	CAbstractWriter &operator<<( BString d) { MustWrite( &d, d.Length() ); return *this; }
 };
 
 	/**	A Writer which writes to a fixed array of bytes. */

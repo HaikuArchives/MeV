@@ -23,12 +23,13 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- * A class that wraps the vchannel array.  
+ * A class that manages the destinations.  
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
  *		Original implementation.
- *		
+ *	8/01/2000		dwalton
+ *      Name change, many improvements.
  * ---------------------------------------------------------------------
  * To Do:
  * 

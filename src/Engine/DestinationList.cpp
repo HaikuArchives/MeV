@@ -56,7 +56,7 @@ int CDestinationList::NewDest()
     		m_tablerep[c]->name << c+1;
     		m_tablerep[c]->m_producer=NULL;
     		m_tablerep[c]->producer_name="never name a midiport this";
-    		m_tablerep[c]->channel	= 1;
+    		m_tablerep[c]->channel	= 0;
     		m_tablerep[c]->flags		= Destination::transposable;  
     		//m_tablerep[c]->flags		= Destination::mute; 
     		m_tablerep[c]->velocityContour=0;
@@ -82,6 +82,10 @@ Destination *  CDestinationList::get(int i)
 }
 bool CDestinationList::IsDefined(int id)
 {
+	if (id >= Max_Destinations)
+	{
+		return false;
+	}
 	if (m_tablerep[id]==NULL)
 	{
 		return false;
@@ -91,6 +95,7 @@ bool CDestinationList::IsDefined(int id)
 		return false;
 	}	
 	return true;	
+
 }
 
 void CDestinationList::First()
@@ -174,7 +179,6 @@ void CDestinationList::OnUpdate(BMessage *msg)
 					
 					if (dest->producer_name==portname)
 					{
-						printf ("set disabled()\n");
 						SetDisableFor(CurrentID(),true);
 					}
 				}
@@ -186,7 +190,7 @@ void CDestinationList::OnUpdate(BMessage *msg)
 				for (First();!IsDone();Next())
 				{
 					Destination *dest=CurrentDest();
-					if (dest->producer_name==portname)
+					if ((dest->producer_name==portname)&&(dest->flags & Destination::disabled))
 					{
 						dest->m_producer=m_midimanager->GetProducer(&dest->producer_name);
 						SetDisableFor(CurrentID(),false);
@@ -197,12 +201,35 @@ void CDestinationList::OnUpdate(BMessage *msg)
 		}
 	}
 }
+//this belongs in the reader.
+int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength );
+int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength )
+{
+	uint8			sLength;
+	int32			actual;
+	
+	inReader >> sLength;
+	actual = sLength < inMaxLength - 1 ? sLength : inMaxLength - 1;
+	inReader.MustRead( outBuffer, actual );
+	outBuffer[ actual ] = 0;
+	if (actual < sLength) inReader.Skip( sLength - actual );
+	return actual;
+}
+//this too..
+void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength );
+void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength )
+{
+	if (inLength > 255) inLength = 255;
+	outWriter << (uint8)inLength;
+	outWriter.MustWrite( inBuffer, inLength );
+}
+
 void CDestinationList::ReadVCTable (CIFFReader &reader)
 {
 	int32		i = 0;
 	int32 portid=0;
 	BString midiport;
-
+	char buff[255];
 	while (reader.BytesAvailable() > 0 )
 	{
 		reader >> portid;
@@ -211,13 +238,30 @@ void CDestinationList::ReadVCTable (CIFFReader &reader)
 		reader >> m_tablerep[portid]->fillColor.red;
 		reader >> m_tablerep[portid]->fillColor.green;
 		reader >> m_tablerep[portid]->fillColor.blue;
-		m_tablerep[portid]==NULL;
-		//reader >> midiport;
-		//printf ("midiport read %s\n",midiport.String());*/
+		ReadStr255( reader,buff, 255 );
+		m_tablerep[portid]->name.SetTo(buff);
+		ReadStr255( reader,buff, 255 );
+		m_tablerep[portid]->producer_name.SetTo(buff);
+		m_tablerep[portid]->m_producer=m_midimanager->GetProducer(&m_tablerep[portid]->producer_name);
+		//m_tablerep[portid]->m_producer=NULL;
+		if (m_tablerep[portid]->m_producer==NULL)
+		{
+			//SetDisableFor(portid,true);
+			m_tablerep[portid]->flags+=Destination::disabled;		
+			m_tablerep[portid]->m_producer=NULL;	
+			CUpdateHint hint;
+			hint.AddInt8("channel",portid);
+			CObservableSubject::PostUpdate(&hint,NULL);
+		}
 	}
+	CUpdateHint hint;
+	hint.AddInt8("channel",portid);
+	CObservableSubject::PostUpdate(&hint,NULL);
 }
 void CDestinationList::WriteVCTable (CIFFWriter &writer)
 {
+	char buff[255];
+	char buff2[255];
 	for (First();!IsDone();Next())
 	{
 		writer << (int32)CurrentID(); 
@@ -226,7 +270,20 @@ void CDestinationList::WriteVCTable (CIFFWriter &writer)
 		writer << dest->fillColor.red;
 		writer << dest->fillColor.green;
 		writer << dest->fillColor.blue;
-		//writer << dest->m_producer->Name();
+		dest->name.CopyInto(buff,0,dest->name.Length());
+		WriteStr255( writer,buff,dest->name.Length() );
+		if (dest->producer_name.Length()>0)
+		{
+			dest->producer_name.CopyInto(buff,0,dest->producer_name.Length());
+			WriteStr255( writer,buff,dest->producer_name.Length() );		
+		}
+		else
+		{
+			BString s="no port";
+			s.CopyInto(buff,0,s.Length());
+			WriteStr255( writer,buff,s.Length() );
+		}	
+			
 	}
 }
 void CDestinationList::SetNameFor(
@@ -355,7 +412,6 @@ CDestinationList::SetDisableFor(
 	Destination *dest = m_tablerep[id];
 	if (disable) 
 	{
-		printf ("disabling\n");
 		dest->flags+=Destination::disabled;		
 		dest->m_producer=NULL;	
 		CUpdateHint hint;
@@ -374,7 +430,7 @@ CDestinationList::SetDisableFor(
 }
 
 void
-CDestinationList::SetSoloFor(
+CDestinationList::SetSoloFor( 
 	int id,
 	bool solo)
 {

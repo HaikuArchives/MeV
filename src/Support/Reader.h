@@ -176,7 +176,7 @@ public:
 		/**	Stream read operator to read a double */
 	CAbstractReader &operator>>( double &d ) { MustReadAndSwap( &d, sizeof d); return *this; }
 		/** Stream read operator to read a bstring*/
-	CAbstractReader &operator>>( char  &d) { MustRead (&d,sizeof d); return *this;}
+	CAbstractReader &operator>>( BString &d) { MustRead (&d,d.Length()); return *this;}
 };
 
 	/**	A reader which reads from a fixed array of bytes, supplied at

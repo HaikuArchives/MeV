@@ -18,7 +18,7 @@ void CInternalSynth::NoteOff(uchar channel,
                           uchar velocity,
                           bigtime_t time)
 {
-    m_midiSynth->NoteOff(channel,note,velocity,time/1000);
+    m_midiSynth->NoteOff(channel+1,note,velocity,time/1000);
 	
 }
 
@@ -27,40 +27,40 @@ void CInternalSynth::NoteOn(uchar channel,
                          uchar velocity,
                          bigtime_t time)
 {
-        m_midiSynth->NoteOn(channel,note,velocity,time/1000);
+        m_midiSynth->NoteOn(channel+1,note,velocity,time/1000);
 }
 void CInternalSynth::KeyPressure(uchar channel,
                               uchar note,
                               uchar pressure,
                               bigtime_t time )
 {
-        m_midiSynth->KeyPressure(channel,note,pressure,time/1000);
+        m_midiSynth->KeyPressure(channel+1,note,pressure,time/1000);
 }
 void CInternalSynth::ControlChange(uchar channel,
                                 uchar controlNumber,
                                 uchar controlValue,
                                 bigtime_t time )
 {
-         m_midiSynth->ControlChange(channel,controlNumber,controlValue,time/1000);
+         m_midiSynth->ControlChange(channel+1,controlNumber,controlValue,time/1000);
 }
 void CInternalSynth::ProgramChange(uchar channel,
                                 uchar programNumber,
                                 bigtime_t time)
 {
-		m_midiSynth->ProgramChange(channel,programNumber,time/1000);
+		m_midiSynth->ProgramChange(channel+1,programNumber,time/1000);
 }
 void CInternalSynth::ChannelPressure(uchar channel,
                                   uchar pressure,
                                   bigtime_t time)
 {
-    	m_midiSynth->ChannelPressure(channel,pressure,time/1000);
+    	m_midiSynth->ChannelPressure(channel+1,pressure,time/1000);
 }
 void CInternalSynth::PitchBend(uchar channel,
                             uchar lsb,
                             uchar msb,
                             bigtime_t time)
 {
-    	m_midiSynth->PitchBend(channel,lsb,msb,time/1000);
+    	m_midiSynth->PitchBend(channel+1,lsb,msb,time/1000);
 }
 void CInternalSynth::SystemExclusive(void* data,
                                   size_t dataLength,

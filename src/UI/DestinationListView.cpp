@@ -169,7 +169,7 @@ void CDestinationListView::SetChannel( uint8 inChannel )
 			Destination *dest=m_destList->CurrentDest();
 			BMenuItem *selected=m_destMenu->ItemAt(c+2);
 			selected->SetMarked(true);
-			if (dest->m_producer)
+			if (dest->m_producer!=NULL)
 			{
 				m_portName->SetText(dest->m_producer->Name());
 			}
@@ -178,7 +178,7 @@ void CDestinationListView::SetChannel( uint8 inChannel )
 				m_portName->SetText("no port");
 			}
 			BString sch;
-			sch << dest->channel;
+			sch << (dest->channel+1);
 			m_channelValue->SetText(sch.String());
 			return;
 		}
@@ -213,7 +213,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 					else 
 					{
 						BRect r;
-						r.Set(40,40,300,200);
+						r.Set(40,40,300,240);
 						m_modifierMap[m_selected_id]=new CDestinationModifier(r,m_selected_id,m_destList,(BView *)this);
 						m_modifierMap[m_selected_id]->Show();
 					}
@@ -250,7 +250,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 			case NEW_ID:
 			{
 				BRect r;
-				r.Set(40,40,300,200);
+				r.Set(40,40,300,240);
 				int n=m_destList->NewDest();
 				m_modifierMap[n]=new CDestinationModifier(r,n,m_destList,(BView *)this);
 				m_modifierMap[n]->Show();	

@@ -1,7 +1,6 @@
 /* ===================================================================== *
  * MidiManager.cpp (MeV/Midi)
  * ===================================================================== */
-
 #include "MidiManager.h"
 #include "PortNameMap.h"
 #include "list.h"
@@ -42,15 +41,22 @@ CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservableSubject()
 
 BMidiLocalProducer * CMidiManager::GetProducer (BString *name)
 {
+	if ((name->Compare(m_isynth_source->Name()))==0)
+	{
+		return (InternalSynth());
+	}
 	int c=m_midiProducers.CountItems()-1;
 	while (c>=0)
 	{
 		BMidiLocalProducer *aproducer=((BMidiLocalProducer *)m_midiProducers.ItemAt(c));
-		if ((name->Compare(aproducer->Name()))==0)
+		if (aproducer)
 		{
-			return aproducer;
+			if ((name->Compare(aproducer->Name()))==0)
+			{
+				return aproducer;
+			}
 		}
-		c++;
+		c--;
 	}
 	return NULL; //think about the null producer option.
 }
@@ -91,9 +97,7 @@ BString * CMidiManager::CurrentProducerName()
 }
 int32 CMidiManager::CurrentProducerID()
 {
-
- 		return (((BMidiProducer *)m_midiProducers.ItemAt(m_pos))->ID());
-
+ 	return (((BMidiProducer *)m_midiProducers.ItemAt(m_pos))->ID());
 }
 void
 CMidiManager::MessageReceived(BMessage *msg)
@@ -116,7 +120,7 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 	
 	int32 op;
 	if (msg->FindInt32("be:op", &op) != B_OK) {
-		PRINT(("PatchView::HandleMidiEvent: \"op\" field not found\n"));
+		PRINT(("MidiManager::HandleMidiEvent: \"op\" field not found\n"));
 		return;
 	}
 
@@ -126,13 +130,13 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 id;
 			if (msg->FindInt32("be:id", &id) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:id\" field not found in B_MIDI_REGISTERED event\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_REGISTERED event\n"));
 				break;
 			}
 			
 			const char* type;
 			if (msg->FindString("be:type", &type) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:type\" field not found in B_MIDI_REGISTERED event\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_REGISTERED event\n"));
 				break;
 			}
 			
@@ -148,13 +152,13 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 id;
 			if (msg->FindInt32("be:id", &id) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:id\" field not found in B_MIDI_UNREGISTERED\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_UNREGISTERED\n"));
 				break;
 			}
 			
 			const char* type;
 			if (msg->FindString("be:type", &type) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:type\" field not found in B_MIDI_UNREGISTERED\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_UNREGISTERED\n"));
 				break;
 			}
 			
@@ -171,19 +175,19 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 id;
 			if (msg->FindInt32("be:id", &id) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:id\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
 				break;
 			}
 			
 			const char* type;
 			if (msg->FindString("be:type", &type) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:type\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
 				break;
 			}
 			
 			BMessage props;
 			if (msg->FindMessage("be:properties", &props) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:properties\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
+				PRINT(("MidiManager::HandleMidiEvent: \"be:properties\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
 				break;
 			}
 			
@@ -203,7 +207,7 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		//we don't care about these right now.
 	break;
 	default:
-		PRINT(("PatchView::HandleMidiEvent: unknown opcode %ld\n", op));
+		PRINT(("MidiManager::HandleMidiEvent: unknown opcode %ld\n", op));
 		break;
 	}
 }
@@ -228,7 +232,7 @@ void CMidiManager::AddInternalSynth()
 		m_isynth_source=new BMidiLocalProducer("Internal Synth");
 		BMidiLocalConsumer *isynth_monitor=new BMidiLocalConsumer("Internal Synth Monitor"); //this is a temp way to keep the 
 																							//i synth from having zero connections
-																							//and be deleted
+																							//and be deleted 
 		m_isynth_source->Connect(isynth_monitor);
 		m_midiProducers.AddItem(m_isynth_source);
 	}

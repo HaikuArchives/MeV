@@ -1,3 +1,6 @@
+/* ===================================================================== *
+ * DestinationModifier.h (MeV/UI)
+ * ---------------------------------------------------------------------*/
 #include "DestinationModifier.h"
 #include "Destination.h"
 #include <Rect.h>
@@ -55,31 +58,43 @@ CDestinationModifier::_buildUI()
 	m_midiPorts=new BPopUpMenu ("Port");
 	m_channels=new BPopUpMenu ("Channel");
 	int c;
-	for (c=1;c<=16;c++)
+	for (c=0;c<=15;c++)
 	{
 		BMessage *msg=new BMessage (CHANNEL_SELECT);
 		msg->AddInt8("value",c);
 		BString cname;
-		cname << c;
+		cname << (c+1);
 		BMenuItem *item=new BMenuItem(cname.String(),msg);
 		m_channels->AddItem(item);
 	}
 	(m_channels->ItemAt((m_vc->channel-1)))->SetMarked(true);
 	BMenuField *port;
 	BMenuField *channel;
-	r.Set(10,110,150,130);
-	port=new BMenuField(r,"port","Port:",m_midiPorts);
-	port->SetDivider(28);
-	m_background->AddChild(port);	
 
-	r.Set(130,110,200,130);
+
+	r.Set(10,110,150,130);
 	channel=new BMenuField(r,"channel","Channel:",m_channels);
 	channel->SetDivider(56);
 	m_background->AddChild(channel);
-	r.Set(10,140,100,160);
 	
+	r.Set(10,140,280,160);
+	port=new BMenuField(r,"port","Port:",m_midiPorts);
+	port->SetDivider(28);
+	m_background->AddChild(port);
+	
+	r.Set(10,170,100,190);
 	m_mute=new BCheckBox(r,"mutebox","Mute",new BMessage (MUTE_ID));
 	m_background->AddChild(m_mute);
+		
+}
+void CDestinationModifier::_updateStatus()
+{
+	if (m_vc->flags & Destination::disabled)
+	{
+	}
+	else
+	{
+	}
 }
 void CDestinationModifier::AttachedToWindow()
 {
@@ -181,6 +196,12 @@ CDestinationModifier::MessageReceived(BMessage *msg)
 		{
 			m_tm->SetMuteFor (m_id,false);
 		}
+	}
+	break;
+	case Update_ID:
+	case Delete_ID:
+	{
+		CObserver::MessageReceived(msg);
 	}
 	break;
 	default:

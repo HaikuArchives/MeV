@@ -37,6 +37,11 @@
  * To Do:
  * I imagine that this could be used for all the midi port management including
  * patch names etc.
+ *
+ * Currently mev doesn't play as nice as it could with other midi2 packages 
+ * in beos.  Mev can connect to programs, but programs cannot connect mev 
+ * to themselves.  The MMMN (mev master midi node), is the planed solution. 
+ * 
  * ===================================================================== */
 
 #ifndef __C_MidiManager_H__

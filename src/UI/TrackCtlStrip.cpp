@@ -1384,7 +1384,6 @@ CTrackCtlStrip::OnUpdate(
 
 		StSubjectLock trackLock(*Track(), Lock_Shared);
 		EventMarker	marker(Track()->Events());
-		printf ("we are here\n");
 		// redraw every instance of the changed track
 		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
