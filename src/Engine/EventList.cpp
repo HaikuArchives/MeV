@@ -735,7 +735,7 @@ void EventList::Validate()
 }
 #endif
 
-void WriteDeltaValue( CAbstractWriter &writer, unsigned long value )
+void WriteDeltaValue( CWriter &writer, unsigned long value )
 {
 	uint8	b[ 8 ];
 	int32	i = 0;
@@ -754,7 +754,7 @@ void WriteDeltaValue( CAbstractWriter &writer, unsigned long value )
 	}
 }
 
-unsigned long ReadDeltaValue( CAbstractReader &reader )
+unsigned long ReadDeltaValue( CReader &reader )
 {
 	unsigned long		v = 0;
 	uint8				b = 0;
@@ -768,7 +768,7 @@ unsigned long ReadDeltaValue( CAbstractReader &reader )
 	return v;
 }
 
-void WriteFixed( CAbstractWriter &writer, unsigned long value, unsigned long maxVal )
+void WriteFixed( CWriter &writer, unsigned long value, unsigned long maxVal )
 {
 	uint8	b[ 8 ];
 	int32	i = 0;
@@ -786,7 +786,7 @@ void WriteFixed( CAbstractWriter &writer, unsigned long value, unsigned long max
 	}
 }
 
-unsigned long ReadFixed( CAbstractReader &reader, unsigned long maxVal )
+unsigned long ReadFixed( CReader &reader, unsigned long maxVal )
 {
 	unsigned long		v = 0;
 	uint8				b = 0;
@@ -801,7 +801,7 @@ unsigned long ReadFixed( CAbstractReader &reader, unsigned long maxVal )
 	return v;
 }
 
-void WriteEventList( CAbstractWriter &writer, EventList &inEvents )
+void WriteEventList( CWriter &writer, EventList &inEvents )
 {
 	int32			prevTime = 0;
 	EventMarker		marker( inEvents );
@@ -926,7 +926,7 @@ void WriteEventList( CAbstractWriter &writer, EventList &inEvents )
 	}
 }
 
-void ReadEventList( CAbstractReader &reader, EventList &outEvents )
+void ReadEventList( CReader &reader, EventList &outEvents )
 {
 	Event		ev;
 	int32		prevTime = 0;

@@ -41,8 +41,8 @@
 #include "Event.h"
 #include "ItemList.h"
 
-class CAbstractReader;
-class CAbstractWriter;
+class CReader;
+class CWriter;
 class CObservable;
 class EventListUndoAction;
 
@@ -240,12 +240,12 @@ public:
 	}
 };
 
-unsigned long ReadDeltaValue( CAbstractReader &reader );
-unsigned long ReadFixed( CAbstractReader &reader, unsigned long maxVal );
-void ReadEventList( CAbstractReader &reader, EventList &outEvents );
+unsigned long ReadDeltaValue( CReader &reader );
+unsigned long ReadFixed( CReader &reader, unsigned long maxVal );
+void ReadEventList( CReader &reader, EventList &outEvents );
 
-void WriteDeltaValue( CAbstractWriter &writer, unsigned long value );
-void WriteFixed( CAbstractWriter &writer, unsigned long value, unsigned long maxVal );
-void WriteEventList( CAbstractWriter &writer, EventList &inEvents );
+void WriteDeltaValue( CWriter &writer, unsigned long value );
+void WriteFixed( CWriter &writer, unsigned long value, unsigned long maxVal );
+void WriteEventList( CWriter &writer, EventList &inEvents );
 
 #endif /* __C_EventList_H__ */
