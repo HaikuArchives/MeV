@@ -8,7 +8,7 @@
 #include "BeFileWriter.h"
 #include "BeFileReader.h"
 #include "Destination.h"
-#include "DestinationList.h"
+#include "Destination.h"
 #include "EventOp.h"
 #include "EventTrack.h"
 #include "Idents.h"
@@ -23,7 +23,8 @@
 #include "ScreenUtils.h"
 #include "StdEventOps.h"
 #include "TrackWindow.h"
-
+#include "ReconnectingMidiProducer.h"
+#include "MidiManager.h"
 // Gnu C Library
 #include <stdio.h>
 // Interface Kit
@@ -139,7 +140,7 @@ CMeVDoc::CMeVDoc(
 		{
 			case VCTable_ID:
 			{
-				m_destlist->ReadVCTable(iffReader);
+				//ReadDestination (iffReader);
 				break;
 			}
 			case DocTempo_ID:
@@ -203,17 +204,16 @@ CMeVDoc::~CMeVDoc()
 
 		CRefCountObject::Release( op );
 	}
+	for (int i = 0; i < m_destinations.CountItems(); i ++)
+	{
+		CDestination *dest = (CDestination *)m_destinations.ItemAt( i );
+		delete(dest);
+	}
 }
 
 // ---------------------------------------------------------------------------
 // Accessors
 
-Destination *
-CMeVDoc::GetVChannel(
-	int channel) const
-{
-	return m_destlist->get(channel);
-}
 
 BMimeType *
 CMeVDoc::MimeType()
@@ -365,7 +365,7 @@ CMeVDoc::ShowWindowFor(
 }
 
 // ---------------------------------------------------------------------------
-// Operations
+// Track Operations
 
 long CMeVDoc::GetUniqueTrackID()
 {
@@ -475,7 +475,95 @@ void CMeVDoc::PostUpdateAllTracks( CUpdateHint *inHint )
 		track->PostUpdate( inHint );
 	}
 }
+		//Destination Operations
+CDestination *
+CMeVDoc::NewDestination()
+{
+	CDestination *dest=new CDestination(m_destinations.CountItems(),*this,"Untitled Destination",1);
+	m_destinations.AddItem(dest);	
+	return (dest);
+}
 
+int32
+CMeVDoc::GetUniqueDestinationID() const
+{
+return (m_destinations.CountItems());
+}
+
+CDestination *
+CMeVDoc::FindDestination(int32 inID) const
+{
+	return (CDestination* )m_destinations.ItemAt(inID);
+}
+
+CDestination *
+CMeVDoc::FindNextHigherDestinationID (int32 inID) const
+{
+	CDestination		*bestDest = NULL;
+	int32		bestID = 64;
+	
+	for (int i = 0; i < m_destinations.CountItems(); i++)
+	{
+		CDestination *dest = (CDestination *)m_destinations.ItemAt( i );
+		
+		if (dest->Deleted()) {continue;}
+		if (		dest->GetID() < bestID
+			&&	dest->GetID() > inID)
+		{
+			bestDest = dest;
+			bestID = dest->GetID();
+		}
+	}
+	return bestDest;
+}
+//even counts deleted or disabled destinations.
+int32
+CMeVDoc::CountDestinations() const
+{
+	return (m_destinations.CountItems());
+}
+
+bool
+CMeVDoc::IsDefinedDest (int32 inID) const
+{
+	if (m_destinations.ItemAt(inID)==NULL) 
+		return false;
+/*	else if (((CDestination *)m_destinations.ItemAt(inID))->Deleted())
+		return false;
+	else if (((CDestination *)m_destinations.ItemAt(inID))->Disabled())
+		return false;*/
+	else 
+		return true;
+}
+
+int32 
+CMeVDoc::MaxDestinationLatency (uint8 clockType)
+{
+	if (clockType==ClockType_Real)
+	{
+		return m_maxDestLatency;
+	}
+	if (clockType==ClockType_Metered)
+	{
+		return (TempoMap().ConvertRealToMetered(m_maxDestLatency));
+	}
+}
+void CMeVDoc::SetDestinationLatency(int32 id,int32 microseconds)
+{
+	CDestination *dest;
+	int did;
+	did=-1;
+	while (dest=(FindNextHigherDestinationID(did)))
+	{
+		if (m_maxDestLatency<dest->Latency(ClockType_Real))
+		{
+			m_maxDestLatency=dest->Latency(ClockType_Real);
+		}
+		did++;
+	}
+//go though entire destination list and find the one with the highest latency.
+
+}
 void CMeVDoc::ReplaceTempoMap( CTempoMapEntry *entries, int length )
 {
 		// REM: Should be exclusively locked when this occurs
@@ -640,7 +728,14 @@ CMeVDoc::SaveDocument()
 	iffWriter << (long)MeV_ID;
 
 	iffWriter.Push(VCTable_ID);
-	m_destlist->WriteVCTable(iffWriter);
+	CDestination *dest;
+	int32 id=-1;
+	while (dest=(FindNextHigherDestinationID(id)))
+	{
+		id=dest->GetID();
+		dest->WriteDestination (iffWriter);
+	}
+	
 	iffWriter.Pop();
 
 	iffWriter.Push(DocTempo_ID);
@@ -747,6 +842,64 @@ CMeVDoc::ReadTrack(
 	if (inTrackType == TrackType_Event)
 		((CEventTrack *)track)->SummarizeSelection();
 }
+//this belongs in the reader.
+int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength );
+int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength )
+{
+	uint8			sLength;
+	int32			actual;
+	
+	inReader >> sLength;
+	actual = sLength < inMaxLength - 1 ? sLength : inMaxLength - 1;
+	inReader.MustRead( outBuffer, actual );
+	outBuffer[ actual ] = 0;
+	if (actual < sLength) inReader.Skip( sLength - actual );
+	return actual;
+}
+void
+CMeVDoc::ReadDestination (CIFFReader &reader )
+{
+	CMidiManager *manager=CMidiManager::Instance();
+	int32 destid=0;
+	BString midiport;
+	char buff[255];
+	while (reader.BytesAvailable() > 0 )
+	{
+		CDestination *dest;
+		reader >> destid;
+		dest=new CDestination (destid,*this,"Untitled Destination",0);
+		dest->m_producer=new CReconnectingMidiProducer("");
+		reader >> dest->m_channel >> dest->m_flags >> dest->m_velocityContour >> dest->m_initialTranspose;
+		rgb_color color;
+		reader >> color.red;
+		reader >> color.green;
+		reader >> color.blue;
+		
+		dest->m_fillColor=color;
+		ReadStr255(reader,buff, 255);
+		dest->m_name.SetTo(buff);
+		//set producer name
+		ReadStr255(reader,buff,255);
+		BString prod;
+		prod.SetTo(buff);
+		dest->GetProducer()->SetName(prod.String());
+		
+		//load and connect all connections 
+		BString pname;
+		while (pname.Compare("connection list end"))
+		{
+			ReadStr255( reader,buff, 255 );
+			pname.SetTo(buff);
+			//connect with name
+			dest->ToggleConnect(manager->FindConsumer(pname.String()));
+		}
+		m_destinations.AddItem(dest,destid);
+		
+	}
+	//CUpdateHint hint;
+	//hint.AddInt8("channel",destid);
+	//NotifyUpdate(CMeVDoc::Update_AddDest,NULL);
+}
 
 // ---------------------------------------------------------------------------
 // Internal Operations
@@ -822,7 +975,11 @@ CMeVDoc::Init()
 							  Ticks_Per_QtrNote * 4, Ticks_Per_QtrNote * 4,
 							  ClockType_Metered);
 
-	m_destlist=new CDestinationList (this);
+
+    m_newDestID=0;
+    m_maxDestLatency=0;
+   
+    NewDestination();
 }
 
 // END - MeVDoc.cpp
