@@ -55,7 +55,6 @@ SRCS= \
 	UI/GridWindow.cpp \
 	UI/IconMenuItem.cpp \
 	UI/InspectorWindow.cpp \
-	UI/Junk.cpp \
 	UI/LinearEditor.cpp \
 	UI/LinearWindow.cpp \
 	UI/MenuTool.cpp \
@@ -76,8 +75,10 @@ SRCS= \
 	UI/StripLabelView.cpp \
 	UI/StripSplitter.cpp \
 	UI/StripView.cpp \
+	UI/TempoEditControl.cpp \
 	UI/TextDisplay.cpp \
 	UI/TextSlider.cpp \
+	UI/TimeEditControl.cpp \
 	UI/TimeIntervalControl.cpp \
 	UI/Tool.cpp \
 	UI/ToolBar.cpp \
