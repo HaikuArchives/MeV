@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
+<html>
+
+<head>
+	<title>MeV Users Guide - Quick Start</title>
+</head>
+
+<body bgcolor='#ffffff'>
+<table cellpadding=0 width='100%'><tr>
+<td width=80 bgcolor='#006e8a' valign='TOP'>
+	<center>
+		<br><br>
+		<img src='images/icon.gif'>
+		<br><br>
+		<font color='#ccddff'><b>MeV</b><br><br></font>
+		<font color='#aabbcc' size=-2>version 0.8.0 alpha 1</font>
+		<br><br><br><br>
+	<table border=1 cellpadding=5 cellspacing=1>
+	<tr><td width=100% bgcolor='#ddddee'>
+		<a href="index.html"><font size=-1>Overview</font></a><br><br>
+		<a href="history.html"><font size=-1>History</font></a><br><br>
+		<a href="basics.html"><font size=-1>Basics</font></a><br><br>
+		<font color='#555555' size=-1>
+			Quick Start<br><br>
+		</font>
+		<a href="future.html"><font size=-1>Future</font></a><br><br>
+		<a href="contact.html"><font size=-1>Contact</font></a><br><br>
+	</td></tr></table>
+		<br><br><br><br>
+		<font color='#aabbcc' size=-2>aug 15 2000</font>
+		<br><br><br><br>
+	</center>
+</td>
+<td width=10>
+</td>
+<td valign='TOP'>
+	<center><p>
+		<h2>Quick Start</h2>
+	</p></center>
+	<hr>
+	<p>
+		When you launch MeV for the first time, you should see the
+		<font color="#00638a"><b>Assembly</b></font> window, which is
+		the main interface for song arrangement.
+	</p><p>		
+		The Assembly window is a special variant of the generalized window framework 
+		used in MeV to display different types of events in musical time, allowing
+		multiple components, dubbed <font color="#00638a"><b>Strips</font></b>,
+		to be inserted into the editor window. A similar kind of window is used for
+		editing individual parts.
+		<ul>
+			<font color='#777777'><i>In most MIDI sequencers, you have a variety of
+			ways you can view a track or sequence of notes - 'piano roll' editor,
+			drum editor, event list, etc. MeV integrates these diverse ideas into a
+			unified approach that utilizes "nested" editing contexts, wherein a
+			high-level editor window can have several smaller tools or components
+			nested inside of it.</font></i>
+		</ul>
+		Each strip is an object that can represent a different aspect of the
+		musical performance, such as note pitch, note velocity, aftertouch,
+		repeat bars, and any other aspect of the musical performance. Each
+		strip can be vertically scrolled and zoomed independently of all the
+		other strips, but in horizontal scrolling the strips always move in
+		sync. By adding and deleting strips, the user can customize the editing
+		display to see desired parameters and hide unwanted information.
+	</p>
+
+	</p><p>
+		You'll also see several palettes:
+	</p><p>
+		<font color="#00638a"><b>Transport</b></font><br>
+		The Transport window contains the transport buttons (like
+		playback/stop/pause), using the familiar "tape deck" metaphor you
+		know from many other applications. There is a slider for settings
+		the initial tempo of the song.
+	</p><p>
+		<font color="#00638a"><b>Inspector</b></font><br>
+		The Inspector currently has three purposes: 
+		<ul>
+			<li>It lets you modify the current selection using the sliders on the left side.<br><br>
+				Depending on the type of event that is currently selected in the
+				active window these sliders will have different functions, indicated
+				by their label. Some events may only have one adjustable parameter,
+				others two or three. The adjustments you make here will also be used
+				as defaults for newly-added event
+			<br><br>
+			<li>It is used to manage the list of destinations.
+				To create a destination:
+				<ol>
+					<li>Select "New..." from the destination drop-down list.
+					<li>Select the ports & channels you want to use.
+					<li>Give it a nice name and color if you wish.
+				</ol>
+		</ul>
+	</p><p>
+		<font color="#00638a"><b>Parts</b></font><br>
+		The Parts window shows a list of all parts in the active document.
+		You can create a part by pressing Alt+N or selecting "New"->"Metered
+		Part" from the menu. 
+		To edit the part in a new window, double-click it or select "Edit"
+		from its context menu. MeV will open the Linear Editor (**is this
+		the final name?) where you can edit the part.
+	</p><p>
+		<font color="#00638a"><b>Grid</b></font><br>
+		The original Music-X was inspired by the "grid snap" feature found
+		in CAD systems, and in particular used the idea that "grid offset
+		errors" should be preserved while dragging. This approach is
+		standard today, but MeV takes a step further by allowing you to
+		define the grid in a very flexible way. Each measure is conceived
+		as a "structure" or "scaffolding" upon which musical events are hung,
+		and you control the geometry of that scaffolding. 
+	</p><p>
+		<ul>
+			<font color='#777777'><i>The snap size can also be any arbitrary
+			interval - it doesn't have to be an even number of grid units per
+			measure, although the start of a measure is always a snap point
+			(the grid "resets" at each measure).</i></font>
+		</ul>
+	</p>
+	<hr>
+
+</td></tr></table>
+</body>
+
+</html>
