@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * InspectorWindow.h (MeV/User Interface)
+ * InspectorWindow.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -66,16 +66,13 @@ public:						// Constants
 
 public:						// Constructor/Destructor
 							
-							/**	Constructor.	*/
+							/**	Constructor. */
 							CInspectorWindow(
 								BPoint position,
 								CWindowState &state);
 
-public:						// Operations
-
-	/**	Inspect the current event of the track.	*/
-	void					WatchTrack(
-								CEventTrack *track);
+							/**	Destructor. */
+	virtual					~CInspectorWindow();
 
 public:						// CAppWindow Implementation
 
@@ -93,6 +90,10 @@ public:						// CAppWindow Implementation
 private:					// Insternal Operations
 
 	void					_clear();
+
+	/**	Inspect the current event of the track.	*/
+	void					_watchTrack(
+								CEventTrack *track);
 
 private:					// Instance Data
 	

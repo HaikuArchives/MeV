@@ -14,6 +14,7 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
+#define D_ACCESS(x) //PRINT(x)		// Accessors
 #define D_HOOK(x) //PRINT(x)		// BView Implementation
 
 // ---------------------------------------------------------------------------
@@ -31,29 +32,64 @@ CConsoleContainerView::CConsoleContainerView(
 }
 
 // ---------------------------------------------------------------------------
+// Accessors
+
+CConsoleView *
+CConsoleContainerView::GetNextSelected(
+	long *index) const
+{
+	D_ACCESS(("CConsoleContainerView::GetNextSelected()\n"));
+
+	// iterate through the list of console-views, and return the nth
+	// selected console, if available
+	long count = 0;
+	for (long i = 0; i < CountSlots(); i++)
+	{
+		if (SlotAt(i)->IsSelected())
+		{
+			if (count == *index)
+			{
+				(*index)++;
+				return SlotAt(i);
+			}
+			count++;
+		}
+	}
+
+	return NULL;
+}
+
+// ---------------------------------------------------------------------------
 // Operations
 
 void
 CConsoleContainerView::AddSlot(
 	CConsoleView *view,
-	int32 atIndex)
+	long atIndex)
 {
 	CConsoleView *beforeSlot = NULL;
-	if (atIndex > 0)
+	if (atIndex >= 0)
 		beforeSlot = SlotAt(atIndex);
 	AddChild(view, beforeSlot);
 }
 
+void
+CConsoleContainerView::DeselectAll()
+{
+	for (int32 i = 0; i < CountSlots(); i++)
+		SlotAt(i)->SetSelected(false);
+}
+
 CConsoleView *
 CConsoleContainerView::FindSlot(
-	const char *name)
+	const char *name) const
 {
 	return dynamic_cast<CConsoleView *>(FindView(name));
 }
 
 CConsoleView *
 CConsoleContainerView::SlotAt(
-	int32 index)
+	long index) const
 {
 	return dynamic_cast<CConsoleView *>(ChildAt(index));
 }
@@ -67,7 +103,7 @@ CConsoleContainerView::RemoveSlot(
 
 CConsoleView *
 CConsoleContainerView::RemoveSlot(
-	int32 index)
+	long index)
 {
 	CConsoleView *view = SlotAt(index);
 	if (view)
@@ -86,6 +122,13 @@ CConsoleContainerView::Pack()
 		view->MoveTo(horizontalOffset, 0.0);
 		horizontalOffset = view->Frame().right + 1.0;
 	}
+}
+
+void
+CConsoleContainerView::SelectAll()
+{
+	for (long i = 0; i < CountSlots(); i++)
+		SlotAt(i)->SetSelected(true);
 }
 
 // ---------------------------------------------------------------------------
@@ -133,6 +176,16 @@ CConsoleContainerView::GetPreferredSize(
 		*width += B_V_SCROLL_BAR_WIDTH;
 	if (ScrollBar(B_HORIZONTAL))
 		*height += B_H_SCROLL_BAR_HEIGHT;
+}
+
+void
+CConsoleContainerView::MouseDown(
+	BPoint point)
+{
+	D_HOOK(("CConsoleContainerView::MouseDown()\n"));
+
+	if (!(modifiers() & B_SHIFT_KEY))
+		DeselectAll();
 }
 
 // END - ConsoleContainerView.cpp

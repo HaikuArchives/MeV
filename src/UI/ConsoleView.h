@@ -40,6 +40,8 @@
 // Support Kit
 #include <String.h>
 
+class CConsoleContainerView;
+
 /**
  *		@author	Christoper Lenz.  
  */
@@ -79,6 +81,8 @@ public:							// Hook Functions
 								{ }
 
 public:							// Accessors
+
+	CConsoleContainerView *		Container() const;
 
 	bool						IsExpanded() const
 								{ return m_expanded; }

@@ -29,6 +29,8 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)		// CAppWindow Implementation
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -45,8 +47,7 @@ CTransportWindow::CTransportWindow(
 					| B_NOT_RESIZABLE | B_NOT_ZOOMABLE
 					| B_ASYNCHRONOUS_CONTROLS,
 					B_CURRENT_WORKSPACE),
-	m_document(NULL),
-	m_track(NULL)
+	m_document(NULL)
 {
 	D_ALLOC(("CTransportWindow::CTransportWindow()\n"));
 
@@ -170,12 +171,152 @@ CTransportWindow::CTransportWindow(
 	maxHeight = m_tempoCtl->Frame().bottom + 5.0;
 	ResizeTo(maxWidth, maxHeight);
 
-	SetButtons();
+	_setButtons();
+}
+
+CTransportWindow::~CTransportWindow()
+{
+	if (m_document != NULL)
+	{
+		m_document->RemoveObserver(this);
+		m_document = NULL;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CAppWindow Implementation
+
+void
+CTransportWindow::MessageReceived(
+	BMessage *message)
+{
+	switch(message->what)
+	{
+		case MENU_LOCATE_START:
+		{
+			PlaybackState pbState;
+			if ((CPlayerControl::GetPlaybackState(m_document, pbState))
+			 && pbState.running)
+			{
+				bool paused = CPlayerControl::PauseState(m_document);
+				// REM: Add ability to play individual track...
+				CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real, -1, SyncType_SongInternal, 0);
+				if (paused)
+					CPlayerControl::SetPauseState(m_document, true);
+			}
+			_setButtons();
+			break;
+		}
+		case MENU_PLAY:
+		{
+			PlaybackState	pbState;
+			if ((CPlayerControl::GetPlaybackState(m_document, pbState))
+			 && pbState.running)
+			{
+				if (CPlayerControl::PauseState(m_document))
+					CPlayerControl::SetPauseState(m_document, false);
+				else
+					CPlayerControl::SetPauseState(m_document, true);
+			}
+			else
+			{
+				// REM: Add ability to play individual track...
+				if (dynamic_cast<CMeVApp *>(be_app)->GetLoopFlag())
+				{
+					CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real,
+											 -1, SyncType_SongInternal,
+											 PB_Loop);
+				}
+				else
+				{
+					CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real,
+											 -1, SyncType_SongInternal, 0);
+				}
+			}
+			_setButtons();
+			break;
+		}
+		case MENU_LOCATE_END:
+		{
+			_setButtons();
+			break;
+		}
+		case MENU_STOP:
+		{
+			CPlayerControl::StopSong(m_document);
+			m_timeCtl->SetTime(0L, 0);
+			_setButtons();
+			break;
+		}
+		case CTempoEditControl::TEMPO_CHANGED:
+		{
+			double tempo = m_tempoCtl->Tempo();
+			if (m_document)
+				m_document->SetInitialTempo(tempo);
+			CPlayerControl::SetTempo(m_document, tempo);
+			break;
+		}	
+		case 'loop':
+		{
+			((CMeVApp *)be_app)->SetLoopFlag(m_loopButton->IsLooping());
+			_setButtons();
+			break;
+		}
+		case Player_ChangeTransportState:
+		{
+			_setButtons();
+			break;
+		}
+		case Player_ChangeTempo:
+		{
+			m_tempoCtl->SetTempo(CPlayerControl::Tempo(m_document));
+			break;
+		}
+		case CMeVApp::WATCH_TRACK:
+		{
+			CEventTrack *track = NULL;
+			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
+				return;
+			_watchDocument(&track->Document());
+			break;
+		}
+		default:
+		{
+			CAppWindow::MessageReceived(message);
+		}
+	}
+}
+
+bool
+CTransportWindow::SubjectReleased(
+	CObservable *subject)
+{
+	D_OBSERVE(("CTransportWindow<%p>::SubjectReleased()\n", this));
+
+	if (subject == m_document)
+	{
+		_watchDocument(NULL);
+		return true;
+	}
+
+	return CAppWindow::SubjectReleased(subject);
 }
 
 void
-CTransportWindow::SetButtons()
+CTransportWindow::SubjectUpdated(
+	BMessage *message)
 {
+	_setButtons();
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CTransportWindow::_setButtons()
+{
+	D_INTERNAL(("CTransportWindow::_setButtons()\n"));
+
 	if (m_document)
 	{
 		PlaybackState pbState;
@@ -234,151 +375,22 @@ CTransportWindow::SetButtons()
 }
 
 void
-CTransportWindow::MessageReceived(
-	BMessage *message)
+CTransportWindow::_watchDocument(
+	CMeVDoc *document)
 {
-	switch(message->what)
+	D_INTERNAL(("CTransportWindow::_watchDocument()\n"));
+
+	if (document != m_document)
 	{
-		case MENU_LOCATE_START:
-		{
-			PlaybackState	pbState;
-			if ((CPlayerControl::GetPlaybackState(m_document, pbState))
-			 && pbState.running)
-			{
-				bool paused = CPlayerControl::PauseState(m_document);
-				// REM: Add ability to play individual track...
-				CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real, -1, SyncType_SongInternal, 0);
-				if (paused)
-					CPlayerControl::SetPauseState(m_document, true);
-			}
-			SetButtons();
-			break;
-		}
-		case MENU_PLAY:
-		{
-			PlaybackState	pbState;
-			if ((CPlayerControl::GetPlaybackState(m_document, pbState))
-			 && pbState.running)
-			{
-				if (CPlayerControl::PauseState(m_document))
-					CPlayerControl::SetPauseState(m_document, false);
-				else
-					CPlayerControl::SetPauseState(m_document, true);
-			}
-			else
-			{
-				// REM: Add ability to play individual track...
-				if (dynamic_cast<CMeVApp *>(be_app)->GetLoopFlag())
-				{
-					CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real,
-											 -1, SyncType_SongInternal,
-											 PB_Loop);
-				}
-				else
-				{
-					CPlayerControl::PlaySong(m_document, 0, 0, LocateTarget_Real,
-											 -1, SyncType_SongInternal, 0);
-				}
-			}
-			SetButtons();
-			break;
-		}
-		case MENU_LOCATE_END:
-		{
-			SetButtons();
-			break;
-		}
-		case MENU_STOP:
-		{
-			CPlayerControl::StopSong(m_document);
-			m_timeCtl->SetTime(0L, 0);
-			SetButtons();
-			break;
-		}
-		case CTempoEditControl::TEMPO_CHANGED:
-		{
-			double tempo = m_tempoCtl->Tempo();
-			if (m_document)
-				m_document->SetInitialTempo(tempo);
-			CPlayerControl::SetTempo(m_document, tempo);
-			break;
-		}	
-		case 'loop':
-		{
-			((CMeVApp *)be_app)->SetLoopFlag(m_loopButton->IsLooping());
-			SetButtons();
-			break;
-		}
-		case Player_ChangeTransportState:
-		{
-			SetButtons();
-			break;
-		}
-		case Player_ChangeTempo:
-		{
-			m_tempoCtl->SetTempo(CPlayerControl::Tempo(m_document));
-			break;
-		}
-		case CMeVApp::WATCH_TRACK:
-		{
-			CEventTrack *track = NULL;
-			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
-				return;
-			WatchTrack(track);
-			break;
-		}
-		default:
-		{
-			CAppWindow::MessageReceived(message);
-		}
+		if (m_document != NULL)
+			m_document->RemoveObserver(this);
+
+		m_document = document;
+		_setButtons();
+
+		if (m_document != NULL)
+			m_document->AddObserver(this);
 	}
-}
-
-void
-CTransportWindow::WatchTrack(
-	CEventTrack *track)
-{
-	if (track != m_track)
-	{
-		if (m_track != NULL)
-			m_track->RemoveObserver(this);
-
-		m_track = track;
-
-		CMeVDoc *doc = m_track ? &track->Document() : NULL;
-		if (doc != m_document)
-		{
-			if (m_document != NULL)
-				m_document->RemoveObserver(this);
-			m_document = doc;
-			SetButtons();
-		}
-
-		if (m_track)
-			m_track->AddObserver(this);
-	}
-}
-
-bool
-CTransportWindow::SubjectReleased(
-	CObservable *subject)
-{
-	D_OBSERVE(("CTransportWindow<%p>::SubjectReleased()\n", this));
-
-	if (subject == m_track)
-	{
-		WatchTrack(NULL);
-		return true;
-	}
-
-	return CAppWindow::SubjectReleased(subject);
-}
-
-void
-CTransportWindow::SubjectUpdated(
-	BMessage *message)
-{
-	SetButtons();
 }
 
 // END - TransportWindow.cpp

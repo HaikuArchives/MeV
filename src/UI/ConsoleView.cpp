@@ -4,6 +4,7 @@
 
 #include "ConsoleView.h"
 
+#include "ConsoleContainerView.h"
 #include "Observable.h"
 
 // Application Kit
@@ -43,6 +44,21 @@ CConsoleView::~CConsoleView()
 
 // ---------------------------------------------------------------------------
 // Accessors
+
+CConsoleContainerView *
+CConsoleView::Container() const
+{
+	BView *view = Parent();
+	CConsoleContainerView *container = NULL;
+	while ((container = dynamic_cast<CConsoleContainerView *>(view)) == NULL)
+	{
+		view = view->Parent();
+		if (view == NULL)
+			return NULL;
+	}
+
+	return container;
+}
 
 void
 CConsoleView::SetExpanded(
@@ -145,9 +161,15 @@ CConsoleView::MouseDown(
 	if (m_selectable && (buttons == B_PRIMARY_MOUSE_BUTTON))
 	{
 		if (!m_selected)
+		{
+			if (!(modifiers() & B_SHIFT_KEY))
+				Container()->DeselectAll();
 			SetSelected(true);
+		}
 		else
+		{
 			SetSelected(false);
+		}
 	}
 }
 

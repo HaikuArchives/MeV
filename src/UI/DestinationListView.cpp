@@ -28,6 +28,11 @@
 // Support Kit
 #include <Debug.h>
 
+// Debugging Macros
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)		// CAppWindow Implementation
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
+
 // ---------------------------------------------------------------------------
 //	Constructor/Destructor
 
@@ -35,11 +40,13 @@ CDestinationListView::CDestinationListView(
 	BRect frame,
 	uint32 resizingMode,
 	uint32 flags)
-	:	BView(frame, "DestinationListView", resizingMode, flags),
+	:	BView(frame, "", resizingMode, flags),
 		CObserver(),
 		m_doc(NULL),
 		m_track(NULL)
 {
+	D_ALLOC(("CDestinationListView::CDestinationListView()\n"));
+
 	BRect rect(Bounds());
 	BBox *box = new BBox(rect);
 	AddChild(box);
@@ -86,10 +93,24 @@ CDestinationListView::CDestinationListView(
 
 CDestinationListView::~CDestinationListView()
 {
-	if (m_doc)
+	D_ALLOC(("CDestinationListView::~CDestinationListView()\n"));
+
+	if (m_doc != NULL)
 	{
+		CWriteLock lock(m_doc);
+		CDestination *dest = NULL;
+		int32 index = 0;
+		while ((dest = m_doc->GetNextDestination(&index)) != NULL)
+			dest->RemoveObserver(this);
+	
 		m_doc->RemoveObserver(this);
 		m_doc = NULL;
+	}
+
+	if (m_track != NULL)
+	{
+		m_track->RemoveObserver(this);
+		m_track = NULL;
 	}
 }
 

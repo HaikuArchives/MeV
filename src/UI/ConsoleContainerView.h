@@ -42,46 +42,58 @@ class CConsoleContainerView
 	:	public BView
 {
 
-public:						// Constructor/Destructor
+public:							// Constructor/Destructor
 
-							CConsoleContainerView(
-								BRect frame,
-								const char *name);
+								CConsoleContainerView(
+									BRect frame,
+									const char *name);
 
-public:						// Operations
+public:							// Accessors
 
-	void					AddSlot(
-								CConsoleView *view,
-								int32 atIndex = -1);
+	CConsoleView *				GetNextSelected(
+									long *index) const;
 
-	int32					CountSlots() const
-							{ return CountChildren(); }
+public:							// Operations
 
-	CConsoleView *			FindSlot(
-								const char *name);
-	CConsoleView *			SlotAt(
-								int32 index);
+	void						AddSlot(
+									CConsoleView *view,
+									long atIndex = -1);
 
-	void					RemoveSlot(
-								CConsoleView *view);
-	CConsoleView *			RemoveSlot(
-								int32 index);
+	void						DeselectAll();
 
-	void					Pack();
+	int32						CountSlots() const
+								{ return CountChildren(); }
 
-public:						// BView Implementation
+	CConsoleView *				FindSlot(
+									const char *name) const;
+	CConsoleView *				SlotAt(
+									long index) const;
 
-	virtual void			AttachedToWindow();
+	void						RemoveSlot(
+									CConsoleView *view);
+	CConsoleView *				RemoveSlot(
+									long index);
 
-	virtual void			GetPreferredSize(
-								float *width,
-								float *height);
+	void						Pack();
 
-private:					// Instance Data
+	void						SelectAll();
 
-	BScrollBar *			m_hScrollBar;
+public:							// BView Implementation
 
-	BScrollBar *			m_vScrollBar;
+	virtual void				AttachedToWindow();
+
+	virtual void				GetPreferredSize(
+									float *width,
+									float *height);
+
+	virtual void				MouseDown(
+									BPoint point);
+
+private:						// Instance Data
+
+	BScrollBar *				m_hScrollBar;
+
+	BScrollBar *				m_vScrollBar;
 };
 
 #endif /* __C_ConsoleContainerView_H__ */

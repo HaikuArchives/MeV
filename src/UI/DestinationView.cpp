@@ -7,6 +7,7 @@
 #include "BorderView.h"
 #include "ColorDialogWindow.h"
 #include "ColorWell.h"
+#include "ConsoleContainerView.h"
 #include "ConsoleView.h"
 #include "Destination.h"
 #include "Idents.h"
@@ -102,12 +103,14 @@ CDestinationView::CDestinationView(
 										new BMessage(LATENCY_CHANGED));
 	m_latencyControl->SetDivider(controlOffset - 2.0);
 	m_latencyControl->SetAlignment(B_ALIGN_RIGHT, B_ALIGN_RIGHT);
+	m_latencyControl->SetEnabled(false);
 	AddChild(m_latencyControl);
 	rect.OffsetTo(rect.right + 2.0,
 				  rect.top + 5.0 + rect.Height() / 2.0 - fh.ascent / 2.0);
 	rect.right = Bounds().right - 2.0;
 	m_msLabel = new BStringView(rect, "", " ms ");
 	AddChild(m_msLabel);
+	m_msLabel->SetHighColor(tint_color(ViewColor(), B_DARKEN_2_TINT));
 
 	// add configuration view
 	rect.top = rect.bottom + 12.0;
@@ -185,6 +188,15 @@ CDestinationView::MessageReceived(
 
 	switch (message->what)
 	{
+		case MENU_CLEAR:
+		{
+			D_MESSAGE((" -> MENU_CLEAR\n"));
+
+			CDestinationDeleteUndoAction *undoAction;
+			undoAction = new CDestinationDeleteUndoAction(Destination());
+			Destination()->Document()->AddUndoAction(undoAction);
+			break;
+		}
 		case RENAME:
 		{
 			D_MESSAGE((" -> RENAME\n"));
@@ -285,10 +297,17 @@ CDestinationView::MouseDown(
 	int32 buttons = B_PRIMARY_MOUSE_BUTTON;
 	Window()->CurrentMessage()->FindInt32("buttons", &buttons);
 
-	if ((buttons == B_PRIMARY_MOUSE_BUTTON) && m_nameFrame.Contains(point))
+	if ((buttons == B_PRIMARY_MOUSE_BUTTON)
+	 && m_nameFrame.Contains(point)
+	 && IsSelected())
 		Window()->PostMessage(RENAME, this);
 	else if (buttons == B_SECONDARY_MOUSE_BUTTON)
+	{
+		if (!(modifiers() & B_SHIFT_KEY))
+			Container()->DeselectAll();
+		SetSelected(true);
 		_showContextMenu(point);
+	}
 	else
 		CConsoleView::MouseDown(point);
 }
@@ -346,6 +365,10 @@ CDestinationView::_showContextMenu(
 		m_contextMenu->AddItem(item);
 		item = new BMenuItem("Expand", NULL);
 		item->SetEnabled(false);
+		m_contextMenu->AddItem(item);
+		m_contextMenu->AddSeparatorItem();
+
+		item = new BMenuItem("Remove", new BMessage(MENU_CLEAR));
 		m_contextMenu->AddItem(item);
 		m_contextMenu->AddSeparatorItem();
 

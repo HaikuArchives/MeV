@@ -170,6 +170,22 @@ CMixWindow::MessageReceived(
 			Document()->Redo();
 			break;
 		}
+		case MENU_CLEAR:
+		{
+			long index = 0;
+			CConsoleView *slot;
+			while ((slot = m_containerView->GetNextSelected(&index)) != NULL)
+			{
+				CDestinationView *ds = dynamic_cast<CDestinationView *>(slot);
+				if (ds != NULL)
+				{
+					CDestinationDeleteUndoAction *undoAction;
+					undoAction = new CDestinationDeleteUndoAction(ds->Destination());
+					Document()->AddUndoAction(undoAction);
+				}
+			}
+			break;
+		}
 		case MENU_PLAY:
 		{
 			if (CPlayerControl::IsPlaying(Document()))
@@ -237,6 +253,11 @@ CMixWindow::MessageReceived(
 			 || (!CQuickKeyMenuItem::TriggerShortcutMenu(KeyMenuBar(), key)))
 				CDocWindow::MessageReceived(message);
 			break;
+		}
+		case B_SELECT_ALL:
+		{
+			// select all slots
+			m_containerView->SelectAll();
 		}
 		default:
 		{
@@ -364,8 +385,15 @@ CMixWindow::_destinationAdded(
 	CDestinationView *view = new CDestinationView(rect, destination);
 	view->ResizeToPreferred();
 	rect = view->Frame();
-	m_containerView->AddSlot(view);
 
+	// get the index where the destination should be inserted
+	Document()->ReadLock();
+	long index = Document()->IndexOf(destination);
+	Document()->ReadUnlock();
+
+	m_containerView->AddSlot(view, index);
+
+	// add the destination to the map
 	m_destinations[destination->ID()] = view;
 }
 
@@ -378,6 +406,8 @@ CMixWindow::_destinationRemoved(
 	{
 		m_containerView->RemoveSlot(view);
 		delete view;
+
+		// remove the destination from the map
 		m_destinations.erase(destinationID);
 	}
 }

@@ -152,6 +152,17 @@ CInspectorWindow::CInspectorWindow(
 	_clear();
 }
 
+CInspectorWindow::~CInspectorWindow()
+{
+	D_ALLOC(("CInspectorWindow::~CInspectorWindow()\n"));
+
+	if (m_track != NULL)
+	{
+		m_track->RemoveObserver(this);
+		m_track = NULL;
+	}
+}
+
 // ---------------------------------------------------------------------------
 // CAppWindow Implementation
 
@@ -166,7 +177,7 @@ CInspectorWindow::MessageReceived(
 			CEventTrack *track = NULL;
 			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
 				return;
-			WatchTrack(track);
+			_watchTrack(track);
 			break;
 		}
 		case Slider1_ID:
@@ -248,26 +259,6 @@ CInspectorWindow::MessageReceived(
 			CAppWindow::MessageReceived(message);
 			break;
 		}
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Operations
-
-void
-CInspectorWindow::WatchTrack(
-	CEventTrack *track)
-{
-	if (track != m_track)
-	{
-		if (m_track)
-			m_track->RemoveObserver(this);
-
-		m_track = track;
-		if (m_track)
-			m_track->AddObserver(this);
-
-		m_channelControl->SetTrack(m_track);
 	}
 }
 
@@ -395,6 +386,25 @@ CInspectorWindow::_clear()
 		m_vSlider[i]->SetRange(0.0, 0.0);
 		m_vSlider[i]->SetEnabled(false);
 		m_vLabel[i]->SetText("");
+	}
+}
+
+void
+CInspectorWindow::_watchTrack(
+	CEventTrack *track)
+{
+	D_INTERNAL(("CInspectorWindow::_watchTrack()\n"));
+
+	if (track != m_track)
+	{
+		if (m_track)
+			m_track->RemoveObserver(this);
+
+		m_track = track;
+		if (m_track)
+			m_track->AddObserver(this);
+
+		m_channelControl->SetTrack(m_track);
 	}
 }
 

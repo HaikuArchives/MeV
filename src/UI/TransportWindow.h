@@ -60,12 +60,12 @@ public:							// Constructor/Destructor
 									BPoint pos,
 									CWindowState &state);
 
+	virtual						~CTransportWindow();
+
 public:							// CAppWindow Implementation
 
 	virtual void				MessageReceived(
 									BMessage *message);
-
-	void						SetButtons();
 
 	/**	If the app wants us to stop looking at the track, then oblige it.
 		Overridden from the CObserver class.
@@ -79,17 +79,17 @@ public:							// CAppWindow Implementation
 	virtual void				SubjectUpdated(
 									BMessage *message);
 
-public:
+private:						// Internal Operations
 
-	/**	Handle transport functions for the current track */
-	void						WatchTrack(
-									CEventTrack *track);
+	void						_setButtons();
+
+	/**	Handle transport functions for the current document. */
+	void						_watchDocument(
+									CMeVDoc *doc);
 
 private:						// Instance Data
 
 	CMeVDoc	*					m_document;
-
-	CEventTrack *				m_track;
 
 	CTransportButton *			m_skipBackButton;
 	CTransportButton *			m_stopButton;
