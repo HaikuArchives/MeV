@@ -55,15 +55,20 @@ CIconMenuItem::DrawContent()
 	BPoint where(ContentLocation());
 	where.y = Frame().top;
 	
-	if (m_bitmap) {
+	if (m_bitmap)
+	{
 		if (IsEnabled())
+		{
 			Menu()->SetDrawingMode(B_OP_OVER);
+		}
 		else
-			Menu()->SetDrawingMode(B_OP_BLEND);	
-		
+		{
+			Menu()->SetDrawingMode(B_OP_ALPHA);
+			Menu()->SetHighColor(0, 0, 0, 64);
+			Menu()->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
+		}
 		Menu()->DrawBitmapAsync(m_bitmap, where);
 	}
-
 }
 
 void

@@ -139,63 +139,6 @@ CLinearWindow::MessageReceived(
 
 	switch (message->what)
 	{
-		case NEW_EVENT_TYPE_CHANGED:
-		{
-			D_MESSAGE((" -> NEW_EVENT_TYPE_CHANGED\n"));
-			int32 type;
-			if (message->FindInt32("type", &type) != B_OK)
-			{
-				return;
-			}
-			newEventType = (enum E_EventType)(type);
-			BBitmap *bitmap;
-			switch (newEventType)
-			{
-				case EvtType_ProgramChange:
-				{
-					bitmap = ResourceUtils::LoadImage("ProgramTool");
-					break;
-				}
-				case EvtType_TimeSig:
-				{
-					bitmap = ResourceUtils::LoadImage("TimeSigTool");
-					break;
-				}
-				case EvtType_Sequence:
-				{
-					bitmap = ResourceUtils::LoadImage("TrackTool");
-					break;
-				}
-				case EvtType_Repeat:
-				{
-					bitmap = ResourceUtils::LoadImage("RepeatTool");
-					break;
-				}
-				case EvtType_End:
-				{
-					bitmap = ResourceUtils::LoadImage("EndTool");
-					break;
-				}
-				case EvtType_SysEx:
-				{
-					bitmap = ResourceUtils::LoadImage("SysExTool");
-					break;
-				}
-				default:
-				{
-					bitmap = ResourceUtils::LoadImage("PencilTool");
-					break;
-				}
-			}
-			CMenuTool *tool = dynamic_cast<CMenuTool *>
-							  (ToolBar()->FindTool("Create"));
-			if (tool && bitmap)
-			{
-				tool->SetBitmap(bitmap);
-				ToolBar()->Invalidate(tool->Frame());
-			}
-			break;
-		}
 		case TOOL_GRID:
 		{
 			D_MESSAGE((" -> TOOL_GRID\n"));
@@ -345,6 +288,101 @@ CLinearWindow::OnUpdate(
 		CalcWindowTitle(track->Name());
 }
 
+bool
+CLinearWindow::AddStrip(
+	BString type,
+	float proportion)
+{
+	BRect rect(Bounds());
+	rect.top = ToolBar()->Frame().bottom
+			   + CTrackWindow::DEFAULT_RULER_HEIGHT + 1.0;
+	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
+
+	CStripView *strip = NULL;
+
+	if (type == "Piano Roll")
+	{
+		strip = new CLinearEditor(*this, *stripFrame, rect);
+	}
+	else if (type == "Velocity")
+	{
+		strip = new CVelocityEditor(*this, *stripFrame, rect);
+	}
+	else if (type == "Pitch Bend")
+	{
+		strip = new CPitchBendEditor(*this, *stripFrame, rect);
+	}
+	else if (type == "Control Change")
+	{
+		// nyi
+	}
+	else if (type == "Sequence")
+	{
+		strip = new CTrackCtlStrip(*this, *stripFrame, rect, Track(),
+								   "Sequence");
+	}
+
+	if (strip)
+	{
+		stripFrame->AddStrip(strip, proportion);
+		return true;
+	}
+
+	CTrackWindow::AddStrip(type, proportion);
+}
+
+void
+CLinearWindow::NewEventTypeChanged(
+	event_type type)
+{
+	BBitmap *bitmap;
+	switch (type)
+	{
+		case EvtType_ProgramChange:
+		{
+			bitmap = ResourceUtils::LoadImage("ProgramTool");
+			break;
+		}
+		case EvtType_Tempo:
+		{
+			bitmap = ResourceUtils::LoadImage("MetroTool");
+			break;
+		}
+		case EvtType_TimeSig:
+		{
+			bitmap = ResourceUtils::LoadImage("TimeSigTool");
+			break;
+		}
+		case EvtType_Repeat:
+		{
+			bitmap = ResourceUtils::LoadImage("RepeatTool");
+			break;
+		}
+		case EvtType_End:
+		{
+			bitmap = ResourceUtils::LoadImage("EndTool");
+			break;
+		}
+		case EvtType_SysEx:
+		{
+			bitmap = ResourceUtils::LoadImage("SysExTool");
+			break;
+		}
+		default:
+		{
+			bitmap = ResourceUtils::LoadImage("PencilTool");
+			break;
+		}
+	}
+	CMenuTool *tool = dynamic_cast<CMenuTool *>
+					  (ToolBar()->FindTool("Create"));
+	if (tool && bitmap)
+	{
+		tool->SetBitmap(bitmap);
+		ToolBar()->Invalidate(tool->Frame());
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Internal Operations
 
@@ -418,36 +456,39 @@ CLinearWindow::AddToolBar()
 	// make the pop up menu for 'Create' tool
 	BPopUpMenu *createMenu = new BPopUpMenu("", false, false);
 	createMenu->SetFont(be_plain_font);
+	CIconMenuItem *item;
 	BMessage *message = new BMessage(NEW_EVENT_TYPE_CHANGED);
 	message->AddInt32("type", EvtType_Count);
 	createMenu->AddItem(new CIconMenuItem("Default", message,
 										  ResourceUtils::LoadImage("PencilTool")));
+	createMenu->AddSeparatorItem();
 	message = new BMessage(*message);
-	message->ReplaceInt32("type", EvtType_ProgramChange);
-	createMenu->AddItem(new CIconMenuItem("Program Change", message,
-										  ResourceUtils::LoadImage("ProgramTool")));
-	message = new BMessage(*message);
-	message->ReplaceInt32("type", EvtType_Sequence);
-	createMenu->AddItem(new CIconMenuItem("Nested Track", message,
-										  ResourceUtils::LoadImage("TrackTool")));
-	message = new BMessage(*message);
-	message->ReplaceInt32("type", EvtType_Repeat);
-	createMenu->AddItem(new CIconMenuItem("Repeat", message,
-										  ResourceUtils::LoadImage("RepeatTool")));
+	message->ReplaceInt32("type", EvtType_Tempo);
+	createMenu->AddItem(new CIconMenuItem("Tempo", message,
+										  ResourceUtils::LoadImage("MetroTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_TimeSig);
 	createMenu->AddItem(new CIconMenuItem("Time Signature", message,
 										  ResourceUtils::LoadImage("TimeSigTool")));
 	message = new BMessage(*message);
-	message->ReplaceInt32("type", EvtType_SysEx);
-	createMenu->AddItem(new CIconMenuItem("System Exclusive", message,
-										  ResourceUtils::LoadImage("SysExTool")));
+	message->ReplaceInt32("type", EvtType_Repeat);
+	createMenu->AddItem(new CIconMenuItem("Repeat", message,
+										  ResourceUtils::LoadImage("RepeatTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_End);
 	createMenu->AddItem(new CIconMenuItem("Track End", message,
 										  ResourceUtils::LoadImage("EndTool")));
+	createMenu->AddSeparatorItem();
+	message = new BMessage(*message);
+	message->ReplaceInt32("type", EvtType_ProgramChange);
+	createMenu->AddItem(new CIconMenuItem("Program Change", message,
+										  ResourceUtils::LoadImage("ProgramTool")));
+	message = new BMessage(*message);
+	message->ReplaceInt32("type", EvtType_SysEx);
+	createMenu->AddItem(item = new CIconMenuItem("System Exclusive", message,
+												 ResourceUtils::LoadImage("SysExTool")));
+	item->SetEnabled(false);
 	createMenu->SetTargetForItems((CDocWindow *)this);
-
 
 	BRect rect(Bounds());
 	if (KeyMenuBar())
@@ -542,49 +583,6 @@ CLinearWindow::AddFrameView(
 	AddChild(ruler);
 	AddChild(stripScroll);
 	AddChild(stripFrame);
-}
-
-bool
-CLinearWindow::AddStrip(
-	BString type,
-	float proportion)
-{
-	BRect rect(Bounds());
-	rect.top = ToolBar()->Frame().bottom
-			   + CTrackWindow::DEFAULT_RULER_HEIGHT + 1.0;
-	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
-
-	CStripView *strip = NULL;
-
-	if (type == "Piano Roll")
-	{
-		strip = new CLinearEditor(*this, *stripFrame, rect);
-	}
-	else if (type == "Velocity")
-	{
-		strip = new CVelocityEditor(*this, *stripFrame, rect);
-	}
-	else if (type == "Pitch Bend")
-	{
-		strip = new CPitchBendEditor(*this, *stripFrame, rect);
-	}
-	else if (type == "Control Change")
-	{
-		// nyi
-	}
-	else if (type == "Sequence")
-	{
-		strip = new CTrackCtlStrip(*this, *stripFrame, rect, Track(),
-								   "Sequence");
-	}
-
-	if (strip)
-	{
-		stripFrame->AddStrip(strip, proportion);
-		return true;
-	}
-
-	CTrackWindow::AddStrip(type, proportion);
 }
 
 // END - LinearWindow.cpp

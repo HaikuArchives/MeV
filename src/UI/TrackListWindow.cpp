@@ -308,7 +308,7 @@ void
 CTrackListWindow::OnUpdate(
 	BMessage *message)
 {
-	D_HOOK(("CTrackListView::OnUpdate()\n"));
+	D_HOOK(("CTrackListWindow::OnUpdate()\n"));
 
 	int32 trackHint, docHint;
 	int32 trackID;

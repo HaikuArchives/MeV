@@ -155,28 +155,6 @@ public:
 	CAppPrefsWindow( CWindowState &inState );
 };
 
-	// Track preferences window
-	
-class CLEditorPrefsWindow : public CPrefsWindow, public CObserver {
-
-	enum ETrackPrefsPanels {
-		Panel_Views = 0,
-
-		Panel_Count
-	};
-
-// CEditorPrefs		prefs;
-	CEventTrack		*track;
-	CTimeIntervalEditor	*intervalEditor;
-	BOutlineListView	*stripList;
-	
-	void OnUpdate( BMessage * ) {}
-
-public:
-	CLEditorPrefsWindow( CWindowState &inState, CEventTrack *inTrack );
-	~CLEditorPrefsWindow();
-};
-
 	// Generic preferences window
 	
 class CMiniDialog : public BWindow {

@@ -155,6 +155,12 @@ public:							// Hook Functions
 	virtual bool				SupportsShadowing()
 								{ return false; }
 
+	// Conversion between time and coords
+	virtual double				TimeToViewCoords(
+									long timeVal) const;
+	virtual long				ViewCoordsToTime(
+									double relPos) const;
+
 public:							// Accessors
 
 	void						SetHandlerFor(
@@ -205,12 +211,6 @@ public:							// Operations
 	int32						SnapToGrid(
 									int32 inTime,
 									bool inInitial = false);
-
-	// Conversion between time and coords
-	virtual double				TimeToViewCoords(
-									long timeVal) const;
-	virtual long				ViewCoordsToTime(
-									double relPos) const;
 
 protected:						// Internal Operations
 
@@ -300,7 +300,7 @@ protected:						// Instance Data
 	CTrackEditFrame	&			m_frame;
 
 	// Array of handlers for each event type
-	typedef map<TEventType, CAbstractEventHandler *> handler_map;
+	typedef map<event_type, CAbstractEventHandler *> handler_map;
 	handler_map					m_handlers;
 
 	CPolygon *					m_lasso;

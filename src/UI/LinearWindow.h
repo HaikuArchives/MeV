@@ -53,13 +53,6 @@ class CLinearWindow :
 	public CTrackWindow
 {
 	
-public:							// Constants
-
-	enum messages
-	{
-								NEW_EVENT_TYPE_CHANGED = 'mLWn'
-	};
-
 public:							// Constructor/Destructor
 
 								CLinearWindow(
@@ -87,6 +80,15 @@ public:							// CTrackWindow Implementation
 	virtual void				OnUpdate(
 									BMessage *message);
 
+protected:
+
+	virtual bool				AddStrip(
+									BString type,
+									float proportion = 0.3);
+
+	virtual void				NewEventTypeChanged(
+									event_type type);
+
 protected:						// Internal Operations
 
 	void						AddMenuBar();
@@ -97,16 +99,11 @@ protected:						// Internal Operations
 									BRect frame,
 									CTrack *track);
 
-	virtual bool				AddStrip(
-									BString type,
-									float proportion = 0.3);
-
 private:						// Instance Data
 
 	char						m_timeBuf[16];
 
 	CToolBar *					m_toolBar;
-
 
 	uint8						m_toolStates[1];
 

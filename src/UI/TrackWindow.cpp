@@ -4,23 +4,23 @@
 
 #include "TrackWindow.h"
 
-#include "EventTrack.h"
-#include "MeVApp.h"
-#include "Idents.h"
-#include "PlayerControl.h"
-#include "StdEventOps.h"
-#include "MeVDoc.h"
-#include "ResourceUtils.h"
-// UI
-#include "BorderButton.h"
 #include "AssemblyRulerView.h"
+#include "BorderButton.h"
 #include "EventEditor.h"
+#include "EventTrack.h"
+#include "Idents.h"
+#include "MeVApp.h"
+#include "MeVDoc.h"
 #include "OperatorWindow.h"
-#include "TrackListWindow.h"
+#include "PlayerControl.h"
 #include "QuickKeyMenuItem.h"
+#include "ResourceUtils.h"
+#include "StdEventOps.h"
 #include "StripView.h"
-
-#include "Junk.h"
+#include "Tool.h"
+#include "ToolBar.h"
+#include "TrackEditFrame.h"
+#include "TrackListWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -58,7 +58,7 @@ CTrackWindow::CTrackWindow(
 		stripFrame(NULL),
 		stripScroll(NULL),
 		trackOp(NULL),
-		newEventType(EvtType_Count)
+		m_newEventType(EvtType_Count)
 {
 	D_ALLOC(("TrackWindow::TrackWindow()\n"));
 
@@ -90,6 +90,16 @@ CTrackWindow::NewEventDuration() const
 		return ActiveTrack()->TimeGridSize();
 	else
 		return Ticks_Per_QtrNote;
+}
+
+event_type
+CTrackWindow::NewEventType(
+	event_type defaultType) const
+{
+	if (m_newEventType >= EvtType_Count)
+		return defaultType;
+
+	return m_newEventType;
 }
 
 // ---------------------------------------------------------------------------
@@ -298,6 +308,22 @@ CTrackWindow::MessageReceived(
 				if (AddStrip(type))
 					stripFrame->PackStrips();
 			}
+			break;
+		}
+		case NEW_EVENT_TYPE_CHANGED:
+		{
+			int32 type;
+			if (message->FindInt32("type", &type) != B_OK)
+				return;
+
+			if (type != m_newEventType)
+			{
+				m_newEventType = static_cast<event_type>(type);
+				NewEventTypeChanged(m_newEventType);
+			}
+			CTool *tool = ToolBar()->FindTool("Create");
+			if (tool)
+				tool->SetValue(B_CONTROL_ON);
 			break;
 		}
 		case MENU_TRACKLIST:

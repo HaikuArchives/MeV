@@ -45,13 +45,6 @@
 #include "DocWindow.h"
 #include "MeVDoc.h"
 
-//#include "TrackEditFrame.h"
-//#include "EventOp.h"
-//#include "DynamicMenu.h"
-//#include "Idents.h"
-//#include "EventTrack.h"
-//#include "ResourceUtils.h"
-
 class CScroller;
 class CTrackEditFrame;
 class CTrackOperation;
@@ -65,6 +58,13 @@ class CTrackWindow :
 {
 
 public:							// Constants
+
+public:							// Constants
+
+	enum messages
+	{
+								NEW_EVENT_TYPE_CHANGED = 'trwA'
+	};
 
 	enum tool_id
 	{
@@ -102,6 +102,17 @@ public:							// Hook Functions
 									CEventTrack *track)
 								{ }
 
+protected:
+
+	virtual bool				AddStrip(
+									BString type,
+									float proportion = 0.3)
+								{ return false; }
+
+	virtual void				NewEventTypeChanged(
+									event_type type)
+								{ }
+
 public:							// Accessors
 
 	// For windows which edit dual tracks, select which one
@@ -120,6 +131,13 @@ public:							// Accessors
 	// Returns the default event duration
 	int32						NewEventDuration() const;
 	
+	// Returns the type of new events to be created
+	event_type					NewEventType(
+									event_type defaultType) const;
+	void						SetNewEventType(
+									event_type type)
+								{ m_newEventType = type; }
+
 public:							// Operations
 
 	// Set the EventOp representing a pending operation
@@ -132,17 +150,6 @@ public:							// Operations
 
 	// Show the editor preference window
 	void						ShowPrefs();
-
-	// Returns the type of new events to be created
-	E_EventType					GetNewEventType(
-									E_EventType defaultType)
-								{
-									if (newEventType >= EvtType_Count)
-									{
-										return defaultType;
-									}
-									return newEventType;
-								}
 
 public:							// CDocWindow Implementation
 
@@ -170,11 +177,6 @@ public:							// CObserver Implementation
 
 protected:						// Internal Operations
 
-	virtual bool				AddStrip(
-									BString type,
-									float proportion = 0.3)
-								{ return false; }
-
 	void						UpdateActiveSelection(
 									bool active);
 
@@ -191,8 +193,10 @@ protected:						// Instance Data
 
 	EventOp *					trackOp;
 
-	// Type of newly created events
-	enum E_EventType			newEventType;
+private:
+
+	/** Type of newly created events */
+	event_type					m_newEventType;
 };
 
 #endif /* __C_TrackWindow_H__ */

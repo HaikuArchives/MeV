@@ -125,7 +125,7 @@ public:							// Internal Operations
 	/** Construct a new event of the given type */
 	bool						ConstructEvent(
 									BPoint point,
-									TEventType type);
+									event_type type);
 
 	void						CalcZoom();
 

@@ -627,7 +627,7 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 		return false;
 
 	// Initialize a new event
-	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_PitchBend));
+	m_newEv.SetCommand(TrackWindow()->NewEventType(EvtType_PitchBend));
 
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.

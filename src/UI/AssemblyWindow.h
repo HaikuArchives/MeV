@@ -73,6 +73,15 @@ public:							// CTrackWindow Implementation
 	virtual void				OnUpdate(
 									BMessage *message);
 
+protected:
+
+	virtual bool				AddStrip(
+									BString type,
+									float proportion = 0.3);
+
+	virtual void				NewEventTypeChanged(
+									event_type type);
+
 protected:						// Internal Operations
 
 	void						AddMenuBar();
@@ -82,10 +91,6 @@ protected:						// Internal Operations
 	void						AddFrameView(
 									BRect frame,
 									CTrack *track);
-
-	virtual bool				AddStrip(
-									BString type,
-									float proportion = 0.3);
 
 private:						// Instance Data
 

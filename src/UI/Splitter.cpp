@@ -210,9 +210,9 @@ void CSplitter::MouseMoved(
 		}
 		m_lastDragTime = when;
 	}
-	else if (!message)
+	else
 	{
-		if (transit == B_ENTERED_VIEW)
+		if ((transit == B_ENTERED_VIEW) && (message == NULL))
 		{
 			be_app->SetCursor(m_cursor);
 		}

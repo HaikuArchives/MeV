@@ -86,7 +86,7 @@ CLinearEditor::ConstructEvent(
 		return false;
 
 	// Initialize a new event
-	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_Note));
+	m_newEv.SetCommand(TrackWindow()->NewEventType(EvtType_Note));
 
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.

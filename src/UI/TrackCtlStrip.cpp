@@ -25,7 +25,7 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) PRINT(x)		// Constructor/Destructor
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 
 extern const uint8	*resizeCursor,
 					*crossCursor;
@@ -583,60 +583,99 @@ EventOp *CTimeSigEventHandler::CreateDragOp(
 // ---------------------------------------------------------------------------
 // Event handler class for program changes
 
-class CProgramChangeEventHandler : public CAbstractEventHandler {
+class CProgramChangeEventHandler
+	:	public CAbstractEventHandler
+{
 
-		// No constructor
+public:							// Constructor/Destructor
 
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-					const Event		&ev ) const ;
+	/** Load the program change icon from resources. */
+								CProgramChangeEventHandler();
 
-		// Draw the event (or an echo)
-	void Draw(		CEventEditor	&editor,
-					const Event		&ev,
-					bool 			shadowed ) const;
-		// Invalidate the event
-	BRect Extent(		CEventEditor	&editor,
-					const Event		&ev ) const;
+	/** Free the icon. */
+	virtual						~CProgramChangeEventHandler();
 
-		// Pick a single event and returns the distance.
-	long Pick(		CEventEditor	&editor,
-					const Event		&ev,
-					BPoint			pickPt,
-					short			&partCode ) const;
+public:							// CAbstractEventHandler Implementation
 
-		// For a part code returned earlier, return a cursor
-		// image...
-	const uint8 *CursorImage( short partCode ) const;
+	/** Invalidate the event. */
+	virtual void				Invalidate(
+									CEventEditor &editor,
+									const Event &ev) const ;
 
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	long QuantizeDragValue(
-		CEventEditor		&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos ) const;
+	/** Draw the event (or an echo). */
+	virtual void				Draw(
+									CEventEditor &editor,
+									const Event &ev,
+									bool shadowed) const;
 
-		// Make a drag op for dragging notes...
-	EventOp *CreateDragOp(
-		CEventEditor		&editor,
-		const Event		&ev,
-		short			partCode,
-		long				timeDelta,			// The horizontal drag delta
-		long				valueDelta ) const;
+	/** Invalidate the event. */
+	virtual BRect				Extent(
+									CEventEditor &editor,
+									const Event &ev) const;
 
-	const char *GetPatchName( CEventEditor &editor, const Event &ev, char *outName ) const;
+	/** Pick a single event and returns the distance. */
+	virtual long				Pick(
+									CEventEditor &editor,
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
+
+	/** For a part code returned earlier, return a cursor
+		image. */
+	virtual const uint8 *		CursorImage(
+									short partCode) const;
+
+	/** Quantize the vertical position of the mouse based
+		on the event type and return a value delta. */
+	virtual long				QuantizeDragValue(
+									CEventEditor &editor,
+									const Event &inClickEvent,
+									short partCode,
+									BPoint inClickPos,
+									BPoint inDragPos) const;
+
+	/** Make a drag op for dragging notes...
+		@param timeDelta The horizontal drag delta
+	*/
+	virtual EventOp *			CreateDragOp(
+									CEventEditor &editor,
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+	const char *				GetPatchName(
+									CEventEditor &editor,
+									const Event &ev,
+									char *outName) const;
+
+private:						// Instance Data
+
+	BBitmap *					m_icon;
 };
 
-	// Invalidate the event
-void CProgramChangeEventHandler::Invalidate(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+CProgramChangeEventHandler::CProgramChangeEventHandler()
+	:	CAbstractEventHandler(),
+		m_icon(NULL)
 {
-	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
+	m_icon = ResourceUtils::LoadImage("ProgramTool");
+}
 
-	rEditor.Invalidate( Extent( editor, ev ) );
+CProgramChangeEventHandler::~CProgramChangeEventHandler()
+{
+	if (m_icon)
+	{
+		delete m_icon;
+		m_icon = NULL;
+	}
+}
+
+void
+CProgramChangeEventHandler::Invalidate(
+	CEventEditor &editor,
+	const Event &ev) const
+{
+	editor.Invalidate(Extent(editor, ev));
 }
 
 void
@@ -649,19 +688,15 @@ CProgramChangeEventHandler::Draw(
 	VChannelEntry *vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
 	bool locked = editor.Track()->IsChannelLocked(ev.GetVChannel());
 
-	// get bitmap
-	// !!! this MUST be cached somewhere
-	BBitmap *horn = ResourceUtils::LoadImage("ProgramTool");
-	BRect hornRect = horn->Bounds();
-
 	// acquire patch name
 	char patchNameBuf[64];
 	const char *patchName;
 	patchName = GetPatchName(editor, ev, patchNameBuf);
 
+	BRect iconRect = m_icon->Bounds();
 	BRect r;
 	r.left = editor.TimeToViewCoords(ev.Start());
-	r.right	= r.left + rEditor.StringWidth(patchName) + 9.0 + hornRect.Width();
+	r.right	= r.left + rEditor.StringWidth(patchName) + 9.0 + iconRect.Width();
 	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
 	r.bottom = r.top + rEditor.BarHeight() - 2.0;
 	
@@ -680,9 +715,9 @@ CProgramChangeEventHandler::Draw(
 	if (!shadowed && rEditor.PendingOperation() != NULL)
 		return;
 
-	BPoint offset(r.left, (r.top + r.bottom - hornRect.Height()) / 2);
-	editor.DrawBitmap(horn, offset);
-	r.left += hornRect.Width() + 3.0;
+	BPoint offset(r.left, (r.top + r.bottom - iconRect.Height()) / 2);
+	editor.DrawBitmap(m_icon, offset);
+	r.left += iconRect.Width() + 3.0;
 
 	offset.x = r.left + 3.0;
 	offset.y = (r.top + r.bottom - fh.descent + fh.ascent + 1.0) / 2;
@@ -709,14 +744,12 @@ CProgramChangeEventHandler::Draw(
 
 	editor.SetHighColor(0, 0, 0, 255);
 	editor.DrawString(patchName, offset);
-
-	delete horn;
 }
 
-	// Compute the extent of the event.
-BRect CProgramChangeEventHandler::Extent(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+BRect
+CProgramChangeEventHandler::Extent(
+	CEventEditor &editor,
+	const Event &ev) const
 {
 	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
@@ -833,65 +866,103 @@ const char *CProgramChangeEventHandler::GetPatchName(
 // ---------------------------------------------------------------------------
 // Event handler class for tempo events
 
-class CTempoEventHandler : public CAbstractEventHandler {
+class CTempoEventHandler
+	:	public CAbstractEventHandler
+{
 
-		// No constructor
+public:							// Constructor/Destructor
 
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-					const Event		&ev ) const ;
+	/** Load the program change icon from resources. */
+								CTempoEventHandler();
 
-		// Draw the event (or an echo)
-	void Draw(		CEventEditor	&editor,
-					const Event		&ev,
-					bool 			shadowed ) const;
-		// Invalidate the event
-	BRect Extent(		CEventEditor	&editor,
-					const Event		&ev ) const;
+	/** Free the icon. */
+	virtual						~CTempoEventHandler();
 
-		// Pick a single event and returns the distance.
-	long Pick(		CEventEditor	&editor,
-					const Event		&ev,
-					BPoint			pickPt,
-					short			&partCode ) const;
+public:							// CAbstractEventHandler Implementation
 
-		// For a part code returned earlier, return a cursor
-		// image...
-	const uint8 *CursorImage( short partCode ) const;
+	/** Invalidate the event. */
+	virtual void				Invalidate(
+									CEventEditor &editor,
+									const Event &ev) const ;
 
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	long QuantizeDragValue(
-		CEventEditor		&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos ) const;
+	/** Draw the event (or an echo). */
+	virtual void				Draw(
+									CEventEditor &editor,
+									const Event &ev,
+									bool shadowed) const;
 
-		// Make a drag op for dragging notes...
-	EventOp *CreateDragOp(
-		CEventEditor		&editor,
-		const Event		&ev,
-		short			partCode,
-		long				timeDelta,			// The horizontal drag delta
-		long				valueDelta ) const;
+	/** Invalidate the event. */
+	virtual BRect				Extent(
+									CEventEditor &editor,
+									const Event &ev) const;
 
-	EventOp *CreateTimeOp(
-		CEventEditor	&editor,			// The editor
-		const Event	&ev,				// The clicked event
-		short		partCode,			// Part of event clicked
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
+	/** Pick a single event and returns the distance. */
+	virtual long				Pick(
+									CEventEditor &editor,
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
+
+	/** For a part code returned earlier, return a cursor
+		image. */
+	virtual const uint8 *		CursorImage(
+									short partCode) const;
+
+	/** Quantize the vertical position of the mouse based
+		on the event type and return a value delta. */
+	virtual long				QuantizeDragValue(
+									CEventEditor &editor,
+									const Event &inClickEvent,
+									short partCode,
+									BPoint inClickPos,
+									BPoint inDragPos) const;
+
+	/** Make a drag op for dragging notes...
+		@param timeDelta The horizontal drag delta */
+	virtual EventOp *			CreateDragOp(
+									CEventEditor &editor,
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+	/**
+	 @param timeDelta The horizontal drag delta
+	*/
+	virtual EventOp *			CTempoEventHandler::CreateTimeOp(
+									CEventEditor &editor,
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+private:						// Instance Data
+
+	BBitmap *					m_icon;
 };
 
-	// Invalidate the event
-void CTempoEventHandler::Invalidate(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+CTempoEventHandler::CTempoEventHandler()
+	:	CAbstractEventHandler(),
+		m_icon(NULL)
 {
-	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
+	m_icon = ResourceUtils::LoadImage("MetroTool");
+}
 
-	rEditor.Invalidate( Extent( editor, ev ) );
+CTempoEventHandler::~CTempoEventHandler()
+{
+	if (m_icon)
+	{
+		delete m_icon;
+		m_icon = NULL;
+	}
+}
+
+void
+CTempoEventHandler::Invalidate(
+	CEventEditor &editor,
+	const Event &ev) const
+{
+	editor.Invalidate(Extent(editor, ev));
 }
 
 void
@@ -900,65 +971,69 @@ CTempoEventHandler::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
-	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
-	char			tempoText[ 64 ];
-	float			x, y;
-	BBitmap			*icon;
-	
-	icon = ResourceUtils::LoadImage("SmallClock");
-	
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
+
 	font_height fh;
 	be_plain_font->GetHeight(&fh);
 	
-	sprintf( tempoText, "Tempo: %.2f", (float)ev.tempo.newTempo / 1000.0 );
+	BString tempoText;
+	tempoText << static_cast<float>(ev.tempo.newTempo / 1000.0) << " bpm";
 
-	BRect			r;
-	r.left		= editor.TimeToViewCoords( ev.Start() );
-	r.right	= editor.TimeToViewCoords( ev.Stop()  ) - 1.0;
-	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.BarHeight() - 2;
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.right = editor.TimeToViewCoords(ev.Stop()) - 1.0;
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	r.bottom = r.top + rEditor.BarHeight() - 2.0;
 
-	if (shadowed && rEditor.m_dragOp != NULL)
-		rEditor.SetDrawingMode(B_OP_BLEND);
-	else
-		rEditor.SetDrawingMode(B_OP_OVER);
-	
 	// A test -- don't show the existing event if we're adjusting via slider.
-	if (!shadowed && rEditor.PendingOperation() != NULL)
-		return;
+//	if (!shadowed && rEditor.PendingOperation() != NULL)
+//		return;
 
-	if (ev.IsSelected() && editor.IsSelectionVisible())
+	BRect iconRect(r.LeftTop(), r.LeftTop() + m_icon->Bounds().RightBottom());
+	if (shadowed)
 	{
-		if (shadowed)
-			rEditor.SetHighColor( 0, 0, 0 );
-		else
-			rEditor.SetHighColor( 0, 0, 255 );
+		editor.SetDrawingMode(B_OP_ALPHA);
+		editor.SetHighColor(0.0, 0.0, 0.0, 150.0);
+		editor.SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+		editor.SetDrawingMode(B_OP_OVER);
+		editor.SetHighColor(128, 128, 255, 255);
+	}
+	else if (ev.IsSelected() && editor.IsSelectionVisible())
+	{
+		editor.SetDrawingMode(B_OP_INVERT);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+		editor.SetDrawingMode(B_OP_ALPHA);
+		editor.SetHighColor(0.0, 0.0, 0.0, 180.0);
+		editor.SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+		editor.SetDrawingMode(B_OP_OVER);
+		editor.SetHighColor(0, 0, 255, 255);
 	}
 	else
-		rEditor.SetHighColor( 192, 192, 192 );
+	{
+		editor.SetDrawingMode(B_OP_OVER);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+		editor.SetHighColor(0, 0, 0, 255);
+	}
 
-	rEditor.FillRect( BRect( r.left, r.top, r.right, r.top + 2.0 ) );
-
-	rEditor.DrawBitmapAsync( icon, BPoint( r.left, (r.top + r.bottom - 7.0)/2.0 ) );
-
-	x = r.left + 11.0;
-	y = (r.top + 3.0 + r.bottom - fh.descent + fh.ascent + 1.0) / 2;
+	BPoint offset;
+	offset.x = iconRect.right + 4.0;
+	offset.y = (r.top + r.bottom - fh.descent + fh.ascent) / 2.0;
 	
-	rEditor.SetHighColor( 0, 0, 0 );
-	rEditor.DrawString( tempoText, BPoint( x, y ) );
+	editor.DrawString(tempoText.String(), offset);
 }
 
-	// Compute the extent of the event.
-BRect CTempoEventHandler::Extent(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+BRect
+CTempoEventHandler::Extent(
+	CEventEditor &editor,
+	const Event &ev) const
 {
-	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
-	BRect			r;
-	BBitmap			*metro;
-	BRect			metroRect;
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
+	BRect r;
+	BBitmap *metro;
+	BRect metroRect;
 	
-//	metro = ResourceUtils::LoadImage("ProgramTool");
 	metro = ResourceUtils::LoadImage("MetroTool");
 	metroRect = metro->Bounds();
 	
@@ -1079,16 +1154,12 @@ EventOp *CTempoEventHandler::CreateTimeOp(
 // ---------------------------------------------------------------------------
 // Dispatch table for Track Control editor ~~~EVENTLIST
 
-CRepeatEventHandler		repeatEventHandler;
+CRepeatEventHandler			repeatEventHandler;
 CSequenceEventHandler		sequenceEventHandler;
 CTimeSigEventHandler		timeSigEventHandler;
-CProgramChangeEventHandler programChangeEventHandler;
-CTempoEventHandler 		tempoEventHandler;
 
 // ---------------------------------------------------------------------------
-// Linear Editor class
-
-	// ---------- Constructor
+// Constructor/Destructor
 
 CTrackCtlStrip::CTrackCtlStrip(
 	BLooper	&looper,
@@ -1100,11 +1171,11 @@ CTrackCtlStrip::CTrackCtlStrip(
 		m_barHeight(16)
 {
 	SetHandlerFor(EvtType_End, &gEndEventHandler);
-	SetHandlerFor(EvtType_ProgramChange, &programChangeEventHandler);
+	SetHandlerFor(EvtType_ProgramChange, new CProgramChangeEventHandler());
 	SetHandlerFor(EvtType_Repeat, &repeatEventHandler);
 	SetHandlerFor(EvtType_Sequence, &sequenceEventHandler);
 	SetHandlerFor(EvtType_TimeSig, &timeSigEventHandler);
-	SetHandlerFor(EvtType_Tempo, &tempoEventHandler);
+	SetHandlerFor(EvtType_Tempo, new CTempoEventHandler());
 
 	CalcZoom();
 	SetZoomTarget((CObserver *)this);
@@ -1142,42 +1213,46 @@ CTrackCtlStrip::ViewCoordsToVPos(
 }
 
 void
-CTrackCtlStrip::Draw( BRect updateRect )
+CTrackCtlStrip::Draw(
+	BRect updateRect)
 {
-	long				startTime = ViewCoordsToTime( updateRect.left - 128.0 ),
-					stopTime  = ViewCoordsToTime( updateRect.right + 1.0 );
+	long startTime = ViewCoordsToTime(updateRect.left - 128.0);
+	long stopTime = ViewCoordsToTime(updateRect.right + 1.0);
 
-	SetHighColor( 255, 255, 255 );
-	FillRect( updateRect );
+	SetHighColor(255, 255, 255, 255);
+	FillRect(updateRect);
 
-	DrawGridLines( updateRect );
+	DrawGridLines(updateRect);
 
-		// Initialize an event marker for this track.
-	StSubjectLock		trackLock( *Track(), Lock_Shared );
-	EventMarker		marker( Track()->Events() );
+	// Initialize an event marker for this track.
+	StSubjectLock trackLock(*Track(), Lock_Shared);
+	EventMarker marker(Track()->Events());
 
 	bounds = Bounds();
 
-		// For each event that overlaps the current view, draw it. (locked channels first)
-	for (	const Event *ev = marker.FirstItemInRange( startTime, stopTime );
-			ev;
-			ev = marker.NextItemInRange( startTime, stopTime ) )
+	// For each event that overlaps the current view, draw it.
+	// (locked channels first)
+	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+		 ev;
+		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (Track()->IsChannelLocked( *ev ))
-			Handler( *ev ).Draw( *this, *ev, false );
+		if (Track()->IsChannelLocked(*ev))
+			HandlerFor(*ev)->Draw(*this, *ev, false);
 	}
-	
-		// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
-	for (	const Event *ev = marker.FirstItemInRange( startTime, stopTime );
-			ev;
-			ev = marker.NextItemInRange( startTime, stopTime ) )
+
+	// For each event that overlaps the current view, draw it.
+	// (unlocked channels overdraw!)
+	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+		 ev;
+		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (!Track()->IsChannelLocked( *ev ))
-			Handler( *ev ).Draw( *this, *ev, false );
+		if (!Track()->IsChannelLocked(*ev))
+			HandlerFor(*ev)->Draw(*this, *ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();
-	if (echoOp == NULL) echoOp = DragOperation();
+	if (echoOp == NULL)
+		echoOp = DragOperation();
 
 	if (m_dragType == DragType_DropTarget)
 	{
@@ -1396,7 +1471,7 @@ CTrackCtlStrip::MessageReceived(
 					break;
 				GetMouse(&point, &buttons, true);
 
-				if (ConstructEvent(point, (TEventType)evtType) == false)
+				if (ConstructEvent(point, evtType) == false)
 					return;
 				
 				// Initialize an event marker for this track.
@@ -1448,7 +1523,6 @@ void CTrackCtlStrip::MouseMoved(
 		}
 	
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
-//		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
 		return;
 	}
 	
@@ -1514,7 +1588,6 @@ void CTrackCtlStrip::MouseMoved(
 						TrackWindow()->DisplayMouseTime( Track(), time );
 						m_dragType = DragType_DropTarget;
 					}
-//					be_app->HideCursor();
 					return;
 				}
 				break;
@@ -1526,18 +1599,14 @@ void CTrackCtlStrip::MouseMoved(
 	else
 	{
 		if ((ev = PickEvent( marker, point, partCode )) != NULL)
-		{
-			newCursor = Handler( *ev ).CursorImage( partCode );
-		}
-		else newCursor = NULL;
+			newCursor = HandlerFor(*ev)->CursorImage(partCode);
+		else
+			newCursor = NULL;
 	
 		if (newCursor == NULL)
 		{
 			if (crossCursor == NULL)
-			{
 				crossCursor = ResourceUtils::LoadCursor(1);
-			}
-
 			newCursor = crossCursor;
 		}
 	}
@@ -1548,13 +1617,13 @@ CTrackCtlStrip::ConstructEvent(
 	BPoint point)
 {
 	return ConstructEvent(point,
-						  TrackWindow()->GetNewEventType(EvtType_ProgramChange));
+						  TrackWindow()->NewEventType(EvtType_Sequence));
 }
 
 bool
 CTrackCtlStrip::ConstructEvent(
 	BPoint point,
-	TEventType type)
+	event_type type)
 {
 	int32 time;
 
