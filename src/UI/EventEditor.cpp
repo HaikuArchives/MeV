@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * EventEditor.cpp (MeV/User Interface)
+ * EventEditor.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "EventEditor.h"
@@ -112,7 +112,8 @@ CEventEditor::DoDrag(
 													  m_clickPart, m_clickPos,
 													  point);
 	
-			if ((newTimeDelta  == m_timeDelta) && (newValueDelta == m_valueDelta))
+			if ((newTimeDelta  == m_timeDelta)
+			 && (newValueDelta == m_valueDelta))
 				return true;
 	
 			newValueOp = handler.CreateDragOp(*this, *dragEvent, m_clickPart,
@@ -316,7 +317,7 @@ CEventEditor::FinishDrag(
 		if ((m_timeDelta == 0) && (m_valueDelta == 0)
 		 && (m_dragType != DragType_Create))
 			commit = false;
-		
+
 		// Remove highlight from piano keyboard.
 		KillEventFeedback();
 		
@@ -341,6 +342,12 @@ CEventEditor::FinishDrag(
 				else
 				{
 					Track()->ModifySelectedEvents(this, *m_dragOp, "Drag");
+
+					// Update document default attributes
+					const Event *selectedEvent = Track()->CurrentEvent();
+					if (selectedEvent && selectedEvent->HasProperty(Event::Prop_Duration))
+						TrackWindow()->Document()->SetDefaultAttribute(EvAttr_Duration,
+																	   selectedEvent->Duration());
 				}
 	
 				if (prevTrackDuration != Track()->LastEventTime())
@@ -462,13 +469,18 @@ CEventEditor::StartDrag(
 				// This could be faster.
 				Track()->SummarizeSelection();
 	
+				// Update document default attributes
+				if (ev->HasProperty(Event::Prop_Duration))
+					TrackWindow()->Document()->SetDefaultAttribute(EvAttr_Duration,
+																   ev->Duration());
+
 				// Let the world know the selection has changed
 				CEventSelectionUpdateHint hint(*Track(), true);
 				PostUpdate(&hint, true);
 			}
 
 			Track()->SetCurrentEvent(marker);
-			if (modifierKeys & B_CONTROL_KEY && partCode == 0)
+			if ((modifierKeys & B_CONTROL_KEY) && (partCode == 0))
 				m_dragType = DragType_CopyEvents;
 			else
 				m_dragType = DragType_Events;

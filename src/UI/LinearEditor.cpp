@@ -97,8 +97,6 @@ CLinearEditor::ConstructEvent(
 	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
 
 	m_newEv.SetStart(time);
-	m_newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
-	m_newEv.SetVChannel(destination);
 
 	switch (m_newEv.Command())
 	{
@@ -112,6 +110,8 @@ CLinearEditor::ConstructEvent(
 			m_newEv.note.pitch = ViewCoordsToPitch(point.y, true);
 			m_newEv.note.attackVelocity = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_AttackVelocity);
 			m_newEv.note.releaseVelocity = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_ReleaseVelocity);
+			m_newEv.SetDuration(TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Duration));
+			m_newEv.SetVChannel(destination);
 			break;
 		}
 		default:

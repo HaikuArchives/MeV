@@ -62,8 +62,9 @@ CGridWindow::MessageReceived(
 	{
 		case GRID_INTERVAL_CHANGED:
 		{
-			if(m_track)
+			if (m_track)
 			{
+				StSubjectLock(*m_track, Lock_Exclusive);
 				m_track->SetTimeGridSize(m_intervalControl->Value());
 			}
 			break;
