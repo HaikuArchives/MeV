@@ -59,6 +59,7 @@ SRCS= \
 	UI/BorderView.cpp \
 	UI/ColorDialogWindow.cpp \
 	UI/ColorWell.cpp \
+	UI/ConsoleContainerView.cpp \
 	UI/ConsoleView.cpp \
 	UI/ContinuousValueEditor.cpp \
 	UI/CursorCache.cpp \
