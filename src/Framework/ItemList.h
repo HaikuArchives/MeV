@@ -21,10 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Container class which keeps undo history of changes
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -46,17 +42,18 @@
 class ItemListUndoAction_Base;
 template<class Item> class ItemListUndoAction ;
 
-/* ===================================================================== *
-   A template used for copying, constructing, and destructing unknown types
- * ===================================================================== */
-
-	// This supplies the lowest-common-denominator functions for moving and copying
-	// arbitrary classes including integral types. However, these functions are not
-	// particularly optimal, and one would hope that they be replaced for a given type.
+/**
+ *	A template used for copying, constructing, and destructing unknown types.
+ * This supplies the lowest-common-denominator functions for moving and copying
+ * arbitrary classes including integral types. However, these functions are not
+ * particularly optimal, and one would hope that they be replaced for a given type.
+ *	@author		Talin
+ *	@package	Framework
+ */
 template <class T> class ItemFuncs
 {
 public:
-		// Construct items (default constructor with no params)
+		/** Construct items (default constructor with no params)	*/
 	static void Construct(	T* inPointer )				{ new ( inPointer ) T; }
 	static void Construct(	T* inPointer, long inCount )
 		{ while (inCount--) Construct( inPointer++ ); }
@@ -86,10 +83,11 @@ public:
 	}
 };
 
-/* ===================================================================== *
-   ItemBlock_Base - A Block which holds a number of items
- * ===================================================================== */
-
+/**
+ *	ItemBlock_Base - A Block which holds a number of items
+ *	@author		Talin
+ *	@package	Framework
+ */
 class ItemBlock_Base : private DNode {
 
 	friend class	ItemList_Base;
@@ -109,9 +107,13 @@ protected:
 		// in the derived template classes.
 };
 
-	// A non-template base class representing a list of item blocks.
-
-class ItemList_Base {
+/**	
+ *	A non-template base class representing a list of item blocks.	
+ *	@author		Talin
+ *	@package	Framework
+ */
+ 
+ class ItemList_Base {
 	friend class	UndoItem;
 	friend class	ItemBlock_Base;
 	friend class	ItemMarker_Base;
@@ -194,11 +196,12 @@ public:
 	virtual void Validate();
 #endif
 };
-
-/* ===================================================================== *
-   Template class representing a block of specific-sized items
- * ===================================================================== */
-
+/**
+ *	Template class representing a block of specific-sized items
+ *	@author		Talin
+ *	@package	Framework
+ */
+ 
 	// The parameters to the template are:
 	// K	--	the type of items stored in the block
 	// cnt	--	the number of items per block
@@ -225,10 +228,13 @@ public:
 	static ItemBlock_Base* Downcast( ItemBlock *b ) { return (ItemBlock_Base *)b; }
 };
 
-/* ===================================================================== *
-   ItemList Template - A list of blocks
- * ===================================================================== */
-
+/**	
+ *	A template container class which keeps an undo history of changes
+ *	ItemList Template - A list of blocks
+ *	@author		Talin
+ *	@package	Framework
+ */
+ 
 template<class BK,class Item> class ItemList : public ItemList_Base {
 //	friend class	ItemMarker<BK,Item>;
 
@@ -295,10 +301,12 @@ ItemList<BK,Item>::~ItemList()
 	}
 }
 
-/* ===================================================================== *
-   ItemMarker_Base -- non-template base class for ItemMarker
- * ===================================================================== */
-
+/**
+ *	ItemMarker_Base -- non-template base class for ItemMarker
+ *	@author		Talin
+ *	@package	Framework
+ */
+ 
 class ItemMarker_Base : private DNode {
 	friend class	ItemList_Base;
 	friend class ItemListUndoAction_Base;
@@ -394,11 +402,13 @@ public:
 	}
 };
 
-/* ===================================================================== *
-   ItemMarker -- pointer to an item within a block. This will auto-adjust
-   as edits are made.
- * ===================================================================== */
-
+/**
+ *	ItemMarker -- pointer to an item within a block. This will auto-adjust
+ *	as edits are made.
+ *	@author		Talin
+ *	@package	Framework
+ */
+ 
 template<class BK,class Item> class ItemMarker : public ItemMarker_Base {
 protected:
 
@@ -503,9 +513,11 @@ protected:
 	void SetIndex( short inIndex )	{ ItemMarker_Base::SetIndex( inIndex ); }
 };
 
-/** ===================================================================== *
-	UndoItem -- stores UNDO information.
-*/
+/**	
+ *	Document framework class.
+ *	@author		Talin
+ *	@package	Framework
+ */
 
 class ItemListUndoAction_Base : public UndoAction {
 	class CUndoIterator;
@@ -579,6 +591,11 @@ public:
 	void Rollback() { Undo(); }
 };
 
+/**
+ *	Stores undo information
+ *	@author		Talin
+ *	@package	Framework
+ */
 class UndoItem : public DNode {
 	friend class		ItemList_Base;
 	friend class		ItemListUndoAction_Base;
@@ -596,8 +613,8 @@ class UndoItem : public DNode {
 		// first edit within a compound command.
 // short			beginAction;
 
-		// The absolute position within the item list of where the edit
-		// occured.
+		/** The absolute position within the item list of where the edit
+		 * occured.	*/
 	int32			index;
 	int32			numItems;				// number of items in this set
 	void				*undoData;				// actual saved undo data
@@ -615,7 +632,11 @@ public:
 	void *UndoData() { return undoData; }
 	long NumItems()  { return numItems; }
 };
-
+/**
+ *	Template version of ItemListUndoAction_Base
+ *	@author		Talin
+ *	@package	Framework
+ */
 template<class Item>
 class ItemListUndoAction : public ItemListUndoAction_Base {
 public:
