@@ -1106,31 +1106,36 @@ void CEventTrack::WriteTrack( CIFFWriter &writer )
 	}
 }
 
-void CEventTrack::ReadTrackChunk( CIFFReader &reader )
+void
+CEventTrack::ReadTrackChunk(
+	CIFFReader &reader)
 {
-	uint8			gsnap;
-
-	switch (reader.ChunkID()) {
-	case Track_Section_ID:
-		reader >> sectionStart >> sectionEnd;
-		break;
-
-	case Track_Grid_ID:
-		reader >> timeGridSize >> gsnap;
-		gridSnapEnabled = gsnap ? 1 : 0;
-		break;
-
-	case Body_ID:
+	switch (reader.ChunkID())
+	{
+		case Track_Section_ID:
 		{
-			StSubjectLock		trackLock( *this, Lock_Exclusive );
-
-			ReadEventList( reader, events );
+			reader >> sectionStart >> sectionEnd;
+			break;
 		}
-		break;
-
-	default:
-		CTrack::ReadTrackChunk( reader );
-		break;
+		case Track_Grid_ID:
+		{
+			uint8 gsnap;
+			reader >> timeGridSize >> gsnap;
+			gridSnapEnabled = gsnap ? 1 : 0;
+			break;
+		}
+		case Body_ID:
+		{
+			StSubjectLock trackLock(*this, Lock_Exclusive);
+			ReadEventList(reader, events);
+			SummarizeSelection();
+			break;
+		}
+		default:
+		{
+			CTrack::ReadTrackChunk(reader);
+			break;
+		}
 	}
 }
 
