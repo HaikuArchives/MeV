@@ -19,6 +19,7 @@
 #include <ColorControl.h>
 #include <MenuItem.h>
 #include <PopUpMenu.h>
+#include <Screen.h>
 #include <StringView.h>
 #include <TextControl.h>
 #include <Window.h>
@@ -247,9 +248,11 @@ CDestinationView::MessageReceived(
 			ssize_t size;
 			if (message->FindData("color", B_RGB_COLOR_TYPE, &data, &size) != B_OK)
 				return;
-			const rgb_color *color = (const rgb_color *)data;
-			Destination()->SetColor(*color);
-			m_colorWell->SetColor(*color);
+			rgb_color color = *(const rgb_color *)data;
+			BScreen screen;
+			color = screen.ColorForIndex(screen.IndexForColor(color));
+			Destination()->SetColor(color);
+			m_colorWell->SetColor(color);
 			m_colorWell->Invalidate();
 			break;
 		}
