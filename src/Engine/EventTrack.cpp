@@ -36,9 +36,6 @@ CEventTrack::CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *in
 		// Set the signature map to invalid so that it will be regenerated
 	validSigMap = false;
 
-		// Initialize the section markers to the beginning of the track
-	sectionStart = sectionEnd = 0;
-
 		// Initialize the signature map.
 	if (sigMap.clockType == ClockType_Metered)
 	{
@@ -49,14 +46,12 @@ CEventTrack::CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *in
 		// Sunmarize the current selection (which is NIL).
 	SummarizeSelection();
 
+	// Initialize the section markers to the beginning of the track
+	sectionStart = 0;
+	sectionEnd = LogicalLength();
+
 		// Compile list of track operators
 	CompileOperators();
-	
-	//exp dan start
-//	CEventProducer *t=new CEventProducer(inName);
-//	t->Register();
-//	t->StartProducing(1,this);
-	//exp dan end
 }
 
 // ---------------------------------------------------------------------------
@@ -1170,7 +1165,11 @@ void CEventTrack::LockChannel( int32 inChannel, bool inLocked )
 	}
 }
 
-bool CEventTrack::IsChannelLocked( const Event &ev )
+bool
+CEventTrack::IsChannelLocked(
+	const Event &ev) const
 {
-	return (ev.HasProperty( Event::Prop_Channel ) && IsChannelLocked( ev.GetVChannel() ));
+	return (ev.HasProperty(Event::Prop_Channel) && IsChannelLocked(ev.GetVChannel()));
 }
+
+// END - EventTrack.cpp

@@ -286,19 +286,26 @@ public:
 		/** Read one chunk from the MeV file. */
 	void ReadTrackChunk( CIFFReader &reader );
 	
-			// ---------- Channel locking
-			
-		/** Test if a channel is locked... */
-	bool IsChannelLocked( int32 inChannel ) { return lockedChannels[ inChannel ] ? true : false; }
+	/** Test if a channel is locked... */
+	bool						IsChannelLocked(
+									int32 channel) const
+								{ return lockedChannels[channel]; }
 
-		/** Lock or unlock a channel */
-	void LockChannel( int32 inChannel, bool inLocked = true );
-	
-		/** TRUE if this event is "locked" (but only if the event even has a channel.) */
-	bool IsChannelLocked( const Event &ev );
-	
-		/** TRUE if any event in this track is using this channel. */
-	bool IsChannelUsed( int32 inChannel ) { return usedChannels[ inChannel ] ? true : false; }
+	/** Lock or unlock a channel */
+	void						LockChannel(
+									int32 channel,
+									bool locked = true);
+
+	/** TRUE if this event is "locked" (but only if the event even 
+		has a channel.)
+	*/
+	bool						IsChannelLocked(
+									const Event &ev) const;
+
+	/** TRUE if any event in this track is using this channel. */
+	bool						IsChannelUsed(
+									int32 channel) const
+								{ return usedChannels[channel]; }
 };
 
 	/**	A hint which takes it's parameters from the current selection. */
