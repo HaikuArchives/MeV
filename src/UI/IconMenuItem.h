@@ -53,6 +53,11 @@ class CIconMenuItem :
 									char shortcut = 0,
 									uint32 modifiers = 0);
 
+								CIconMenuItem(
+									BMenu *subMenu,
+									BMessage *message = NULL,
+									BBitmap *bitmap = 0);
+
 			virtual 			~CIconMenuItem();
 
 	public:						// BMenuItem Implementation

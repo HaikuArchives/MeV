@@ -28,6 +28,16 @@ CIconMenuItem::CIconMenuItem(
 	D_ALLOC(("CIconMenuItem::CIconMenuItem(%s)\n", label));
 }
 
+CIconMenuItem::CIconMenuItem(
+	BMenu *subMenu,
+	BMessage *message,
+	BBitmap *bitmap)
+	:	BMenuItem(subMenu, message),
+		m_bitmap(bitmap)
+{
+	D_ALLOC(("CIconMenuItem::CIconMenuItem(%s)\n", label));
+}
+
 CIconMenuItem::~CIconMenuItem()
 {
 	D_ALLOC(("CIconMenuItem::~CIconMenuItem()\n"));
