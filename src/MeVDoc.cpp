@@ -429,6 +429,12 @@ CMeVDoc::GetNextDestination(
 	ASSERT(IsReadLocked());
 
 	CDestination *dest = FindDestination(*index);
+	while ((dest != NULL) && dest->IsDeleted())
+	{
+		(*index)++;
+		dest = FindDestination(*index);
+	}
+
 	if (dest != NULL)
 	{
 		int32 count = m_destinations.CountItems();
