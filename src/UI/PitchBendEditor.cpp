@@ -492,6 +492,19 @@ CPitchBendEditor::CursorFor(
 }
 
 void
+CPitchBendEditor::DrawHorizontalGrid(
+	BRect updateRect)
+{
+	BRect rect(updateRect);
+	rect.top = rect.bottom = ValueToViewCoords(0);
+	if (rect.Intersects(updateRect))
+	{
+		SetHighColor(160, 160, 160, 255);
+		StrokeLine(rect.LeftTop(), rect.RightTop());
+	}
+}
+
+void
 CPitchBendEditor::MessageReceived(
 	BMessage *message)
 {
@@ -519,12 +532,19 @@ CPitchBendEditor::MouseMoved(
 {
 	CContinuousValueEditor::MouseMoved(point, transit, message);
 
-	if (transit != B_EXITED_VIEW)
+	if (Window()->IsActive())
 	{
-		int32 value = ViewCoordsToValue(point.y);
-		BString text;
-		text << value;
-		TrackWindow()->SetVerticalPositionInfo(text);
+		if ((transit == B_EXITED_VIEW) || (transit == B_OUTSIDE_VIEW))
+		{
+			TrackWindow()->SetVerticalPositionInfo("");
+		}
+		else
+		{
+			int32 value = ViewCoordsToValue(point.y);
+			BString text;
+			text << value;
+			TrackWindow()->SetVerticalPositionInfo(text);
+		}
 	}
 }
 
@@ -553,7 +573,7 @@ CPitchBendEditor::OnUpdate(
 	int32 minTime;
 	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
 		minTime = ViewCoordsToTime(Bounds().left);
-	r.left = TimeToViewCoords(minTime) - 2.0;
+	r.left = TimeToViewCoords(minTime) - 3.0;
 
 	int32 maxTime;
 	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)

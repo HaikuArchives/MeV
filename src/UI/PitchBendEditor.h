@@ -77,6 +77,9 @@ public:							// CContinuousValueEditor Implementation
 	const BCursor *				CursorFor(
 									int32 editMode) const;
 
+	virtual void				DrawHorizontalGrid(
+									BRect updateRect);
+
 	virtual void				MessageReceived(
 									BMessage *message);
 
