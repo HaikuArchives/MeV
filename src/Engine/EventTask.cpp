@@ -79,6 +79,9 @@ CEventTask::PlayEvent(
 	Destination *dest = NULL;
 	Event stackedEvent(ev);
 
+	// Make a copy of the duration field before we kick it to death (below).
+	int32 duration = stackedEvent.common.duration;
+
 	// filter event though virtual channel table
 	if (ev.HasProperty(Event::Prop_Channel)
 	 && group.m_destlist->IsDefined(ev.note.vChannel))
@@ -93,9 +96,6 @@ CEventTask::PlayEvent(
 		stackedEvent.stack.actualPort = dest->m_producer;
 		stackedEvent.stack.actualChannel = dest->channel;
 	}
-	
-	// Make a copy of the duration field before we kick it to death (below).
-	int32 duration = stackedEvent.common.duration;
 
 	// Modify the stack
 	stackedEvent.stack.start += origin;
