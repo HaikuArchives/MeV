@@ -224,9 +224,14 @@ CDocument::Save()
 {
 	m_saving = true;
 	if (m_named == false)
+	{
 		SaveAs();
+	}
 	else
+	{
 		SaveDocument();
+		m_saving = false;
+	}
 }
 
 void
