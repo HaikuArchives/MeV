@@ -248,6 +248,7 @@ CTransportWindow::MessageReceived(
 			double tempo = m_tempoCtl->Tempo();
 			if (m_document)
 				m_document->SetInitialTempo(tempo);
+			CPlayerControl::SetTempo(m_document, tempo);
 			break;
 		}	
 		case Player_ChangeTransportState:
