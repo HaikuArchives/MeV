@@ -11,7 +11,6 @@
 #include "InspectorWindow.h"
 #include "TransportWindow.h"
 #include "Junk.h"
-#include "Splash.h"
 #include "Idents.h"
 #include "EventOp.h"
 #include "LinearWindow.h"
@@ -61,8 +60,6 @@
 
 CGlobalPrefs				gPrefs;
 char						gPlugInName[ B_FILE_NAME_LENGTH ];
-
-extern void CalcHighlightColor( rgb_color &in, rgb_color &out );
 
 CTrack		*CMeVApp::activeTrack;
 
@@ -131,8 +128,8 @@ class CImportRefFilter : public BRefFilter {
 };
 
 CMeVApp::CMeVApp()
-	:	CDocApp( "application/x-vnd.MeV" ),
-		prefs( "x-vnd.MeV" ),
+	:	CDocApp("application/x-vnd.BeUnited.MeV"),
+		prefs( "x-vnd.BeUnited.MeV" ),
 		winSettings( prefs, "settings/windows", true ),
 		editSettings( prefs, "settings/edit", true ),
 		midiSettings( prefs, "settings/midi", true ),
@@ -154,7 +151,7 @@ CMeVApp::CMeVApp()
 		appPrefsWinState( BRect( 40, 40, 500, 300 ) ),
 		aboutPluginWinState( BRect( 80, 80, 450, 250 ) )
 {
-		// Iterate through all the plugins...
+	// Iterate through all the plugins...
 	BDirectory			addOnDir( "/boot/home/config/add-ons/MeV" );
 	bool				trackListOpen = true,
 						inspectorOpen = true,
@@ -164,73 +161,42 @@ CMeVApp::CMeVApp()
 						midiConfigOpen = false,
 						aboutPlugOpen = false;
 
-	CSplashWindow::DisplayStatus( "Initializing Defaults..." );
-	
 	Event::InitTables();
 	activeTrack = NULL;
 	filter = new CMeVRefFilter;
 	importFilter = new CImportRefFilter;
 	loopFlag = false;
 	
-		// Initialize mini-dialog windows
+	// Initialize mini-dialog windows
 	deviceAttrsWindow = NULL;
 	portAttrsWindow = NULL;
 	patchAttrsWindow = NULL;
 
-		// Initialize default global prefs
-	gPrefs.feedbackDragMask = -1;
-	gPrefs.feedbackAdjustMask = -1;
+	// Initialize default global prefs
+	gPrefs.feedbackDragMask = ULONG_MAX;
+	gPrefs.feedbackAdjustMask = ULONG_MAX;
 	gPrefs.feedbackDelay = 50;
 	gPrefs.inclusiveSelection = false;
 	gPrefs.firstMeasureNumber = 1;
 	gPrefs.appPrefsPanel = 0;
 	gPrefs.lEditorPrefsPanel = 0;
 	
-		// Initialize import/export file panels
+	// Initialize import/export file panels
 	exportPanel = NULL;
 	importPanel = NULL;
 
-	CSplashWindow::DisplayStatus( "Starting MIDI Player..." );
-	CMidiManager *mm=CMidiManager::Instance();
+	CMidiManager *mm = CMidiManager::Instance();
 	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
-	
+
 	CVCTableManager *vcm;
-	vcm=new CVCTableManager();
-		
-	/*
-		i=2;
-		VChannelEntry	&vc2 = defaultVCTable[ i ];
-		
-		vc2.fillColor	= defaultColorTable[ i & 15 ];
-		if (i & 16)
-		{
-			vc2.fillColor.red		= vc2.fillColor.red	* 3 / 4;
-			vc2.fillColor.green	= vc2.fillColor.green	* 3 / 4;
-			vc2.fillColor.blue	= vc2.fillColor.blue	* 3 / 4;
-		}
-		
-		vc2.name=new BString ("one");
-		
-		vc2.port		= i/16;
-		vc2.defined = 1;
-		vc2.channel	= (i&15) + 1;
-		vc2.flags		= VChannelEntry::transposable;
-		vc2.velocityContour = vc2.VUMeter = 0;
-		CalcHighlightColor( vc2.fillColor, vc2.highlightColor );
-	*/
+	vcm = new CVCTableManager();
 
-	CSplashWindow::DisplayStatus( "Scanning for Plug-ins..." );
-
-	//printf("Scanning for plug-ins\n");
-
-		// Load in add-ons
+	// Load in add-ons
 	if (addOnDir.InitCheck() == B_NO_ERROR)
 	{
 		BEntry		entry;
 		
-		//printf("Looping\n");
-
 		for (;;)
 		{
 			BPath		path;
@@ -242,31 +208,23 @@ CMeVApp::CMeVApp()
 			
 			entry.GetPath( &path );
 			
-			//printf(" %s\n", path.Path());	
-
 			id = load_add_on( path.Path() );
 			if (id == B_ERROR) continue;
 			
 			entry.GetName( gPlugInName );
-
-			//printf(" checking for symbol\n");	
 
 			if (get_image_symbol(	id,
 								"CreatePlugin",  //"CreatePlugin__Fv",
 								B_SYMBOL_TYPE_TEXT,
 								(void **)&func_create ) == B_NO_ERROR)
 			{
-				//printf("   found it!\n");	
-				CSplashWindow::DisplayStatus( "Loading %s...", gPlugInName );
 				pi = (func_create)();
 // 			plugInList.AddItem( pi );
 			}
 		}
 	}
 	
-	CSplashWindow::DisplayStatus( "Reading window preferences..." );
-
-		// Load in application preferences
+	// Load in application preferences
 	if (!winSettings.InitCheck())
 	{
 		BMessage		&prefMessage = winSettings.GetMessage();
@@ -280,8 +238,6 @@ CMeVApp::CMeVApp()
 		aboutPlugOpen		= ReadWindowState( prefMessage, ABOUT_PI_NAME,  aboutPluginWinState, false );
 	}
 	
-	CSplashWindow::DisplayStatus( "Reading editor preferences..." );
-
 	if (!editSettings.InitCheck())
 	{
 		BMessage		&prefMessage = editSettings.GetMessage();
@@ -313,9 +269,7 @@ CMeVApp::CMeVApp()
 			gPrefs.lEditorPrefsPanel = v;
 	}
 
-	CSplashWindow::DisplayStatus( "Reading MIDI preferences..." );
-
-		// Load in application preferences
+	// Load in application preferences
 	if (!midiSettings.InitCheck())
 	{
 		BMessage		&prefMessage = midiSettings.GetMessage();
@@ -323,8 +277,6 @@ CMeVApp::CMeVApp()
 		SetDevicePrefs( &prefMessage );
 	}
 	
-	CSplashWindow::DisplayStatus( "Reading virtual channel preferences..." );
-
 		// Load default virtual channel table...
 	if (!vtableSettings.InitCheck())
 	{
@@ -355,14 +307,10 @@ CMeVApp::CMeVApp()
 				if (t) vc.flags |= VChannelEntry::mute;
 				else vc.flags &= ~VChannelEntry::mute;
 			}
-		
-			//CalcHighlightColor( vc.fillColor, vc.highlightColor );
 		}	
 	}
 	
 	CalcDeviceTable();
-
-	CSplashWindow::HideSplash();
 
 	if (trackListOpen) ShowTrackList( true );
 	if (inspectorOpen) ShowInspector( true );
@@ -634,7 +582,7 @@ CMeVApp::AboutRequested()
 		if (appFileInfo.GetVersionInfo(&versionInfo, B_APP_VERSION_KIND) == B_OK)
 			aboutText << " " << versionInfo.short_info;
 	}
-	aboutText << "\n";
+	aboutText << "\nBuild Date: " << __DATE__ << "\n";
 
 	// add url
 	aboutText << "\nThe MeV Homepage:\n";
@@ -780,20 +728,24 @@ EventOp *CMeVApp::OperatorAt( int32 index )
 	return NULL;
 }
 
-bool CMeVApp::QuitRequested()
+bool
+CMeVApp::QuitRequested()
 {
-		// save out application preferences before windows close.
+	if (!CDocApp::QuitRequested())
+		return false;
+
+	// save out application preferences before windows close.
 	if (!winSettings.InitCheck())
 	{
-		BMessage		&prefMessage = winSettings.GetMessage();
+		BMessage &prefMessage = winSettings.GetMessage();
 
-		WriteWindowState( prefMessage, TRACKLIST_NAME, trackListState );
-		WriteWindowState( prefMessage, INSPECTOR_NAME,	inspectorState );
-		WriteWindowState( prefMessage, GRID_NAME,		gridWinState );
-		WriteWindowState( prefMessage, TRANSPORT_NAME,	transportState );
-		WriteWindowState( prefMessage, APP_PREFS_NAME,	appPrefsWinState );
-		WriteWindowState( prefMessage, MIDI_CONFIG_NAME,midiConfigWinState );
-		WriteWindowState( prefMessage, ABOUT_PI_NAME,	aboutPluginWinState );
+		WriteWindowState(prefMessage, TRACKLIST_NAME, trackListState );
+		WriteWindowState(prefMessage, INSPECTOR_NAME, inspectorState );
+		WriteWindowState(prefMessage, GRID_NAME, gridWinState );
+		WriteWindowState(prefMessage, TRANSPORT_NAME, transportState );
+		WriteWindowState(prefMessage, APP_PREFS_NAME, appPrefsWinState );
+		WriteWindowState(prefMessage, MIDI_CONFIG_NAME, midiConfigWinState );
+		WriteWindowState(prefMessage, ABOUT_PI_NAME, aboutPluginWinState );
 		winSettings.Save();
 	}
 	return true;
@@ -1472,7 +1424,6 @@ void CMeVApp::SetDevicePrefs( BMessage *msg )
 			if (	msg->FindString( "portDevice", i, (const char **)&device ) == B_NO_ERROR
 				&& msg->FindString( "portDescription", i, (const char **)&description ) == B_NO_ERROR)
 			{
-				CSplashWindow::DisplayStatus( "Creating device: %s...", description );
 				//CPlayerControl::SetPortDevice( i, device );
 				//CPlayerControl::SetPortName( i, description );
 			}

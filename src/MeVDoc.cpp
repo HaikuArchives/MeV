@@ -62,24 +62,6 @@ void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength )
 	outWriter.MustWrite( inBuffer, inLength );
 }
 
-inline uint8 Brighten( uint8 inColor )
-{
-	int32		d = 255 - inColor;
-	
-// d = (d*d) / 400;
-	d = d / 2 - 16; if (d < 0) d = 0;
-
-	return 255 - d;
-}
-
-void CalcHighlightColor( rgb_color &in, rgb_color &out )
-{
-	out.red   = Brighten( in.red   );
-	out.green = Brighten( in.green );
-	out.blue  = Brighten( in.blue  );
-	out.alpha = 0;
-}
-
 void CMeVDoc::Init()
 {
 	masterRealTrack = NULL;
@@ -690,8 +672,8 @@ void CMeVDoc::SaveDocument()
 		
 		if (ni.InitCheck() == B_NO_ERROR)
 		{
-			ni.SetType( "audio/x-vnd.SylvanTechnicalArts-MeV" );
-			ni.SetPreferredApp( "application/x-vnd.SylvanTechnicalArts-MeV" );
+			ni.SetType("audio/x-vnd.BeUnited.MeV");
+			ni.SetPreferredApp("application/x-vnd.BeUnited.MeV");
 		}
 	}
 }

@@ -278,6 +278,4 @@ public:
 	void ReplaceTempoMap( CTempoMapEntry *entries, int length );
 };
 
-extern void CalcHighlightColor( rgb_color &in, rgb_color &out );
-
 #endif /* __C_MeVDoc_H__ */
