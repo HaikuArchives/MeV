@@ -49,8 +49,9 @@
 
 class CScroller;
 class CStripFrameView;
-class CTextDisplay;
 class CTrackOperation;
+
+class BStringView;
 
 // ---------------------------------------------------------------------------
 // A window which displays and edits strips
@@ -69,11 +70,6 @@ public:							// Constants
 	};
 
 	static const float			DEFAULT_RULER_HEIGHT;
-
-	enum
-	{
-								FILE_CHUNK_ID = 'tkwd'
-	};
 
 public:							// Constructor/Destructor
 
@@ -226,11 +222,11 @@ private:
 
 	/** The horizontal position info display in the lower left 
 		corner of the window */
-	CTextDisplay *				m_hPosInfoView;
+	BStringView *				m_hPosInfoView;
 
 	/** The vertical position info display in the lower left 
 		corner of the window */
-	CTextDisplay *				m_vPosInfoView;
+	BStringView *				m_vPosInfoView;
 };
 
 #endif /* __C_TrackWindow_H__ */

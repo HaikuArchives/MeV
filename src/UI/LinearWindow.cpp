@@ -5,24 +5,23 @@
 #include "LinearWindow.h"
 
 #include "AssemblyRulerView.h"
+#include "BitmapTool.h"
 #include "BorderButton.h"
-#include "EventTrack.h"
-#include "PlayerControl.h"
-#include "Idents.h"
-#include "MeVApp.h"
-#include "ResourceUtils.h"
-#include "QuickKeyMenuItem.h"
-#include "TextDisplay.h"
 #include "BorderView.h"
+#include "EventTrack.h"
+#include "IconMenuItem.h"
+#include "Idents.h"
 #include "LinearEditor.h"
+#include "MenuTool.h"
+#include "MeVApp.h"
+#include "PitchBendEditor.h"
+#include "PlayerControl.h"
+#include "QuickKeyMenuItem.h"
+#include "ResourceUtils.h"
+#include "TextDisplay.h"
+#include "ToolBar.h"
 #include "TrackCtlStrip.h"
 #include "VelocityEditor.h"
-#include "PitchBendEditor.h"
-// User Interface
-#include "BitmapTool.h"
-#include "IconMenuItem.h"
-#include "MenuTool.h"
-#include "ToolBar.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -197,13 +196,6 @@ CLinearWindow::MessageReceived(
 		{
 		 	break;
 		}
-		case CDocWindow::SELECTED:
-		{
-			bool active = false;
-			message->FindBool("active", 0, &active);
-			UpdateActiveSelection(active);
-			break;
-		}		
 		default:
 		{
 			CTrackWindow::MessageReceived( message );

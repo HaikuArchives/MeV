@@ -21,7 +21,6 @@
 #include "StdEventOps.h"
 #include "StripFrameView.h"
 #include "StripView.h"
-#include "TextDisplay.h"
 #include "Tool.h"
 #include "ToolBar.h"
 
@@ -31,6 +30,7 @@
 #include <MessageFilter.h>
 // Interface Kit
 #include <MenuBar.h>
+#include <StringView.h>
 // Support Kit
 #include <Debug.h>
 #include <String.h>
@@ -101,20 +101,21 @@ CTrackWindow::AddFrameView(
 	// Add the vertical position info view
 	infoRect = view->Bounds();
 	infoRect.right = 59.0;
-	m_vPosInfoView = new CTextDisplay(infoRect.InsetByCopy(1.0, 1.0),
-									  "", false);
+	m_vPosInfoView = new BStringView(infoRect.InsetByCopy(1.0, 1.0),
+									 "", "");
+//	m_vPosInfoView->SetViewColor(B_TRANSPARENT_COLOR);
 	m_vPosInfoView->SetAlignment(B_ALIGN_RIGHT);
 	m_vPosInfoView->SetFont(be_fixed_font);
-	m_vPosInfoView->SetFontSize(10);
+	m_vPosInfoView->SetFontSize(10.0);
 	view->AddChild(m_vPosInfoView);
 
 	// Add the horizontal position info view
 	infoRect.OffsetBy(infoRect.Width(), 0.0);
-	m_hPosInfoView = new CTextDisplay(infoRect.InsetByCopy(1.0, 1.0),
-									  "", false );
+	m_hPosInfoView = new BStringView(infoRect.InsetByCopy(1.0, 1.0),
+									 "", "");
 	m_hPosInfoView->SetAlignment(B_ALIGN_RIGHT);
 	m_hPosInfoView->SetFont(be_fixed_font);
-	m_hPosInfoView->SetFontSize(10);
+	m_hPosInfoView->SetFontSize(10.0);
 	view->AddChild(m_hPosInfoView);
 
 	AddChild(view);
@@ -311,7 +312,7 @@ CTrackWindow::MenusBeginning()
 		description = Track()->UndoDescription();
 		if (description)
 		{
-			itemLabel << " " << description;
+			itemLabel << ": " << description;
 		}
 		if (item)
 		{
@@ -334,7 +335,7 @@ CTrackWindow::MenusBeginning()
 		description = Track()->RedoDescription();
 		if (description)
 		{
-			itemLabel << " " << description;
+			itemLabel << ": " << description;
 		}
 		if (item)
 		{
@@ -670,6 +671,7 @@ CTrackWindow::WindowActivated(
 		SetPulseRate(70000);
 		CMeVApp::WatchTrack(Track());
 	}
+	UpdateActiveSelection(active);
 }
 
 // ---------------------------------------------------------------------------
