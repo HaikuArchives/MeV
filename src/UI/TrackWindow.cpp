@@ -590,7 +590,6 @@ CTrackWindow::CreateFileMenu(
 	menu->AddItem(new BMenuItem(submenu));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("About MeV", new BMessage(MENU_ABOUT), 0));
-	menu->AddItem(new BMenuItem("MIDI Configuration..", new BMessage(MENU_MIDI_CONFIG), 'P', B_SHIFT_KEY));
 	menu->AddItem(new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS), 'P'));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));

@@ -44,7 +44,7 @@
 #include <string.h>
 // Support Kit
 #include <OS.h>
-
+#include <MidiProducer.h>
 // ---------------------------------------------------------------------
 //	Forward declarations
 
@@ -345,6 +345,8 @@ public:
 						data4,					// 4th data byte
 						data5,					// 5th data byte
 						data6;					// 6th data byte
+						BMidiLocalProducer		*actualPort;	
+		
 		} common;
 
 			// In events which are placed on the playback stack, the
@@ -354,9 +356,11 @@ public:
 			
 		struct {
 			int32		start;					// start time of event
-			uint8		actualPort,				// actual port number
-						actualChannel,			// actual channel number
-						task,					// playback task of this evt.
+			uint8			actualChannel;			// actual channel number
+												// playback thread of this evt.
+			
+			uint8		hack;
+			uint8		task,					// playback task of this evt.
 						pad;
 			uint8		command,				// command byte + control bits
 						vChannel,				// virtual channel
@@ -366,6 +370,7 @@ public:
 						data4,					// 4th data byte
 						data5,					// 5th data byte
 						data6;					// 6th data byte
+			BMidiLocalProducer		*actualPort;	
 		} stack;
 
 		struct {
@@ -379,6 +384,8 @@ public:
 						data4,					// 4th data byte (not used)
 						data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+						BMidiLocalProducer		*actualPort;	
+		
 		} note;
 
 		struct {
@@ -391,6 +398,8 @@ public:
 						data3,				// 3rd data bute (not used)
 						data4;					// 4th data byte (not used)
 			uint16		updatePeriod;			// # of clock cycles per increment
+			BMidiLocalProducer		*actualPort;	
+		
 		} aTouch;
 
 		struct {
@@ -403,6 +412,8 @@ public:
 						LSB,					// controller LSB (or unused)
 						data4;					// 4th data byte (not used)
 			uint16		updatePeriod;			// # of interpolation steps
+			BMidiLocalProducer		*actualPort;	
+		
 		} controlChange;
 
 		struct {
@@ -416,6 +427,8 @@ public:
 						bankLSB,				// program bank LSB (or unused)
 						data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+						BMidiLocalProducer		*actualPort;	
+		
 		} programChange;
 
 		struct {
@@ -426,6 +439,8 @@ public:
 			uint16		targetBend,			// target bend value
 						startBend,			// initial bend value
 						updatePeriod;			// # of clock cycles per increment
+						BMidiLocalProducer		*actualPort;	
+		
 		} pitchBend;
 
 			// Rem: Could short sysex messages be stored IN the data 2-6?
@@ -441,6 +456,8 @@ public:
 						data4,					// 4th data byte (not used)
 						data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+						BMidiLocalProducer		*actualPort;	
+		
 		} sysEx;
 
 		struct {
@@ -454,6 +471,8 @@ public:
 						data4,					// 4th data byte (not used)
 						data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+						BMidiLocalProducer		*actualPort;	
+		
 		} text;
 
 		struct {
@@ -466,6 +485,8 @@ public:
 			uint32		newTempo;				// new tempo (packed 7)
 												// tempo is in 1000ths of a beat
 												// per minute
+			BMidiLocalProducer		*actualPort;	
+		
 		} tempo;
 
 		struct {
@@ -476,6 +497,8 @@ public:
 						data1,					// 1st data byte (not used)
 						vPos;					// vertical position
 			uint32		period;					// microseconds per qtr note
+			BMidiLocalProducer		*actualPort;	
+		
 		} exactTempo;
 
 		struct {
@@ -489,6 +512,8 @@ public:
 			uint8		denominator;			// denominator of timesig
 			uint8		data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+						BMidiLocalProducer		*actualPort;	
+		
 		} sigChange;
 
 		struct {
@@ -501,6 +526,8 @@ public:
 			uint16		repeatCount;			// # of times to repeat (0xffff == infinity)
 			uint8		data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+						BMidiLocalProducer		*actualPort;	
+		
 		} repeat;
 
 		struct {
@@ -513,6 +540,8 @@ public:
 			int8		transposition;			// sequence transposition
 			uint8		flags;					// flags, none defined
 			uint16		sequence;				// which sequence ID to play
+		BMidiLocalProducer		*actualPort;	
+		
 		} sequence;
 
 			// REM: I'm not sure this is right, looks like a copy of the sequence
@@ -527,6 +556,8 @@ public:
 						vPos;					// vertical position
 			uint16		condition,				// condition bits to match
 						mask;					// mask of bits
+				BMidiLocalProducer		*actualPort;	
+		
 		} branch;
 
 		struct {								// contour control vertex
@@ -540,6 +571,8 @@ public:
 			uint8		contour;				// contour number
 			uint8		data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
+			BMidiLocalProducer		*actualPort;	
+		
 		} contour;
 
 		struct {
@@ -547,6 +580,8 @@ public:
 			CPlaybackTask *taskPtr;				// pointer to playback task
 			uint8		command,				// command = EvtType_TaskMarker
 						pad[ 7 ];				// unused
+			BMidiLocalProducer		*actualPort;	
+		
 		} task;
 
 		struct {
@@ -557,6 +592,8 @@ public:
 			uint16		startValue,			// start interpolation value
 						targetValue,			// final interpolation value
 						pad2;
+			BMidiLocalProducer		*actualPort;	
+		
 		} startInterpolate;
 
 		struct {
@@ -566,6 +603,8 @@ public:
 						interpolationType;		// what type of interpolation
 			uint16		timeStep;				// time step between interpolations
 			uint32		duration;				// total duration of interpolation
+			BMidiLocalProducer		*actualPort;	
+		
 		} interpolate;
 	};
 

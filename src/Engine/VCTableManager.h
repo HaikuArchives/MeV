@@ -23,8 +23,7 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- * A class that wraps the vchannel array.  Allows psuedo dynamic management. 
- * Based on the cursor design patteren.
+ * A class that wraps the vchannel array.  
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
@@ -37,20 +36,34 @@
 #ifndef __C_VChannelManager_H__
 #define __C_VChannelManager_H__
 #include "VChannel.h"
+#include "Messenger.h"
+//enum ID {
+//	VCTM_NOTIFY='ntfy'
+//	};
 class CVCTableManager {
 public:
-	CVCTableManager(VChannelTable *table);
-	void AddVC(VChannelEntry &vc);
+	CVCTableManager();
+	void _notifyClients();
+	void NotifyClients();
+	void AddClient(BHandler *nhandler);
+	int NewVC(char *name);
 	void RemoveVC(int id);
+	VChannelEntry * operator[](int i);
+	VChannelEntry * get(int i);
 	
 	bool IsDefined(int id);
 	void First();
 	bool IsDone();
 	void Next();
+	//VChannelEntry * GetVC(int id);
 	VChannelEntry * CurrentVC();
 	int CurrentID();
+	
+	VChannelEntry * m_tablerep[Max_VChannels];
+	int count;
 private:
-	VChannelTable *m_tablerep;
+	BMessenger *m_notifier;
+	
 	int pos;
 };
 #endif /* __C_VChannelManager_H__ */

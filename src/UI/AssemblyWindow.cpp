@@ -302,7 +302,6 @@ CAssemblyWindow::AddMenuBar()
 	menu->AddItem(new BMenuItem("Select All", new BMessage(B_SELECT_ALL), 'A'));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("View Settings...", new BMessage(MENU_VIEW_SETTINGS)));
-	menu->AddItem(new BMenuItem("Virtual Channels...", new BMessage(MENU_VIRTUAL_CHANNELS)));
 	menuBar->AddItem(menu);
 
 	// Create the 'Play' menu

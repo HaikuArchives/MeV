@@ -46,9 +46,10 @@
 #include "EventEditor.h"
 #include "EventTrack.h"
 #include "MeVApp.h"
+#include "ChannelManagerView.h"
+//#include "ChannelSelectorView.h"
 
 class CTextDisplay;
-class CChannelSelectorView;
 class CMeVDoc;
 class CTextSlider;
 
@@ -89,66 +90,19 @@ public:						// Operations
 	void					Clear();
 
 private:					// Instance Data
-
+	virtual void            MenusBeginning();
 	CMeVDoc					*m_doc;
 	CEventTrack				*m_track;
 
 	CTextDisplay			*m_eventTypeView;
 	CTextDisplay			*m_channelNameView;
-	CChannelSelectorView	*m_channelControl;
+	//CChannelSelectorView	*m_channelControl;
+	CChannelManagerView	   *m_channelControl;
 	BStringView				*m_vLabel[3];
 	CTextSlider				*m_vSlider[3];			// Three sliders
 	int32					m_baseValue[3];
 	int32					m_previousValue;
 	E_EventAttribute		m_editedAttr[3];
-};
-
-class CChannelSelectorView : 
-	public BControl {
-
-private:
-
-	CEventTrack		*track;
-	uint8			channel;
-	CTextDisplay		*nameView;
-
-		/**	Invalidate the rectangle surrounding a particular channel */
-	void InvalidateChannel( int32 inChannel );
-	void MouseDown( BPoint point );
-	void Draw( BRect r );
-	void AttachedToWindow() { SetViewColor( B_TRANSPARENT_32_BIT ); }
-
-public:
-		/**	Constructor */
-	CChannelSelectorView(		BRect 		inFrame,
-							BMessage		*inMessage,
-							CTextDisplay	*inNameView,
-							uint32		inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT,
-							uint32		inFlags = B_WILL_DRAW );
-							
-	~CChannelSelectorView() { CRefCountObject::Release( track ); }
-
-		/**	Select which track we are looking at, so we can draw channel
-			array properly.
-		*/
-	void SetTrack( CEventTrack *inTrack )
-	{
-		if (track != inTrack)
-		{
-			CRefCountObject::Release( track );
-			track = inTrack;
-			if (track) track->Acquire();
-			if (Window())
-			{
-				Window()->Lock();
-				Invalidate();
-				Window()->Unlock();
-			}
-		}
-	}
-	
-		/**	Set which channel is selected. */
-	void SetChannel( uint8 inChannel );
 };
 
 #endif /* __C_InspectorWindow_H__ */

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * PlaybackTaskGroup.h (MeV/Engine)
+ * PlaybackThreadTeam.h (MeV/Engine)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -35,8 +35,8 @@
  *
  * ===================================================================== */
 
-#ifndef __C_PlaybackTaskGroup_H__
-#define __C_PlaybackTaskGroup_H__
+#ifndef __C_PlaybackThreadTeam_H__
+#define __C_PlaybackThreadTeam_H__
  
 #include "MeV.h"
 #include "MeVDoc.h"
@@ -46,17 +46,17 @@
 #include "TempoMap.h"
 #include "VCTableManager.h"
 // ---------------------------------------------------------------------------
-// A playback task group represents a set of related tasks, such as a song.
+// A playback thread team represents a "group" of related threads, such as a song.
 
-class CPlaybackTaskGroup : public DNode {
+class CPlaybackThreadTeam : public DNode {
 
 	friend class	CMIDIPlayer;
-	friend class	CPlaybackTask;
-	friend class	CEventTask;
-	friend class	CRealClockEventTask;
-	friend class	CMeteredClockEventTask;
-	friend class	CMasterEventTask;
-	friend class	CPlayerControl;
+	friend class	CPlaybackThread;
+	friend class	CEventThread;
+	friend class	CRealClockEventThread;
+	friend class	CMeteredClockEventThread;
+	friend class	CMasterEventThread;
+	friend class CPlayerControl;
 
 public:
 
@@ -73,10 +73,10 @@ public:
 							end;			// Time to stop (or -1 if no stop)
 	};
 
-	enum EGroupFlags {
+	enum ETeamFlags {
 			// Clock states
-		Clock_Stopped		= (1<<0),	// Clock halted because group is stopped
-		Clock_Paused			= (1<<1),	// Clock halted because group is paused
+		Clock_Stopped		= (1<<0),	// Clock halted because team is stopped
+		Clock_Paused			= (1<<1),	// Clock halted because team is paused
 		Clock_AwaitingSync	= (1<<2),	// Clock halted because awaiting sync
 		Clock_Locating		= (1<<3),	// Clock halted because still locating
 
@@ -98,19 +98,20 @@ public:
 
 private:
 
-		// list of active tasks for this musical set
-	DList			tasks;
+		// list of active threads for this musical set
+	DList			threads;
 
 		// Pointer to document (only one document per context, or NULL)
 	CMeVDoc			*doc;
 
 		// Pointer to document's virtual channel table
-	CVCTableManager	*vChannelTable;
-
-		// The start time of this group, in absolute real time
+		CVCTableManager	*vChannelTable;
+	//VChannelEntry	*vChannelTable;
+	
+		// The start time of this team, in absolute real time
 	int32			origin;
 
-		// The relative start and end time of this group (in locate-type terms). Mainly used for repeating
+		// The relative start and end time of this team (in locate-type terms). Mainly used for repeating
 //	int32			sectionStart,
 //					sectionEnd;
 
@@ -154,22 +155,22 @@ private:
 
 		// Update the local time of the playback context
 	void Update( long internalTicks );
-	void FlushTasks();
+	void FlushThreads();
 	void FlushNotes( CEventStack &stack );
-	void KillChildTasks( CPlaybackTask *parent );
+	void KillChildThreads( CPlaybackThread *parent );
 	void LocateNextChunk( TimeState &tState );
 	void Locate();
 	void Restart();
-	static int32 LocatorTaskFunc( void *data );
+	static int32 LocatorThreadFunc( void *data );
 
 		// Takes a MeV event sends it out to the MIDI stream
 	void ExecuteEvent( Event &ev, TimeState & );
 
 		// Note: Private destructor; only friends can delete.
-	~CPlaybackTaskGroup();
+	~CPlaybackThreadTeam();
 
 public:
-	CPlaybackTaskGroup(	CMeVDoc *inDocument = NULL );
+	CPlaybackThreadTeam(	CMeVDoc *inDocument = NULL );
 
 		// Start playing
 	void Start(	CTrack				*inTrack1,
@@ -198,4 +199,4 @@ public:
 	int32 CurrentTempoPeriod();
 };
 
-#endif /* __C_PlaybackTaskGroup_H__ */
+#endif /* __C_PlaybackThreadTeam_H__ */

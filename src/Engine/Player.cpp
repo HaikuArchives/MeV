@@ -14,6 +14,7 @@
 #include "Idents.h"
 #include "MidiDeviceInfo.h"
 #include <stdio.h>
+#include <MidiProducer.h>
 
 #include <Debug.h>
 
@@ -104,8 +105,9 @@ void CMIDIPlayer::ControlThread()
 				if (cmdArgs.document == NULL) break;
 				CRefCountObject::Release( songGroup->doc );
 				songGroup->doc = cmdArgs.document;
-				songGroup->vChannelTable = &cmdArgs.document->GetVChannel( 0 );
-				
+				songGroup->vChannelTable = cmdArgs.document->GetVCTableManager(  );
+				//songGroup->vChannelTable = &cmdArgs.document->GetVChannel( 0 );
+				//check the above out dan				
 					// Reset all channel state records...
 				InitChannelStates();
 
@@ -441,12 +443,17 @@ CPlaybackTaskGroup *CMIDIPlayer::FindGroup( CMeVDoc *doc )
 
 void CMIDIPlayer::SendEvent(
 	const Event		&ev,
-	uint8			inPort,
+	BMidiLocalProducer	*inPort,
 	uchar			inActualChannel,
 	bigtime_t		inTime )
 {
-	BMidiLocalProducer	*port = m_ports[ inPort ];
-	ChannelState	*chState = &m_portInfo[ inPort ].channelStates[ inActualChannel ];
+	BMidiLocalProducer	*port =  inPort ;
+	
+	ChannelState	*chState = &m_portInfo[0].channelStates[ 0];
+//	ChannelState	*chState = &portInfo[0].channelStates[ inActualChannel ];
+//	BMidiLocalProducer	*port = m_ports[ inPort ];
+//	ChannelState	*chState = &m_portInfo[ inPort ].channelStates[ inActualChannel ];
+
 	MIDIDeviceInfo	*mdi;
 	uint8			lsbIndex;
 
@@ -475,7 +482,7 @@ void CMIDIPlayer::SendEvent(
 
 	case EvtType_ChannelATouch:					// channel aftertouch
 		D_EVENT(("SendEvent(ChannelATouch)\n"));
-		if (chState->channelAfterTouch != ev.aTouch.value)
+		 if (chState->channelAfterTouch != ev.aTouch.value)
 		{
 			port->SprayChannelPressure(
 								inActualChannel,
@@ -545,8 +552,8 @@ void CMIDIPlayer::SendEvent(
 		D_EVENT(("SendEvent(ProgramChange)\n"));
 
 			// Return the MIDI device associated with this port and channel
-		mdi = ((CMeVApp *)be_app)->LookupInstrument( inPort, inActualChannel );
-
+		//mdi = ((CMeVApp *)be_app)->LookupInstrument( inPort, inActualChannel );
+		//dan 6/30/00
 			// Only send bank changes if the instrument understands such...
 			// And only if this event has a valid bank number
 		if (mdi != NULL && mdi->SupportsProgramBanks())
@@ -677,10 +684,11 @@ void CPlayerControl::DoAudioFeedback(
 				? attributeValue
 				: demoEvent->GetVChannel();
 
-		VChannelEntry	&vc = doc->GetVChannel( channel );
-
-		modEvent->stack.actualPort = vc.port;	
-		modEvent->stack.actualChannel = vc.channel;
+		VChannelEntry	*vc = doc->GetVChannel( channel );
+//dan 6/30/00
+		
+		modEvent->stack.actualPort = vc->m_producer;	
+		modEvent->stack.actualChannel = vc->channel;
 	}
 	else
 	{
@@ -747,6 +755,7 @@ void CPlayerControl::DoAudioFeedback(
 		
 	case EvAttr_AttackVelocity:
 		noteStart->note.attackVelocity = attributeValue;
+		//printf("player.cpp %d\n",noteStart->note.attackVelocity);
 		break;
 
 	case EvAttr_ReleaseVelocity:

@@ -42,7 +42,6 @@
 #define __C_LinearWindow_H__
 
 #include "TrackWindow.h"
-
 // ---------------------------------------------------------------------------
 // Linear editor window
 
@@ -97,6 +96,9 @@ protected:						// Internal Operations
 private:						// Instance Data
 
 	char						m_timeBuf[16];
+
+	CToolBar *					m_toolBar;
+
 
 	uint8						m_toolStates[1];
 

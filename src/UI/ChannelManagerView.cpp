@@ -1,3 +1,5 @@
+
+
 //channel manager view
 #include "TextDisplay.h"
 #include "MeVDoc.h"
@@ -7,23 +9,21 @@
 #include "IconMenuItem.h"
 #include <Message.h>
 //Interface kit
-#include <View.h>
-#include <Window.h>
 #include <Rect.h>
 #include <MenuField.h>
-#include <MenuItem.h>
 #include <Bitmap.h>
 //debug
 #include <stdio.h>
-
+#include <Box.h>
 enum EInspectorControlIDs {
 	CHANNEL_CONTROL_ID	= 'chan',
 	Slider1_ID			= 'sld1',
 	Slider2_ID			= 'sld2',
 	Slider3_ID			= 'sld3',
-	Button_ID			= 'butt',
+	EDIT_ID			= 'butt',
 	NEW_ID				= 'nwid',
-	DELETE_ID			= 'dtid'
+	DELETE_ID			= 'dtid',
+	VCTM_NOTIFY			= 'ntfy'
 };
 
 CChannelManagerView::CChannelManagerView(
@@ -33,6 +33,7 @@ CChannelManagerView::CChannelManagerView(
 	uint32		inFlags )
 	: BView( inFrame, "ChannelManager", inResizingMode, inFlags )
 {
+	
 	//initialize
 	channel = 0;
 	track = NULL;
@@ -44,19 +45,22 @@ CChannelManagerView::CChannelManagerView(
 	//interface setup
 		//popup
 	r.Set(2,2,132,10);
-	m_vcMenu=new BPopUpMenu("vchannels");
+	m_vcMenu=new BPopUpMenu("-");
 	BMenuField *menufield;
-	menufield=new BMenuField(r,"vc field","v channel",m_vcMenu);
+	menufield=new BMenuField(r,"vc field","Destination",m_vcMenu);
 	AddChild (menufield);
-	m_vcMenu->SetTargetForItems(this);
+	
 			//add new, delete.
 	BMenuItem *new_vc=new BMenuItem ("New",new BMessage (NEW_ID));
 	m_vcMenu->AddItem(new_vc);
-	BMenuItem *delete_vc=new BMenuItem("Delete",new BMessage (DELETE_ID));
-	m_vcMenu->AddItem(delete_vc);
+	BSeparatorItem *sep=new BSeparatorItem ();
+	m_vcMenu->AddItem(sep);
+	r.Set(135,2,175,10);
+	m_deleteButton=new BButton(r,"editButton","Delete",new BMessage(DELETE_ID));
+	AddChild(m_deleteButton);
 		//edit button
-	r.Set(140,2,200,10);
-	m_editButton=new BButton(r,"editButton","Edit",new BMessage(Button_ID));
+	r.Set(180,2,220,10);
+	m_editButton=new BButton(r,"editButton","Edit",new BMessage(EDIT_ID));
 	AddChild(m_editButton);
 		//port
 	r.Set(2,30,40,42);
@@ -75,14 +79,31 @@ CChannelManagerView::CChannelManagerView(
 	m_channelValue=new CTextDisplay(r,"m_channelValue");
 	m_channelValue->SetText("-");
 	AddChild(m_channelValue);
+	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	
+		//init
+	int c=0;
+	//MaxVChannels 64
+ 	while (c<64)
+	{
+		m_modifierArray[c]=NULL;
+		c++;
+	}
+		//sugar.
+	BBox *box=new BBox(Bounds());
+	AddChild(box);
+	
 	
 
 }
 
-
-
-void CChannelManagerView::MenusBeginning()
+void CChannelManagerView::AttachedToWindow()
 {
+	m_editButton->SetTarget(this);
+	m_deleteButton->SetTarget(this);
+	m_vcMenu->SetTargetForItems(this);
+	BMenuItem *select=m_vcMenu->ItemAt(0);
+	select->SetMarked(true);
 	
 }
 void CChannelManagerView::Update()
@@ -91,13 +112,14 @@ void CChannelManagerView::Update()
 	int n=m_vcMenu->CountItems()-1;
 	while (n>=2)
 	{
-	delete m_vcMenu->RemoveItem(n);
-	n--;
+		delete m_vcMenu->RemoveItem(n);
+		n--;
 	}
 	
 	if (track)
 	{
 		m_vcTableM=track->Document().GetVCTableManager ();
+		m_vcTableM->AddClient(this);
 		VChannelEntry *VCptr;
 		int id;
 		BRect icon_r;
@@ -106,6 +128,7 @@ void CChannelManagerView::Update()
 		{
 			VCptr=m_vcTableM->CurrentVC();
 			id=m_vcTableM->CurrentID();
+			printf("%d\n",id);
 			CIconMenuItem *vc_item;
 			BMessage *vc_message;
 			vc_message=new BMessage(CHANNEL_CONTROL_ID);
@@ -121,11 +144,10 @@ void CChannelManagerView::Update()
 			}
 				
 			icon->SetBits((void *)bits,255,0,B_RGB32);
-			vc_item=new CIconMenuItem(VCptr->name->String(),vc_message,icon);
+			vc_item=new CIconMenuItem(VCptr->name.String(),vc_message,icon);
 			vc_item->SetTarget(this);
 			m_vcMenu->AddItem(vc_item);
-		}		
-		
+		}
 	}
 }
 void CChannelManagerView::SetTrack( CEventTrack *inTrack )
@@ -141,41 +163,99 @@ void CChannelManagerView::SetTrack( CEventTrack *inTrack )
 			Update();
 			Window()->Unlock();
 		}
+		Update();
 	}
 }
 
 		/**	Set which channel is selected. */
 void CChannelManagerView::SetChannel( uint8 inChannel )
 {
-		VChannelEntry *VCptr;
-		for (m_vcTableM->First();!m_vcTableM->IsDone();m_vcTableM->Next())
+	m_selected_id=inChannel;
+
+	int c=0;
+	for (m_vcTableM->First();!m_vcTableM->IsDone();m_vcTableM->Next())
+	{
+		if (m_selected_id==m_vcTableM->CurrentID())
 		{
-			if (inChannel==m_vcTableM->CurrentID())
+			VChannelEntry *vc=m_vcTableM->CurrentVC();
+			BMenuItem *selected=m_vcMenu->ItemAt(c+2);
+			selected->SetMarked(true);
+			if (vc->m_producer)
 			{
-				printf ("found %s\n",m_vcTableM->CurrentVC()->name->String());
-				BMenuItem *selected=m_vcMenu->FindItem(m_vcTableM->CurrentVC()->name->String());
-				selected->SetMarked(true);
+				m_portName->SetText(vc->m_producer->Name());
 			}
+			else
+			{
+				m_portName->SetText("no port");
+			}
+			BString sch;
+			sch << vc->channel;
+			m_channelValue->SetText(sch.String());
+			return;
 		}
-	
+		c++;
+	}
+
 }
+			
 void CChannelManagerView::MessageReceived(BMessage *msg)
 {
 	switch (msg->what)
 		{
 			case CHANNEL_CONTROL_ID:
 			{
-				
-				int8 vc;
-			  	msg->FindInt8("channel",&vc);
-				channel=vc;
-				BString schan;
-				schan << vc;
-				m_channelValue->SetText(schan.String());
+				int8 vc_id;
+			  	msg->FindInt8("channel",&vc_id);
+			  	SetChannel(vc_id);
+			  	m_selected_id=vc_id;
 				Window()->PostMessage( msg );
 			}
 			break;
-			
+			case EDIT_ID:
+			{
+				m_modifierArray[m_selected_id]->Lock();	
+				if (m_modifierArray[m_selected_id]->IsHidden())
+				{
+					m_modifierArray[m_selected_id]->Show();
+				}
+				else if (m_modifierArray[m_selected_id]->IsMinimized())
+				{
+					m_modifierArray[m_selected_id]->Minimize(false);		
+				}
+				m_modifierArray[m_selected_id]->Unlock();
+			}
+			break;
+			case DELETE_ID:
+			{	
+				if (m_vcTableM->IsDefined(m_selected_id))
+				{
+					m_vcTableM->RemoveVC(m_selected_id);
+					Update();
+					BMenuItem *select=m_vcMenu->ItemAt(0);
+					select->SetMarked(true);
+					m_modifierArray[m_selected_id]->Lock();	
+					m_modifierArray[m_selected_id]->Die();
+					m_modifierArray[m_selected_id]=NULL;
+				}
+			}
+			break;
+			case NEW_ID:
+			{
+				BRect r;
+				r.Set(40,40,300,200);
+				int n=m_vcTableM->NewVC("Untitled");
+				Update();
+				m_modifierArray[n]=new CVChannelModifier(r,m_vcTableM->get(n),m_vcTableM);
+				m_modifierArray[n]->Show();
+				SetChannel(n);			
+			}
+			break;
+			case VCTM_NOTIFY:
+			{
+				Update();
+				SetChannel(m_selected_id);
+			}
+			break;
 			default:
 				BView::MessageReceived(msg);
 				break;

@@ -14,7 +14,8 @@
 #include <Window.h>
 #include <Rect.h>
 
-
+//test
+#include "MidiManager.h"
 CChannelSelectorView::CChannelSelectorView(
 	BRect 		inFrame,
 	BMessage		*inMessage,
@@ -27,6 +28,10 @@ CChannelSelectorView::CChannelSelectorView(
 	track = NULL;
 	nameView = inNameView;
 	SetFontSize( 9.0 );
+	
+	
+	
+	
 }
 
 void CChannelSelectorView::Draw( BRect r )
@@ -73,7 +78,7 @@ void CChannelSelectorView::Draw( BRect r )
 		{
 			for (x = 2; x < fr.right; x += cWidth, ch++)
 			{
-				VChannelEntry	&vc = doc.GetVChannel( ch );
+				VChannelEntry	*vc = doc.GetVChannel( ch );
 				char				text[ 3 ];
 				
 				if (track && track->IsChannelLocked( ch ))
@@ -84,12 +89,12 @@ void CChannelSelectorView::Draw( BRect r )
 				}
 				else
 				{
-					SetHighColor( vc.fillColor );
+					SetHighColor( vc->fillColor );
 					FillRect( BRect( x + 1, y + 1, x + cWidth - 2, y + cHeight - 2 ) );
-					SetHighColor( vc.highlightColor );
+					SetHighColor( vc->highlightColor );
 					FillRect( BRect( x, y, x + cWidth - 2, y ) );
 					FillRect( BRect( x, y, x, y + cHeight - 2 ) );
-					SetLowColor( vc.fillColor );
+					SetLowColor( vc->fillColor );
 				}
 				
 				text[ 0 ] = '0' + (ch + 1) / 10;
@@ -97,7 +102,7 @@ void CChannelSelectorView::Draw( BRect r )
 				text[ 2 ] = '\0';
 
 					// Set text color based on brightness of background
-				if (vc.fillColor.red*vc.fillColor.red + vc.fillColor.green*vc.fillColor.green * 2 + vc.fillColor.blue*vc.fillColor.blue < 160*160)
+				if (vc->fillColor.red*vc->fillColor.red + vc->fillColor.green*vc->fillColor.green * 2 + vc->fillColor.blue*vc->fillColor.blue < 160*160)
 					SetHighColor( 255, 255, 255 );
 				else SetHighColor( 0, 0, 0 );
 				MovePenTo( x + 2, y + 10 );

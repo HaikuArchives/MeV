@@ -11,7 +11,7 @@
 #include "PlayerControl.h"
 #include "MidiDeviceInfo.h"
 #include "MathUtils.h"
-
+//#include "ChannelManagerView.h"
 #include "Junk.h"
 
 // Gnu C Library
@@ -44,6 +44,9 @@ enum EInspectorControlIDs {
 	Slider1_ID			= 'sld1',
 	Slider2_ID			= 'sld2',
 	Slider3_ID			= 'sld3',
+		EDIT_ID			= 'butt',
+	NEW_ID				= 'nwid',
+	DELETE_ID			= 'dtid'
 };
 
 
@@ -151,19 +154,24 @@ CInspectorWindow::CInspectorWindow(
 	bgView->AddChild(m_eventTypeView);
 
 	// Channel name
-	stringView = new BStringView(BRect(18.0, 20.0, 58.0, 33.0), "", "Channel");
+	stringView = new BStringView(BRect(15.0, 20.0, 58.0, 33.0), "", "Channel");
 	bgView->AddChild(stringView);
 	stringView->SetAlignment(B_ALIGN_RIGHT);
 
 	m_channelNameView = new CTextDisplay(BRect(60.0, 20.0, 191.0, 33.0), "");
 	bgView->AddChild(m_channelNameView);
 
-	m_channelControl = new CChannelSelectorView(BRect(410, 3,
-													  410 + channelBoxWidth * 16 + 2,
-													  3 + channelBoxHeight * 4 + 2 ),
-												 new BMessage(ChannelControl_ID),
-												 m_channelNameView);
+//	m_channelControl = new CChannelSelectorView(BRect(410, 3,
+//													  410 + channelBoxWidth * 16 + 2,
+//													  3 + channelBoxHeight * 4 + 2 ),
+//												       m_channelNameView);
+	BRect r;
+	r.Set(410,3,410 + channelBoxWidth * 16 + 2,3 + channelBoxHeight * 4 + 2);
+	m_channelControl = new CChannelManagerView(r,m_channelNameView);
 	bgView->AddChild(m_channelControl);
+	
+	
+	
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -210,7 +218,7 @@ CInspectorWindow::OnUpdate(
 {
 	if(message->HasInt8("channel"))
 	{
-		m_channelControl->Invalidate();
+		m_channelControl->Update();
 	}
 
 	if((m_track == NULL)
@@ -233,6 +241,7 @@ CInspectorWindow::OnUpdate(
 			{
 				m_doc->SetDefaultAttribute(EvAttr_Channel, channel);
 			}
+			
 			m_channelControl->SetChannel(channel);
 		}
 
@@ -425,7 +434,11 @@ CInspectorWindow::MessageReceived(
 
 // ---------------------------------------------------------------------------
 // Operations
+void
+CInspectorWindow::MenusBeginning()
+{
 
+}
 void
 CInspectorWindow::WatchTrack(
 	CEventTrack *track)

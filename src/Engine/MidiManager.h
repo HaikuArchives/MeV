@@ -44,41 +44,50 @@
 
 //this class should take care of building new consumers and connecting...etc.
 
-#include <MidiLocalProducer.h>
+#include <MidiProducer.h>
 #include <MidiRoster.h>
-#include <MidiLocalConsumer.h>
 #include <MidiConsumer.h>
 #include <List.h>
 #include <String.h>
-#include <Handler.h>
-class CMidiManager : public BHandler{
+#include <Looper.h>
+#include "PortNameMap.h"
+class CMidiManager : public BLooper{
 	public:
-		static CMidiManager* Instance();
+		static CMidiManager * Instance();
 		BMidiLocalProducer * GetProducer(BString *name);
 		BMidiLocalProducer * GetProducer (int32 id);
 		
 		//GetConsumer methods need to be added.
 		//
 		//a little cursor kinda deal
-		//void FirstProducer();
-		//void NextProducer();
-		//bool IsLastProducer();
-		//BString *name CurrentProducerName();
-		//int32 CurrentProducerID();
-		 
+		void FirstProducer();
+		void NextProducer();
+		bool IsLastProducer();
+		BString * CurrentProducerName();
+		int32 CurrentProducerID();
+		void Notify(BMessenger *msgr); 
 		virtual void MessageReceived(BMessage *msg);
-		
-	
+		void AddInternalSynth();
+		BMidiLocalProducer * InternalSynth();
 	protected:
 		CMidiManager();
 	private:
 		static CMidiManager *m_instance;
 		BList m_midiProducers;
+		int32 m_pos;
+	
 		BMidiRoster *m_roster;
 		void _addProducer(int32 id);
 		void _addConsumer(int32 id);
 		void _removeProducer(int32 id);
 		void _removeConsumer(int32 id);
 		void _handleMidiEvent(BMessage *msg);
-	};
+		BMessenger *m_notifier;
+		BMidiLocalProducer *m_isynth;
+		//port name map:
+		//we have the ability to let the user change port name...no problem
+		//but there are names they shouldn't see...like /dev/midi/mo/dev
+		//or /dev/midi/awe64/1 so this lets us give better names.
+		CPortNameMap *m_portNameMap;
+};
 #endif

@@ -30,6 +30,7 @@ SRCS= \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
+	Engine/VCTableManager.cpp \
 	Support/BeError.cpp \
 	Support/BeFileReader.cpp \
 	Support/Dictionary.cpp \
@@ -43,7 +44,7 @@ SRCS= \
 	UI/BitmapTool.cpp \
 	UI/BorderButton.cpp \
 	UI/BorderView.cpp \
-	UI/ChannelSelectorView.cpp \
+	UI/ChannelManagerView.cpp \
 	UI/ContinuousValueEditor.cpp \
 	UI/EventEditor.cpp \
 	UI/GridWindow.cpp \
@@ -53,7 +54,6 @@ SRCS= \
 	UI/LinearEditor.cpp \
 	UI/LinearWindow.cpp \
 	UI/MenuTool.cpp \
-	UI/MidiConfigWindow.cpp \
 	UI/MultiColumnListView.cpp \
 	UI/OperatorWindow.cpp \
 	UI/PitchBendEditor.cpp \
@@ -82,9 +82,8 @@ SRCS= \
 	UI/TrackListWindow.cpp \
 	UI/TrackWindow.cpp \
 	UI/TransportWindow.cpp \
-	UI/VChannelWindow.cpp \
-	UI/VelocityEditor.cpp
-	
+	UI/VelocityEditor.cpp \
+	UI/VChannelModifier.cpp 
 
 #	specify the resource files to use
 #	full path or a relative path to the resource file can be used.
@@ -127,7 +126,7 @@ SYSTEM_INCLUDE_PATHS =
 #	additional paths to look for local headers
 #	thes use the form: #include "header"
 #	source file directories are automatically included
-LOCAL_INCLUDE_PATHS = ../lib/libprefs
+LOCAL_INCLUDE_PATHS = ../lib/libprefs/src
 
 #	specify the level of optimization that you desire
 #	NONE, SOME, FULL

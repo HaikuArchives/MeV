@@ -1,24 +1,25 @@
 /* ===================================================================== *
- * EventTask.cpp (MeV/Engine)
+ * EventThread.cpp (MeV/Engine)
  * ===================================================================== */
  
-#include "EventTask.h"
-#include "PlaybackTaskGroup.h"
+#include "EventThread.h"
+#include "PlaybackThreadTeam.h"
 #include "Player.h"
 #include "MidiDeviceInfo.h"
 #include "MeVApp.h"
 
+#include <stdio.h>
 // ---------------------------------------------------------------------------
-// CEventTask constructor
+// CEventThread constructor
 
-CEventTask::CEventTask(
-	CPlaybackTaskGroup &group,
+CEventThread::CEventThread(
+	CPlaybackThreadTeam &team,
 	CEventTrack		*tr,
 	TState			&inTimeBase,
-	CPlaybackTask	*par,
+	CPlaybackThread	*par,
 	int32			start,
 	int32			end )
-		: CPlaybackTask(group, tr, par, start),
+		: CPlaybackThread(team, tr, par, start),
 		  timeBase(inTimeBase),
 		  playPos(tr->Events())
 {
@@ -26,7 +27,7 @@ CEventTask::CEventTask(
 	clockType			= ClockType_Real;
 	repeatStack		= NULL;
 	trackEndTime		= tr->LogicalLength();
-	taskDuration		= end >= 0 ? end : LONG_MAX;
+	threadDuration		= end >= 0 ? end : LONG_MAX;
 	nextRepeatTime	= trackEndTime;
 	interruptable		= true;
 
@@ -38,8 +39,8 @@ CEventTask::CEventTask(
 // ---------------------------------------------------------------------------
 // copy constructor
 
-CEventTask::CEventTask( CPlaybackTaskGroup &group, CEventTask &th )
-		: CPlaybackTask(group, th),
+CEventThread::CEventThread( CPlaybackThreadTeam &team, CEventThread &th )
+		: CPlaybackThread(team, th),
 		  timeBase(th.timeBase),
 		  playPos(th.playPos)
 {
@@ -47,7 +48,7 @@ CEventTask::CEventTask( CPlaybackTaskGroup &group, CEventTask &th )
 	clockType			= th.clockType;
 	nextRepeatTime	= th.nextRepeatTime;
 	trackEndTime		= th.trackEndTime;
-	taskDuration		= th.taskDuration;
+	threadDuration		= th.threadDuration;
 	interruptable		= th.interruptable;
 
 //	implicitRepeatPos	= th.implicitRepeatPos;
@@ -64,7 +65,7 @@ CEventTask::CEventTask( CPlaybackTaskGroup &group, CEventTask &th )
 */
 
 #if 0
-void CEventTask::RecalcImplicitLoop( bool inAtStart, int32 inImplicitRepeatEnd )
+void CEventThread::RecalcImplicitLoop( bool inAtStart, int32 inImplicitRepeatEnd )
 {
 	if (inAtStart)
 	{
@@ -77,14 +78,14 @@ void CEventTask::RecalcImplicitLoop( bool inAtStart, int32 inImplicitRepeatEnd )
 		implicitRepeatStart = timeBase.seekTime - originTime;
 	}
 	trackEndTime = inImplicitRepeatEnd;
-	flags |= Task_ImplicitLoop;
+	flags |= Thread_ImplicitLoop;
 }
 #endif
 
 // ---------------------------------------------------------------------------
 // destructor
 
-CEventTask::~CEventTask()
+CEventThread::~CEventThread()
 {
 	// REM: Should also search stacks and kill
 
@@ -100,14 +101,12 @@ CEventTask::~CEventTask()
 // ---------------------------------------------------------------------------
 // playback routine for a single event
 
-void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
+void CEventThread::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 {
 		// filter event though virtual channel table
-	
-	VChannelEntry			*vc = group.vChannelTable->get(ev.note.vChannel);
-	//CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ vc->port ].channelStates[ vc->channel ];
-	CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ 0 ].channelStates[ vc->channel ];
-	
+	//VChannelEntry			*vc = team.vChannelTable + ev.note.vChannel;	//used to be not one but vc->port.
+    VChannelEntry 			*vc = team.vChannelTable->GetVC(ev.note.vChannel);
+    CMIDIPlayer::ChannelState	*chState = &thePlayer.portInfo[ 1 ].channelStates[ vc->channel ];
 	int32			duration;
 	Event			stackedEvent( ev );
 	
@@ -121,7 +120,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	stackedEvent.stack.start			+= origin;
 	stackedEvent.stack.actualPort		= vc->m_producer;
 	stackedEvent.stack.actualChannel	= vc->channel;
-	stackedEvent.stack.task			= taskID;
+	
+	stackedEvent.stack.thread			= threadID;
 
 		// REM: Do we also want to filter on the VChannel? I think so...
 		
@@ -132,10 +132,10 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	case EvtType_Note:							// note-on event
 
 			// Ignore the note event if locating
-		if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
+		if (team.flags & CPlaybackThreadTeam::Clock_Locating) break;
 		if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
 		
-			// Apply task-specific transposition.
+			// Apply thread-specific transposition.
 		if (transposition != 0 && vc->flags & VChannelEntry::transposable)
 		{
 			stackedEvent.note.pitch += transposition;
@@ -166,7 +166,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
 		
 			// If locating, update channel state table but don't stack the event
-		if (group.flags & CPlaybackTaskGroup::Clock_Locating)
+		if (team.flags & CPlaybackThreadTeam::Clock_Locating)
 		{
 			chState->pitchBendState = ev.pitchBend.targetBend;
 			break;
@@ -203,11 +203,10 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
 
 			// If locating, update channel state table but don't stack the event
-		if (group.flags & CPlaybackTaskGroup::Clock_Locating)
+		if (team.flags & CPlaybackThreadTeam::Clock_Locating)
 		{
-			//vc->port - > 0
-			MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( 0, vc->channel );
-
+			MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument(1, vc->channel );
+			//dan walton 7/17
 				// (Only update the channel bank state if this device supports banks)
 			if (	mdi != NULL
 				&& mdi->SupportsProgramBanks()
@@ -232,7 +231,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 		if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
 
 			// If locating, update channel state table but don't stack the event
-		if (group.flags & CPlaybackTaskGroup::Clock_Locating)
+		if (team.flags & CPlaybackThreadTeam::Clock_Locating)
 		{
 			chState->channelAfterTouch = ev.aTouch.value;
 			break;
@@ -252,7 +251,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 			// another time and another event type.)
 
 			// If locating, update channel state table but don't stack the event
-		if (group.flags & CPlaybackTaskGroup::Clock_Locating)
+		if (team.flags & CPlaybackThreadTeam::Clock_Locating)
 		{
 			uint8			lsbIndex;
 
@@ -286,7 +285,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	case EvtType_PolyATouch:						// polyphonic aftertouch
 
 			// Ignore the event if locating
-		if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
+		if (team.flags & CPlaybackThreadTeam::Clock_Locating) break;
 		if (vc->flags & (VChannelEntry::mute | VChannelEntry::muteFromSolo)) break;
 
 		stack.Push( stackedEvent );
@@ -318,8 +317,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 
 	case EvtType_Sequence:							// play another track
 
-		CTrack			*tr = group.doc->FindTrack( ev.sequence.sequence );
-		CPlaybackTask	*p;
+		CTrack			*tr = team.doc->FindTrack( ev.sequence.sequence );
+		CPlaybackThread	*p;
 
 		if (tr == NULL) break;
 #if USE_SHARED_LOCKS
@@ -346,7 +345,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 			// If it's an event track and not empty
 		if (tk != NULL && tk->Events().IsEmpty() == false)
 		{
-			CEventTask		*th;
+			CEventThread		*th;
 			int32			start = stackedEvent.stack.start,
 							stop = start + duration;
 
@@ -355,8 +354,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 			{
 				if (track->ClockType() == ClockType_Metered)
 				{
-					start = group.tempo.ConvertMeteredToReal( start );
-					stop = group.doc->TempoMap().ConvertMeteredToReal( stop );
+					start = team.tempo.ConvertMeteredToReal( start );
+					stop = team.doc->TempoMap().ConvertMeteredToReal( stop );
 					duration = stop - start;
 				}
 				
@@ -372,8 +371,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 //					duration = tk->LogicalLength() * reps;
 //				}
 				
-				th = new CRealClockEventTask(
-					group, tk, this, start, duration );
+				th = new CRealClockEventThread(
+					team, tk, this, start, duration );
 					
 				th->interruptable = ((ev.sequence.flags & Event::Seq_Interruptable) ? true : false);
 			}
@@ -381,8 +380,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 			{
 				if (track->ClockType() == ClockType_Real)
 				{
-					start = group.tempo.ConvertRealToMetered( start );
-					stop = group.doc->TempoMap().ConvertRealToMetered( stop );
+					start = team.tempo.ConvertRealToMetered( start );
+					stop = team.doc->TempoMap().ConvertRealToMetered( stop );
 					duration = stop - start;
 				}
 			
@@ -398,8 +397,8 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 //					duration = tk->LogicalLength() * reps;
 //				}
 				
-				th = new CMeteredClockEventTask(
-					group, tk, this, start, duration );
+				th = new CMeteredClockEventThread(
+					team, tk, this, start, duration );
 
 				th->interruptable = ((ev.sequence.flags & Event::Seq_Interruptable) ? true : false);
 			}
@@ -431,7 +430,7 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 // ---------------------------------------------------------------------------
 // Force a repeat event at the current point in the sequence.
 
-void CEventTask::BeginRepeat( int32 inRepeatStart, int32 inRepeatDuration, int32 inRepeatCount )
+void CEventThread::BeginRepeat( int32 inRepeatStart, int32 inRepeatDuration, int32 inRepeatCount )
 {
 	if (		inRepeatCount == 1
 		||	inRepeatDuration <= 0) return;
@@ -451,8 +450,8 @@ void CEventTask::BeginRepeat( int32 inRepeatStart, int32 inRepeatDuration, int32
 		rps->next = repeatStack;
 
 			// If this is a master track, then adjust something or other...
-		if (		track == group.mainTracks[ 0 ]
-			||	track == group.mainTracks[ 1 ])
+		if (		track == team.mainTracks[ 0 ]
+			||	track == team.mainTracks[ 1 ])
 		{
 			if (inRepeatCount > 0)
 				timeBase.expansion += (inRepeatCount - 1) * rps->timeOffset;
@@ -467,7 +466,7 @@ void CEventTask::BeginRepeat( int32 inRepeatStart, int32 inRepeatDuration, int32
 // ---------------------------------------------------------------------------
 // Code to handle repeats and other scheduled discontinuities
 
-bool CEventTask::Repeat()
+bool CEventThread::Repeat()
 {
 	bool			result = false;
 
@@ -533,8 +532,8 @@ bool CEventTask::Repeat()
 		// let's attempt to re-start the sequence.
 	if (		result == false
 		&&	currentTime >= trackEndTime
-		&&	currentTime < taskDuration
-		&& 	(flags & Task_ImplicitLoop))
+		&&	currentTime < threadDuration
+		&& 	(flags & Thread_ImplicitLoop))
 	{
 			// Delete all pending repeats
 		while (repeatStack != NULL)
@@ -544,7 +543,7 @@ bool CEventTask::Repeat()
 			repeatStack = rps;
 		}
 		
-		if (taskDuration != LONG_MAX) taskDuration -= track->LogicalLength();
+		if (threadDuration != LONG_MAX) threadDuration -= track->LogicalLength();
 
 			// Set play position to start of track, and adjust origin and current time.
 //		playPos = implicitRepeatPos;
@@ -558,7 +557,7 @@ bool CEventTask::Repeat()
 		result = true;
 	}
 
-	if (interruptable && trackEndTime > taskDuration) trackEndTime = taskDuration;
+	if (interruptable && trackEndTime > threadDuration) trackEndTime = threadDuration;
 
 	return result;
 }
@@ -566,10 +565,10 @@ bool CEventTask::Repeat()
 // ---------------------------------------------------------------------------
 // playback routine
 
-void CEventTask::Play()
+void CEventThread::Play()
 {
 	int32		targetTime;
-	bool			locating = (group.flags & CPlaybackTaskGroup::Clock_Locating) != false;
+	bool			locating = (team.flags & CPlaybackThreadTeam::Clock_Locating) != false;
 
 		// If we're locating, then we want to lock for certain
 	if (locating)
@@ -615,10 +614,10 @@ void CEventTask::Play()
 		if (Repeat() == false)
 		{
 				// Check to see if we've run out of track
-			if (currentTime >= trackEndTime || (flags & Task_Finished))
+			if (currentTime >= trackEndTime || (flags & Thread_Finished))
 			{
 					// If we've reached the end, then exit this routine...
-				flags |= Task_Finished;
+				flags |= Thread_Finished;
 				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
 			}
 			else
@@ -644,7 +643,7 @@ void CEventTask::Play()
 
 			if (ev->Start() >= trackEndTime)
 			{
-				flags |= Task_Finished;
+				flags |= Thread_Finished;
 				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
 			}
 			else ReQueue( timeBase.stack, nextRepeatTime + originTime );
@@ -669,7 +668,7 @@ void CEventTask::Play()
 		ev = playPos.Seek( 1 );
 	}
 
-	if (repeatStack != NULL || currentTime < taskDuration)
+	if (repeatStack != NULL || currentTime < threadDuration)
 	{
 		ReQueue( timeBase.stack, nextRepeatTime + originTime );
 #if USE_SHARED_LOCKS
@@ -686,28 +685,28 @@ void CEventTask::Play()
 #else
 	track->Unlock();
 #endif
-	flags |= Task_Finished;
+	flags |= Thread_Finished;
 	ReQueue( timeBase.stack, trackEndTime + originTime );
 }
 
 // ---------------------------------------------------------------------------
-// Returns the current time in the task
+// Returns the current time in the thread
 
-int32 CEventTask::CurrentTime()
+int32 CEventThread::CurrentTime()
 {
 	return timeBase.seekTime - originTime;
 }
 
 // ---------------------------------------------------------------------------
-// CRealTimeEventTask constructor
+// CRealTimeEventThread constructor
 
-CRealClockEventTask::CRealClockEventTask(
-	CPlaybackTaskGroup &group,
+CRealClockEventThread::CRealClockEventThread(
+	CPlaybackThreadTeam &team,
 	CEventTrack		*tr,
-	CPlaybackTask	*par,
+	CPlaybackThread	*par,
 	int32			start,
 	int32			end )
-		: CEventTask( group, tr, group.real, par, start, end )
+		: CEventThread( team, tr, team.real, par, start, end )
 {
 	trackAdvance = cTrackAdvance_Real;
 	eventAdvance = cEventAdvance_Real;
@@ -719,10 +718,10 @@ CRealClockEventTask::CRealClockEventTask(
 // playback routine
 
 #if 0
-void CRealClockEventTask::Play()
+void CRealClockEventThread::Play()
 {
 	int32		targetTime;
-	bool			locating = (group.flags & CPlaybackTaskGroup::Clock_Locating) != false;
+	bool			locating = (team.flags & CPlaybackThreadTeam::Clock_Locating) != false;
 
 		// If we're locating, then we want to lock for certain
 	if (locating)
@@ -761,7 +760,7 @@ void CRealClockEventTask::Play()
 
 			if (ev->Start() >= trackEndTime)
 			{
-				flags |= Task_Finished;
+				flags |= Thread_Finished;
 				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
 			}
 			else ReQueue( timeBase.stack, nextRepeatTime + originTime );
@@ -790,7 +789,7 @@ void CRealClockEventTask::Play()
 		ev = playPos.Seek( 1 );
 	}
 
-	if (repeatStack != NULL || currentTime < taskDuration)
+	if (repeatStack != NULL || currentTime < threadDuration)
 	{
 		ReQueue( timeBase.stack, nextRepeatTime + originTime );
 #if USE_SHARED_LOCKS
@@ -807,21 +806,21 @@ void CRealClockEventTask::Play()
 #else
 	track->Unlock();
 #endif
-	flags |= Task_Finished;
+	flags |= Thread_Finished;
 	ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
 }
 #endif
 
 // ---------------------------------------------------------------------------
-// CRealTimeEventTask constructor
+// CRealTimeEventThread constructor
 
-CMeteredClockEventTask::CMeteredClockEventTask(
-	CPlaybackTaskGroup &group,
+CMeteredClockEventThread::CMeteredClockEventThread(
+	CPlaybackThreadTeam &team,
 	CEventTrack		*tr,
-	CPlaybackTask	*par,
+	CPlaybackThread	*par,
 	int32			start,
 	int32			end )
-		: CEventTask( group, tr, group.metered, par, start, end )
+		: CEventThread( team, tr, team.metered, par, start, end )
 {
 	trackAdvance = cTrackAdvance_Metered;
 	eventAdvance = cEventAdvance_Metered;
@@ -833,10 +832,10 @@ CMeteredClockEventTask::CMeteredClockEventTask(
 // playback routine
 
 #if 0
-void CMeteredClockEventTask::Play()
+void CMeteredClockEventThread::Play()
 {
 	int32		targetTime;
-	bool			locating = (group.flags & CPlaybackTaskGroup::Clock_Locating) != false;
+	bool			locating = (team.flags & CPlaybackThreadTeam::Clock_Locating) != false;
 
 		// If we're locating, then we want to lock for certain
 	if (locating)
@@ -882,10 +881,10 @@ void CMeteredClockEventTask::Play()
 		if (Repeat() == false)
 		{
 				// Check to see if we've run out of track
-			if (currentTime >= trackEndTime || (flags & Task_Finished))
+			if (currentTime >= trackEndTime || (flags & Thread_Finished))
 			{
 					// If we've reached the end, then exit this routine...
-				flags |= Task_Finished;
+				flags |= Thread_Finished;
 				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
 			}
 			else
@@ -911,7 +910,7 @@ void CMeteredClockEventTask::Play()
 
 			if (ev->Start() >= trackEndTime)
 			{
-				flags |= Task_Finished;
+				flags |= Thread_Finished;
 				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
 			}
 			else ReQueue( timeBase.stack, nextRepeatTime + originTime );
@@ -936,7 +935,7 @@ void CMeteredClockEventTask::Play()
 		ev = playPos.Seek( 1 );
 	}
 
-	if (repeatStack != NULL || currentTime < taskDuration)
+	if (repeatStack != NULL || currentTime < threadDuration)
 	{
 		ReQueue( timeBase.stack, nextRepeatTime + originTime );
 #if USE_SHARED_LOCKS
@@ -953,34 +952,34 @@ void CMeteredClockEventTask::Play()
 #else
 	track->Unlock();
 #endif
-	flags |= Task_Finished;
+	flags |= Thread_Finished;
 	ReQueue( timeBase.stack, trackEndTime + originTime );
 }
 #endif
 
 #if 0
 // ---------------------------------------------------------------------------
-// CRealTimeEventTask constructor
+// CRealTimeEventThread constructor
 
-CMasterEventTask::CMasterEventTask(
-	CPlaybackTaskGroup &group,
+CMasterEventThread::CMasterEventThread(
+	CPlaybackThreadTeam &team,
 	CEventTrack		*tr,
 	CTrack			*par,
 	long			start )
-		: CEventTask( group, tr, par, start ),
+		: CEventThread( team, tr, par, start ),
 			mPlayPos( tr->Events() )
 {
 	clockType		= ClockType_Real;
-	ReQueue( group.real.stack, start );
+	ReQueue( team.real.stack, start );
 	mPlayPos.First();
 }
 
 // ---------------------------------------------------------------------------
 // playback routine
 
-void CMasterEventTask::Play()
+void CMasterEventThread::Play()
 {
-	currentTime = group.real.seekTime - originTime;
+	currentTime = team.real.seekTime - originTime;
 
 // reQueue( &pl->meteredTimeStack, t );
 
@@ -994,10 +993,10 @@ void CMasterEventTask::Play()
 	{
 		long		t = ev->Start() + originTime;
 
-		if (IsTimeGreater( group.real.seekTime, t )) break;
+		if (IsTimeGreater( team.real.seekTime, t )) break;
 
 			// Ummm, we need to convert the time to absolute before sending it to PlayEvent...
-		PlayEvent( *ev, group.real.stack, originTime );
+		PlayEvent( *ev, team.real.stack, originTime );
 		ev = playPos.Seek( 1 );
 	}
 	
@@ -1007,10 +1006,10 @@ void CMasterEventTask::Play()
 			// REM: We need to calc the absolute time of the event...
 		long		t = ev->Start() /* + originTime */;
 
-		if (IsTimeGreater( group.metered.seekTime, t )) break;
+		if (IsTimeGreater( team.metered.seekTime, t )) break;
 
 			// Ummm, we need to convert the time to absolute before sending it to PlayEvent...
-		PlayEvent( *ev, group.metered.stack, 0 );
+		PlayEvent( *ev, team.metered.stack, 0 );
 		ev = mPlayPos.Seek( 1 );
 	}
 	
@@ -1020,6 +1019,6 @@ void CMasterEventTask::Play()
 	// Should we "re-queue" this?
 
 		// REM: Is this incorrect for the master track?
-// flags |= Task_Finished;
+// flags |= Thread_Finished;
 }
 #endif

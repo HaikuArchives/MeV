@@ -124,9 +124,15 @@ void CMeVDoc::Init()
 								Ticks_Per_QtrNote * 4,
 								Ticks_Per_QtrNote * 4,
 								ClockType_Metered );
-
-	((CMeVApp *)be_app)->GetDefaultVCTable( vcTable );
+	//m_VCTM=NULL;
 	
+	//((CMeVApp *)be_app)->GetDefaultVCTable( vcTable );
+	//This should be taken care of by the vctable manager...
+	//in fact...the default should be the latest saved...or something
+
+	//m_VCTM=new CVCTableManager ();
+		
+	//maybe add *** new
 	// kludge code
 	_me = this;
 }
@@ -430,8 +436,8 @@ BWindow *CMeVDoc::ShowWindow( enum EWindowTypes inType )
 	
 		switch (inType) {
 		case VChannel_Window:
-			bw = new CVChannelWindow( *state, *this );
-			bw->Show();
+			//bw = new CVChannelWindow( *state, *this );
+			//bw->Show();
 			break;
 
 		case DocPrefs_Window:
@@ -593,6 +599,7 @@ CMeVDoc::ChangeTrackOrder(
 
 void CMeVDoc::VirtualChannelName( int32 inChannelIndex, char *outBuf )
 {
+	/*
 	VChannelEntry		*vc = &vcTable[ inChannelIndex ];
 	MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( vc->port, vc->channel - 1 );
 	char				*name;
@@ -607,8 +614,10 @@ void CMeVDoc::VirtualChannelName( int32 inChannelIndex, char *outBuf )
 			return;
 		}
 	}
-		
-	sprintf( outBuf, "%s: %d", name, vc->channel );
+*/		
+	sprintf( outBuf, "%s: %d", "NONO",9 );
+
+
 }
 
 void CMeVDoc::SaveDocument()
@@ -715,11 +724,12 @@ void CMeVDoc::ReadVCTable( CIFFReader &reader )
 
 	while (reader.BytesAvailable() > 0 )
 	{
-		VChannelEntry	&vc = vcTable[ i ];
+		VChannelEntry	*vc = m_VCTM[ i ];
 //		ReadStr255( reader, vc.name, sizeof vc.name );
-		reader >> vc.port >> vc.channel >> vc.flags >> vc.velocityContour >> vc.initialTranspose;
-		reader >> vc.fillColor;
-		CalcHighlightColor( vc.fillColor, vc.highlightColor );
+		//dan 7/17/00 reader >> vc.port >> vc.channel >> vc.flags >> vc.velocityContour >> vc.initialTranspose;
+		reader >> vc->channel >> vc->flags >> vc->velocityContour >> vc->initialTranspose;
+		reader >> vc->fillColor;
+		//CalcHighlightColor( vc->fillColor, vc->highlightColor );
 		i++;		
 	}
 }
@@ -729,11 +739,12 @@ void CMeVDoc::WriteVCTable( CIFFWriter &writer )
 	writer.Push( VCTable_ID );
 	for (int i = 0; i < Max_VChannels; i++)
 	{
-		VChannelEntry	&vc = vcTable[ i ];
+		VChannelEntry	*vc = m_VCTM[ i ];
 	
 //		WriteStr255( writer, vc.name, strlen( vc.name ) );
-		writer << vc.port << vc.channel << vc.flags << vc.velocityContour << vc.initialTranspose;
-		writer << vc.fillColor;
+		//dan 7/17/00writer << vc.port << vc.channel << vc.flags << vc.velocityContour << vc.initialTranspose;
+		writer << vc->channel << vc->flags << vc->velocityContour << vc->initialTranspose;
+		writer << vc->fillColor;
 	}
 	writer.Pop();
 }

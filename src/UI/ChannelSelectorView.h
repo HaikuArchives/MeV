@@ -56,7 +56,7 @@ private:
 	void Draw( BRect r );
 	void AttachedToWindow() { SetViewColor( B_TRANSPARENT_32_BIT ); }
 
-public:
+public: 
 		/**	Constructor */
 	CChannelSelectorView(		BRect 		inFrame,
 							BMessage		*inMessage,

@@ -30,10 +30,7 @@
  * 
  * ---------------------------------------------------------------------
  * To Do:
- * Lots lots lots...
- * The portName will not be active until the midimanager is finnished.
- * the edit button will not be active until the midimanager is finnished.
- * the new button will not be active until the edit system is active.
+ * When no destination is selected and one tries to add an event.  We crash.
  * ===================================================================== */
 #ifndef __C_ChannelSelectorView_H__
 #define __C_ChannelSelectorView_H__
@@ -46,31 +43,38 @@
 #include <Button.h>
 #include <CheckBox.h>
 #include <StringView.h>
+#include "VChannelModifier.h"
 class CChannelManagerView : 
 	public BView {
 
 private:
-
+	uint8			m_selected_id;
+	uint8			m_default_id;
+	VChannelEntry *m_vc;//selected vc.
 	CEventTrack		*track;
 	uint8			channel;
 	CTextDisplay	*nameView;
 	BPopUpMenu		*m_vcMenu;
 	BButton			*m_editButton;
+	BButton			*m_deleteButton;
 	BStringView	    *m_channel;
 	CTextDisplay	*m_channelValue;
 	BStringView  	*m_port;
 	CTextDisplay	*m_portName;
 	BCheckBox		*m_mute;
 	BCheckBox		*m_lock;
-	
+	CVChannelModifier *m_modifierArray[Max_VChannels];
 	CVCTableManager *m_vcTableM;
+	
+	
 //	+-------------------------------+ +---------+
 //	| m_vcMenu                      | | editbut. |
 //	+-------------------------------+ +---------+
 //	Port:		ObjektSynth
 //	Channel:	1
 //		[x] Mute				[x] Lock	
-		
+	virtual void AttachedToWindow();
+	//update the info on selected channel;
 public:
 		/**	Constructor */
 	CChannelManagerView(BRect 		inFrame,
@@ -83,7 +87,6 @@ public:
 		/**	Select which track we are looking at, so we can draw channel
 			array properly.
 		*/
-	void MenusBeginning();
 	void SetTrack( CEventTrack *inTrack );
 	void Update();
 	virtual void MessageReceived(BMessage *msg);

@@ -663,7 +663,7 @@ void CProgramChangeEventHandler::Draw(
 	bool 			shadowed ) const
 {
 	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		&vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
 	bool				locked = 	editor.Track()->IsChannelLocked( ev.GetVChannel() );
 	char				patchNameBuf[ 64 ];
 	const char		*patchName;
@@ -719,7 +719,7 @@ void CProgramChangeEventHandler::Draw(
 	}
 	else
 	{
-		rEditor.SetHighColor( vce.fillColor );
+		rEditor.SetHighColor( vce->fillColor );
 		rEditor.FillRect( r );
 
 		if (ev.IsSelected() && editor.IsSelectionVisible())
@@ -740,7 +740,7 @@ BRect CProgramChangeEventHandler::Extent(
 	const Event		&ev ) const
 {
 	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		&vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
 	BRect			r;
 	char				patchNameBuf[ 64 ];
 	const char		*patchName;
@@ -836,11 +836,11 @@ const char *CProgramChangeEventHandler::GetPatchName(
 {
 	uint16			programBank;
 	CMeVDoc			&doc = editor.Track()->Document();
-	VChannelEntry		&vc = doc.GetVChannel( ev.GetVChannel() );
+	VChannelEntry		*vc = doc.GetVChannel( ev.GetVChannel() );
 	MIDIDeviceInfo	*instrument;
 	PatchInfo			*patch;
 
-	instrument = ((CMeVApp *)be_app)->LookupInstrument( vc.port, vc.channel - 1 );
+	instrument = ((CMeVApp *)be_app)->LookupInstrument( 1, vc->channel - 1 );
 	if (instrument == NULL) return "[Invalid Device]";
 	
 	programBank = (ev.programChange.bankMSB << 7) | ev.programChange.bankLSB;
@@ -925,7 +925,7 @@ void CTempoEventHandler::Draw(
 	bool 			shadowed ) const
 {
 	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		&vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
 	char				tempoText[ 64 ];
 	int32			x, y;
 	int32			radius = rEditor.barHeight / 2 - 1;
@@ -981,7 +981,7 @@ BRect CTempoEventHandler::Extent(
 	const Event		&ev ) const
 {
 	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		&vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
 	BRect			r;
 	BBitmap			*metro;
 	BRect			metroRect;

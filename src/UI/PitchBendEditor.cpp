@@ -172,7 +172,7 @@ void CPitchBendEventHandler::Draw(
 {
 	CPitchBendEditor	&lEditor = (CPitchBendEditor &)editor;
 	bool				locked = 	editor.Track()->IsChannelLocked( ev.GetVChannel() );
-	VChannelEntry &vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+	VChannelEntry *vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 	BRect			r;
 
 	if (shadowed)
@@ -182,7 +182,7 @@ void CPitchBendEventHandler::Draw(
 	}
 	
 	if (locked)	lEditor.SetHighColor( 192, 192, 192 );
-	else			lEditor.SetHighColor( vce.fillColor );
+	else			lEditor.SetHighColor( vce->fillColor );
 		
 	if (ev.Duration() > 0 && ev.pitchBend.updatePeriod > 0)
 	{
@@ -224,7 +224,7 @@ void CPitchBendEventHandler::Draw(
 	r.bottom = r.top + 4.0;
 	
 	if (locked)	lEditor.SetHighColor( 192, 192, 192 );
-	else			lEditor.SetHighColor( vce.fillColor );
+	else			lEditor.SetHighColor( vce->fillColor );
 	lEditor.FillRect( r );
 	
 	if (locked)

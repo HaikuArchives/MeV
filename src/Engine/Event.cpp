@@ -6,7 +6,7 @@
 #include "Event.h"
 #include "VChannel.h"
 #include "MathUtils.h"
-
+#include <stdio.h>
 /** ======================================================================= **
 	Event Members
  ** ======================================================================= **/
@@ -555,6 +555,7 @@ bool Event::SetAttribute( enum E_EventAttribute inAttr, int32 inValue )
 		if (	cmd == EvtType_Note || cmd == EvtType_NoteOff)
 		{
 			note.attackVelocity = CLAMP( 1L, inValue, 127 );
+	
 			return true;
 		}
 		else return false;

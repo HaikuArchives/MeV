@@ -1,18 +1,28 @@
 #include "MidiManager.h"
+#include "PortNameMap.h"
+#include "InternalSynth.h"
 #include <MidiProducer.h>
 #include <Messenger.h>
 #include <Debug.h>
+#include <stdio.h>
+enum EVChannelModifierControlID {
+	NOTIFY='ntfy'
+	};
 CMidiManager* CMidiManager::m_instance=0;
 CMidiManager* CMidiManager::Instance()
 {
 	if (m_instance==0)
-	{
+	{	
 		m_instance=new CMidiManager();
+		m_instance->Run();  //maybe a race condition here.
+		//if its the first time, wait a sec till we fill our lists...is there a better way?
+		snooze(100000);
+			
 	}
 	return m_instance;
 }
-	
-CMidiManager::CMidiManager() : BHandler("MidiHandler")
+
+CMidiManager::CMidiManager() : BLooper("MidiHandler")
 {
 	BMidiRoster* m_roster = BMidiRoster::MidiRoster();
 	if (! m_roster) {
@@ -20,9 +30,62 @@ CMidiManager::CMidiManager() : BHandler("MidiHandler")
 		be_app->PostMessage(B_QUIT_REQUESTED);
 		return;
 	}
-	
 	BMessenger msgr(this);
 	m_roster->StartWatching(&msgr);
+	m_notifier=NULL;
+	m_portNameMap=new CPortNameMap();
+	m_isynth=NULL;
+	
+}
+void CMidiManager::Notify(BMessenger *msgr)
+{
+	m_notifier=msgr;
+}
+BMidiLocalProducer * CMidiManager::GetProducer (BString *name)
+{
+	int c=m_midiProducers.CountItems()-1;
+	while (c>=0)
+	{
+		BMidiLocalProducer *aproducer=((BMidiLocalProducer *)m_midiProducers.ItemAt(c));
+		if ((name->Compare(aproducer->Name()))==0)
+		{
+			return aproducer;
+		}
+		c++;
+	}
+	return NULL; //think about the null producer option.
+}
+BMidiLocalProducer * CMidiManager::GetProducer (int32 id)
+{
+	return (BMidiLocalProducer *)(m_roster->FindProducer(id,true));
+}
+void CMidiManager::FirstProducer()
+{
+	m_pos=0;
+}
+void CMidiManager::NextProducer()
+{
+	m_pos++;
+}
+bool CMidiManager::IsLastProducer()
+{
+	if (m_pos>(m_midiProducers.CountItems()-1))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+BString * CMidiManager::CurrentProducerName()
+{
+ BString *portname = new BString(((BMidiProducer *)m_midiProducers.ItemAt(m_pos))->Name());
+ return (m_portNameMap->Map(portname));
+}
+int32 CMidiManager::CurrentProducerID()
+{
+ return (((BMidiProducer *)m_midiProducers.ItemAt(m_pos))->ID());
 }
 void
 CMidiManager::MessageReceived(BMessage *msg)
@@ -30,6 +93,10 @@ CMidiManager::MessageReceived(BMessage *msg)
 	switch (msg->what)
 	{
 		case B_MIDI_EVENT:
+			if (m_notifier!=NULL)
+			{	
+			m_notifier->SendMessage(new BMessage (NOTIFY));
+			}
 			_handleMidiEvent(msg);
 			break;
 		default:
@@ -132,28 +199,56 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		break;
 	}
 }
+BMidiLocalProducer * CMidiManager::InternalSynth()
+{
+	if (m_isynth)
+	{
+		return (m_isynth);
+	}
+}
 
+void CMidiManager::AddInternalSynth()
+{
+	if (!m_isynth)
+	{
+		CInternalSynth *isynth=new CInternalSynth("Internal Synth");
+		m_isynth=new BMidiLocalProducer("Internal Synth");
+		//m_isynth->Register();
+		m_isynth->Connect(isynth);
+		m_midiProducers.AddItem(m_isynth);
+	}
+}
 void CMidiManager::_addConsumer(int32 id)
 {
 //build new producer, add it to the producer list,
 //connect it to the thing
-//give it same name.
+//give it same name.  map the name?
 	BMidiConsumer *theConsumer=m_roster->FindConsumer(id); 
-	BMidiLocalProducer *aproducer=new BMidiLocalProducer("h");//theConsumer->Name());
+	BMidiLocalProducer *aproducer=new BMidiLocalProducer(theConsumer->Name());//theConsumer->Name());
 	aproducer->Connect(theConsumer);
 	m_midiProducers.AddItem(aproducer);
-
+	theConsumer->Release();
 }
 void CMidiManager::_removeConsumer(int32 id)
 {
 //go though entire list and remove the producer that is connected.
-	BMidiConsumer *theConsumer=m_roster->FindConsumer(id); 
-	int c=m_midiProducers.CountItems();
+	int c=m_midiProducers.CountItems()-1;
 	while (c>=0)
 	{
-		if (((BMidiLocalProducer *)m_midiProducers.ItemAt(c))->IsConnected(theConsumer))
+		BMidiLocalProducer *aproducer=((BMidiLocalProducer *)m_midiProducers.ItemAt(c));
+		PRINT( ("%s has %d connections\n",aproducer->Name(),aproducer->Connections()->CountItems()) );
+		for (int x=0;x<aproducer->Connections()->CountItems();x++)
 		{
-			((BMidiLocalProducer *)m_midiProducers.RemoveItem(c))->Release();
+			BMidiConsumer *test=(BMidiConsumer *) aproducer->Connections()->ItemAt(x);
+			PRINT( ("%s is connected to %s\n",aproducer->Name(),test->Name()) );
+		} 
+		
+		if ((aproducer->Connections()->CountItems()==0))
+		{
+			BMidiLocalProducer *removing=((BMidiLocalProducer *)m_midiProducers.RemoveItem(c));
+			PRINT( ("%s connected, releasing\n",removing->Name()) );
+			removing->Unregister();
+			removing->Release();
 		}
 		c--;
 	}

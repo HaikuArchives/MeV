@@ -7,7 +7,7 @@
 #include "MeVPlugin.h"
 #include "StdEventOps.h"
 #include "MathUtils.h"
-
+#include <stdio.h>
 #pragma export on
 EventOp::EventOp( MeVPlugIn *inCreator )
 {

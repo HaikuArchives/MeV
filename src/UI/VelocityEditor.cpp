@@ -9,6 +9,7 @@
 #include "MeVDoc.h"
 #include "MathUtils.h"
 #include "ResourceUtils.h"
+
 #include "StripLabelView.h"
 
 // ---------------------------------------------------------------------------
@@ -37,7 +38,9 @@ void CVelocityNoteEventHandler::Draw(
 	bool 			shadowed ) const
 {
 	CVelocityEditor	&vEditor = (CVelocityEditor &)editor;
-	VChannelEntry	&vce = vEditor.TrackWindow()->Document()->GetVChannel( ev.GetVChannel() );
+
+	VChannelEntry	*vce = vEditor.TrackWindow()->Document()->GetVChannel( ev.GetVChannel() );
+
 	BRect			r( vEditor.ViewBounds() );
 	BPoint			points[ 4 ] = { BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ) };
 	
@@ -61,13 +64,13 @@ void CVelocityNoteEventHandler::Draw(
 		
 		vEditor.StrokeRect( r );
 		r.InsetBy( 1.0, 1.0 );
-		vEditor.SetHighColor( vce.fillColor );
+		vEditor.SetHighColor( vce->fillColor );
 		vEditor.SetDrawingMode( B_OP_BLEND );
 		vEditor.FillRect( r );
 	}
 	else
 	{
-		vEditor.SetHighColor( vce.fillColor );
+		vEditor.SetHighColor( vce->fillColor );
 		vEditor.SetDrawingMode( B_OP_BLEND );
 		vEditor.FillPolygon( points, 4, r );
 
@@ -213,6 +216,7 @@ CVelocityEditor::CVelocityEditor(
 	:	CEventEditor(	inLooper, inFrame, rect,
 						"Velocity Strip", false, false )
 {
+
 	SetHandlerFor(EvtType_Note, &velocityNoteHandler);
 	SetFlags(Flags() | B_FULL_UPDATE_ON_RESIZE);
 
@@ -470,6 +474,7 @@ bool CVelocityEditor::DoDrag( BPoint point, ulong buttons )
 						int32	v = (t - time1) * dv / dt + vel1;
 					
 						evCopy.note.attackVelocity = CLAMP( 1L, v, 127L );
+						printf("ve %d\n",evCopy.note.attackVelocity);
 					}
 				}
 
@@ -482,6 +487,7 @@ bool CVelocityEditor::DoDrag( BPoint point, ulong buttons )
 						int32	v = (t - time1) * dv / dt + vel1;
 					
 						evCopy.note.releaseVelocity = CLAMP( 0L, v, 127L );
+						
 					}
 				}
 				

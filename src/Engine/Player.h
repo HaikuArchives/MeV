@@ -175,7 +175,7 @@ public:
 	
 		// Send an event directly to a hardware port. You probably shouldn't call
 		// this directly. (no locking, for one thing)
-	void SendEvent(	const Event &inEvent, uint8 inPort, uint8 inActualChannel, bigtime_t inTime  );
+	void SendEvent(	const Event &inEvent, BMidiLocalProducer *inPort, uint8 inActualChannel, bigtime_t inTime  );
 
 		// Fetch the player's command port ID
 	port_id Port() const;

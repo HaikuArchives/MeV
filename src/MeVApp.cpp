@@ -22,6 +22,7 @@
 #include "ScreenUtils.h"
 #include "PlayerControl.h"
 #include "MidiDeviceInfo.h"
+#include "MidiManager.h"
 // User Interface
 #include "AboutWindow.h"
 #include "TrackListWindow.h"
@@ -45,6 +46,8 @@
 #include <MidiProducer.h>
 #include <MidiConsumer.h>
 
+#include "VCTableManager.h"
+//debug
 #define TRACKLIST_NAME		"Track List"
 #define INSPECTOR_NAME		"Inspector"
 #define GRID_NAME			"Grid"
@@ -209,27 +212,35 @@ CMeVApp::CMeVApp()
 	importPanel = NULL;
 
 	CSplashWindow::DisplayStatus( "Starting MIDI Player..." );
-	
+	int i=1;
+	CMidiManager *mm=CMidiManager::Instance();
+	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
 	
-		// Initialize default virtual channel table
-	for (int i = 0; i < Max_VChannels; i++)
-	{
-		VChannelEntry	&vc = defaultVCTable[ i ];
+	CVCTableManager *vcm;
+	vcm=new CVCTableManager();	
+	vcm->NewVC("zzz");
+	/*
+		i=2;
+		VChannelEntry	&vc2 = defaultVCTable[ i ];
 		
-		vc.fillColor	= defaultColorTable[ i & 15 ];
+		vc2.fillColor	= defaultColorTable[ i & 15 ];
 		if (i & 16)
 		{
-			vc.fillColor.red		= vc.fillColor.red	* 3 / 4;
-			vc.fillColor.green	= vc.fillColor.green	* 3 / 4;
-			vc.fillColor.blue	= vc.fillColor.blue	* 3 / 4;
+			vc2.fillColor.red		= vc2.fillColor.red	* 3 / 4;
+			vc2.fillColor.green	= vc2.fillColor.green	* 3 / 4;
+			vc2.fillColor.blue	= vc2.fillColor.blue	* 3 / 4;
 		}
-		vc.port		= i/16;
-		vc.channel	= (i&15) + 1;
-		vc.flags		= VChannelEntry::transposable;
-		vc.velocityContour = vc.VUMeter = 0;
-		CalcHighlightColor( vc.fillColor, vc.highlightColor );
-	}
+		
+		vc2.name=new BString ("one");
+		
+		vc2.port		= i/16;
+		vc2.defined = 1;
+		vc2.channel	= (i&15) + 1;
+		vc2.flags		= VChannelEntry::transposable;
+		vc2.velocityContour = vc2.VUMeter = 0;
+		CalcHighlightColor( vc2.fillColor, vc2.highlightColor );
+	*/
 
 	CSplashWindow::DisplayStatus( "Scanning for Plug-ins..." );
 
@@ -347,14 +358,14 @@ CMeVApp::CMeVApp()
 			int8				b;
 			bool				t;
 		
-			VChannelEntry	&vc = defaultVCTable[ i ];
+			VChannelEntry	&vc = (*defaultVCTable)[ i ];
 
-			if (prefMessage.FindInt8( "Port", i, &b ) == B_OK) vc.port = b;
+			//if (prefMessage.FindInt8( "Port", i, &b ) == B_OK) vc.port = b;
 			if (prefMessage.FindInt8( "Channel", i, &b ) == B_OK) vc.channel = b;
 			if (prefMessage.FindInt8( "Red", i, &b ) == B_OK) vc.fillColor.red = b;
 			if (prefMessage.FindInt8( "Green", i, &b ) == B_OK) vc.fillColor.green = b;
 			if (prefMessage.FindInt8( "Blue", i, &b ) == B_OK) vc.fillColor.blue = b;
-			if (prefMessage.FindInt8( "Contour", i, &b ) == B_OK) vc.velocityContour = b;
+			//if (prefMessage.FindInt8( "Contour", i, &b ) == B_OK) vc.velocityContour = b;
 
 			if (prefMessage.FindBool( "Transpose", i, &t ) == B_OK)
 			{
@@ -368,7 +379,7 @@ CMeVApp::CMeVApp()
 				else vc.flags &= ~VChannelEntry::mute;
 			}
 		
-			CalcHighlightColor( vc.fillColor, vc.highlightColor );
+			//CalcHighlightColor( vc.fillColor, vc.highlightColor );
 		}	
 	}
 	
@@ -585,15 +596,7 @@ void CMeVApp::ShowPrefs()
 
 void CMeVApp::ShowMidiConfig()
 {
-	midiConfigWinState.Lock();
-	if (!midiConfigWinState.Activate())
-	{
-		BWindow		*w;
-	
-		w = new CMidiConfigWindow( midiConfigWinState );
-		w->Show();
-	}
-	midiConfigWinState.Unlock();
+
 }
 
 void CMeVApp::WatchTrack( CEventTrack *inTrack )
@@ -1766,7 +1769,8 @@ BFilePanel *CMeVApp::GetExportPanel( BMessenger *msngr )
 
 void CMeVApp::SetDefaultVCTable( VChannelTable &inTable )
 {
-	memcpy( defaultVCTable, inTable, sizeof defaultVCTable );
+printf ("default vc table set\n");
+/*	memcpy( defaultVCTable, inTable, sizeof defaultVCTable );
 
 		// Save default virtual channel table
 	if (!vtableSettings.InitCheck())
@@ -1777,20 +1781,20 @@ void CMeVApp::SetDefaultVCTable( VChannelTable &inTable )
 
 		for (int i = 0; i < Max_VChannels; i++)
 		{
-			VChannelEntry	&vc = defaultVCTable[ i ];
+			VChannelEntry	*vc = defaultVCTable->get(i);
 
-			prefMessage.AddInt8( "Port", vc.port );
-			prefMessage.AddInt8( "Channel", vc.channel );
-			prefMessage.AddInt8( "Red", vc.fillColor.red );
-			prefMessage.AddInt8( "Green", vc.fillColor.green );
-			prefMessage.AddInt8( "Blue", vc.fillColor.blue );
-			prefMessage.AddInt8( "Contour", vc.velocityContour );
+			//prefMessage.AddInt8( "Port", vc.port );
+			prefMessage.AddInt8( "Channel", vc->channel );
+			prefMessage.AddInt8( "Red", vc->fillColor.red );
+			prefMessage.AddInt8( "Green", vc->fillColor.green );
+			prefMessage.AddInt8( "Blue", vc->fillColor.blue );
+			prefMessage.AddInt8( "Contour", vc->velocityContour );
 
-			prefMessage.AddBool( "Transpose", vc.flags & VChannelEntry::transposable ? true : false );
-			prefMessage.AddBool( "Mute", vc.flags & VChannelEntry::mute ? true : false );
+			prefMessage.AddBool( "Transpose", vc->flags & VChannelEntry::transposable ? true : false );
+			prefMessage.AddBool( "Mute", vc->flags & VChannelEntry::mute ? true : false );
 		}	
 		vtableSettings.Save();
-	}
+	}*/
 }
 
 void CMeVApp::BuildExportMenu( BMenu *inMenu )

@@ -562,24 +562,26 @@ CLinearNoteEventHandler::Draw(
 		return;
 	}
 
-	VChannelEntry &vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+
+	VChannelEntry *vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+
 
 	if (shadowed)
 	{
 		lEditor.SetDrawingMode(B_OP_BLEND);
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR, 
-					  vce.fillColor, vce.highlightColor, true);
+					  vce->fillColor, vce->highlightColor, true);
 		lEditor.SetDrawingMode(B_OP_COPY);
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
 		DrawNoteShape(&lEditor, r, SELECTED_BORDER_COLOR,
-					  vce.fillColor, vce.highlightColor, true);
+					  vce->fillColor, vce->highlightColor, true);
 	}
 	else
 	{
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
-					  vce.fillColor, vce.highlightColor, true);
+					  vce->fillColor, vce->highlightColor, true);
 	}
 }
 

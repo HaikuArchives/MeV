@@ -39,7 +39,9 @@
 #define __C_VChannelEntry_H__
 
 #include "BitSet.h"
-
+#include <MidiProducer.h>
+//Support Kit.
+#include <String.h>
 // Interface Kit
 #include <InterfaceDefs.h>
 
@@ -63,15 +65,20 @@ public:
 	};
 
 	// REM: Replace with string class
-//	char				name[ 24 ];				// channel name
-
-	uint8				port,					// midi port number
-						channel,				// real midi channel
+	//char				name[ 24 ];				// channel name
+	
+	//uint8				port;					// midi port number
+	uint8				channel,				// real midi channel
 						flags,					// various flags
 						velocityContour,		// which envelope to use
 						VUMeter,				// Vu-like meter bar height
 						pad;					// not used
-
+						
+						//defined;				// pad replaced with defined,
+												// so the manager knows what is
+												// defined.
+	BString 			name;					// in the future we may not need this.
+	BMidiLocalProducer	   *m_producer;					
 	int8				transpose,				// transposition for channel
 						initialTranspose;		// initial transposition value
 
@@ -79,7 +86,7 @@ public:
 						highlightColor;			// hightlight color
 };
 
-typedef VChannelEntry   VChannelTable[ Max_VChannels ];
+typedef VChannelEntry  * VChannelTable[ Max_VChannels ];
 
 /* ============================================================================ *
    VBitTable -- array of bits, one for each possible virtual channel.

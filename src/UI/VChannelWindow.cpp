@@ -48,7 +48,7 @@ public:
 	
 		switch (inIndex) {
 		case 0:	return rowIndex + 1;
-		case 2: return vc->port + 1;
+		//case 2: return vc->port + 1;
 		case 3: return vc->channel;
 		case 5: return (vc->flags & VChannelEntry::transposable) ? 1 : 0;
 		case 6: return (vc->flags & VChannelEntry::mute) ? 1 : 0;
@@ -63,13 +63,13 @@ public:
 
 		if (inIndex == 1)
 		{
-			MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( vc->port, vc->channel - 1 );
+			MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( 1, vc->channel - 1 );
 			char				*name;
 			
 			if (mdi != NULL)	name = mdi->name;
 			else
 			{
-				name = CPlayerControl::PortName( vc->port );
+				//name = CPlayerControl::PortName( vc->port );
 				if (name == NULL) return "--";
 			}
 			
@@ -233,7 +233,7 @@ void CVChannelWindow::MessageReceived( BMessage *msg )
 		// Fall thru
 
 	case SelectChannel_ID:
-		portSlider->SetValue( vc.port + 1 );
+		portSlider->SetValue( vc->port + 1 );
 		channelSlider->SetValue( vc.channel );
 		channelColor->SetValue( vc.fillColor );	
 		break;

@@ -1,29 +1,31 @@
 /* ===================================================================== *
- * PlaybackTaskGroup.cpp (MeV/Engine)
+ * PlaybackThreadTeam.cpp (MeV/Engine)
  * ===================================================================== */
  
-#include "PlaybackTask.h"
-#include "PlaybackTaskGroup.h"
+#include "PlaybackThread.h"
+#include "PlaybackThreadTeam.h"
 #include "Player.h"
-#include "EventTask.h"
+#include "EventThread.h"
 #include "Idents.h"
-
-#include <Debug.h>
-
-#define D_EXECUTE(x) PRINT (x)
 
 // ---------------------------------------------------------------------------
 // Constructor for playback context
 
-CPlaybackTaskGroup::CPlaybackTaskGroup( CMeVDoc *d )
+CPlaybackThreadTeam::CPlaybackThreadTeam( CMeVDoc *d )
 {
 	LOCK_PLAYER;
-	
 		// Initialize what fields need it
 	doc			= d;
-	vChannelTable	= d ? d->GetVCTableManager(  ) : NULL;
+	//vChannelTable	= d ? &d->GetVChannel(0) : NULL;
+	vChannelTable	= d? d->GetVCTableManager () : NULL;
+	if (vChannelTable!=NULL)
+	{
+	printf("ok..\n");
+	}
+	//printf ("%s vc\n",vChannelTable->name->String());
+	
 	flags			= Clock_Stopped;
-	origin		= thePlayer.m_internalTimerTick; // +++++ REMOVE THIS DEPENDANCY +++++
+	origin		= thePlayer.internalTimerTick;
 	real.time		= real.start = 0;
 	metered.time	= metered.start = 0;
 	syncType		= SyncType_FreeRunning;
@@ -36,18 +38,18 @@ CPlaybackTaskGroup::CPlaybackTaskGroup( CMeVDoc *d )
 	tempo.SetInitialTempo( RateToPeriod( doc ? doc->InitialTempo() : 100.0 ) );
 
 		// Add ourselves to the list of playback contexts
-	thePlayer.m_groupList.AddTail( this );
+	thePlayer.teamList.AddTail( this );
 }
 
 // ---------------------------------------------------------------------------
 // Destructor for playback context
 
-CPlaybackTaskGroup::~CPlaybackTaskGroup()
+CPlaybackThreadTeam::~CPlaybackThreadTeam()
 {
 	LOCK_PLAYER;
 
 	if (locatorThread >= B_NO_ERROR) kill_thread( locatorThread );
-	FlushTasks();						// delete all active tasks
+	FlushThreads();						// delete all active threads
 	CRefCountObject::Release( mainTracks[ 0 ] );
 	CRefCountObject::Release( mainTracks[ 1 ] );
 	CRefCountObject::Release( doc );		// Release refcount to doc
@@ -57,7 +59,7 @@ CPlaybackTaskGroup::~CPlaybackTaskGroup()
 // ---------------------------------------------------------------------------
 // Calculate the tempo period for the given clock time.
 
-int32 CPlaybackTaskGroup::CurrentTempoPeriod()
+int32 CPlaybackThreadTeam::CurrentTempoPeriod()
 {
 	return tempo.CalcPeriodAtTime( metered.time, ClockType_Metered );
 }
@@ -65,7 +67,7 @@ int32 CPlaybackTaskGroup::CurrentTempoPeriod()
 // ---------------------------------------------------------------------------
 // Set up a tempo change
 
-void CPlaybackTaskGroup::ChangeTempo(
+void CPlaybackThreadTeam::ChangeTempo(
 	long			newRate,
 	long			start,
 	long			duration,
@@ -77,7 +79,7 @@ void CPlaybackTaskGroup::ChangeTempo(
 // ---------------------------------------------------------------------------
 // Update the time of this
 
-void CPlaybackTaskGroup::Update( long internalTicks )
+void CPlaybackThreadTeam::Update( long internalTicks )
 {
 	Event	ev;
 
@@ -136,12 +138,12 @@ void CPlaybackTaskGroup::Update( long internalTicks )
 		if (	metered.stack.NextTime( next ))
 		{
 			done = false;
-			next = tempo.ConvertMeteredToReal( next );
+			next = tempo.ConvertMeteredToReal( metered.seekTime );
 			if (IsTimeGreater( next, nextEventTime ))
 				nextEventTime = next;
 		}
 		
-			// Looping options for entire task!
+			// Looping options for entire thread!
 		if (pbOptions & PB_Loop)
 		{
 			if (done)
@@ -170,7 +172,7 @@ void CPlaybackTaskGroup::Update( long internalTicks )
 // ---------------------------------------------------------------------------
 // flushStacks -- kill all notes in progress
 
-void CPlaybackTaskGroup::FlushEvents()
+void CPlaybackThreadTeam::FlushEvents()
 {
 	Event	ev;
 	LOCK_PLAYER;
@@ -192,7 +194,7 @@ void CPlaybackTaskGroup::FlushEvents()
 // ---------------------------------------------------------------------------
 // Kill all notes on one stack
 
-void CPlaybackTaskGroup::FlushNotes( CEventStack &stack )
+void CPlaybackThreadTeam::FlushNotes( CEventStack &stack )
 {
 	class CEventStackIterator		iter( stack );
 	Event						*ev;
@@ -211,7 +213,7 @@ void CPlaybackTaskGroup::FlushNotes( CEventStack &stack )
 // ---------------------------------------------------------------------------
 // Kill all notes on both stacks
 
-void CPlaybackTaskGroup::FlushNotes()
+void CPlaybackThreadTeam::FlushNotes()
 {
 	Event	ev;
 	LOCK_PLAYER;
@@ -221,54 +223,54 @@ void CPlaybackTaskGroup::FlushNotes()
 }
 
 // ---------------------------------------------------------------------------
-// flushTasks -- kill all tasks
+// flushThreads -- kill all threads
 
-void CPlaybackTaskGroup::FlushTasks()
+void CPlaybackThreadTeam::FlushThreads()
 {
-	CPlaybackTask		*th;
+	CPlaybackThread		*th;
 
-		// Delete all tasks belonging to this context.
-	while ((th = (CPlaybackTask *)tasks.First()) != NULL)
+		// Delete all threads belonging to this context.
+	while ((th = (CPlaybackThread *)threads.First()) != NULL)
 		delete th;
 }
 
 // ---------------------------------------------------------------------------
-// flushTasks -- set all tasks belonging to a particular parent as
+// flushThreads -- set all threads belonging to a particular parent as
 // having expired.
 
-void CPlaybackTaskGroup::KillChildTasks( CPlaybackTask *parent )
+void CPlaybackThreadTeam::KillChildThreads( CPlaybackThread *parent )
 {
-	CPlaybackTask		*th;
+	CPlaybackThread		*th;
 
-		// Delete all tasks belonging to this context.
-	for (	th = (CPlaybackTask *)tasks.First();
+		// Delete all threads belonging to this context.
+	for (	th = (CPlaybackThread *)threads.First();
 			th != NULL;
-			th = (CPlaybackTask *)th->Next())
+			th = (CPlaybackThread *)th->Next())
 	{
 		if (th->parent == parent)
 		{
-			KillChildTasks( th );
+			KillChildThreads( th );
 			delete th;
 		}
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Hook function for spawned task for locator task.
+// Hook function for spawned thread for locator task.
 
-int32 CPlaybackTaskGroup::LocatorTaskFunc( void *data )
+int32 CPlaybackThreadTeam::LocatorThreadFunc( void *data )
 {
-	((CPlaybackTaskGroup *)data)->Locate();
+	((CPlaybackThreadTeam *)data)->Locate();
 	return 0;
 }
 
 // ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::LocateNextChunk -- locate a small batch of events
+// CPlaybackThreadTeam::LocateNextChunk -- locate a small batch of events
 
 	// Only locate 200 events in a batch -- after that, go listen for more messages
 const int maxLocate = 200;
 
-void CPlaybackTaskGroup::LocateNextChunk( TimeState &tState )
+void CPlaybackThreadTeam::LocateNextChunk( TimeState &tState )
 {
 	int32		count = 0;
 	Event		ev;
@@ -286,12 +288,12 @@ void CPlaybackTaskGroup::LocateNextChunk( TimeState &tState )
 }
 
 // ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::Locate -- called by player task to do the locate chores
+// CPlaybackThreadTeam::Locate -- called by player task to do the locate chores
 
-void CPlaybackTaskGroup::Locate()
+void CPlaybackThreadTeam::Locate()
 {
 	bool				doneLocating = false;
-	CPlaybackTask	*th[ 2 ];
+	CPlaybackThread	*th[ 2 ];
 	
 	th[ 0 ] = th[ 1 ] = NULL;
 
@@ -307,8 +309,8 @@ void CPlaybackTaskGroup::Locate()
 
 		if (flags & Locator_Reset)
 		{
-				// Stop all playback tasks for this song.
-			FlushTasks();
+				// Stop all playback threads for this song.
+			FlushThreads();
 
 			real.seekTime = metered.seekTime = 0;
 
@@ -330,10 +332,10 @@ void CPlaybackTaskGroup::Locate()
 				
 				if (!tr->Events().IsEmpty())
 				{
-						// Start the new tasks at time 0 with no parent task.
+						// Start the new threads at time 0 with no parent thread.
 					if (tr->ClockType() == ClockType_Real)
 					{
-						th[ 0 ] = new CRealClockEventTask(
+						th[ 0 ] = new CRealClockEventThread(
 							*this,
 							(CEventTrack *)tr,
 							NULL,
@@ -342,7 +344,7 @@ void CPlaybackTaskGroup::Locate()
 					}
 					else
 					{
-						th[ 1 ] = new CMeteredClockEventTask(
+						th[ 1 ] = new CMeteredClockEventThread(
 							*this,
 							(CEventTrack *)tr,
 							NULL,
@@ -419,7 +421,7 @@ void CPlaybackTaskGroup::Locate()
 					{
 						if (th[ i ])
 						{
-							CEventTask	*eth = (CEventTask *)th[ i ];
+							CEventThread	*eth = (CEventThread *)th[ i ];
 							eth->Repeat( eth->clockType == ClockType_Real ? real : metered );
 						}
 					}
@@ -440,21 +442,21 @@ void CPlaybackTaskGroup::Locate()
 		real.time = tempo.ConvertMeteredToReal( metered.seekTime );
 	}
 
-		// Push back task origin so that lTime is correct.
+		// Push back thread origin so that lTime is correct.
 		// REM: Is this correct for synced sequences???
-	origin = thePlayer.m_internalTimerTick - real.time; // +++++ REMOVE THIS DEPENDANCY +++++
+	origin = thePlayer.internalTimerTick - real.time;
 	flags &= ~Clock_Locating;
 
 		// Poke the main player task to make sure it handles the first
 		// event promptly. It doesn't have to actually do anything with
 		// this command.
-	write_port( thePlayer.Port(), Command_Attention, "", 0 );
+	write_port( thePlayer.cmdPort, Command_Attention, "", 0 );
 }
 
 // ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::Start -- starts the music for a playback context
+// CPlaybackThreadTeam::Start -- starts the music for a playback context
 
-void CPlaybackTaskGroup::Start(
+void CPlaybackThreadTeam::Start(
 	CTrack				*inTrack1,
 	CTrack				*inTrack2,
 	int32				inLocTime,
@@ -470,7 +472,7 @@ void CPlaybackTaskGroup::Start(
 		if (		mainTracks[ 0 ] == inTrack1
 			&&	mainTracks[ 1 ] == inTrack2
 			&&	inSyncType == syncType
-			&&	!tasks.Empty() )
+			&&	!threads.Empty() )
 		{
 			flags &= ~(Clock_Stopped | Clock_Paused);
 			return;
@@ -478,7 +480,7 @@ void CPlaybackTaskGroup::Start(
 		
 		inLocTarget = locateType;		// REM: Correct?
 
-		if (tasks.Empty()) inLocTime = 0;
+		if (threads.Empty()) inLocTime = 0;
 	}
 	
 	LOCK_PLAYER;
@@ -517,7 +519,7 @@ void CPlaybackTaskGroup::Start(
 		}
 	}
 
-	origin = thePlayer.m_internalTimerTick - real.start; // +++++ REMOVE THIS DEPENDANCY +++++
+	origin = thePlayer.internalTimerTick - real.start;
 
 		// If "paused" flag, then set sequence to paused
 	if (inOptionFlags & PB_Paused) flags |= Clock_Paused;
@@ -583,7 +585,7 @@ void CPlaybackTaskGroup::Start(
 
 			wait_for_thread( locatorThread, &result );
 		}
-		locatorThread = spawn_thread(	LocatorTaskFunc, "LocatorTask", B_LOW_PRIORITY, this );
+		locatorThread = spawn_thread(	LocatorThreadFunc, "LocatorThread", B_LOW_PRIORITY, this );
 		if (locatorThread >= 0) resume_thread( locatorThread );
 	}
 }
@@ -591,7 +593,7 @@ void CPlaybackTaskGroup::Start(
 // ---------------------------------------------------------------------------
 // Restarts the track when an auto-loop happens
 
-void CPlaybackTaskGroup::Restart()
+void CPlaybackThreadTeam::Restart()
 {
 		// Cannot restart if not internally sync'd
 	if (syncType > SyncType_SongInternal) return;
@@ -613,14 +615,14 @@ void CPlaybackTaskGroup::Restart()
 
 		wait_for_thread( locatorThread, &result );
 	}
-	locatorThread = spawn_thread(	LocatorTaskFunc, "LocatorTask", B_LOW_PRIORITY, this );
+	locatorThread = spawn_thread(	LocatorThreadFunc, "LocatorThread", B_LOW_PRIORITY, this );
 	if (locatorThread >= 0) resume_thread( locatorThread );
 }
 
 // ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::Stop -- Halt playing and flush all pending note-offs.
+// CPlaybackThreadTeam::Stop -- Halt playing and flush all pending note-offs.
 
-void CPlaybackTaskGroup::Stop( void )
+void CPlaybackThreadTeam::Stop( void )
 {
 	flags |= Clock_Stopped;
 	FlushNotes();
@@ -638,7 +640,7 @@ void CPlaybackTaskGroup::Stop( void )
 // are sent to AFTER they have been pulled of the player stack, i.e. events do
 // not get here until after they have been remapped and are absolutely ready to go.
 
-void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
+void CPlaybackThreadTeam::ExecuteEvent( Event &ev, TimeState &tState )
 {
 	uint8		cmd = ev.Command();
 
@@ -648,44 +650,35 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 		{
 			if (flags & Clock_Locating) return;		// no notes while locating
 		}
-
-//		D_EXECUTE(("MIDI: %ld %ld %d %d %d %d\n",
-//			ev.common.start,
-//			ev.common.duration,
-//			ev.common.command,
-//			ev.common.vChannel,
-//			ev.common.data1,
-//			ev.common.data2));
-		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
-//		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time() );
+		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time() );
 	}
 	else
 	{
 		CMIDIPlayer::ChannelState		*chState;
 	
 		switch (cmd) {
-		case EvtType_TaskMarker:
+		case EvtType_ThreadMarker:
 
-			if (ev.task.taskPtr->flags & CPlaybackTask::Task_Finished)
+			if (ev.thread.threadPtr->flags & CPlaybackThread::Thread_Finished)
 			{
-// 			KillChildTasks( ev.task.taskPtr );
-				delete ev.task.taskPtr;
+// 			KillChildThreads( ev.thread.threadPtr );
+				delete ev.thread.threadPtr;
 				
-				if (tasks.Empty())
+				if (threads.Empty())
 				{
 					BMessage		msg( Player_ChangeTransportState );
 					be_app->PostMessage( &msg );
 				}
 			}
-			else ev.task.taskPtr->Play();
+			else ev.thread.threadPtr->Play();
 
 			break;
 			
 		case EvtType_StartInterpolate:
 
-//			chState = &thePlayer.m_portInfo[ ev.stack.actualPort ].channelStates[ ev.stack.actualChannel ];
-			chState = &thePlayer.m_portInfo[ 0 ].channelStates[ ev.stack.actualChannel ];
-			
+			//chState = &thePlayer.portInfo[ ev.stack.actualPort ].channelStates[ ev.stack.actualChannel ];
+			chState = &thePlayer.portInfo[ 1 ].channelStates[ ev.stack.actualChannel ];
+			//dan 6/30/00
 			switch (ev.startInterpolate.interpolationType) {
 			case Interpolation_PitchBend:
 			
@@ -697,8 +690,7 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 
 				ev.pitchBend.command = EvtType_PitchBend;
 				ev.pitchBend.targetBend = ev.startInterpolate.startValue;
-				printf("2!!\n");
-				thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
+				thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, B_NOW );
 				break;
 
 			default:
@@ -709,9 +701,8 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 
 		case EvtType_Interpolate:
 
-			//chState = &thePlayer.m_portInfo[ ev.stack.actualPort ].channelStates[ ev.stack.actualChannel ];
-			chState = &thePlayer.m_portInfo[ 0 ].channelStates[ ev.stack.actualChannel ];
-			
+			//chState = &thePlayer.portInfo[ ev.stack.actualPort ].channelStates[ ev.stack.actualChannel ];
+			//dan 6/30/00
 			switch (ev.startInterpolate.interpolationType) {
 			case Interpolation_PitchBend:
 				int32		elapsed;
@@ -752,7 +743,7 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 				{
 					ev.pitchBend.command = EvtType_PitchBend;
 					ev.pitchBend.targetBend = newValue;
-					thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
+					thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, B_NOW );
 				}
 
 				break;
