@@ -24,9 +24,11 @@ SRCS= \
 	Engine/EventTask.cpp \
 	Engine/EventTrack.cpp \
 	Engine/MidiDeviceInfo.cpp \
+	Engine/MidiManager.cpp \
 	Engine/PlaybackTask.cpp \
 	Engine/PlaybackTaskGroup.cpp \
 	Engine/Player.cpp \
+	Engine/PortNameMap.cpp \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
@@ -37,8 +39,8 @@ SRCS= \
 	Support/DList.cpp \
 	Support/IFFReader.cpp \
 	Support/IFFWriter.cpp \
+	Support/InternalSynth.cpp \
 	Support/ResourceUtils.cpp \
-	UI/AboutWindow.cpp \
 	UI/AssemblyRulerView.cpp \
 	UI/AssemblyWindow.cpp \
 	UI/BitmapTool.cpp \
@@ -69,6 +71,7 @@ SRCS= \
 	UI/StringEditView.cpp \
 	UI/StripFrameView.cpp \
 	UI/StripLabelView.cpp \
+	UI/StripSplitter.cpp \
 	UI/StripView.cpp \
 	UI/TextDisplay.cpp \
 	UI/TextSlider.cpp \
@@ -82,16 +85,15 @@ SRCS= \
 	UI/TrackListWindow.cpp \
 	UI/TrackWindow.cpp \
 	UI/TransportWindow.cpp \
-	UI/VelocityEditor.cpp \
-	UI/VChannelModifier.cpp 
+	UI/VChannelModifier.cpp \
+	UI/VelocityEditor.cpp
 
 #	specify the resource files to use
 #	full path or a relative path to the resource file can be used.
 RSRCS= \
 	../resources/Bitmaps.rsrc \
 	../resources/MeV.rsrc \
-	../resources/Cursor.rsrc \
-	../resources/Button.rsrc
+	../resources/Cursor.rsrc
 
 # @<-src@ 
 #%}
