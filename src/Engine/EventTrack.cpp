@@ -7,6 +7,7 @@
 #include "MeVDoc.h"
 #include "EventOp.h"
 #include "EventEditor.h"
+#include "EventRenderer.h"
 #include "MeVFileID.h"
 
 // Support Kit
