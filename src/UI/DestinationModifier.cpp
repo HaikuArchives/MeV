@@ -207,11 +207,12 @@ CDestinationModifier::_buildUI()
 	rect.left = rect.right;
 	rect.right = Bounds().Width() - 5.0;
 	m_solo = new BCheckBox(rect, "Solo", "Solo", new BMessage(SOLOED));
+	m_solo->SetEnabled(false);
 	m_background->AddChild(m_solo);
 
 	// add destination color-control
 	rect.left = Bounds().left + 5.0;
-	rect.top = rect.bottom + 10.0;
+	rect.top = rect.bottom + 15.0;
 	rect.bottom = Bounds().bottom - 5.0;
 	m_colors = new BColorControl(rect.LeftTop(), B_CELLS_32x8, 4.0,
 								 "Destination Color",
