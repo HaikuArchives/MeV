@@ -6,6 +6,7 @@ SRCS= \
 	MeVApp.cpp \
 	MeVDoc.cpp \
 	MeVPlugin.cpp \
+	Framework/AppWindow.cpp \
 	Framework/DocApp.cpp \
 	Framework/Document.cpp \
 	Framework/DocWindow.cpp \
