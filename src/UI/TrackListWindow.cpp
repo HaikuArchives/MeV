@@ -43,7 +43,7 @@ CTrackListWindow::CTrackListWindow(
 				   BRect(position.x, position.y,
 						 position.x + DEFAULT_DIMENSIONS.Width(),
 						 position.y + DEFAULT_DIMENSIONS.Height()),
-				   "Tracks", B_FLOATING_WINDOW,
+				   "Parts", B_FLOATING_WINDOW,
 				   B_WILL_ACCEPT_FIRST_CLICK | B_ASYNCHRONOUS_CONTROLS,
 				   B_CURRENT_WORKSPACE),
 		CObserver(*this, NULL),
@@ -368,10 +368,10 @@ CTrackListWindow::AddMenuBar()
 	menu->SetFont(be_plain_font);
 	BMenu *subMenu = new BMenu("New");
 	subMenu->SetFont(be_plain_font);
-	subMenu->AddItem(item = new BMenuItem("Metered Track",
+	subMenu->AddItem(item = new BMenuItem("Metered Part",
 										  new BMessage(MENU_CREATE_METERED_TRACK),
 										  'N'));
-	subMenu->AddItem(item = new BMenuItem("Realtime Track",
+	subMenu->AddItem(item = new BMenuItem("Realtime Part",
 										  new BMessage(MENU_CREATE_REAL_TRACK),
 										  'N', B_SHIFT_KEY));
 	menu->AddItem(subMenu);

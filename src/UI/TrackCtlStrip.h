@@ -62,7 +62,7 @@ public:							// Constructor/Destructor
 									CStripFrameView &frame,
 									BRect rect,
 									CEventTrack *track,
-									char *name = "Track");
+									char *name = "Part");
 
 public:							// Accessors
 

@@ -48,12 +48,12 @@ void Event::InitTables()
 	DefineEvent( EvtType_Text, "Text", Event::Prop_ExtraData | Event::Prop_VertPos );
 	DefineEvent( EvtType_UserEvent, "User Event", Event::Prop_ExtraData );
 	DefineEvent( EvtType_Repeat, "Repeat", Event::Prop_Duration );
-	DefineEvent( EvtType_Sequence, "Track", Event::Prop_Duration | Event::Prop_VertPos );
+	DefineEvent( EvtType_Sequence, "Part", Event::Prop_Duration | Event::Prop_VertPos );
 	DefineEvent( EvtType_Branch, "Conditional Branch", Event::Prop_VertPos );
 	DefineEvent( EvtType_ChannelMute, "Channel Mute", Event::Prop_Duration );
 	DefineEvent( EvtType_ChannelTranspose, "Channel Tranpose", 0 );
 	DefineEvent( EvtType_ChannelVolume, 	"Channel Volume", Event::Prop_VertPos );
-	DefineEvent( EvtType_MuteTrack, 	"Mute Track", Event::Prop_Duration );
+	DefineEvent( EvtType_MuteTrack, 	"Mute Part", Event::Prop_Duration );
 	DefineEvent( EvtType_Tempo, "Tempo", Event::Prop_Duration | Event::Prop_VertPos );
 	DefineEvent( EvtType_TimeSig, "Time Signature", 0 );
 };
@@ -84,7 +84,7 @@ UEventAttributeTable::EvAttr UEventAttributeTable::attrTable[ EvAttr_Count ] = {
 	{	"Update Rate",		0, 0,		0x3fff		}, 	// EvAttr_UpdatePeriod
 	{	"Tempo",			0, 1000*10,1000*500	}, 	//?	EvAttr_TempoValue
 	{	"Repeats",		0, 0,		0x0ffff		},	//?	EvAttr_RepeatCount
-	{	"Sequence",		0, 2,		0x0ffff		}, 	//?	EvAttr_SequenceNumber
+	{	"Part",			0, 2,		0x0ffff		}, 	//?	EvAttr_SequenceNumber
 	{	"Transpose",		0, -128,	127			}, 	// EvAttr_Transposition
 	{	"Level",			0, 0,		255			}, 	// EvAttr_CountourLevel
 	{	"Bytes",			0, 0,		LONG_MAX	}, 	// EvAttr_DataSize

@@ -266,7 +266,7 @@ public:							// Constructor/Destructor
 public:							// UndoAction Implementation
 
 	const char *				Description() const
-								{ return "Delete Track"; }
+								{ return "Delete Part"; }
 
 	void						Redo();
 
@@ -300,7 +300,7 @@ public:							// Constructor/Destructor
 public:							// UndoAction Implementation
 
 	const char *				Description() const
-								{ return "Rename Track"; }
+								{ return "Rename Part"; }
 
 	void						Redo();
 

@@ -656,7 +656,7 @@ CTrackWindow::CreateWindowMenu(
 
 	// Create the file menu
 	menu = new BMenu("Window");
-	menu->AddItem(new BMenuItem("Show Tracks",
+	menu->AddItem(new BMenuItem("Show Parts",
 								new BMessage(MENU_TRACKLIST), 'L'));
 	menu->AddItem(new BMenuItem("Show Inspector",
 								new BMessage(MENU_INSPECTOR), 'I'));
@@ -668,7 +668,7 @@ CTrackWindow::CreateWindowMenu(
 	SetWindowMenu(menu);
 	menuBar->AddItem(menu);
 }
-	
+
 void
 CTrackWindow::UpdateActiveSelection(
 	bool active)

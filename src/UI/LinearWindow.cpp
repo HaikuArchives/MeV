@@ -448,7 +448,7 @@ CLinearWindow::AddToolBar()
 										  ResourceUtils::LoadImage("RepeatTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_End);
-	createMenu->AddItem(new CIconMenuItem("Track End", message,
+	createMenu->AddItem(new CIconMenuItem("Part End", message,
 										  ResourceUtils::LoadImage("EndTool")));
 	createMenu->AddSeparatorItem();
 	message = new BMessage(*message);

@@ -43,7 +43,7 @@
 #include <NodeInfo.h>
 #include <Path.h>
 
-#define TRACKLIST_NAME		"Track List"
+#define TRACKLIST_NAME		"Part List"
 #define INSPECTOR_NAME		"Inspector"
 #define GRID_NAME			"Grid"
 #define TRANSPORT_NAME		"Transport"

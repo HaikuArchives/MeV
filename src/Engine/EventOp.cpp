@@ -250,7 +250,7 @@ public:
 	uint16			v;
 
 	SetSequenceNumOp( uint16 inV ) { v = inV; }
-	const char *UndoDescription() const { return "Set Track"; }
+	const char *UndoDescription() const { return "Set Part"; }
 };
 
 void SetSequenceNumOp::operator()( Event &ev, TClockType )

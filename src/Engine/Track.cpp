@@ -55,7 +55,7 @@ CTrack::CTrack(
 		{	0, 1000, 10000 },
 	};
 		
-	strcpy(m_name, name ? name : "Untitled Track");
+	strcpy(m_name, name ? name : "Untitled Part");
 
 	// Initialize the signature map.
 	sigMap.entries = (cType != ClockType_Metered ? absSigMap : relSigMap);
