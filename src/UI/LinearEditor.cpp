@@ -12,297 +12,11 @@
 
 // Interface Kit
 #include <Region.h>
+// Support Kit
+#include <Debug.h>
 
 const uint8			*resizeCursor,
 					*crossCursor;
-
-// ---------------------------------------------------------------------------
-// Note handler class for linear editor
-
-	// Invalidate the event
-void CLinearNoteEventHandler::Invalidate(
-	CEventEditor	&editor,
-	const Event		&ev ) const
-{
-	CLinearEditor	&lEditor = (CLinearEditor &)editor;
-
-	BRect	r;
-
-	r.left	= lEditor.TimeToViewCoords( ev.Start() ) - 1.0;
-	r.right	= lEditor.TimeToViewCoords( ev.Stop()  ) + 1.0;
-	r.bottom	= lEditor.PitchToViewCoords( ev.note.pitch )   + 1.0;
-	r.top	= r.bottom - lEditor.whiteKeyStep - 2.0;
-
-	lEditor.Invalidate( r );
-}
-
-void DrawNoteShape(	
-	BView		*view,
-	BRect		inRect,
-	rgb_color		outline,
-	rgb_color		fill,
-	rgb_color		highlight,
-	bool			drawHighlight );
-
-void DrawNoteShape(	
-	BView		*view,
-	BRect		inRect,
-	rgb_color		outline,
-	rgb_color		fill,
-	rgb_color		highlight,
-	bool			drawHighlight )
-{
-	view->SetHighColor( outline );
-	
-	if (inRect.Width() <= 2.0 || inRect.Height() <= 2.0)
-	{
-		view->FillRect( inRect );
-	}
-	else if (inRect.Width() <= 4.0 || inRect.Height() <= 2.0)
-	{
-		BRect		hLine;
-
-		hLine.left = inRect.left + 1;
-		hLine.right = inRect.right - 1;
-		hLine.top = hLine.bottom = inRect.top;
-		view->FillRect( hLine );
-		hLine.top = hLine.bottom = inRect.bottom;
-		view->FillRect( hLine );
-
-		view->FillRect( BRect( inRect.left, inRect.top + 1, inRect.left, inRect.bottom - 1 ) );
-		view->FillRect( BRect( inRect.right, inRect.top + 1, inRect.right, inRect.bottom - 1 ) );
-
-		view->SetHighColor( fill );
-		if (drawHighlight)
-		{
-			hLine.top = hLine.bottom = inRect.top + 1;
-			view->FillRect( hLine );
-
-			hLine.top = inRect.top + 3;
-			hLine.bottom = inRect.bottom - 1;
-			view->FillRect( hLine );
-
-			view->SetHighColor( highlight );
-			hLine.top = hLine.bottom = inRect.top + 2;
-			hLine.left = inRect.left + 2;
-			view->FillRect( hLine );
-
-			view->SetHighColor( 255, 255, 255 );
-			hLine.left = hLine.right = inRect.left + 1;
-			view->FillRect( hLine );
-		}
-		else
-		{
-			hLine.top = inRect.top + 1;
-			hLine.bottom = inRect.bottom - 1;
-			view->FillRect( hLine );
-		}
-	}
-	else
-	{
-		BRect	r1,
-				r2,
-				r3;
-		
-		r1.left = inRect.left + 2;
-		r1.right = inRect.right - 2;
-		
-		r2.left = r2.right = inRect.left + 1;
-		r3.left = r3.right = inRect.right - 1;
-
-		r1.top = r1.bottom = inRect.top;		view->FillRect( r1 );
-		r1.top = r1.bottom = inRect.bottom;	view->FillRect( r1 );
-
-		r2.top = r2.bottom = r3.top = r3.bottom = inRect.top + 1;
-		view->FillRect( r2 );
-		view->FillRect( r3 );
-
-		r2.top = r2.bottom = r3.top = r3.bottom = inRect.bottom - 1;
-		view->FillRect( r2 );
-		view->FillRect( r3 );
-
-		view->FillRect( BRect( inRect.left, inRect.top + 2, inRect.left, inRect.bottom - 2 ) );
-		view->FillRect( BRect( inRect.right, inRect.top + 2, inRect.right, inRect.bottom - 2 ) );
-
-		view->SetHighColor( fill );
-		
-		r1.top = inRect.top + 2;
-		r1.bottom = inRect.bottom - 2;
-
-		r1.left = r1.right = inRect.left + 1;		view->FillRect( r1 );
-		r1.left = r1.right = inRect.right - 1;	view->FillRect( r1 );
-
-		if (drawHighlight)
-		{
-			r1.left = inRect.left + 2;
-			r1.right = inRect.right - 2;
-			r1.top = r1.bottom = inRect.top + 1;
-			view->FillRect( r1 );
-			r1.top = inRect.top + 3;
-			r1.bottom = inRect.bottom - 1;
-			view->FillRect( r1 );
-
-			view->SetHighColor( highlight );
-			r2.top = r2.bottom = inRect.top + 2;
-			r2.left = inRect.left + 3;
-			r2.right = inRect.right - 2;
-			view->FillRect( r2 );
-
-			view->SetHighColor( 255, 255, 255 );
-			r2.left = r2.right = inRect.left + 2;
-			view->FillRect( r2 );
-		}
-		else
-		{
-			view->FillRect( BRect( inRect.left + 2, inRect.top + 1, inRect.right - 2, inRect.bottom - 1 ) );
-		}
-	}
-}
-
-	// Draw the event (or an echo)
-void CLinearNoteEventHandler::Draw(
-	CEventEditor	&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
-{
-	CLinearEditor		&lEditor = (CLinearEditor &)editor;
-	CEventTrack		*track = editor.Track();
-	static rgb_color	black = { 0, 0, 0 },
-					medGrey = { 128, 128, 128 },
-					ltGrey = { 192, 192, 192 },
-					blue = { 0, 0, 255 };
-
-	BRect			r;
-
-	r.left		= lEditor.TimeToViewCoords( ev.Start() );
-	r.right	= lEditor.TimeToViewCoords( ev.Stop()  );
-	r.bottom	= lEditor.PitchToViewCoords( ev.note.pitch );
-	r.top 	= r.bottom - lEditor.whiteKeyStep;
-
-	if (track->IsChannelLocked( ev.GetVChannel() ))
-	{
-		if (!shadowed) DrawNoteShape( &lEditor, r, medGrey, ltGrey, black, false );
-		return;
-	}
-
-	VChannelEntry		&vce = lEditor.Document().GetVChannel( ev.GetVChannel() );
-
-	if (shadowed)
-	{
-		lEditor.SetDrawingMode( B_OP_BLEND );
-		DrawNoteShape( &lEditor, r, black, vce.fillColor, vce.highlightColor, true );
-		lEditor.SetDrawingMode( B_OP_COPY );
-	}
-	else if (ev.IsSelected() && editor.IsSelectionVisible())
-	{
-		DrawNoteShape( &lEditor, r, blue, vce.fillColor, vce.highlightColor, true );
-	}
-	else
-	{
-		DrawNoteShape( &lEditor, r, black, vce.fillColor, vce.highlightColor, true );
-	}
-}
-
-	// Compute the extent of the event.
-BRect CLinearNoteEventHandler::Extent(
-	CEventEditor		&editor,
-	const Event		&ev ) const
-{
-	CLinearEditor	&lEditor = (CLinearEditor &)editor;
-	BRect			r;
-
-	r.left		= lEditor.TimeToViewCoords( ev.Start() );
-	r.right	= lEditor.TimeToViewCoords( ev.Stop()  );
-	r.bottom	= lEditor.PitchToViewCoords( ev.note.pitch );
-	r.top   	= r.bottom - lEditor.whiteKeyStep;
-
-	return r;
-}
-
-	// Pick a single event and return the part code
-	// (or -1 if event not picked)
-long CLinearNoteEventHandler::Pick(
-	CEventEditor	&editor,
-	const Event		&ev,
-	BPoint			pickPt,
-	short			&partCode ) const
-{
-	CLinearEditor	&lEditor = (CLinearEditor &)editor;
-	int				top,
-					bottom;
-
-	bottom	= lEditor.PitchToViewCoords( ev.note.pitch );
-	top		= bottom - lEditor.whiteKeyStep;
-
-	return lEditor.PickDurationEvent( ev, top, bottom, pickPt, partCode );
-}
-
-const uint8 *CLinearNoteEventHandler::CursorImage( short partCode ) const
-{
-	switch (partCode) {
-	case 0:
-		return B_HAND_CURSOR;			// Return the normal hand cursor
-
-	case 1:								// Return resizing cursor
-		if (resizeCursor == NULL)
-		{
-			resizeCursor = ResourceUtils::LoadCursor(2);
-		}
-		return resizeCursor;
-	}
-	
-	return NULL;
-}
-
-	// Quantize the vertical position of the mouse based
-	// on the event type and return a value delta.
-long CLinearNoteEventHandler::QuantizeDragValue(
-	CEventEditor	&editor,
-	const Event		&inClickEvent,
-	short			partCode,			// Part of event clicked
-	BPoint			inClickPos,
-	BPoint			inDragPos ) const
-{
-	CLinearEditor	&lEditor = (CLinearEditor &)editor;
-
-		// Get the pitch and y position of the old note.
-
-	long			oldPitch	= inClickEvent.note.pitch;
-	float			oldYPos		= lEditor.PitchToViewCoords( oldPitch );
-	long			newPitch;
-
-		// Add in the vertical drag delta to the note position,
-		// and compute the new pitch.
-		
-	newPitch = lEditor.ViewCoordsToPitch(
-		oldYPos + inDragPos.y - inClickPos.y - lEditor.whiteKeyStep / 2, false );
-					
-	return newPitch - oldPitch;
-}
-
-EventOp *CLinearNoteEventHandler::CreateDragOp(
-	CEventEditor	&editor,
-	const Event		&ev,
-	short			partCode,
-	long			timeDelta,			// The horizontal drag delta
-	long			valueDelta ) const
-{
-	if (partCode == 0)
-		return new PitchOffsetOp( valueDelta );
-	else return NULL;
-}
-
-EventOp *CLinearNoteEventHandler::CreateTimeOp(
-	CEventEditor	&editor,
-	const Event		&ev,
-	short			partCode,
-	long			timeDelta,			// The horizontal drag delta
-	long			valueDelta ) const
-{
-	if (partCode == 1)
-		return new DurationOffsetOp( timeDelta );
-	else return CAbstractEventHandler::CreateTimeOp( editor, ev, partCode, timeDelta, valueDelta );
-}
 
 // ---------------------------------------------------------------------------
 // Dispatch table for linear editor ~~~EVENTLIST
@@ -310,193 +24,195 @@ EventOp *CLinearNoteEventHandler::CreateTimeOp(
 CLinearNoteEventHandler		linearNoteHandler;
 
 // ---------------------------------------------------------------------------
-// Linear Editor class
+// Class Data Initialization
 
-	// ---------- Constructor
+const rgb_color
+CLinearEditor::NORMAL_GRID_LINE_COLOR = {220, 220, 220, 255};
+
+const rgb_color
+CLinearEditor::OCTAVE_GRID_LINE_COLOR = {180, 180, 180, 255};
+
+const rgb_color
+CLinearEditor::BACKGROUND_COLOR = {255, 255, 255, 255};
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
 
 CLinearEditor::CLinearEditor(
-	BLooper			&inLooper,
-	CTrackEditFrame	&inFrame,
-	BRect			rect )
-	:	CEventEditor(	inLooper, inFrame, rect,
-						"Linear Editor", true, true )
+	BLooper &looper,
+	CTrackEditFrame	&frame,
+	BRect rect)
+	:	CEventEditor(looper, frame, rect, "Linear Editor", true, true),
+		m_verticalZoom(1),
+		m_whiteKeyStep(8)
 {
-	handlers[ EvtType_Note ]	= &linearNoteHandler;
-	handlers[ EvtType_End ]		= &gEndEventHandler;
+	handlers[EvtType_Note] = &linearNoteHandler;
+	handlers[EvtType_End] = &gEndEventHandler;
 
-	verticalZoom		= 1;
-	whiteKeyStep		= 8;
 	CalcZoom();
 	SetZoomTarget( (CObserver *)this );
 
-		// Make the label view on the left-hand side
-	labelView = new CPianoKeyboardView(	BRect(	0.0,
-												0.0,
-												20.0,
-												rect.Height() ),
-										this,
-										B_FOLLOW_TOP_BOTTOM,
-										B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
+	// Make the label view on the left-hand side
+	labelView = new CPianoKeyboardView(BRect(0.0, 0.0, 20.0, rect.Height()),
+									   this, B_FOLLOW_TOP_BOTTOM,
+									   B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE);
+	ResizeBy(-21.0, 0.0);
+	MoveBy(21.0, 0.0);
+	TopView()->AddChild(labelView);
 
-	ResizeBy( -21.0, 0.0 );
-	MoveBy( 21.0, 0.0 );
-	TopView()->AddChild( labelView );
-
-	SetFlags( Flags() | B_PULSE_NEEDED );
+	SetFlags(Flags() | B_PULSE_NEEDED);
 }
 
 // ---------------------------------------------------------------------------
-// Convert a pitch-value to a y-coordinate
+// CEventEditor Implementation
 
-long CLinearEditor::PitchToViewCoords( int pitch )
+void
+CLinearEditor::AttachedToWindow()
 {
-	static uint8	offset[ 12 ] = { 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12 };
-	int				octave = pitch / 12,
-					note = pitch % 12;
+	BRect r(Bounds());
 
-	return	stripLogicalHeight
-			- octave * octaveStep
-			- ((offset[ note ] * whiteKeyStep) >> 1);
+	SetViewColor(B_TRANSPARENT_32_BIT);
+	SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
+				   (m_stripLogicalHeight - r.Height() / 2) / 2);
 }
 
-// ---------------------------------------------------------------------------
-// Convert a y-coordinate to a pitch value
-
-long CLinearEditor::ViewCoordsToPitch( int yPos, bool limit )
+bool
+CLinearEditor::ConstructEvent(
+	BPoint point)
 {
-	static uint8	offsetTable[ 28 ] =
-	{	0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5,
-		6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 11
-	};
-	
-	int				octave = (stripLogicalHeight - yPos) / octaveStep,
-					offset = (stripLogicalHeight - yPos) % octaveStep,
-					key;
-					
-	if (offset < 0)
+	int32 time;
+	CMeVDoc &doc = Document();
+
+	// Initialize a new event.
+	newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_Note));
+			
+	// Compute the difference between the original
+	// time and the new time we're dragging the events to.
+	time = Handler(newEv).QuantizeDragTime(*this, newEv, 0,
+										   BPoint(0.0, 0.0), point, true);
+	TrackWindow()->DisplayMouseTime(Track(), time);
+
+	newEv.SetStart(time);
+	newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
+	newEv.SetVChannel(doc.GetDefaultAttribute(EvAttr_Channel));
+
+	switch (newEv.Command())
 	{
-		octave--;
-		offset += octaveStep;
-	}
-
-	key = offsetTable[ (offset * 4) / whiteKeyStep ] + octave * 12;
-
-	if (limit)
-	{
-		if (key < 0) return 0;
-		if (key > 127) return 127;
-	}
-	return key;
-}
-
-void CLinearEditor::Draw( BRect updateRect )
-{
-	long				startTime = ViewCoordsToTime( updateRect.left - 1.0 ),
-					stopTime  = ViewCoordsToTime( updateRect.right + 1.0 ),
-					minPitch = ViewCoordsToPitch( updateRect.bottom + whiteKeyStep, true ),
-					maxPitch = ViewCoordsToPitch( updateRect.top - whiteKeyStep, true );
-	int				yPos,
-					lineCt;
-#if 0
-	screen_info		sInfo;
-	
-	get_screen_info( &sInfo );
-
-	BRect			bounds( updateRect );
-	
-	bounds.OffsetTo( B_ORIGIN );
-
-	BBitmap			*bm = new BBitmap( bounds, sInfo.mode, true );
-	BView			*bv = new BView( bounds, NULL, 0, 0 );
-	
-// bv->ScrollTo( updateRect.LeftTop() );
-	bm->Lock();
-	bm->AddChild( bv );
-	
-	bv->SetHighColor( 255, 255, 255 );
-	bv->FillRect( updateRect );
-
-	bv->SetHighColor( 220, 220, 220 );
-	for (int i = 4; i < 200; i += 5)
-	{
-		bv->FillRect( BRect(	updateRect.left, 
-								i,
-								updateRect.right,
-								i ) );
-	}
-	bv->Sync();
-	bm->Unlock();
-
-	DrawBitmap( bm, updateRect.LeftTop() );
-	
-	bm->Lock();
-	delete bv;
-	bm->Unlock();
-	delete bm;
-
-#else
-	SetHighColor( 255, 255, 255 );
-	FillRect( updateRect );
-
-	SetHighColor( 220, 220, 220 );
-
-		// Draw horizontal grid lines.
-		// REM: This needs to be faster.
-	for (	yPos = stripLogicalHeight, lineCt = 0;
-			yPos >= updateRect.top;
-			yPos -= whiteKeyStep, lineCt++ )
-	{
-		if (lineCt >= 7) lineCt = 0;
-
-			// Fill solid rectangle with gridline
-		if (yPos <= updateRect.bottom)
+		case EvtType_End:
 		{
-			if (lineCt == 0)
-				SetHighColor( 180, 180, 180 );
-			else SetHighColor( 220, 220, 220 );
-	
-			FillRect(	BRect(	updateRect.left, yPos,
-								updateRect.right, yPos ) );
+			newEv.SetDuration(0);
+			break;
+		}
+		case EvtType_Note:
+		{
+			newEv.note.pitch = ViewCoordsToPitch(point.y, true);
+			newEv.note.attackVelocity = doc.GetDefaultAttribute(EvAttr_AttackVelocity);
+			newEv.note.releaseVelocity = doc.GetDefaultAttribute(EvAttr_ReleaseVelocity);
+			break;
+		}
+		default:
+		{
+			return false;
 		}
 	}
 
-	DrawGridLines( updateRect );
+	return true;
+}
 
-		// Initialize an event marker for this track.
-	StSubjectLock		trackLock( *Track(), Lock_Shared );
-	EventMarker		marker( Track()->Events() );
+void
+CLinearEditor::DoEventFeedback(
+	const Event &event)
+{
+	// Start audio feedback
+	if (gPrefs.FeedbackEnabled(EvAttr_Pitch))
+		CPlayerControl::DoAudioFeedback(&Track()->Document(), EvAttr_Pitch,
+										event.note.pitch, &event);
+			
+	// If it has a pitch, then show that pitch
+	if (event.HasAttribute(EvAttr_Pitch))
+		((CPianoKeyboardView *)labelView)->SetSelectedKey(event.note.pitch);
+}
+
+void
+CLinearEditor::Draw(
+	BRect updateRect)
+{
+	long startTime = ViewCoordsToTime(updateRect.left - 1.0);
+	long stopTime  = ViewCoordsToTime(updateRect.right + 1.0);
+	long minPitch = ViewCoordsToPitch(updateRect.bottom + m_whiteKeyStep, true);
+	long maxPitch = ViewCoordsToPitch(updateRect.top - m_whiteKeyStep, true);
+
+	// Draw horizontal grid lines.
+	int top = static_cast<int>(updateRect.top);
+	int bottom = static_cast<int>(updateRect.bottom);
+	if (bottom > m_stripLogicalHeight)
+		bottom = m_stripLogicalHeight;
+	int absGridLine = (m_stripLogicalHeight - top) / m_whiteKeyStep;
+	if (bottom >= top) {
+		BeginLineArray(bottom - top + 1);
+		BPoint p1(updateRect.left, top);
+		BPoint p2(updateRect.right, top);
+		while (top <= bottom)
+		{
+			p1.y = p2.y = top++;
+			if (top % m_whiteKeyStep) {
+				AddLine(p1, p2, BACKGROUND_COLOR);
+			}
+			else {
+				AddLine(p1, p2,	(absGridLine-- % 7) ? NORMAL_GRID_LINE_COLOR
+											 		: OCTAVE_GRID_LINE_COLOR);
+			}
+		}
+		EndLineArray();
+	}
+
+	if (updateRect.bottom > m_stripLogicalHeight) {
+		SetHighColor(255, 255, 255, 255);
+		FillRect(BRect(updateRect.left, m_stripLogicalHeight + 1,
+					   updateRect.right, updateRect.bottom),
+				 B_SOLID_HIGH);
+	}
+
+	DrawGridLines(updateRect);
+
+	// Initialize an event marker for this track.
+	StSubjectLock trackLock(*Track(), Lock_Shared);
+	EventMarker marker(Track()->Events());
 
 	bounds = Bounds();
 	
-		// REM: We should be able to figure out the maximum and minimum pitch of notes 
-		// which are in the update rect.
+	// REM: We should be able to figure out the maximum and minimum pitch of notes 
+	// which are in the update rect.
 
-		// For each event that overlaps the current view, draw it. (locked channels first)
-	for (	const Event *ev = marker.FirstItemInRange( startTime, stopTime );
-			ev;
-			ev = marker.NextItemInRange( startTime, stopTime ) )
+	// For each event that overlaps the current view, draw it. (locked channels first)
+	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+		 ev;
+		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (ev->Command() == EvtType_Note
-			&& (ev->note.pitch < minPitch || ev->note.pitch >maxPitch)) continue;
+		if ((ev->Command() == EvtType_Note)
+		 && ((ev->note.pitch < minPitch) || (ev->note.pitch > maxPitch)))
+			continue;
 
-		if (Track()->IsChannelLocked( *ev ))
-			Handler( *ev ).Draw( *this, *ev, false );
+		if (Track()->IsChannelLocked(*ev))
+			Handler(*ev).Draw(*this, *ev, false);
 	}
-	
-		// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
-	for (	const Event *ev = marker.FirstItemInRange( startTime, stopTime );
-			ev;
-			ev = marker.NextItemInRange( startTime, stopTime ) )
-	{
-		if (ev->Command() == EvtType_Note
-			&& (ev->note.pitch < minPitch || ev->note.pitch >maxPitch)) continue;
 
-		if (!Track()->IsChannelLocked( *ev ))
-			Handler( *ev ).Draw( *this, *ev, false );
+	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
+	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+		 ev;
+		 ev = marker.NextItemInRange(startTime, stopTime))
+	{
+		if ((ev->Command() == EvtType_Note)
+		 && ((ev->note.pitch < minPitch) || (ev->note.pitch > maxPitch)))
+		 	continue;
+
+		if (!Track()->IsChannelLocked(*ev))
+			Handler(*ev).Draw(*this, *ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();
-	if (echoOp == NULL) echoOp = dragOp;
+	if (echoOp == NULL)
+		echoOp = dragOp;
 
 	if (!IsSelectionVisible())
 	{
@@ -504,46 +220,11 @@ void CLinearEditor::Draw( BRect updateRect )
 	}
 	else if (dragType == DragType_Create)
 	{
-		DrawCreateEcho( startTime, stopTime );
-#if 0
-		Event		evCopy( newEv );
-			
-		if (echoOp) (*echoOp)( evCopy, Track()->ClockType() );
-			
-		if (	evCopy.Start() <= stopTime && evCopy.Stop()  >= startTime)
-		{
-			Handler( evCopy ).Draw( *this, evCopy, true );
-		}
-#endif
+		DrawCreateEcho(startTime, stopTime);
 	}
 	else if (echoOp != NULL)
 	{
-		DrawEchoEvents( startTime, stopTime );
-#if 0	
-			// Initialize an event marker for this track.
-		EventMarker		marker( Track()->Events() );
-		const Event		*ev;
-		TClockType		clockType = Track()->ClockType();
-
-			// For each event that overlaps the current view, draw it.
-		for (	ev = marker.FirstItemInRange( Track()->MinSelectTime(), Track()->MaxSelectTime() );
-				ev;
-				ev = marker.NextItemInRange( Track()->MinSelectTime(), Track()->MaxSelectTime() ) )
-		{
-			if (ev->IsSelected())
-			{
-				Event		evCopy( *(Event *)ev );
-		
-				(*echoOp)( evCopy, clockType );
-			
-				if (	evCopy.Start() <= stopTime
-					&& 	evCopy.Stop()  >= startTime)
-				{
-					Handler( evCopy ).Draw( *this, evCopy, true );
-				}
-			}
-		}
-#endif
+		DrawEchoEvents(startTime, stopTime);
 	}
 	else if (dragType == DragType_Select)
 	{
@@ -554,656 +235,545 @@ void CLinearEditor::Draw( BRect updateRect )
 		DrawLasso();
 	}
 
-	DrawPBMarkers( pbMarkers, pbCount, updateRect, false );
-	
-#endif
+	DrawPBMarkers(pbMarkers, pbCount, updateRect, false);
 }
 
-void CLinearEditor::Pulse()
+void
+CLinearEditor::KillEventFeedback()
 {
-	UpdatePBMarkers();
-	
-		// REM: Add code to process newly recorded events
-		// REM: Add code to edit events via MIDI.
+	((CPianoKeyboardView *)labelView)->SetSelectedKey(-1);
 }
 
-// ---------------------------------------------------------------------------
-// Update message from another observer
-
-void CLinearEditor::OnUpdate( BMessage *inMsg )
+void
+CLinearEditor::MessageReceived(
+	BMessage *message)
 {
-	int32		minTime = 0,
-				maxTime = LONG_MAX;
-	int32		trackHint;
-	bool			flag;
-	bool			selChange = false;
-	int8			channel = -1;
-	BRect		r( Bounds() );
+	switch (message->what) {
+		case ZoomOut_ID:
+		{
+			if (m_whiteKeyStep < 12)
+			{
+				BRect r(Frame());
+				float sValue = (ScrollValue(B_VERTICAL) + (r.Height()) / 2) / m_whiteKeyStep;
+				m_whiteKeyStep++;
+				CalcZoom();
+				Hide();
+				SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
+							   (sValue * m_whiteKeyStep) - (r.Height()) / 2);
+				labelView->Invalidate();
+				Show();
+			}
+			break;
+		}
+		case ZoomIn_ID:
+		{
+			if (m_whiteKeyStep > 4) 
+			{
+				BRect r(Bounds());
+				float sValue = (ScrollValue(B_VERTICAL) + (r.Height()) / 2) / m_whiteKeyStep;
+				m_whiteKeyStep--;
+				CalcZoom();
+				Hide();
+				SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight,
+							   (sValue * m_whiteKeyStep) - (r.Height()) / 2);
+				labelView->Invalidate();
+				Show();
+			}
+			break;
+		}
+		case Update_ID:
+		case Delete_ID:
+		{
+			CObserver::MessageReceived(message);
+			break;
+		}
+		default:
+		{
+			CStripView::MessageReceived(message);
+			break;
+		}
+	}
+}
+
+void
+CLinearEditor::MouseMoved(
+	BPoint point,
+	uint32 transit,
+	const BMessage *message)
+{
+	if (transit == B_EXITED_VIEW)
+	{
+		TrackWindow()->DisplayMouseTime(NULL, 0);
+		return;
+	}
+	
+	TrackWindow()->DisplayMouseTime(Track(), ViewCoordsToTime(point.x));
+
+	StSubjectLock trackLock(*Track(), Lock_Shared);
+	EventMarker marker(Track()->Events());
+
+	bounds = Bounds();
+}
+
+void
+CLinearEditor::OnUpdate(
+	BMessage *message)
+{
+	int32 minTime = 0;
+	int32 maxTime = LONG_MAX;
+	int32 trackHint;
+	bool flag;
+	bool selChange = false;
+	int8 channel = -1;
+	BRect r(Bounds());
 
 	bounds = r;
 
-	if (inMsg->FindBool( "SelChange", 0, &flag ) == B_OK)
+	if (message->FindBool("SelChange", 0, &flag) == B_OK)
 	{
 		if (!IsSelectionVisible()) return;
 		selChange = flag;
 	}
 
-	if (inMsg->FindInt32( "TrackAttrs", 0, &trackHint ) == B_OK)
+	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 	{
-			// REM: what do we do if track changes name?
+		// REM: what do we do if track changes name?
 		if (!(trackHint &
-			(CTrack::Update_Duration|CTrack::Update_SigMap|CTrack::Update_TempoMap)))
+			(CTrack::Update_Duration | CTrack::Update_SigMap | CTrack::Update_TempoMap)))
 				return;
 	}
-	else trackHint = 0;
+	else
+		trackHint = 0;
 
-	if (inMsg->FindInt32( "MinTime", 0, &minTime ) == B_OK)
+	if (message->FindInt32("MinTime", 0, &minTime) == B_OK)
 	{
-		r.left = TimeToViewCoords( minTime ) - 1.0;
+		r.left = TimeToViewCoords(minTime) - 1.0;
 	}
-	else minTime = 0;
+	else
+		minTime = 0;
 
-	if (inMsg->FindInt32( "MaxTime", 0, &maxTime ) == B_OK)
+	if (message->FindInt32("MaxTime", 0, &maxTime) == B_OK)
 	{
-		r.right = TimeToViewCoords( maxTime ) + 1.0;
+		r.right = TimeToViewCoords(maxTime) + 1.0;
 	}
-	else maxTime = LONG_MAX;
+	else
+		maxTime = LONG_MAX;
 	
-	if (inMsg->FindInt8( "channel", 0, &channel ) != B_OK) channel = -1;
+	if (message->FindInt8("channel", 0, &channel) != B_OK)
+		channel = -1;
 
-	if (trackHint & CTrack::Update_Duration) RecalcScrollRangeH();
+	if (trackHint & CTrack::Update_Duration)
+		RecalcScrollRangeH();
 
-	if (trackHint & (CTrack::Update_SigMap|CTrack::Update_TempoMap))
+	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
 	{
 		RecalcScrollRangeH();
-// 	TrackWindow()->InvalidateRuler();
-		Invalidate();			// Invalidate everything if signature map changed
+		// Invalidate everything if signature map changed
+		Invalidate();
 	}
 	else if (channel >= 0)
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if (ev->HasProperty( Event::Prop_Channel ) && ev->GetVChannel() == channel)
-				Handler( *ev ).Invalidate( *this, *ev );
+			if (ev->HasProperty(Event::Prop_Channel) && ev->GetVChannel() == channel)
+				Handler(*ev).Invalidate(*this, *ev);
 		}
 	}
 	else if (selChange)
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			Handler( *ev ).Invalidate( *this, *ev );
+			Handler(*ev).Invalidate(*this, *ev);
 		}
 	}
 	else
 	{
-		Invalidate( r );
+		Invalidate(r);
 	}
 }
 
-void CLinearEditor::CalcZoom()
+void
+CLinearEditor::Pulse()
 {
-	octaveStep			= 7 * whiteKeyStep;
-	stripLogicalHeight	= 75 * whiteKeyStep - 1;
+	UpdatePBMarkers();
+	
+	// REM: Add code to process newly recorded events
+	// REM: Add code to edit events via MIDI.
 }
 
-void CLinearEditor::AttachedToWindow()
+void
+CLinearEditor::SetScrollValue(
+	float inScrollValue,
+	orientation inOrient)
 {
-	BRect		r( Frame() );
-
-	SetViewColor( B_TRANSPARENT_32_BIT );
-	SetScrollRange(	scrollRange.x, scrollValue.x,
-					stripLogicalHeight,
-					(stripLogicalHeight - r.Height()/2) / 2 );
-}
-
-void CLinearEditor::MessageReceived( BMessage *msg )
-{
-	switch (msg->what) {
-	case ZoomOut_ID:
-
-		if (whiteKeyStep < 12)
-		{
-			BRect		r( Frame() );
-			float		sValue = (ScrollValue( B_VERTICAL ) + (r.bottom - r.top) / 2) / whiteKeyStep;
-
-			whiteKeyStep++;
-			CalcZoom();
-			Hide();
-			SetScrollRange(	scrollRange.x, scrollValue.x,
-							stripLogicalHeight,
-							(sValue * whiteKeyStep) - (r.bottom - r.top) / 2 );
-			labelView->Invalidate();
-			Show();
-		}
-		break;
-
-	case ZoomIn_ID:
-
-		if (whiteKeyStep > 4) 
-		{
-			BRect		r( Frame() );
-			float		sValue = (ScrollValue( B_VERTICAL ) + (r.bottom - r.top) / 2) / whiteKeyStep;
-
-			whiteKeyStep--;
-			CalcZoom();
-			Hide();
-			SetScrollRange(	scrollRange.x, scrollValue.x,
-							stripLogicalHeight,
-							(sValue * whiteKeyStep) - (r.bottom - r.top) / 2 );
-			labelView->Invalidate();
-			Show();
-		}
-		break;
-
-	case Update_ID:
-	case Delete_ID:
-		CObserver::MessageReceived( msg );
-		break;
-
-	default:
-		CStripView::MessageReceived( msg );
-		break;
-	}
+	CStripView::SetScrollValue(inScrollValue, inOrient);
+	labelView->ScrollTo(0.0, scrollValue.y);
 }
 
 // ---------------------------------------------------------------------------
-// Linear editor mouse movement handler
+// Internal Operations
 
-void CLinearEditor::MouseMoved(
-	BPoint		point,
-	ulong		transit,
-	const BMessage	* )
+void
+CLinearEditor::CalcZoom()
 {
-//	const Event		*ev;
-//	short			partCode;
-//	const uint8		*newCursor;
+	m_octaveStep = 7 * m_whiteKeyStep;
+	m_stripLogicalHeight = 75 * m_whiteKeyStep - 1;
+}
 
-	if (transit == B_EXITED_VIEW)
+long
+CLinearEditor::PitchToViewCoords(
+	int pitch)
+{
+	static uint8 offset[12] = {0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12};
+	int octave = pitch / 12;
+	int note = pitch % 12;
+
+	return	m_stripLogicalHeight - octave * m_octaveStep
+								 - ((offset[note] * m_whiteKeyStep) >> 1);
+}
+
+long
+CLinearEditor::ViewCoordsToPitch(
+	int yPos,
+	bool limit)
+{
+	static uint8 offsetTable[28] =
 	{
-		TrackWindow()->DisplayMouseTime( NULL, 0 );
-//		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
+		0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5,
+		6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 11
+	};
+	
+	int octave = (m_stripLogicalHeight - yPos) / m_octaveStep;
+	int offset = (m_stripLogicalHeight - yPos) % m_octaveStep;
+	int key;
+					
+	if (offset < 0)
+	{
+		octave--;
+		offset += m_octaveStep;
+	}
+
+	key = offsetTable[(offset * 4) / m_whiteKeyStep] + octave * 12;
+
+	if (limit)
+	{
+		if (key < 0)
+			return 0;
+		if (key > 127)
+			return 127;
+	}
+
+	return key;
+}
+
+// ---------------------------------------------------------------------------
+// Class Data Initialization
+
+const rgb_color
+CLinearNoteEventHandler::DEFAULT_BORDER_COLOR = {0, 0, 0, 255};
+const rgb_color
+CLinearNoteEventHandler::DEFAULT_HIGHLIGHT_COLOR = {224, 224, 224, 255};
+const rgb_color
+CLinearNoteEventHandler::SELECTED_BORDER_COLOR = {0, 0, 255, 255};
+const rgb_color
+CLinearNoteEventHandler::DISABLED_BORDER_COLOR = {128, 128, 128, 255};
+const rgb_color
+CLinearNoteEventHandler::DISABLED_FILL_COLOR = {192, 192, 192, 255};
+
+// ---------------------------------------------------------------------------
+// CAbstractEventHandler Implementation
+
+void
+CLinearNoteEventHandler::Invalidate(
+	CEventEditor &editor,
+	const Event &ev) const
+{
+	CLinearEditor &lEditor = (CLinearEditor &)editor;
+
+	BRect r;
+
+	r.left = lEditor.TimeToViewCoords(ev.Start()) - 1.0;
+	r.right	= lEditor.TimeToViewCoords(ev.Stop()) + 1.0;
+	r.bottom = lEditor.PitchToViewCoords(ev.note.pitch) + 1.0;
+	r.top = r.bottom - lEditor.m_whiteKeyStep - 2.0;
+
+	lEditor.Invalidate(r);
+}
+
+void
+DrawNoteShape(	
+	BView *view,
+	BRect inRect,
+	rgb_color outline,
+	rgb_color fill,
+	rgb_color highlight,
+	bool drawHighlight)
+{
+	view->SetHighColor(fill);
+	view->FillRect(inRect.InsetByCopy(1.0, 1.0), B_SOLID_HIGH);
+	view->SetHighColor(outline);
+	view->StrokeRoundRect(inRect, 3.0, 3.0, B_SOLID_HIGH);
+	if (drawHighlight && ((inRect.Width() >= 4.0) && (inRect.Height() >= 4.0))) {
+		BPoint pLeft(inRect.left + 2.0, inRect.top + 2.0);
+		BPoint pRight(inRect.right - 2.0, inRect.top + 2.0);
+		view->SetHighColor(255, 255, 255, 255);
+		view->StrokeLine(pLeft, pLeft, B_SOLID_HIGH);
+		pLeft.x++;
+		view->SetHighColor(highlight);
+		view->StrokeLine(pLeft, pRight, B_SOLID_HIGH);
+	}
+}
+
+void
+CLinearNoteEventHandler::Draw(
+	CEventEditor &editor,
+	const Event &ev,
+	bool shadowed) const
+{
+	CLinearEditor &lEditor = (CLinearEditor &)editor;
+	CEventTrack *track = editor.Track();
+	BRect r(Extent(editor, ev));
+
+	if (track->IsChannelLocked(ev.GetVChannel()))
+	{
+		if (!shadowed)
+			DrawNoteShape(&lEditor, r, DISABLED_BORDER_COLOR,
+						  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR, false);
 		return;
 	}
-	
-	TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
 
-	StSubjectLock		trackLock( *Track(), Lock_Shared );
-	EventMarker		marker( Track()->Events() );
+	VChannelEntry &vce = lEditor.Document().GetVChannel(ev.GetVChannel());
 
-	bounds = Bounds();
-
-//	if ((ev = PickEvent( marker, point, partCode )) != NULL)
-//	{
-//		newCursor = Handler( *ev ).CursorImage( partCode );
-//	}
-//	else newCursor = NULL;
-//	
-//	if (newCursor == NULL)
-//	{
-//		if (crossCursor == NULL)
-//		{
-//			crossCursor = ResourceUtils::LoadCursor(1);
-//		}
-//
-//		newCursor = crossCursor;
-//	}
-//	
-//	TrackWindow()->SetCursor( newCursor );
-}
-
-#if 0
-void CLinearEditor::StartDrag( BPoint point, ulong buttons )
-{
-	const Event		*ev;
-	StSubjectLock		trackLock( *Track(), Lock_Shared );
-	EventMarker		marker( Track()->Events() );
-	short			partCode;
-	ulong			modifierKeys = modifiers();
-
-	bounds = Bounds();
-	
-	if ((ev = PickEvent( marker, point, partCode )) != NULL)
+	if (shadowed)
 	{
-		bool			wasSelected = false;
-	
-		Document().SetActiveMaster( Track() );
-
-		if (ev->IsSelected())
-		{
-			wasSelected = true;
-		
-			if (modifierKeys & B_SHIFT_KEY)
-			{
-				((Event *)ev)->SetSelected( false );
-				Handler( *ev ).Invalidate( *this, *ev );
-			
-					// This could be faster.
-				Track()->SummarizeSelection();
-
-					// Let the world know the selection has changed
-				CEventSelectionUpdateHint		hint( *Track(), true );
-				PostUpdate( &hint, true );
-				return;
-			}
-		}
-		else
-		{
-			if (!(modifierKeys & B_SHIFT_KEY))
-			{
-				Track()->DeselectAll( this );
-			}
-			((Event *)ev)->SetSelected( true );
-			Handler( *ev ).Invalidate( *this, *ev );
-
-				// This could be faster.
-			Track()->SummarizeSelection();
-
-				// Let the world know the selection has changed
-			CEventSelectionUpdateHint		hint( *Track(), true );
-			PostUpdate( &hint, true );
-		}
-		
-		Track()->SetCurrentEvent( marker );
-		if (modifierKeys & B_CONTROL_KEY && partCode == 0)
-			dragType = DragType_CopyEvents;
-		else dragType = DragType_Events;
-		clickPart = partCode;
-		
-		TrackWindow()->DisplayMouseTime( Track(), ev->Start() );
-
-			// Start audio feedback
-		if ((partCode == 0 || wasSelected == false) && gPrefs.FeedbackEnabled( EvAttr_Pitch ))
-			CPlayerControl::DoAudioFeedback( &Track()->Document(), EvAttr_Pitch, ev->note.pitch, ev );
-			
-			// If it has a pitch, then show that pitch
-		if (ev->HasAttribute( EvAttr_Pitch ))
-			((CPianoKeyboardView *)labelView)->SetSelKey( ev->note.pitch );
-		
-		timeDelta = 0;
-		valueDelta = 0;
+		lEditor.SetDrawingMode(B_OP_BLEND);
+		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR, 
+					  vce.fillColor, vce.highlightColor, true);
+		lEditor.SetDrawingMode(B_OP_COPY);
 	}
-	else if (buttons & B_SECONDARY_MOUSE_BUTTON)
+	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
-		if (!(modifierKeys & B_SHIFT_KEY))
-			Track()->DeselectAll( this );
-
-			// If clicking with right button, then also do a lasso drag.
-		cursorPos = point;
-		dragType = DragType_Lasso;
-		AddLassoPoint( point );
+		DrawNoteShape(&lEditor, r, SELECTED_BORDER_COLOR,
+					  vce.fillColor, vce.highlightColor, true);
 	}
 	else
 	{
-		if (!(modifierKeys & B_SHIFT_KEY))
-			Track()->DeselectAll( this );
-
-		int32 toolState = TrackWindow()->CurrentTool();
-		
-		if (toolState == TOOL_CREATE)
-		{
-			int32		time;
-			CMeVDoc		&doc = Document();
-		
-				// Initialize a new event.
-			newEv.SetCommand( TrackWindow()->GetNewEventType() );
-			
-				// Compute the difference between the original
-				// time and the new time we're dragging the events to.
-			time = Handler( newEv ).QuantizeDragTime(
-				*this,
-				newEv,
-				0,
-				BPoint( 0.0, 0.0 ),
-				point,
-				true );
-			TrackWindow()->DisplayMouseTime( Track(), time );
-
-			newEv.SetStart( time );
-			newEv.SetDuration( TrackWindow()->GetNewEventDuration() - 1 );
-			newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
-
-			switch (newEv.Command()) {
-			case EvtType_End:
-				newEv.SetDuration( 0 );
-				break;
-
-			case EvtType_Note:
-				newEv.note.pitch = ViewCoordsToPitch( point.y, true );
-				newEv.note.attackVelocity = doc.GetDefaultAttribute( EvAttr_AttackVelocity );
-				newEv.note.releaseVelocity = doc.GetDefaultAttribute( EvAttr_ReleaseVelocity );
-				break;
-
-			default:
-				beep();
-				return;
-			};
-
-			clickPart = 0;
-			dragType = DragType_Create;
-			Handler( newEv ).Invalidate( *this, newEv );
-
-				// Start audio feedback
-			if (gPrefs.FeedbackEnabled( EvAttr_Pitch ))
-				CPlayerControl::DoAudioFeedback( &Track()->Document(), EvAttr_Pitch, newEv.note.pitch, &newEv );
-
-				// If it has a pitch, then show that pitch
-			if (newEv.HasAttribute( EvAttr_Pitch ))
-				((CPianoKeyboardView *)labelView)->SetSelKey( newEv.note.pitch );
-
-				// Poke selection times so that drag-limits will work properly
-				// (Drag limits are implemented in Handler.QuantizeDragTime
-				// and use the track selection times).
-				// REM: This is somewhat of a kludge and may interfere
-				// with plug-in development.
-			Track()->SetSelectTime( newEv.Start(), newEv.Stop() );
-
-			timeDelta = 0;
-			valueDelta = 0;
-		}
-		else
-		{
-				// Do a selection rectangle drag...
-			cursorPos = anchorPos = point;
-			dragType = DragType_Select;
-			DrawSelectRect();
-			TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
-		}
+		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
+					  vce.fillColor, vce.highlightColor, true);
 	}
 }
 
-bool CLinearEditor::DoDrag( BPoint point, ulong buttons )
+BRect
+CLinearNoteEventHandler::Extent(
+	CEventEditor &editor,
+	const Event &ev) const
 {
-	bounds = Bounds();
+	CLinearEditor &lEditor = (CLinearEditor &)editor;
+	BRect r;
+	r.left = lEditor.TimeToViewCoords(ev.Start());
+	r.right = lEditor.TimeToViewCoords(ev.Stop()),
+	r.bottom = lEditor.PitchToViewCoords(ev.note.pitch);
+	r.top = r.bottom - lEditor.m_whiteKeyStep;
 
-	if (		dragType == DragType_Events
-		||	dragType == DragType_CopyEvents
-		||	dragType == DragType_Create)
+	return r;
+}
+
+long
+CLinearNoteEventHandler::Pick(
+	CEventEditor &editor,
+	const Event &ev,
+	BPoint pickPt,
+	short &partCode) const
+{
+	CLinearEditor &lEditor = (CLinearEditor &)editor;
+	int bottom	= lEditor.PitchToViewCoords(ev.note.pitch);
+	int top = bottom - lEditor.m_whiteKeyStep;
+
+	return lEditor.PickDurationEvent(ev, top, bottom, pickPt, partCode);
+}
+
+const uint8 *
+CLinearNoteEventHandler::CursorImage(
+	short partCode) const
+{
+	switch (partCode)
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		long			newTimeDelta,
-					newValueDelta;
-		EventOp		*newValueOp,
-					*newTimeOp,
-					*newDragOp;
-		const Event	*dragEvent;
-		
-		if (dragType == DragType_Create)	dragEvent = &newEv;
-		else								dragEvent = Track()->CurrentEvent();
-
-		const CAbstractEventHandler		&handler( Handler( *dragEvent ) );
-
-			// Compute the difference between the original
-			// time and the new time we're dragging the events to.
-		newTimeDelta = handler.QuantizeDragTime(
-			*this, *dragEvent, clickPart, clickPos, point );
-
-			// Compute the difference between the original value
-			// and the new value we're dragging the events to.
-		newValueDelta = handler.QuantizeDragValue(
-			*this, *dragEvent, clickPart, clickPos, point );
+		case 0:
+		{
+			return B_HAND_CURSOR;
+		}
+		case 1:
+		{
+			if (resizeCursor == NULL)
+				resizeCursor = ResourceUtils::LoadCursor(2);
+			return resizeCursor;
+		}
+	}
 	
-		if (	newTimeDelta  == timeDelta
-			&&	newValueDelta == valueDelta)
-					return true;
+	return NULL;
+}
 
-		newValueOp = handler.CreateDragOp(
-			*this, *dragEvent, clickPart, newTimeDelta, newValueDelta );
+long
+CLinearNoteEventHandler::QuantizeDragValue(
+	CEventEditor &editor,
+	const Event &inClickEvent,
+	short partCode,
+	BPoint inClickPos,
+	BPoint inDragPos) const
+{
+	CLinearEditor	&lEditor = (CLinearEditor &)editor;
 
-		newTimeOp = handler.CreateTimeOp(
-			*this, *dragEvent, clickPart, newTimeDelta, newValueDelta );
-			
-		if (newTimeOp == NULL)		newDragOp = newValueOp;
-		else if (newValueOp == NULL)	newDragOp = newTimeOp;
-		else
-		{
-				// If we have two operations, then pair them, and release them
-				// (because pair keeps references to the objects)
-			newDragOp = new PairOp( newValueOp, newTimeOp );
-			CRefCountObject::Release( newValueOp );
-			CRefCountObject::Release( newTimeOp );
-		}
+	// Get the pitch and y position of the old note.
+	long oldPitch = inClickEvent.note.pitch;
+	float oldYPos = lEditor.PitchToViewCoords(oldPitch);
+	long newPitch;
 
-			// Do audio feedback for this drag, but only if value changed,
-			// and only if we're dragging something that can be fed back.
-		if (newValueOp != NULL && newValueDelta != valueDelta)
-		{
-			Event			feedbackEvent( *(Event *)dragEvent );
-			
-				// REM: EvAttr_Pitch should not be hard coded.
-				// This should be in fact computed from the handler.
-				// Or from the valueOp.
-			(*newValueOp)( feedbackEvent, Track()->ClockType() );
-			if (gPrefs.FeedbackEnabled( EvAttr_Pitch ))
-				CPlayerControl::DoAudioFeedback(
-					&Track()->Document(), 
-					EvAttr_Pitch,
-					feedbackEvent.note.pitch,
-					&feedbackEvent );
-
-				// If it has a pitch, then show that pitch
-			if (feedbackEvent.HasAttribute( EvAttr_Pitch ))
-				((CPianoKeyboardView *)labelView)->SetSelKey( feedbackEvent.note.pitch );
-		}
-		
-		if (	dragType == DragType_Create)
-		{
-			Event		evCopy( newEv );
+	// Add in the vertical drag delta to the note position,
+	// and compute the new pitch.
+	newPitch = lEditor.ViewCoordsToPitch(oldYPos + inDragPos.y
+										 - inClickPos.y - lEditor.m_whiteKeyStep / 2,
+										 false);
 					
-			if (dragOp) (*dragOp)( evCopy, Track()->ClockType() );
-			Handler( evCopy ).Invalidate( *this, evCopy );
-
-			evCopy = newEv;
-			if (newDragOp) (*newDragOp)( evCopy, Track()->ClockType() );
-			Handler( evCopy ).Invalidate( *this, evCopy );
-		}
-		else
-		{
-			if (dragOp)		InvalidateSelection( *dragOp );
-			if (newDragOp)	InvalidateSelection( *newDragOp );
-		}
-		
-		CRefCountObject::Release( dragOp );
-		dragOp = newDragOp;
-
-		timeDelta = newTimeDelta;
-		valueDelta = newValueDelta;
-
-		TrackWindow()->DisplayMouseTime( Track(), dragEvent->Start() + timeDelta );
-	}
-	else if (dragType == DragType_Select)
-	{
-		if (cursorPos != point)
-		{
-			DrawSelectRect();
-			cursorPos = point;
-			DrawSelectRect();
-			TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
-		}
-	}
-	else if (dragType == DragType_Lasso)
-	{
-		if (cursorPos != point)
-		{
-			AddLassoPoint( point );
-			cursorPos = point;
-			TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
-		}
-	}
-	return true;
+	return newPitch - oldPitch;
 }
 
-void CLinearEditor::FinishDrag(
-	BPoint		point,
-	ulong		buttons,
-	bool		commit )
+EventOp *
+CLinearNoteEventHandler::CreateDragOp(
+	CEventEditor &editor,
+	const Event &ev,
+	short partCode,
+	long timeDelta,
+	long valueDelta) const
 {
-		// Initialize an event marker for this track.
-	StSubjectLock		trackLock( *Track(), Lock_Exclusive );
-
-	bounds = Bounds();
-
-	Document().SetActiveMaster( Track() );
-
-	if (dragType == DragType_Events || dragType == DragType_CopyEvents
-		|| dragType == DragType_Create)
-	{
-		if (timeDelta == 0 && valueDelta == 0 && dragType != DragType_Create)
-			commit = false;
-		
-			// Remove highlight from piano keyboard.
-		KillEventFeedback();
-		
-		if (dragOp || dragType == DragType_Create)
-		{
-			if (commit)
-			{
-				ApplyDragOp();
-			}
-			else InvalidateSelection( *dragOp );
-		}
-	}
-	else if (dragType == DragType_Select)
-	{
-		DoRectangleSelection();
-	}
-	else if (dragType == DragType_Lasso)
-	{	
-		DoLassoSelection();
-	}
-
-	CRefCountObject::Release( dragOp ); dragOp = NULL;
-	dragType = DragType_None;
-	TrackWindow()->DisplayMouseTime( NULL, 0 );
+	if (partCode == 0)
+		return new PitchOffsetOp(valueDelta);
+	else
+		return NULL;
 }
-#endif
 
-bool CLinearEditor::ConstructEvent( BPoint point )
+EventOp *
+CLinearNoteEventHandler::CreateTimeOp(
+	CEventEditor &editor,
+	const Event &ev,
+	short partCode,
+	long timeDelta,
+	long valueDelta) const
 {
-	int32		time;
-	CMeVDoc		&doc = Document();
-
-		// Initialize a new event.
-	newEv.SetCommand( TrackWindow()->GetNewEventType( EvtType_Note ) );
-			
-		// Compute the difference between the original
-		// time and the new time we're dragging the events to.
-	time = Handler( newEv ).QuantizeDragTime(
-		*this,
-		newEv,
-		0,
-		BPoint( 0.0, 0.0 ),
-		point,
-		true );
-	TrackWindow()->DisplayMouseTime( Track(), time );
-
-	newEv.SetStart( time );
-	newEv.SetDuration( TrackWindow()->NewEventDuration() - 1 );
-	newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
-
-	switch (newEv.Command()) {
-	case EvtType_End:
-		newEv.SetDuration( 0 );
-		break;
-
-	case EvtType_Note:
-		newEv.note.pitch = ViewCoordsToPitch( point.y, true );
-		newEv.note.attackVelocity = doc.GetDefaultAttribute( EvAttr_AttackVelocity );
-		newEv.note.releaseVelocity = doc.GetDefaultAttribute( EvAttr_ReleaseVelocity );
-		break;
-
-	default:
-		return false;
-	};
-
-	return true;
+	if (partCode == 1)
+		return new DurationOffsetOp(timeDelta);
+	else
+		return CAbstractEventHandler::CreateTimeOp(editor, ev, partCode,
+												   timeDelta, valueDelta);
 }
 
 // ---------------------------------------------------------------------------
-// Do additional audio feedback or selection for this event..
+// Constructor/Destructor
 
-void CLinearEditor::DoEventFeedback( const Event &ev )
+CPianoKeyboardView::CPianoKeyboardView(
+	BRect frame,
+	CLinearEditor *editor,
+	uint32 resizeFlags,
+	uint32 flags)
+	:	BView(frame, "PianoKeyboardView", resizeFlags, flags),
+		m_editor(editor),
+		m_selectedKey(-1)
 {
-		// Start audio feedback
-	if (gPrefs.FeedbackEnabled( EvAttr_Pitch ))
-		CPlayerControl::DoAudioFeedback( &Track()->Document(), EvAttr_Pitch, ev.note.pitch, &ev );
-			
-		// If it has a pitch, then show that pitch
-	if (ev.HasAttribute( EvAttr_Pitch ))
-		((CPianoKeyboardView *)labelView)->SetSelKey( ev.note.pitch );
+	SetViewColor(B_TRANSPARENT_32_BIT);
 }
 
 // ---------------------------------------------------------------------------
-// Remove any feedback artifacts for this event.
+// Operations
 
-void CLinearEditor::KillEventFeedback()
+void
+CPianoKeyboardView::SetSelectedKey(
+	int32 key)
 {
-	((CPianoKeyboardView *)labelView)->SetSelKey( -1 );
+	BRect r(Bounds());
+
+	if (key != m_selectedKey)
+	{
+		r.bottom = m_editor->PitchToViewCoords(m_selectedKey) + 1.0;
+		r.top = r.bottom - m_editor->m_whiteKeyStep - 2.0;
+		Invalidate(r);
+
+		m_selectedKey = key;
+
+		r.bottom = m_editor->PitchToViewCoords(m_selectedKey) + 1.0;
+		r.top = r.bottom - m_editor->m_whiteKeyStep - 2.0;
+		Invalidate(r);
+	}
 }
 
 // ---------------------------------------------------------------------------
-// Draw piano keyboard
+// BView Implementation
 
-void CPianoKeyboardView::Draw( BRect updateRect )
+void
+CPianoKeyboardView::Draw(
+	BRect updateRect)
 {
-	BRect		r( Bounds() );
-	int32		yPos;
-	int32		lineCt;
-	int32		wh = editor->whiteKeyStep,
-				bl = (wh + 1) / 4;
-	int32		key;
-	static int8	black[ 7 ] = { 1, 1, 0, 1, 1, 1, 0 };
+	BRect r(Bounds()), rect;
+	BRegion wRegion(updateRect), bRegion;
+	int32 yPos;
+	int32 lineCt;
+	int32 wh = m_editor->m_whiteKeyStep;
+	int32 bl = (wh + 1) / 4;
+	int32 key;
+	static int8	black[7] = {1, 1, 0, 1, 1, 1, 0};
 
-	SetHighColor( 128, 128, 128 );
+	if (updateRect.right >= r.right) {
+		SetHighColor(128, 128, 128, 255);
+		StrokeLine(BPoint(updateRect.right, r.top), BPoint(updateRect.right, r.bottom),
+				   B_SOLID_HIGH);
+		updateRect.right -= 1.0;
+		wRegion.Exclude(BRect(r.right, updateRect.top, r.right, updateRect.bottom));
+	}
 
-	FillRect( BRect( updateRect.right, r.top, updateRect.right, r.bottom ) );
+	SetHighColor(255, 255, 255, 255);
+	SetLowColor(128, 128, 128, 255);
 
-	SetHighColor( 255, 255, 255 );
-	FillRect( BRect( updateRect.left, editor->stripLogicalHeight, updateRect.right - 1, r.bottom ) );
-	SetLowColor( 128, 128, 128 );
-
-		// Draw horizontal grid lines.
-		// REM: This needs to be faster.
-	for (	yPos = editor->stripLogicalHeight, lineCt = 0, key = 0;
+	// Draw horizontal grid lines.
+	// REM: This needs to be faster.
+	for (	yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
 			yPos >= updateRect.top;
 			yPos -= wh, lineCt++, key++ )
 	{
 		if (lineCt >= 7) lineCt = 0;
 
-			// Fill solid rectangle with gridline
+		// Fill solid rectangle with gridline
 		if (yPos <= updateRect.bottom + wh + bl)
 		{
-			FillRect(	BRect(	updateRect.left, yPos,
-								updateRect.right - 1, yPos ),
-						B_SOLID_LOW );
-		
-			if (selKey == key)		SetHighColor( 148, 148, 255 );
-			else						SetHighColor( 255, 255, 255 );
+			rect = BRect(updateRect.left, yPos, updateRect.right, yPos);
+			StrokeLine(rect.LeftTop(), rect.RightTop(), B_SOLID_LOW);
+			wRegion.Exclude(rect);
 
-			FillRect(	BRect(	r.left, yPos - wh + 1,
-								r.right - 1, yPos - 1 ) );
-
+			if (m_selectedKey == key)
+			{
+				SetHighColor(148, 148, 255, 255);
+				rect = BRect(r.left, yPos - wh + 1, r.right - 1, yPos - 1);
+				FillRect(rect, B_SOLID_HIGH);
+				wRegion.Exclude(rect);
+			}
 		}
-		if (black[ lineCt ]) key++;
+		if (black[lineCt])
+			key++;
 	}
 
-	SetHighColor( 96, 96, 96 );
-	SetLowColor( 148, 148, 255 );
-
-		// Draw horizontal grid lines.
-		// REM: This needs to be faster.
-	for (	yPos = editor->stripLogicalHeight, lineCt = 0, key = 0;
+	// Draw black keys
+	// REM: This needs to be faster.
+	SetLowColor(148, 148, 255, 255);
+	for (	yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
 			yPos >= updateRect.top;
 			yPos -= wh, lineCt++, key++ )
 	{
@@ -1211,52 +781,31 @@ void CPianoKeyboardView::Draw( BRect updateRect )
 
 		if (black[ lineCt ]) key++;
 
-			// Fill solid rectangle with gridline
+		// Fill solid rectangle with gridline
 		if (yPos <= updateRect.bottom + wh + bl)
 		{
 			if (black[ lineCt ])
 			{
-				FillRect(	BRect(	r.left, yPos - wh - bl,
-									r.left + 11, yPos - wh + bl ) );
+				rect = BRect(r.left, yPos - wh - bl, r.left + 11, yPos - wh + bl);
+				bRegion.Include(rect);
 
-				if (selKey == key)
+				if (m_selectedKey == key)
 				{
-					FillRect(	BRect(	r.left, yPos - wh - bl + 1,
-										r.left + 10, yPos - wh + bl - 1 ),
-								B_SOLID_LOW );
+					rect = BRect(r.left, yPos - wh - bl + 1,
+								 r.left + 10, yPos - wh + bl - 1);
+					FillRect(rect, B_SOLID_LOW);
+					bRegion.Exclude(rect);
+					wRegion.Exclude(rect);
 				}
 			}
 		}
 	}
+
+	SetHighColor(96, 96, 96, 255);
+	FillRegion(&bRegion, B_SOLID_HIGH);
+	SetHighColor(255, 255, 255, 255);
+	wRegion.Exclude(&bRegion);
+	FillRegion(&wRegion, B_SOLID_HIGH);
 }
 
-void CPianoKeyboardView::SetSelKey( int32 newKey )
-{
-	BRect	r( Bounds() );
-
-	if (selKey != newKey)
-	{
-		BRegion		region;
-		BRect		update;
-	
-		r.bottom	= editor->PitchToViewCoords( selKey ) + 1.0;
-		r.top	= r.bottom - editor->whiteKeyStep - 2.0;
-		
-		region.Include( r );
-		update = r;
-
-		selKey = newKey;
-	
-		r.bottom	= editor->PitchToViewCoords( selKey ) + 1.0;
-		r.top	= r.bottom - editor->whiteKeyStep - 2.0;
-		
-		region.Include( r );
-		update = update | r;
-
-		Window()->Lock();
-		ConstrainClippingRegion( &region );	
-		Draw( update );
-		ConstrainClippingRegion( NULL );	
-		Window()->Unlock();
-	}
-}
+// END - LinearEditor.cpp

@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	07/02/2000	cell
+ *		Major cleanup, simpler and more efficient drawing code
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -45,168 +47,205 @@
 // ---------------------------------------------------------------------------
 // Linear editor strip view
 
-class CLinearEditor : public CEventEditor {
-protected:
-
-	friend class	CLinearNoteEventHandler;
+class CLinearEditor
+	:	public CEventEditor
+{
+	friend class CLinearNoteEventHandler;
 	friend class CPianoKeyboardView;
+								
+public:							// Constants
 
-	short			verticalZoom,			// Zoom amount in vertical direction
-					whiteKeyStep,			// step interval of white key
-					octaveStep,				// step interval of octave
-					stripLogicalHeight;		// logical height of strip.
+	static const rgb_color		NORMAL_GRID_LINE_COLOR;
+	static const rgb_color		OCTAVE_GRID_LINE_COLOR;
+	static const rgb_color		BACKGROUND_COLOR;
 
-//	static CAbstractEventHandler *handlers[ EvtType_Count ];
+public:							// Constructor/Destructor
 
-//	const CAbstractEventHandler &Handler( const Event &ev ) const
-//	{
-//		return (ev.Command() < EvtType_Count)
-//			? *handlers[ ev.Command() ]
-//			: (CAbstractEventHandler &)gNullEventHandler;
-//	}
+								CLinearEditor(
+									BLooper &looper,
+									CTrackEditFrame &frame,
+									BRect rect);
 
-	void SetScrollValue( float inScrollValue, orientation inOrient )
-	{
-		CStripView::SetScrollValue( inScrollValue, inOrient );
-		labelView->ScrollTo( 0.0, scrollValue.y );
-	}
+public:							// CEventEditor Implementation
 
-	void MouseMoved(
-		BPoint		point,
-		ulong		transit,
-		const BMessage	* );
+	void						AttachedToWindow();
 
-	void AttachedToWindow();
-	void MessageReceived( BMessage *msg );
-	void Pulse();
+	virtual bool				ConstructEvent(
+									BPoint point);
 
-	void CalcZoom();
+	// Do additional audio feedback or selection for this event
+	virtual void				DoEventFeedback(
+									const Event &event);
+
+	virtual void				Draw(
+									BRect updateRect);
+
+	// Remove any feedback artifacts for this event
+	virtual void				KillEventFeedback();
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				MouseMoved(
+									BPoint point,
+									ulong transit,
+									const BMessage *message);
+
+	// Called when the window activates to tell this view
+	// to make the selection visible.
+	virtual void				OnGainSelection()
+								{ InvalidateSelection(); }
 	
-public:
-		// ---------- Constructor
+	// Called when some other window activates to tell this view
+	// to hide the selection.
+	virtual void				OnLoseSelection()
+								{ InvalidateSelection(); }
 
-	CLinearEditor(	BLooper			&inLooper,
-					CTrackEditFrame &frame,
-					BRect			rect );
-					
-		// ---------- Hooks
+	// Update message from another observer
+	virtual void				OnUpdate(
+									BMessage *message);
 
-	void Draw( BRect updateRect );
+	virtual void				Pulse();
 
-/*	void StartDrag( BPoint point, ulong buttons );
-	bool DoDrag( BPoint point, ulong buttons );
-	void FinishDrag( BPoint point, ulong buttons, bool commit ); */
-	bool ConstructEvent( BPoint point );
-	void DoEventFeedback( const Event &ev );
-	void KillEventFeedback();
+	virtual void				SetScrollValue(
+									float inScrollValue,
+									orientation inOrient);
 
-		// Update message from another observer
-	void OnUpdate( BMessage *inMsg );
+	virtual bool				SupportsShadowing()
+								{ return true; }
 
-		// ---------- Conversion funcs
+protected:						// Internal Operations
 
-		// returns y-pos for pitch
-	long PitchToViewCoords( int pitch );
+	void						CalcZoom();
 
-		// returns pitch for y-pos and optionally clamp to legal values
-	long ViewCoordsToPitch( int yPos, bool limit = true );
+	void						DeselectAll();
 
-		// ---------- Getters
+	// convert a pitch-value to a y-coordinate
+	long						PitchToViewCoords(
+									int pitch);
 
-	bool SupportsShadowing() { return true; }
+	// Convert a y-coordinate to a pitch value
+	long						ViewCoordsToPitch(
+									int yPos,
+									bool limit = true);
 
-		// ---------- General operations
+private:						// Instance Data
 
-	void DeselectAll();
-	
-		/**	Called when the window activates to tell this view
-			to make the selection visible.
-		*/
-	virtual void OnGainSelection() { InvalidateSelection(); }
-	
-		/**	Called when some other window activates to tell this view
-			to hide the selection.
-		*/
-	virtual void OnLoseSelection() { InvalidateSelection(); }
+	// Zoom amount in vertical direction
+	short int					m_verticalZoom;
 
+	// step interval of white key
+	short int					m_whiteKeyStep;
+
+	// step interval of octave
+	short int					m_octaveStep;
+
+	// logical height of strip.
+	short int					m_stripLogicalHeight;
 };
 
 // ---------------------------------------------------------------------------
 // Piano keyboard view
 
-class CPianoKeyboardView : public BView {
-	CLinearEditor		*editor;
-	int32				selKey;
+class CPianoKeyboardView
+	:	public BView
+{
 
-public:
-	CPianoKeyboardView(	BRect		rect,
-						CLinearEditor *lEditor,
-						ulong		resizeFlags,
-						ulong		flags )
-		:	BView( rect, NULL, resizeFlags, flags )
-	{
-		editor = lEditor;
-		SetViewColor( B_TRANSPARENT_32_BIT );
-		selKey = -1;
-	}
+public:							// Constructor/Destructor
 
-	void Draw( BRect updateRect );
+								CPianoKeyboardView(
+									BRect frame,
+									CLinearEditor *editor,
+									uint32 resizeFlags,
+									uint32 flags);
+
+public:							// Operations
 	
-	void SetSelKey( int32 newKey );
+	void						SetSelectedKey(
+									int32 key);
+
+public:							// BView Implementation
+
+	virtual void				Draw(
+									BRect updateRect);
+
+private:						// Instance Data
+
+	CLinearEditor *				m_editor;
+	int32						m_selectedKey;
+
 };
+
 
 // ---------------------------------------------------------------------------
 // Note handler class for linear editor
 
-class CLinearNoteEventHandler : public CAbstractEventHandler {
-		// No constructor
+class CLinearNoteEventHandler
+	:	public CAbstractEventHandler
+{
 
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-						const Event		&ev ) const ;
+public:							// Constants
 
-		// Draw the event (or an echo)
-	void Draw(			CEventEditor	&editor,
-						const Event		&ev,
-						bool 			shadowed ) const;
+	static const rgb_color		DEFAULT_BORDER_COLOR;
+	static const rgb_color		DEFAULT_HIGHLIGHT_COLOR;
+	static const rgb_color		SELECTED_BORDER_COLOR;
+	static const rgb_color		DISABLED_BORDER_COLOR;
+	static const rgb_color		DISABLED_FILL_COLOR;
 
-		// Invalidate the event
-	BRect Extent(		CEventEditor	&editor,
-						const Event		&ev ) const;
+public:							// CAbstractEventHandler Implementation
 
-		// Pick a single event and returns the distance.
-	long Pick(			CEventEditor	&editor,
-						const Event		&ev,
-						BPoint			pickPt,
-						short			&partCode ) const;
+	// Invalidate the event
+	virtual void				Invalidate(
+									CEventEditor &editor,
+									const Event	&ev) const;
 
-		// For a part code returned earlier, return a cursor
-		// image...
-	const uint8 *CursorImage( short partCode ) const;
+	// Draw the event (or an echo)
+	virtual void				Draw(
+									CEventEditor &editor,
+									const Event &ev,
+									bool shadowed) const;
 
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	long QuantizeDragValue(
-		CEventEditor	&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos ) const;
+	// Compute the extent of the event
+	virtual BRect				Extent(
+									CEventEditor &editor,
+									const Event &ev) const;
 
-		// Make a drag op for dragging notes...
-	EventOp *CreateDragOp(
-		CEventEditor	&editor,
-		const Event		&ev,
-		short			partCode,
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
+	// Pick a single event and return the part code
+	// (or -1 if event not picked)
+	virtual long				Pick(
+									CEventEditor &editor,
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
 
-	EventOp *CreateTimeOp(
-		CEventEditor	&editor,			// The editor
-		const Event		&ev,				// The clicked event
-		short			partCode,			// Part of event clicked
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
+	// For a part code returned earlier, return a cursor
+	// image...
+	virtual const uint8 *		CursorImage(
+									short partCode) const;
+
+	// Quantize the vertical position of the mouse based
+	// on the event type and return a value delta.
+	virtual long				QuantizeDragValue(
+									CEventEditor &editor,
+									const Event	&inClickEvent,
+									short partCode,
+									BPoint inClickPos,
+									BPoint inDragPos) const;
+
+	// Make a drag op for dragging notes...
+	virtual EventOp *			CreateDragOp(
+									CEventEditor &editor,
+									const Event	&ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+	virtual EventOp *			CreateTimeOp(
+									CEventEditor &editor,
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
 };
 
 #endif /* __C_LinearEditor_H__ */
