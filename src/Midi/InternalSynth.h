@@ -40,67 +40,73 @@
 #include <MidiSynth.h>
 // Midi Kit 2
 #include <MidiConsumer.h>
+// Storage Kit
+#include <Mime.h>
 
 class CInternalSynth
 	:	public BMidiLocalConsumer
 {
 
-public:
-    CInternalSynth(char *name);
-    ~CInternalSynth();
-	void Init();
-    virtual	void	NoteOff(uchar channel,
-                         uchar note,
-                         uchar velocity,
-                         bigtime_t time);
+public:							// Constructor/Destructor
 
-    virtual	void	NoteOn(uchar channel,
-                        uchar note,
-                        uchar velocity,
-                        bigtime_t time  );
+								CInternalSynth(
+									char *name);
 
-    virtual	void	KeyPressure(uchar channel,
-                             uchar note,
-                             uchar pressure,
-                             bigtime_t time  );
+								~CInternalSynth();
 
-    virtual	void	ControlChange(uchar channel,
-                               uchar controlNumber,
-                               uchar controlValue,
-                               bigtime_t time  );
+public:							// Accessors
 
-    virtual	void	ProgramChange(uchar channel,
-                               uchar programNumber,
-                               bigtime_t time  );
+	BBitmap *					GetIcon(
+									icon_size size) const;
 
-    virtual	void	ChannelPressure(uchar channel,
-                                 uchar pressure,
-                                 bigtime_t time );
+public:							// Operations
 
-    virtual	void	PitchBend(uchar channel,
-                           uchar lsb,
-                           uchar msb,
-                           bigtime_t time  );
+	void						Init();
 
-    virtual	void	SystemExclusive(void* data,
-                                 size_t dataLength,
-                                 bigtime_t time  );
+public:							// BMidiLocalConsumer Implementation
 
-    virtual	void	SystemCommon(uchar statusByte,
-                              uchar data1,
-                              uchar data2,
-                              bigtime_t time  );
+	virtual	void				NoteOff(
+									uchar channel,
+									uchar note,
+									uchar velocity,
+									bigtime_t time);
 
-    virtual	void	SystemRealTime(uchar statusByte, bigtime_t time  );
+	virtual	void				NoteOn(
+									uchar channel,
+									uchar note,
+									uchar velocity,
+									bigtime_t time);
 
-    virtual	void	TempoChange(int32 bpm, bigtime_t time );
+    virtual	void				KeyPressure(
+									uchar channel,
+									uchar note,
+									uchar pressure,
+									bigtime_t time);
 
-    //virtual void	AllNotesOff(bool justChannel = true, int32 time );
+	virtual	void				ControlChange(
+									uchar channel,
+									uchar controlNumber,
+									uchar controlValue,
+									bigtime_t time);
 
-private:
-    //i think think we are going to need an icon
-    /*void GetIcons(BBitmap* largeIcon, BBitmap* miniIcon);
-    void AddIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;*/
+	virtual	void				ProgramChange(
+									uchar channel,
+									uchar programNumber,
+									bigtime_t time);
+
+	virtual	void				ChannelPressure(
+									uchar channel,
+									uchar pressure,
+									bigtime_t time );
+
+	virtual	void				PitchBend(
+									uchar channel,
+									uchar lsb,
+									uchar msb,
+									bigtime_t time);
+
+private:						// Instance Data
+
     BMidiSynth *m_midiSynth;
 };
 
