@@ -98,7 +98,7 @@ CLinearWindow::MessageReceived(
 
 	switch (message->what)
 	{
-		case TOOL_GRID:
+		case CEventEditor::TOOL_GRID:
 		{
 			D_MESSAGE((" -> TOOL_GRID\n"));
 			int32 value;
@@ -109,21 +109,15 @@ CLinearWindow::MessageReceived(
 			Track()->EnableGridSnap(value);
 			break;
 		}
-		case TOOL_SELECT:
-		case TOOL_CREATE:
-		case TOOL_ERASE:
-		case TOOL_TEXT:
+		case CEventEditor::TOOL_SELECT:
+		case CEventEditor::TOOL_CREATE:
+		case CEventEditor::TOOL_ERASE:
+		case CEventEditor::TOOL_TEXT:
 		{
 			D_MESSAGE((" -> TOOL_SELECT/CREATE/ERASE/TEXT\n"));
 			m_toolStates[0] = message->what;
 			break;
 		}
-/*		case 'dura':
-			// REM: Do we also want to change duration of selected events?
-			((CMeVDoc &)Document()).SetDefaultAttribute( EvAttr_Duration, durationEditor->Value() );
-			newEventDuration = durationEditor->Value();
-			break;
-*/		
 		case MENU_UNDO:
 		{
 			Track()->Undo();
@@ -426,22 +420,22 @@ CLinearWindow::AddToolBar()
 	CBitmapTool *tool;
 	toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
 											ResourceUtils::LoadImage("GridTool"),
-											new BMessage(TOOL_GRID)));
+											new BMessage(CEventEditor::TOOL_GRID)));
 	tool->SetValue(B_CONTROL_ON);
 	toolBar->AddSeparator();
 
 	toolBar->AddTool(tool = new CBitmapTool("Select",
 											ResourceUtils::LoadImage("ArrowTool"),
-											new BMessage(TOOL_SELECT)));
+											new BMessage(CEventEditor::TOOL_SELECT)));
 	tool->SetValue(B_CONTROL_ON);
 	toolBar->AddTool(new CMenuTool("Create", ResourceUtils::LoadImage("PencilTool"),
-								   createMenu, new BMessage(TOOL_CREATE)));
+								   createMenu, new BMessage(CEventEditor::TOOL_CREATE)));
 	toolBar->AddTool(tool = new CBitmapTool("Erase",
 											ResourceUtils::LoadImage("EraserTool"),
-											new BMessage(TOOL_ERASE)));
+											new BMessage(CEventEditor::TOOL_ERASE)));
 	toolBar->AddTool(tool = new CBitmapTool("Text",
 											ResourceUtils::LoadImage("TextTool"),
-											new BMessage(TOOL_TEXT)));
+											new BMessage(CEventEditor::TOOL_TEXT)));
 	tool->SetEnabled(false);
 	toolBar->MakeRadioGroup("Select", "Text", true);
 

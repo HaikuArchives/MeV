@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * LinearEditor.h (MeV/User Interface)
+ * LinearEditor.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -182,78 +182,6 @@ private:						// Instance Data
 	CLinearEditor *				m_editor;
 	int32						m_selectedKey;
 
-};
-
-
-// ---------------------------------------------------------------------------
-// Note handler class for linear editor
-
-class CLinearNoteEventHandler
-	:	public CAbstractEventHandler
-{
-
-public:							// Constants
-
-	static const rgb_color		DEFAULT_BORDER_COLOR;
-	static const rgb_color		DEFAULT_HIGHLIGHT_COLOR;
-	static const rgb_color		SELECTED_BORDER_COLOR;
-	static const rgb_color		DISABLED_BORDER_COLOR;
-	static const rgb_color		DISABLED_FILL_COLOR;
-	static const pattern		C_MIXED_COLORS;
-public:							// CAbstractEventHandler Implementation
-
-	// Invalidate the event
-	virtual void				Invalidate(
-									CEventEditor &editor,
-									const Event	&ev) const;
-
-	// Draw the event (or an echo)
-	virtual void				Draw(
-									CEventEditor &editor,
-									const Event &ev,
-									bool shadowed) const;
-
-	// Compute the extent of the event
-	virtual BRect				Extent(
-									CEventEditor &editor,
-									const Event &ev) const;
-
-	// Pick a single event and return the part code
-	// (or -1 if event not picked)
-	virtual long				Pick(
-									CEventEditor &editor,
-									const Event &ev,
-									BPoint pickPt,
-									short &partCode) const;
-
-	// For a part code returned earlier, return a cursor
-	// image...
-	virtual const uint8 *		CursorImage(
-									short partCode) const;
-
-	// Quantize the vertical position of the mouse based
-	// on the event type and return a value delta.
-	virtual long				QuantizeDragValue(
-									CEventEditor &editor,
-									const Event	&inClickEvent,
-									short partCode,
-									BPoint inClickPos,
-									BPoint inDragPos) const;
-
-	// Make a drag op for dragging notes...
-	virtual EventOp *			CreateDragOp(
-									CEventEditor &editor,
-									const Event	&ev,
-									short partCode,
-									long timeDelta,
-									long valueDelta) const;
-
-	virtual EventOp *			CreateTimeOp(
-									CEventEditor &editor,
-									const Event &ev,
-									short partCode,
-									long timeDelta,
-									long valueDelta) const;
 };
 
 #endif /* __C_LinearEditor_H__ */

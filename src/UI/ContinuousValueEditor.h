@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * ContinuousValueEditor.h (MeV/User Interface)
+ * ContinuousValueEditor.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public

@@ -48,10 +48,8 @@
 #include "BorderView.h"
 #include "StripView.h"
 #include "TrackWindow.h"
-// Standard Template Library
-#include <map>
 
-class CAbstractEventHandler;
+class CEventHandler;
 class CEventTrack;
 class CPolygon;
 class CStripFrameView;
@@ -67,6 +65,16 @@ class CEventEditor :
 	friend class		CEndEventHandler;
 
 public:							// Constants
+
+	enum edit_mode
+	{
+								TOOL_SELECT,
+								TOOL_CREATE,
+								TOOL_ERASE,
+								TOOL_TEXT,
+								TOOL_GRID,
+								TOOL_TEMPO
+	};
 
 	enum EDragTypes {
 		DragType_None = 0,
@@ -110,6 +118,9 @@ public:							// Hook Functions
 	virtual bool				ConstructEvent(
 									BPoint point)
 								{ return false; }
+
+	virtual const BCursor *		CursorFor(
+									int32 editMode) const;
 
 	// Hook functions called by dragging code.
 	// Called each time mouse moves.
@@ -165,16 +176,12 @@ public:							// Accessors
 
 	void						SetHandlerFor(
 									TEventType eventType,
-									CAbstractEventHandler *handler)
+									CEventHandler *handler)
 								{ m_handlers[eventType] = handler; }
 
-	// Look up a handler for a given event
-	const CAbstractEventHandler &Handler(
-									const Event &ev)
-								{ return *HandlerFor(ev); }
-
-	CAbstractEventHandler *		HandlerFor(
-									const Event &ev) const;
+	CEventHandler *				HandlerFor(
+									const Event &ev) const
+								{ return m_handlers[ev.Command()]; }
 
 	// Return the pending operation for this window
 	EventOp *					DragOperation()
@@ -306,8 +313,8 @@ protected:						// Instance Data
 	CStripFrameView	&			m_frame;
 
 	// Array of handlers for each event type
-	typedef map<event_type, CAbstractEventHandler *> handler_map;
-	handler_map					m_handlers;
+	CEventHandler *				m_nullEventHandler;
+	CEventHandler *				m_handlers[EvtType_Count];
 
 	CPolygon *					m_lasso;
 
@@ -352,163 +359,187 @@ protected:						// Instance Data
 // on the event type and on the view type (in other words,
 // it's a lame attempt to make up for the lack of multi-methods
 // in C++)
-	
+//
 // ONLY functions which need to differ based on the type
 // of the event AND the type of the view should go in here.
 
-class CAbstractEventHandler {
-public:
-		// No constructor
+class CEventHandler
+{
 
-		// Invalidate the event
-	virtual	void Invalidate(	CEventEditor	&editor,
-								const Event		&ev ) const = 0;
+public:							// Constructor/Destructor
 
-		// Draw the event (or an echo)
-	virtual	void Draw(			CEventEditor	&editor,
-								const Event		&ev,
-								bool 			shadowed ) const = 0;
+								CEventHandler(
+									CEventEditor * const editor)
+									:	m_editor(editor)
+								{ }
 
-		// Invalidate the event
-	virtual	BRect Extent(		CEventEditor	&editor,
-								const Event		&ev ) const
-	{
-		return BRect( 0, 0, 0, 0 );
-	}
+public:							// Hook Functions
 
-		// Pick a single event and return the part code
-		// (or -1 if event not picked)
-	virtual long Pick(	CEventEditor	&editor,
-						const Event		&ev,
-						BPoint			pickPt,
-						short			&partCode ) const
-	{
-		return -1;
-	}
+	// Invalidate the event
+	virtual	void				Invalidate(
+									const Event &ev) const = 0;
+
+	// Draw the event (or an echo)
+	virtual	void				Draw(
+									const Event &ev,
+									bool shadowed) const = 0;
+
+	// Invalidate the event
+	virtual	BRect				Extent(
+									const Event &ev) const
+								{ return BRect(0.0, 0.0, -1.0, -1.0); }
+
+	// Pick a single event and return the part code
+	// (or -1 if event not picked)
+	virtual long				Pick(
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const
+								{ return -1; }
+
+	// For a part code returned earlier, return a cursor
+	// image...
+	virtual const BCursor *		Cursor(
+									short partCode,
+									int32 editMode,
+									bool dragging = false) const;
 	
-		// For a part code returned earlier, return a cursor
-		// image...
-	virtual const uint8 *CursorImage( short partCode ) const
-	{
-		return NULL;
-	}
-	
-		// Quantize the time of the dragging operation and
-		// return a time delta.
-	virtual long QuantizeDragTime(
-		CEventEditor	&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos,
-		bool				inInitial = false ) const;
+	// Quantize the time of the dragging operation and
+	// return a time delta.
+	virtual long				QuantizeDragTime(
+									const Event &clickedEvent,
+									short partCode,
+									BPoint clickPos,
+									BPoint dragPos,
+									bool initial = false) const;
 
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	virtual long QuantizeDragValue(
-		CEventEditor	&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos ) const
-	{
-		return static_cast<long>(inClickPos.y - inDragPos.y);
-	}
+	// Quantize the vertical position of the mouse based
+	// on the event type and return a value delta.
+	virtual long				QuantizeDragValue(
+									const Event &clickedEvent,
+									short partCode,
+									BPoint clickPos,
+									BPoint dragPos) const
+								{ return static_cast<long>(clickPos.y - dragPos.y); }
 
-		// Drag operation. What this function does is to create
-		// a function object to implement the drag operation.
-		// This function object can modify the events in question
-		// in a manner consistent with the part of the event
-		// clicked and the current mouse position.
-		//
-		// This is used in two ways. First, it is used to create
-		// temporary proxy events which are rendered as a drag
-		// echo. Secondly, it is used to permanently modify the
-		// events when the drag operation is completed.
-	virtual EventOp *CreateDragOp(
-		CEventEditor	&editor,			// The editor
-		const Event		&ev,				// The clicked event
-		short			partCode,			// Part of event clicked
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const
-	{
-		return NULL;
-	}
+	// Drag operation. What this function does is to create
+	// a function object to implement the drag operation.
+	// This function object can modify the events in question
+	// in a manner consistent with the part of the event
+	// clicked and the current mouse position.
+	//
+	// This is used in two ways. First, it is used to create
+	// temporary proxy events which are rendered as a drag
+	// echo. Secondly, it is used to permanently modify the
+	// events when the drag operation is completed.
+	virtual EventOp *			CreateDragOp(
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const
+								{ return NULL; }
 
-	virtual EventOp *CreateTimeOp(
-		CEventEditor	&editor,			// The editor
-		const Event		&ev,				// The clicked event
-		short			partCode,			// Part of event clicked
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
+	virtual EventOp *			CreateTimeOp(
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+protected:						// Accessors
+
+	CEventEditor * const		Editor() const
+								{ return m_editor; }
+
+private:						// Instance Data
+
+	CEventEditor * const		m_editor;
 };
 
 // ---------------------------------------------------------------------------
 // The null handler does nothing to the event.
 
-class CNullEventHandler : public CAbstractEventHandler {
-public:
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-						const Event		&ev ) const {};
+class CNullEventHandler
+	:	public CEventHandler
+{
 
-		// Draw the event (or an echo)
-	void Draw(			CEventEditor	&editor,
-						const Event		&ev,
-						bool 			shadowed ) const {};
+public:							// Constructor/Destructor
+
+								CNullEventHandler(
+									CEventEditor *editor)
+									:	CEventHandler(editor)
+								{ }
+
+public:							// CAbstractEventHandler Implementation
+
+	// Invalidate the event
+	void						Invalidate(
+									const Event &ev) const
+								{ }
+
+	// Draw the event (or an echo)
+	void						Draw(
+									const Event &ev,
+									bool shadowed) const
+								{ }
 };
 
 // ---------------------------------------------------------------------------
 // Event handler class for "end" events
 
-class CEndEventHandler : public CAbstractEventHandler {
+class CEndEventHandler
+	:	public CEventHandler
+{
 
-		// No constructor
+public:							// Constructor/Destructor
 
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-						const Event		&ev ) const ;
+								CEndEventHandler(
+									CEventEditor *editor)
+									:	CEventHandler(editor)
+								{ }
 
-		// Draw the event (or an echo)
-	void Draw(			CEventEditor	&editor,
-						const Event		&ev,
-						bool 			shadowed ) const;
-		// Invalidate the event
-	BRect Extent(		CEventEditor	&editor,
-						const Event		&ev ) const;
+public:							// CAbstractEventHandler Implementation
 
-		// Pick a single event and returns the distance.
-	long Pick(			CEventEditor	&editor,
-						const Event		&ev,
-						BPoint			pickPt,
-						short			&partCode ) const;
+	// Invalidate the event
+	void						Invalidate(
+									const Event &ev) const;
 
-		// For a part code returned earlier, return a cursor
-		// image...
-	const uint8 *CursorImage( short partCode ) const;
+	// Draw the event (or an echo)
+	void						Draw(
+									const Event	&ev,
+									bool shadowed) const;
+	// Invalidate the event
+	BRect						Extent(
+									const Event &ev) const;
 
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	long QuantizeDragValue(
-		CEventEditor	&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos ) const;
+	// Pick a single event and returns the distance.
+	long						Pick(
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
 
-		// Make a drag op for dragging notes...
-	EventOp *CreateDragOp(
-		CEventEditor	&editor,
-		const Event		&ev,
-		short			partCode,
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
+	// For a part code returned earlier, return a cursor
+	// image...
+	const BCursor *				Cursor(
+									short partCode,
+									int32 mode = CEventEditor::TOOL_SELECT,
+									bool dragging = false) const;
+
+	// Quantize the vertical position of the mouse based
+	// on the event type and return a value delta.
+	long						QuantizeDragValue(
+									const Event &clickedEvent,
+									short partCode,
+									BPoint clickPos,
+									BPoint dragPos) const
+								{ return 0; }
+
+	// Make a drag op for dragging notes...
+	EventOp *					CreateDragOp(
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const
+								{ return NULL; }
 };
-
-// ---------------------------------------------------------------------------
-// Global null handler
-
-extern CNullEventHandler	gNullEventHandler;
-extern CEndEventHandler	gEndEventHandler;
 
 #endif /* __C_EventEditor_H__ */

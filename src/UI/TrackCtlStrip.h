@@ -18,7 +18,7 @@
  *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------

@@ -68,16 +68,6 @@ public:							// Constants
 								NEW_EVENT_TYPE_CHANGED = 'trwA'
 	};
 
-	enum tool_id
-	{
-								TOOL_SELECT,
-								TOOL_CREATE,
-								TOOL_ERASE,
-								TOOL_TEXT,
-								TOOL_GRID,
-								TOOL_TEMPO
-	};
-
 	static const float			DEFAULT_RULER_HEIGHT;
 
 	enum

@@ -1,22 +1,19 @@
 /* ===================================================================== *
- * PitchBendEditor.cpp (MeV/User Interface)
+ * PitchBendEditor.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "PitchBendEditor.h"
 
-// Application
+#include "CursorCache.h"
+#include "Destination.h"
+#include "EventTrack.h"
 #include "Idents.h"
+#include "MathUtils.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
-// Engine
-#include "EventTrack.h"
 #include "PlayerControl.h"
 #include "StdEventOps.h"
-#include "Destination.h"
-// StripView
 #include "StripLabelView.h"
-// Support
-#include "MathUtils.h"
 #include "ResourceUtils.h"
 
 // Gnu C Library
@@ -65,31 +62,53 @@ enum E_PitchBendParts {
 // An operator which modifies both pitch bends by an equal offset
 // and also forces them to the same value if the duration is 0.
 
-class DualBendOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+class DualBendOffsetOp
+	:	public EventOp
+{
 
-public:
-	int32			delta;
+public:							// Constructor
 
-	DualBendOffsetOp( int16 dp ) { delta = dp; }
-	const char *UndoDescription() const { return "Change Pitch Bend"; }
+								DualBendOffsetOp(
+									int16 dp)
+								{ delta = dp; }
+
+public:							// Operators
+
+	void						operator()(
+									Event &ev,
+									TClockType clockType);
+
+public:							// EventOp Implementation
+
+	const char *				UndoDescription() const
+								{ return "Change Pitch Bend"; }
+
+public:							// Instance Data
+
+	int32						delta;
 };
 
-void DualBendOffsetOp::operator()( Event &ev, TClockType )
+void
+DualBendOffsetOp::operator()(
+	Event &ev,
+	TClockType clockType)
 {
 	if (ev.Command() == EvtType_PitchBend)
 	{
 		if (ev.Duration() > 0)
 		{
 			ev.pitchBend.startBend =
-				(uint16)CLAMP( 0, ((int16)ev.pitchBend.startBend) + delta, 0x3fff );
+				(uint16)CLAMP(0, ((int16)ev.pitchBend.startBend) + delta,
+							  0x3fff );
 			ev.pitchBend.targetBend =
-				(uint16)CLAMP( 0, ((int16)ev.pitchBend.targetBend) + delta, 0x3fff );
+				(uint16)CLAMP(0, ((int16)ev.pitchBend.targetBend) + delta,
+							  0x3fff);
 		}
 		else
 		{
-			ev.pitchBend.startBend = ev.pitchBend.targetBend =
-				(uint16)CLAMP( 0, ((int16)ev.pitchBend.targetBend) + delta, 0x3fff );
+			ev.pitchBend.startBend = ev.pitchBend.targetBend = 
+				(uint16)CLAMP(0, ((int16)ev.pitchBend.targetBend) + delta,
+							  0x3fff );
 		}
 	}
 }
@@ -97,222 +116,192 @@ void DualBendOffsetOp::operator()( Event &ev, TClockType )
 // ---------------------------------------------------------------------------
 // pitch bend handler class for pitch bend editor
 
-class CPitchBendEventHandler : public CAbstractEventHandler {
-		// No constructor
+class CPitchBendEventHandler
+	:	public CEventHandler
+{
 
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-						const Event		&ev ) const ;
+public:							// No constructor
 
-		// Draw the event (or an echo)
-	void Draw(			CEventEditor	&editor,
-						const Event		&ev,
-						bool 			shadowed ) const;
+								CPitchBendEventHandler(
+									CEventEditor * const editor)
+									:	CEventHandler(editor)
+								{ }
 
-		// Invalidate the event
-	BRect Extent(		CEventEditor	&editor,
-						const Event		&ev ) const;
-
-		// Pick a single event and returns the distance.
-	long Pick(			CEventEditor	&editor,
-						const Event		&ev,
-						BPoint			pickPt,
-						short			&partCode ) const;
-
-		// For a part code returned earlier, return a cursor
-		// image...
-	const uint8 *CursorImage( short partCode ) const;
-
-	long QuantizeDragTime(
-		CEventEditor	&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos,
-		bool				inInitial = false ) const;
-
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	long QuantizeDragValue(
-		CEventEditor	&editor,
-		const Event		&inClickEvent,
-		short			partCode,			// Part of event clicked
-		BPoint			inClickPos,
-		BPoint			inDragPos ) const;
-
-		// Make a drag op for dragging notes...
-	EventOp *CreateDragOp(
-		CEventEditor	&editor,
-		const Event		&ev,
-		short			partCode,
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
-
-	EventOp *CreateTimeOp(
-		CEventEditor	&editor,			// The editor
-		const Event		&ev,				// The clicked event
-		short			partCode,			// Part of event clicked
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
-};
+public:							// CEventHandler Implementation
 
 	// Invalidate the event
-void CPitchBendEventHandler::Invalidate(
-	CEventEditor	&editor,
-	const Event		&ev ) const
-{
-	((CPitchBendEditor &)editor).Invalidate( Extent( editor, ev ) );
-}
+	void						Invalidate(
+									const Event	&ev) const ;
 
 	// Draw the event (or an echo)
-void CPitchBendEventHandler::Draw(
-	CEventEditor	&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
+	void						Draw(
+									const Event &ev,
+									bool shadowed) const;
+
+	// Invalidate the event
+	BRect						Extent(
+									const Event &ev) const;
+
+		// Pick a single event and returns the distance.
+	long						Pick(
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
+
+	// For a part code returned earlier, return a cursor
+	// image...
+	const BCursor *				Cursor(
+									short partCode,
+									int32 editMode = CEventEditor::TOOL_SELECT,
+									bool dragging = false) const;
+
+	long						QuantizeDragTime(
+									const Event &ev,
+									short partCode,
+									BPoint clickPos,
+									BPoint dragPos,
+									bool initial = false) const;
+
+	// Quantize the vertical position of the mouse based
+	// on the event type and return a value delta.
+	long						QuantizeDragValue(
+									const Event &ev,
+									short partCode,
+									BPoint clickPos,
+									BPoint dragPos ) const;
+
+	// Make a drag op for dragging notes...
+	EventOp *					CreateDragOp(
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+	EventOp *					CreateTimeOp(
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+protected:						// Accessors
+
+	CPitchBendEditor * const	Editor() const
+								{ return (CPitchBendEditor *)CEventHandler::Editor(); }
+};
+
+void
+CPitchBendEventHandler::Invalidate(
+	const Event &ev ) const
 {
-	CPitchBendEditor	&lEditor = (CPitchBendEditor &)editor;
-	bool				locked = 	editor.Track()->IsChannelLocked( ev.GetVChannel() );
-	Destination *dest = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
-	BRect			r;
+	Editor()->Invalidate(Extent(ev));
+}
+
+void
+CPitchBendEventHandler::Draw(
+	const Event &ev,
+	bool shadowed) const
+{
+	bool locked = Editor()->Track()->IsChannelLocked(ev.GetVChannel());
+	Destination *dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+	BRect r;
 
 	if (shadowed)
 	{
-		if (locked) return;
-		lEditor.SetDrawingMode( B_OP_BLEND );
+		if (locked)
+			return;
+		Editor()->SetDrawingMode( B_OP_BLEND );
 	}
 	
-	if (locked)	lEditor.SetHighColor( 192, 192, 192 );
-	else			lEditor.SetHighColor( dest->fillColor );
+	if (locked)
+		Editor()->SetHighColor(192, 192, 192);
+	else
+		Editor()->SetHighColor(dest->fillColor);
 		
-	if (ev.Duration() > 0 && ev.pitchBend.updatePeriod > 0)
+	if ((ev.Duration() > 0) && (ev.pitchBend.updatePeriod > 0))
 	{
-		long				v;
-			
+		Editor()->BeginLineArray(ev.Duration() / ev.pitchBend.updatePeriod);
 		for (int i = ev.pitchBend.updatePeriod; i < ev.Duration(); i += ev.pitchBend.updatePeriod)
 		{
-			v 	= ev.pitchBend.startBend - 0x2000
-				+ ((ev.pitchBend.targetBend - ev.pitchBend.startBend) * i / ev.Duration());
-			
-			r.left = lEditor.TimeToViewCoords( ev.Start() + i ) - 1.0;
-			r.top = lEditor.ValueToViewCoords( v ) - 1.0;			
-			r.right = r.left + 1.0;
-			r.bottom = r.top + 1.0;
-			
-			lEditor.FillRect( r );
+			long v = ev.pitchBend.startBend - 0x2000
+					 + ((ev.pitchBend.targetBend - ev.pitchBend.startBend)
+					    * i / ev.Duration());
+			BPoint point(Editor()->TimeToViewCoords(ev.Start() + i),
+						 Editor()->ValueToViewCoords(v));
+			Editor()->AddLine(point, point, Editor()->HighColor());
 		}
+		Editor()->EndLineArray();
 
-		r.left = lEditor.TimeToViewCoords( ev.Stop() ) - 2.0;
-		r.top = lEditor.ValueToViewCoords( ev.pitchBend.targetBend - 0x2000 ) - 2.0;
+		r.left = Editor()->TimeToViewCoords(ev.Stop() ) - 2.0;
+		r.top = Editor()->ValueToViewCoords(ev.pitchBend.targetBend - 0x2000) - 2.0;
 		r.right = r.left + 4.0;
 		r.bottom = r.top + 4.0;
 	
-		lEditor.FillRect( r );
+		Editor()->FillEllipse(r);
 
-		r.InsetBy( -1.0, -1.0 );
+		r.InsetBy(-1.0, -1.0);
 		if (locked)
-			lEditor.SetHighColor( 128, 128, 128 );
-		else if (ev.IsSelected() && !shadowed && editor.IsSelectionVisible())
-			lEditor.SetHighColor( 0, 0, 255 );
-		else	
-			lEditor.SetHighColor( 0, 0, 0 );
-		lEditor.StrokeRect( r );
+			Editor()->SetHighColor(128, 128, 128);
+		else if (ev.IsSelected() && !shadowed && Editor()->IsSelectionVisible())
+			Editor()->SetHighColor(0, 0, 255);
+		else
+			Editor()->SetHighColor(0, 0, 0);
+		Editor()->StrokeEllipse(r);
 	}
 
-	r.left = lEditor.TimeToViewCoords( ev.Start() ) - 2.0;
-	r.top = lEditor.ValueToViewCoords( ev.pitchBend.startBend - 0x2000 ) - 2.0;
+	r.left = Editor()->TimeToViewCoords(ev.Start()) - 2.0;
+	r.top = Editor()->ValueToViewCoords(ev.pitchBend.startBend - 0x2000) - 2.0;
 	r.right = r.left + 4.0;
 	r.bottom = r.top + 4.0;
 	
-	if (locked)	lEditor.SetHighColor( 192, 192, 192 );
-	else			lEditor.SetHighColor( dest->fillColor );
-	lEditor.FillRect( r );
+	if (locked)
+		Editor()->SetHighColor(192, 192, 192);
+	else
+		Editor()->SetHighColor(dest->fillColor);
+	Editor()->FillEllipse(r);
 	
 	if (locked)
-		lEditor.SetHighColor( 128, 128, 128 );
-	else if (ev.IsSelected() && !shadowed && editor.IsSelectionVisible())
-		lEditor.SetHighColor( 0, 0, 255 );
-	else lEditor.SetHighColor( 0, 0, 0 );
+		Editor()->SetHighColor(128, 128, 128);
+	else if (ev.IsSelected() && !shadowed && Editor()->IsSelectionVisible())
+		Editor()->SetHighColor(0, 0, 255);
+	else
+		Editor()->SetHighColor(0, 0, 0);
 	
-	r.InsetBy( -1.0, -1.0 );
-	lEditor.StrokeRect( r );
-	lEditor.SetDrawingMode( B_OP_COPY );
+	r.InsetBy(-1.0, -1.0);
+	Editor()->StrokeEllipse(r);
 }
 
-	// Compute the extent of the event.
-BRect CPitchBendEventHandler::Extent(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+BRect
+CPitchBendEventHandler::Extent(
+	const Event &ev) const
 {
-	CPitchBendEditor	&lEditor = (CPitchBendEditor &)editor;
-	BRect			r;
-	int32			yStart, yStop;
-	
-	yStart	= lEditor.ValueToViewCoords( ev.pitchBend.startBend - 0x2000 );
-	yStop	= lEditor.ValueToViewCoords( ev.pitchBend.targetBend - 0x2000 );
+	float yStart = Editor()->ValueToViewCoords(ev.pitchBend.startBend - 0x2000);
+	float yStop = Editor()->ValueToViewCoords(ev.pitchBend.targetBend - 0x2000);
 
-	r.left		= lEditor.TimeToViewCoords( ev.Start() ) - 5.0;
-	r.right	= lEditor.TimeToViewCoords( ev.Stop()  ) + 5.0;
-	r.bottom	= MAX( yStart, yStop ) + 5.0;
-	r.top		= MIN( yStart, yStop ) - 5.0;
+	BRect r;
+	r.left = Editor()->TimeToViewCoords(ev.Start()) - 5.0;
+	r.right	= Editor()->TimeToViewCoords(ev.Stop()) + 5.0;
+	r.bottom = MAX(yStart, yStop) + 5.0;
+	r.top = MIN(yStart, yStop) - 5.0;
 
 	return r;
 }
 
-	//	Returns the distance between a point and a line
-static float DistFromPointToLine( BPoint &lineStart, BPoint &lineEnd, BPoint &testPt )
+long
+CPitchBendEventHandler::Pick(
+	const Event &ev,
+	BPoint pickPt,
+	short &partCode) const
 {
-	double			x1 = testPt.x  - lineStart.x,
-					y1 = testPt.y  - lineStart.y;
-
-	double			x2 = lineEnd.x - lineStart.x,
-					y2 = lineEnd.y - lineStart.y;
-
-	double			dist;
-
-	if (x2 < 0) { x2 = -x2; x1 = -x1; }
-	if (y2 < 0) { y2 = -y2; y1 = -y1; }
-
-		//	If line is just a single point, then return maxint
-	if (x2 == 0 && y2 == 0) return DBL_MAX;
-
-		//	First, get the distance along the line
-	dist = x1 * x2 + y1 * y2;
-
-		//	If closest point on line is not between the two points, then
-		//	return maxint.
-	if (dist < 0 || dist > (x2 * x2 + y2 * y2)) return DBL_MAX;
-
-	if (x2 > y2)	dist = y1 - y2 * x1 / x2;
-	else			dist = x1 - x2 * y1 / y2;
-
-	return fabs(dist);
-}
-
-	// Pick a single event and return the part code
-	// (or -1 if event not picked)
-long CPitchBendEventHandler::Pick(
-	CEventEditor	&editor,
-	const Event		&ev,
-	BPoint			pickPt,
-	short			&partCode ) const
-{
-	CPitchBendEditor	&lEditor = (CPitchBendEditor &)editor;
 	if (ev.Duration() > 0)
 	{
-		BPoint			start,
-						stop;
-		int32			dist,
-						best;
-					
-		start.x = lEditor.TimeToViewCoords( ev.Start() );
-		start.y = lEditor.ValueToViewCoords( ev.pitchBend.startBend - 0x2000 );
+		BPoint start(Editor()->TimeToViewCoords(ev.Start()),
+					 Editor()->ValueToViewCoords(ev.pitchBend.startBend - 0x2000));
+		BPoint stop(Editor()->TimeToViewCoords(ev.Stop()),
+					Editor()->ValueToViewCoords(ev.pitchBend.targetBend - 0x2000));
 	
-		stop.x = lEditor.TimeToViewCoords( ev.Stop() );
-		stop.y = lEditor.ValueToViewCoords( ev.pitchBend.targetBend - 0x2000 );
-	
-		best	= MAX(fabs( pickPt.x - stop.x ), fabs( pickPt.y - stop.y ) );
-		dist	= MAX(fabs( pickPt.x - start.x ), fabs( pickPt.y - start.y ) );
-		
+		float best = MAX(fabs(pickPt.x - stop.x), fabs(pickPt.y - stop.y));
+		float dist = MAX(fabs(pickPt.x - start.x), fabs(pickPt.y - start.y));
+
 		partCode = Part_End;
 		if (dist < best)
 		{
@@ -320,133 +309,138 @@ long CPitchBendEventHandler::Pick(
 			partCode = Part_Start;
 		}
 		
-		if (best > 3)
+		if (best > 3.0)
 		{
-			dist = DistFromPointToLine( start, stop, pickPt );
+			dist = MathUtils::DistanceFromPointToLine(pickPt, start, stop);
 			if (dist < best)
 			{
-				best = dist + 2;
+				best = dist + 2.0;
 				partCode = Part_Whole;
 			}
 		}
 		
-		if (best > 8) return LONG_MAX;
-		return best;
+		if (best > 8.0)
+			return LONG_MAX;
+		return static_cast<long>(best);
 	}
 	else
 	{
-		BPoint			diff;
-		
-		diff.x = pickPt.x - lEditor.TimeToViewCoords( ev.Start() );
-		diff.y = pickPt.y - lEditor.ValueToViewCoords( ev.pitchBend.startBend - 0x2000 );
+		BPoint diff(pickPt.x - Editor()->TimeToViewCoords(ev.Start()),
+					pickPt.y - Editor()->ValueToViewCoords(ev.pitchBend.startBend - 0x2000));
 
-		if (diff.y > 8 || diff.y < -8 || diff.x > 10 || diff.x < -8) return LONG_MAX;
+		if ((diff.y > 8) || (diff.y < -8) || (diff.x > 10) || (diff.x < -8))
+			return LONG_MAX;
 		
-		if (diff.x >= 3) partCode = Part_End;
-		else partCode = Part_Whole;
+		if (diff.x >= 3.0)
+			partCode = Part_End;
+		else
+			partCode = Part_Whole;
 
-		return MAX(fabs( diff.x ), fabs( diff.y ) );
+		return static_cast<long>(MAX(fabs(diff.x), fabs(diff.y)));
 	}
 }
 
-const uint8 *CPitchBendEventHandler::CursorImage( short partCode ) const
+const BCursor *
+CPitchBendEventHandler::Cursor(
+	short partCode,
+	int32 editMode,
+	bool dragging) const
 {
-	switch (partCode) {
-	case Part_Whole:
-	case Part_Start:
-		return B_HAND_CURSOR;			// Return the normal hand cursor
-
-//	case Part_End:						// Return resizing cursor
-//		if (resizeCursor == NULL)
-//		{
-//			resizeCursor = ResourceUtils::LoadCursor(2);
-//		}
-//		return resizeCursor;
+	switch (partCode)
+	{
+		case Part_Whole:
+		{
+			if (dragging)
+				return CCursorCache::GetCursor(CCursorCache::DRAGGING);
+			return CCursorCache::GetCursor(CCursorCache::DRAGGABLE);
+		}
+		case Part_Start:
+		case Part_End:
+		{
+			return CCursorCache::GetCursor(CCursorCache::CROSS_HAIR);
+		}
 	}
 
 	return NULL;
 }
 
-	// Quantize the vertical position of the mouse based
-	// on the event type and return a value delta.
-long CPitchBendEventHandler::QuantizeDragValue(
-	CEventEditor		&editor,
-	const Event		&inClickEvent,
-	short			partCode,			// Part of event clicked
-	BPoint			inClickPos,
-	BPoint			inDragPos ) const
+long
+CPitchBendEventHandler::QuantizeDragValue(
+	const Event &ev,
+	short partCode,
+	BPoint clickPos,
+	BPoint dragPos) const
 {
-	CPitchBendEditor	&lEditor = (CPitchBendEditor &)editor;
-
-		// Simply scale the dragged value by the pixel step value
-	return (long)((double)(inClickPos.y - inDragPos.y) / lEditor.pixelsPerValue);
+	// Simply scale the dragged value by the pixel step value
+	double val = (clickPos.y - dragPos.y) / Editor()->pixelsPerValue;
+	return static_cast<long>(val);
 }
 
-	// Pitchbends have NO time quantization
-long CPitchBendEventHandler::QuantizeDragTime(
-	CEventEditor	&editor,
-	const Event		&inClickEvent,
-	short			partCode,			// Part of event clicked
-	BPoint			inClickPos,
-	BPoint			inDragPos,
-	bool				inInitial ) const
+long
+CPitchBendEventHandler::QuantizeDragTime(
+	const Event &ev,
+	short partCode,
+	BPoint clickPos,
+	BPoint dragPos,
+	bool initial) const
 {
-	return editor.ViewCoordsToTime( inDragPos.x - inClickPos.x );
+	return Editor()->ViewCoordsToTime(dragPos.x - clickPos.x);
 }
 
-EventOp *CPitchBendEventHandler::CreateDragOp(
-	CEventEditor	&editor,
-	const Event		&ev,
-	short			partCode,
-	long			timeDelta,			// The horizontal drag delta
-	long			valueDelta ) const
+EventOp *
+CPitchBendEventHandler::CreateDragOp(
+	const Event &ev,
+	short partCode,
+	long timeDelta,
+	long valueDelta) const
 {
-	switch (partCode) {
-	case Part_Whole:			return new DualBendOffsetOp( valueDelta );
-	case Part_Start:			return new IBendOffsetOp( valueDelta );
-	case Part_End:			return new BendOffsetOp( valueDelta );
+	switch (partCode)
+	{
+		case Part_Whole:
+			return new DualBendOffsetOp(valueDelta);
+		case Part_Start:
+			return new IBendOffsetOp(valueDelta);
+		case Part_End:
+			return new BendOffsetOp(valueDelta);
 	};
+
 	return NULL;
 }
 
-EventOp *CPitchBendEventHandler::CreateTimeOp(
-	CEventEditor		&editor,
-	const Event		&ev,
-	short			partCode,
-	long				timeDelta,			// The horizontal drag delta
-	long				valueDelta ) const
+EventOp *
+CPitchBendEventHandler::CreateTimeOp(
+	const Event &ev,
+	short partCode,
+	long timeDelta,
+	long valueDelta) const
 {
-	if (partCode == Part_End) return new DurationOffsetOp( timeDelta );
+	if (partCode == Part_End)
+	{
+		return new DurationOffsetOp(timeDelta);
+	}
 	else
 	{
-		timeDelta = MAX( timeDelta, -editor.Track()->MinSelectTime() );
-		return new TimeOffsetOp( timeDelta );
+		timeDelta = MAX(timeDelta, - Editor()->Track()->MinSelectTime());
+		return new TimeOffsetOp(timeDelta);
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Dispatch table for linear editor
-
-CPitchBendEventHandler		pitchBendHandler;
-
-// ---------------------------------------------------------------------------
-// Linear Editor class
-
-	// ---------- Constructor
+// Constructor/Destructor
 
 CPitchBendEditor::CPitchBendEditor(
-	BLooper			&inLooper,
-	CStripFrameView	&inFrame,
-	BRect			rect )
-	:	CContinuousValueEditor(	inLooper, inFrame, rect, "Pitch Bend" )
+	BLooper &looper,
+	CStripFrameView	&frame,
+	BRect rect)
+	:	CContinuousValueEditor(looper, frame, rect, "Pitch Bend")
 {
-	SetHandlerFor(EvtType_PitchBend, &pitchBendHandler);
+	SetHandlerFor(EvtType_PitchBend, new CPitchBendEventHandler(this));
 
-	minValue		= 0 - 0x2000;
-	maxValue 	= 0x3fff - 0x2000;
-	eventAscent	= 3.0;
-	eventDescent	= 3.0;
-	verticalZoom	= 6;
+	minValue = 0 - 0x2000;
+	maxValue = 0x3fff - 0x2000;
+	eventAscent = 3;
+	eventDescent = 3;
+	verticalZoom = 6;
 
 	CalcZoom();
 
@@ -459,26 +453,42 @@ CPitchBendEditor::CPitchBendEditor(
 }
 
 // ---------------------------------------------------------------------------
-// Convert an event value to a y-coordinate
+// Operations
 
-long CPitchBendEditor::ValueToViewCoords( int value )
+float
+CPitchBendEditor::ValueToViewCoords(
+	int value)
 {
-	return stripLogicalHeight - ((value - minValue) * pixelsPerValue) - eventDescent;
+	float val = floor((value - minValue) * pixelsPerValue);
+	return stripLogicalHeight - val - eventDescent;
+}
+
+long
+CPitchBendEditor::ViewCoordsToValue(
+	float yPos,
+	bool limit)
+{
+	long value = static_cast<long>((stripLogicalHeight - yPos - eventDescent)
+								   / pixelsPerValue + minValue);
+	if (limit)
+	{
+		if (value < minValue)
+			return minValue;
+		if (value > maxValue)
+			return maxValue;
+	}
+	return value;
 }
 
 // ---------------------------------------------------------------------------
-// Convert a y-coordinate to an event value
+// CEventEditor Implementation
 
-long CPitchBendEditor::ViewCoordsToValue( int yPos, bool limit )
+const BCursor *
+CPitchBendEditor::CursorFor(
+	int32 editMode) const
 {
-	long	value =  (stripLogicalHeight - yPos - eventDescent) / pixelsPerValue + minValue;
-
-	if (limit)
-	{
-		if (value < minValue) return minValue;
-		if (value > maxValue) return maxValue;
-	}
-	return value;
+	// cannot create or delete events in this strip, only modify
+	return CEventEditor::CursorFor(editMode);
 }
 
 void
@@ -518,96 +528,86 @@ CPitchBendEditor::MouseMoved(
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Update message from another observer
-
-void CPitchBendEditor::OnUpdate( BMessage *inMsg )
+void
+CPitchBendEditor::OnUpdate(
+	BMessage *message)
 {
-	int32		minTime = 0,
-				maxTime = LONG_MAX;
-	int32		trackHint;
-	bool			flag;
-	bool			selChange = false;
-	int8			channel = -1;
-	BRect		r( Bounds() );
-
+	BRect r(Bounds());
 	bounds = r;
 
-	if (inMsg->FindBool( "SelChange", 0, &flag ) == B_OK)
+	bool selChange = false;
+	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
 	{
-		if (!IsSelectionVisible()) return;
-		selChange = flag;
+		if (!IsSelectionVisible())
+			return;
 	}
 
-	if (inMsg->FindInt32( "TrackAttrs", 0, &trackHint ) == B_OK)
+	int32 trackHint = 0;
+	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 	{
-			// REM: what do we do if track changes name?
-		if (!(trackHint &
-			(CTrack::Update_Duration|CTrack::Update_SigMap|CTrack::Update_TempoMap)))
-				return;
+		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
+						   CTrack::Update_TempoMap)))
+			return;
 	}
-	else trackHint = 0;
 
-	if (inMsg->FindInt32( "MinTime", 0, &minTime ) == B_OK)
-	{
-		r.left = TimeToViewCoords( minTime ) - 5.0;
-	}
-	else minTime = 0;
+	int32 minTime;
+	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
+		minTime = ViewCoordsToTime(Bounds().left);
+	r.left = TimeToViewCoords(minTime) - 2.0;
 
-	if (inMsg->FindInt32( "MaxTime", 0, &maxTime ) == B_OK)
-	{
-		r.right = TimeToViewCoords( maxTime ) + 5.0;
-	}
-	else maxTime = LONG_MAX;
-	
-	if (inMsg->FindInt8( "channel", 0, &channel ) != B_OK) channel = -1;
+	int32 maxTime;
+	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
+		maxTime = ViewCoordsToTime(Bounds().right);
+	r.right = TimeToViewCoords(maxTime) + 4.0;
 
-	if (trackHint & CTrack::Update_Duration) RecalcScrollRangeH();
-
-	if (trackHint & (CTrack::Update_SigMap|CTrack::Update_TempoMap))
-	{
+	if (trackHint & CTrack::Update_Duration)
 		RecalcScrollRangeH();
-// 	TrackWindow()->InvalidateRuler();
-		Invalidate();			// Invalidate everything if signature map changed
-	}
-	else if (channel >= 0)
-	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+	uint8 channel;
+	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
+	{
+		// Invalidate everything if signature map changed
+		Invalidate();
+	}
+	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
+	{
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker	marker(Track()->Events());
+
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if (ev->Command() == EvtType_PitchBend && ev->GetVChannel() == channel)
-				Handler( *ev ).Invalidate( *this, *ev );
+			if ((ev->HasProperty(Event::Prop_Channel))
+			 && (ev->GetVChannel() == channel))
+			{
+				HandlerFor(*ev)->Invalidate(*ev);
+			}
 		}
 	}
 	else if (selChange)
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if (ev->Command() == EvtType_PitchBend)
-				Handler( *ev ).Invalidate( *this, *ev );
+			HandlerFor(*ev)->Invalidate(*ev);
 		}
 	}
 	else
 	{
-		Invalidate( r );
+		Invalidate(r);
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Linear editor mouse movement handler
-
-bool CPitchBendEditor::ConstructEvent( BPoint point )
+bool
+CPitchBendEditor::ConstructEvent(
+	BPoint point)
 {
 	// check if destination is set
 	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
@@ -620,9 +620,9 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
 	int32 time;
-	time = Handler(m_newEv).QuantizeDragTime(*this, m_newEv, 0,
-											 BPoint(0.0, 0.0), point,
-											 true);
+	time = HandlerFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
+												 BPoint(0.0, 0.0), point,
+												 true);
 	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
 
 	m_newEv.SetStart(time);

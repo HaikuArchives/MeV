@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * ContinuousValueEditor.cpp (MeV/User Interface)
+ * ContinuousValueEditor.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "ContinuousValueEditor.h"
@@ -15,80 +15,59 @@
 // Constructor
 
 CContinuousValueEditor::CContinuousValueEditor(
-	BLooper			&inLooper,
-	CStripFrameView	&inFrame,
-	BRect			rect,
-	const char		*name )
-	:	CEventEditor(	inLooper, inFrame, rect, name, true, true )
+	BLooper &looper,
+	CStripFrameView	&frameView,
+	BRect rect,
+	const char *name)
+	:	CEventEditor(looper, frameView, rect, name, true, true)
 {
 }
 
 // ---------------------------------------------------------------------------
 // General drawing routine
 
-void CContinuousValueEditor::Draw( BRect updateRect )
+void
+CContinuousValueEditor::Draw(
+	BRect updateRect)
 {
-	long				startTime = ViewCoordsToTime( updateRect.left - 1.0 ),
-					stopTime  = ViewCoordsToTime( updateRect.right + 1.0 );
-//	int				yPos; //,
-//					lineCt;
-	SetHighColor( 255, 255, 255 );
-	FillRect( updateRect );
+	long startTime = ViewCoordsToTime(updateRect.left - 1.0);
+	long stopTime  = ViewCoordsToTime(updateRect.right + 1.0);
+	SetHighColor(255, 255, 255);
+	FillRect(updateRect);
 
-	SetHighColor( 220, 220, 220 );
+	SetHighColor(220, 220, 220);
 
-	FillRect(	BRect(	updateRect.left, stripLogicalHeight,
-					updateRect.right, stripLogicalHeight ) );
+	FillRect(BRect(updateRect.left, stripLogicalHeight,
+				   updateRect.right, stripLogicalHeight));
 
-#if 0
-		// Draw horizontal grid lines.
-		// REM: This needs to be faster.
-	for (	yPos = stripLogicalHeight, lineCt = 0;
-			yPos >= updateRect.top;
-			yPos -= whiteKeyStep, lineCt++ )
-	{
-		if (lineCt >= 7) lineCt = 0;
+	DrawGridLines(updateRect);
 
-			// Fill solid rectangle with gridline
-		if (yPos <= updateRect.bottom)
-		{
-			if (lineCt == 0)
-				SetHighColor( 180, 180, 180 );
-			else SetHighColor( 220, 220, 220 );
-	
-			FillRect(	BRect(	updateRect.left, yPos,
-								updateRect.right, yPos ) );
-		}
-	}
-#endif
-
-	DrawGridLines( updateRect );
-
-		// Initialize an event marker for this track.
-	StSubjectLock		trackLock( *Track(), Lock_Shared );
-	EventMarker		marker( Track()->Events() );
+	// Initialize an event marker for this track.
+	StSubjectLock trackLock(*Track(), Lock_Shared);
+	EventMarker marker(Track()->Events());
 
 	bounds = Bounds();
 
-		// For each event that overlaps the current view, draw it. (locked channels first)
-	for (	const Event *ev = marker.FirstItemInRange( startTime, stopTime );
-			ev;
-			ev = marker.NextItemInRange( startTime, stopTime ) )
+	// For each event that overlaps the current view, draw it. (locked channels first)
+	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+		 ev;
+		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
+		if (ev->HasProperty(Event::Prop_Channel)
+		 && Track()->IsChannelLocked(ev->GetVChannel()))
+			HandlerFor(*ev)->Draw(*ev, false);
+	}
 
-		if (ev->HasProperty( Event::Prop_Channel ) && Track()->IsChannelLocked( ev->GetVChannel() ))
-			Handler( *ev ).Draw( *this, *ev, false );
-	}
-	
-		// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
-	for (	const Event *ev = marker.FirstItemInRange( startTime, stopTime );
-			ev;
-			ev = marker.NextItemInRange( startTime, stopTime ) )
+	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
+	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+		 ev;
+		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (!Track()->IsChannelLocked( ev->GetVChannel() || !ev->HasProperty( Event::Prop_Channel ) ))
-			Handler( *ev ).Draw( *this, *ev, false );
+		if (!Track()->IsChannelLocked(ev->GetVChannel()
+		 || !ev->HasProperty(Event::Prop_Channel)))
+			HandlerFor(*ev)->Draw(*ev, false);
 	}
-	
+
 	EventOp	*echoOp = PendingOperation();
 	if (echoOp == NULL)
 		echoOp = DragOperation();
@@ -111,102 +90,99 @@ void CContinuousValueEditor::Draw( BRect updateRect )
 // ---------------------------------------------------------------------------
 // Periodic update time tick -- used to update playback markers
 
-void CContinuousValueEditor::Pulse()
+void
+CContinuousValueEditor::Pulse()
 {
 	UpdatePBMarkers();
-		// REM: Add code to process newly recorded events
-		// REM: Add code to edit events via MIDI.
+	// REM: Add code to process newly recorded events
+	// REM: Add code to edit events via MIDI.
 }
 
 // ---------------------------------------------------------------------------
 // Update message from another observer
 
-void CContinuousValueEditor::OnUpdate( BMessage *inMsg )
+void
+CContinuousValueEditor::OnUpdate(
+	BMessage *message)
 {
-	int32		minTime = 0,
-				maxTime = LONG_MAX;
-	int32		trackHint;
-	bool			flag;
-	bool			selChange = false;
-	int8			channel = -1;
-	BRect		r( Bounds() );
-
+	BRect r(Bounds());
 	bounds = r;
 
-	if (inMsg->FindBool( "SelChange", 0, &flag ) == B_OK)
+	bool selChange = false;
+	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
 	{
-		if (!IsSelectionVisible()) return;
-		selChange = flag;
+		if (!IsSelectionVisible())
+			return;
 	}
 
-	if (inMsg->FindInt32( "TrackAttrs", 0, &trackHint ) == B_OK)
+	int32 trackHint = 0;
+	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 	{
-			// REM: what do we do if track changes name?
-		if (!(trackHint &
-			(CTrack::Update_Duration|CTrack::Update_SigMap|CTrack::Update_TempoMap)))
-				return;
+		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
+						   CTrack::Update_TempoMap)))
+			return;
 	}
-	else trackHint = 0;
 
-	if (inMsg->FindInt32( "MinTime", 0, &minTime ) == B_OK)
-	{
-		r.left = TimeToViewCoords( minTime ) - 1.0;
-	}
-	else minTime = 0;
+	int32 minTime;
+	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
+		minTime = ViewCoordsToTime(Bounds().left);
+	r.left = TimeToViewCoords(minTime) - 1.0;
 
-	if (inMsg->FindInt32( "MaxTime", 0, &maxTime ) == B_OK)
-	{
-		r.right = TimeToViewCoords( maxTime ) + 1.0;
-	}
-	else maxTime = LONG_MAX;
-	
-	if (inMsg->FindInt8( "channel", 0, &channel ) != B_OK) channel = -1;
+	int32 maxTime;
+	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
+		maxTime = ViewCoordsToTime(Bounds().right);
+	r.right = TimeToViewCoords(maxTime) + 1.0;
 
-	if (trackHint & CTrack::Update_Duration) RecalcScrollRangeH();
-
-	if (trackHint & (CTrack::Update_SigMap|CTrack::Update_TempoMap))
-	{
+	if (trackHint & CTrack::Update_Duration)
 		RecalcScrollRangeH();
-// 	TrackWindow()->InvalidateRuler();
-		Invalidate();			// Invalidate everything if signature map changed
-	}
-	else if (channel >= 0)
-	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+	uint8 channel;
+	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
+	{
+		// Invalidate everything if signature map changed
+		Invalidate();
+	}
+	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
+	{
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker	marker(Track()->Events());
+
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if (ev->HasProperty( Event::Prop_Channel ) && ev->GetVChannel() == channel)
-				Handler( *ev ).Invalidate( *this, *ev );
+			if ((ev->HasProperty(Event::Prop_Channel))
+			 && (ev->GetVChannel() == channel))
+			{
+				HandlerFor(*ev)->Invalidate(*ev);
+			}
 		}
 	}
 	else if (selChange)
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			Handler( *ev ).Invalidate( *this, *ev );
+			HandlerFor(*ev)->Invalidate(*ev);
 		}
 	}
 	else
 	{
-		Invalidate( r );
+		Invalidate(r);
 	}
 }
 
 // ---------------------------------------------------------------------------
 // Calculate factors relating to zoom
 
-void CContinuousValueEditor::CalcZoom()
+void
+CContinuousValueEditor::CalcZoom()
 {
 	stripLogicalHeight = (long)(16.0 * pow( 1.4, verticalZoom ));
 	pixelsPerValue = (double)stripLogicalHeight / (maxValue - minValue);
@@ -235,6 +211,8 @@ CContinuousValueEditor::MouseMoved(
 	uint32 transit,
 	const BMessage *message)
 {
+	CEventEditor::MouseMoved(point, transit, message);
+
 	if (transit == B_EXITED_VIEW)
 	{
 		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);

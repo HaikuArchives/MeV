@@ -181,7 +181,7 @@ CAssemblyWindow::MessageReceived(
 			}
 			break;
 		}
-		case TOOL_GRID:
+		case CEventEditor::TOOL_GRID:
 		{
 			D_MESSAGE((" -> TOOL_GRID\n"));
 			int32 value;
@@ -192,10 +192,10 @@ CAssemblyWindow::MessageReceived(
 			Track()->EnableGridSnap(value);
 			break;
 		}
-		case TOOL_SELECT:
-		case TOOL_CREATE:
-		case TOOL_ERASE:
-		case TOOL_TEXT:
+		case CEventEditor::TOOL_SELECT:
+		case CEventEditor::TOOL_CREATE:
+		case CEventEditor::TOOL_ERASE:
+		case CEventEditor::TOOL_TEXT:
 		{
 			D_MESSAGE((" -> TOOL_SELECT/CREATE/ERASE/TEXT\n"));
 			m_toolStates[0] = message->what;
@@ -415,19 +415,19 @@ CAssemblyWindow::AddToolBar()
 	CBitmapTool *tool;
 	toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
 											ResourceUtils::LoadImage("GridTool"),
-											new BMessage(TOOL_GRID)));
+											new BMessage(CEventEditor::TOOL_GRID)));
 	tool->SetValue(B_CONTROL_ON);
 	toolBar->AddSeparator();
 
 	toolBar->AddTool(tool = new CBitmapTool("Select",
 											ResourceUtils::LoadImage("ArrowTool"),
-											new BMessage(TOOL_SELECT)));
+											new BMessage(CEventEditor::TOOL_SELECT)));
 	tool->SetValue(B_CONTROL_ON);
 	toolBar->AddTool(new CMenuTool("Create", ResourceUtils::LoadImage("PencilTool"),
-								   createMenu, new BMessage(TOOL_CREATE)));
+								   createMenu, new BMessage(CEventEditor::TOOL_CREATE)));
 	toolBar->AddTool(tool = new CBitmapTool("Eraser",
 											ResourceUtils::LoadImage("EraserTool"),
-											new BMessage(TOOL_ERASE)));
+											new BMessage(CEventEditor::TOOL_ERASE)));
 	toolBar->MakeRadioGroup("Select", "Eraser", true);
 	
 	SetToolBar(toolBar);

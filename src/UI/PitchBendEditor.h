@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * PitchBendEditor.h (MeV/User Interface)
+ * PitchBendEditor.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -43,35 +43,53 @@
 // ---------------------------------------------------------------------------
 // Pitch bend editor strip view
 
-class CPitchBendEditor : public CContinuousValueEditor {
+class CPitchBendEditor
+	:	public CContinuousValueEditor
+{
+	friend class CPitchBendEventHandler;
+
 protected:
 
-	friend class	CPitchBendEventHandler;
 
-	virtual void MessageReceived( BMessage *msg );
-	virtual void MouseMoved(BPoint point, uint32 transit, const BMessage *message);
-	virtual void OnUpdate( BMessage *inMsg );
-	
-public:
-		// ---------- Constructor
+public:							// Constructor/Destructor
 
-	CPitchBendEditor(	BLooper			&inLooper,
-					CStripFrameView &frame,
-					BRect			rect );
-					
-		// ---------- Hooks
+								CPitchBendEditor(
+									BLooper &looper,
+									CStripFrameView &frame,
+									BRect rect);
 
-	bool ConstructEvent( BPoint point );
+public:							// Operations
 
-		// ---------- Conversion funcs
+	/** returns y-pos for pitch */
+	float						ValueToViewCoords(
+									int value);
 
-		// returns y-pos for pitch
-	long ValueToViewCoords( int value );
+	/** returns pitch for y-pos and optionally clamp to legal values */
+	long						ViewCoordsToValue(
+									float y,
+									bool limit = true);
 
-		// returns pitch for y-pos and optionally clamp to legal values
-	long ViewCoordsToValue( int yPos, bool limit = true );
+public:							// CContinuousValueEditor Implementation
 
-	virtual void ZoomChanged(int32 diff);
+	virtual bool				ConstructEvent(
+									BPoint point);
+
+	const BCursor *				CursorFor(
+									int32 editMode) const;
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
+
+	virtual void				OnUpdate(
+									BMessage *message);
+
+	virtual void				ZoomChanged(
+									int32 diff);
 };
 
 #endif /* __C_PitchBendEditor_H__ */

@@ -1,9 +1,10 @@
 /* ===================================================================== *
- * LinearEditor.cpp (MeV/User Interface)
+ * LinearEditor.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "LinearEditor.h"
 
+#include "CursorCache.h"
 #include "EventTrack.h"
 #include "Idents.h"
 #include "Destination.h"
@@ -18,13 +19,95 @@
 // Support Kit
 #include <Debug.h>
 
-const uint8			*resizeCursor,
-					*crossCursor;
-
 // ---------------------------------------------------------------------------
-// Dispatch table for linear editor ~~~EVENTLIST
+// Note handler class for linear editor
 
-CLinearNoteEventHandler		linearNoteHandler;
+class CLinearNoteEventHandler
+	:	public CEventHandler
+{
+
+public:							// Constants
+
+	static const rgb_color		DEFAULT_BORDER_COLOR;
+	static const rgb_color		DEFAULT_HIGHLIGHT_COLOR;
+	static const rgb_color		SELECTED_BORDER_COLOR;
+	static const rgb_color		DISABLED_BORDER_COLOR;
+	static const rgb_color		DISABLED_FILL_COLOR;
+	static const pattern		MIXED_COLORS;
+
+public:							// Constructor
+
+								CLinearNoteEventHandler(
+									CEventEditor * const editor)
+									:	CEventHandler(editor)
+								{ }
+
+public:							// CAbstractEventHandler Implementation
+
+	// Invalidate the event
+	virtual void				Invalidate(
+									const Event	&ev) const;
+
+	// Draw the event (or an echo)
+	virtual void				Draw(
+									const Event &ev,
+									bool shadowed) const;
+
+	// Compute the extent of the event
+	virtual BRect				Extent(
+									const Event &ev) const;
+
+	// Pick a single event and return the part code
+	// (or -1 if event not picked)
+	virtual long				Pick(
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
+
+	// For a part code returned earlier, return a cursor
+	// image...
+	virtual const BCursor *		Cursor(
+									short partCode,
+									int32 editMode = CEventEditor::TOOL_SELECT,
+									bool dragging = false) const;
+
+	// Quantize the vertical position of the mouse based
+	// on the event type and return a value delta.
+	virtual long				QuantizeDragValue(
+									const Event	&inClickEvent,
+									short partCode,
+									BPoint inClickPos,
+									BPoint inDragPos) const;
+
+	// Make a drag op for dragging notes...
+	virtual EventOp *			CreateDragOp(
+									const Event	&ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+	virtual EventOp *			CreateTimeOp(
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
+
+protected:						// Accessors
+
+	CLinearEditor * const		Editor() const
+								{ return (CLinearEditor *)CEventHandler::Editor(); }
+
+private:						// Internal Operations
+
+	static void					DrawNoteShape(
+									BView *view,
+									BRect rect,
+									rgb_color outline,
+									rgb_color fill,
+									rgb_color higlight,
+									bool drawHighlight,
+									pattern apattern = B_SOLID_HIGH);
+};
 
 // ---------------------------------------------------------------------------
 // Class Data Initialization
@@ -37,8 +120,6 @@ CLinearEditor::OCTAVE_GRID_LINE_COLOR = {180, 180, 180, 255};
 
 const rgb_color
 CLinearEditor::BACKGROUND_COLOR = {255, 255, 255, 255};
-const pattern
-CLinearNoteEventHandler::C_MIXED_COLORS = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x0f};
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -50,8 +131,7 @@ CLinearEditor::CLinearEditor(
 	:	CEventEditor(looper, frame, rect, "Piano Roll", true, true),
 		m_whiteKeyStep(8)
 {
-	SetHandlerFor(EvtType_Note, &linearNoteHandler);
-	SetHandlerFor(EvtType_End, &gEndEventHandler);
+	SetHandlerFor(EvtType_Note, new CLinearNoteEventHandler(this));
 
 	CalcZoom();
 
@@ -91,7 +171,7 @@ CLinearEditor::ConstructEvent(
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
 	int32 time;
-	time = HandlerFor(m_newEv)->QuantizeDragTime(*this, m_newEv, 0,
+	time = HandlerFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
 												 BPoint(0.0, 0.0), point,
 												 true);
 	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
@@ -198,7 +278,7 @@ CLinearEditor::Draw(
 			continue;
 
 		if (Track()->IsChannelLocked(*ev))
-			HandlerFor(*ev)->Draw(*this, *ev, false);
+			HandlerFor(*ev)->Draw(*ev, false);
 	}
 
 	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
@@ -211,7 +291,7 @@ CLinearEditor::Draw(
 		 	continue;
 
 		if (!Track()->IsChannelLocked(*ev))
-			HandlerFor(*ev)->Draw(*this, *ev, false);
+			HandlerFor(*ev)->Draw(*ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();
@@ -366,7 +446,7 @@ CLinearEditor::OnUpdate(
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
 			if (ev->HasProperty(Event::Prop_Channel) && ev->GetVChannel() == channel)
-				HandlerFor(*ev)->Invalidate(*this, *ev);
+				HandlerFor(*ev)->Invalidate(*ev);
 		}
 	}
 	else if (selChange)
@@ -379,7 +459,7 @@ CLinearEditor::OnUpdate(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			HandlerFor(*ev)->Invalidate(*this, *ev);
+			HandlerFor(*ev)->Invalidate(*ev);
 		}
 	}
 	else
@@ -524,105 +604,64 @@ const rgb_color
 CLinearNoteEventHandler::DISABLED_BORDER_COLOR = {128, 128, 128, 255};
 const rgb_color
 CLinearNoteEventHandler::DISABLED_FILL_COLOR = {192, 192, 192, 255};
+const pattern
+CLinearNoteEventHandler::MIXED_COLORS = { 0xf0, 0xf0, 0xf0, 0xf0, 
+										  0x0f, 0x0f, 0x0f, 0x0f };
 
 // ---------------------------------------------------------------------------
 // CAbstractEventHandler Implementation
 
 void
 CLinearNoteEventHandler::Invalidate(
-	CEventEditor &editor,
 	const Event &ev) const
 {
-	CLinearEditor &lEditor = (CLinearEditor &)editor;
-
-	BRect r;
-
-	r.left = lEditor.TimeToViewCoords(ev.Start()) - 1.0;
-	r.right	= lEditor.TimeToViewCoords(ev.Stop()) + 1.0;
-	r.bottom = lEditor.PitchToViewCoords(ev.note.pitch) + 1.0;
-	r.top = r.bottom - lEditor.m_whiteKeyStep - 2.0;
-
-	lEditor.Invalidate(r);
-}
-
-void
-DrawNoteShape(	
-	BView *view,
-	BRect inRect,
-	rgb_color outline,
-	rgb_color fill,
-	rgb_color highlight,
-	bool drawHighlight,
-	pattern apattern=B_SOLID_HIGH)
-{
-	rgb_color contrast;
-	contrast.red=(fill.red+128) % 255;
-	contrast.green=(fill.green+128) % 255;
-	contrast.blue=(fill.blue+128) % 255;
-	
-	view->SetHighColor(fill);
-	view->SetLowColor(contrast);
-	view->FillRect(inRect.InsetByCopy(1.0, 1.0), apattern);
-	view->SetHighColor(outline);
-	view->StrokeRoundRect(inRect, 3.0, 3.0, B_SOLID_HIGH);
-	if (drawHighlight && ((inRect.Width() >= 4.0) && (inRect.Height() >= 4.0))) {
-		BPoint pLeft(inRect.left + 2.0, inRect.top + 2.0);
-		BPoint pRight(inRect.right - 2.0, inRect.top + 2.0);
-		view->SetHighColor(255, 255, 255, 255);
-		view->StrokeLine(pLeft, pLeft, B_SOLID_HIGH);
-		pLeft.x++;
-		view->SetHighColor(highlight);
-		view->StrokeLine(pLeft, pRight, B_SOLID_HIGH);
-	}
+	Editor()->Invalidate(Extent(ev));
 }
 
 void
 CLinearNoteEventHandler::Draw(
-	CEventEditor &editor,
 	const Event &ev,
 	bool shadowed) const
 {
-	CLinearEditor &lEditor = (CLinearEditor &)editor;
-	CEventTrack *track = editor.Track();
-	BRect r(Extent(editor, ev));
+	CEventTrack *track = Editor()->Track();
+	BRect r(Extent(ev));
 
 	if (track->IsChannelLocked(ev.GetVChannel()))
 	{
 		if (!shadowed)
-			DrawNoteShape(&lEditor, r, DISABLED_BORDER_COLOR,
-						  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR, false);
+			DrawNoteShape(Editor(), r, DISABLED_BORDER_COLOR,
+						  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR,
+						  false);
 		return;
 	}
 
-
-	Destination *dest = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
-
-	
+	Destination *dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 	if (dest->flags & Destination::deleted)
 	{
-		DrawNoteShape(&lEditor, r, DISABLED_BORDER_COLOR,
-				  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR,false);
+		DrawNoteShape(Editor(), r, DISABLED_BORDER_COLOR,
+					  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR, false);
 	}
-	else if ((dest->flags & Destination::mute) || (dest->flags & Destination::disabled))
+	else if ((dest->flags & Destination::mute)
+		  || (dest->flags & Destination::disabled))
 	{
-		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
-					  dest->fillColor, dest->highlightColor, true,C_MIXED_COLORS);
+		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, dest->fillColor,
+					  dest->highlightColor, true, MIXED_COLORS);
 	}
 	else if (shadowed)
 	{
-		lEditor.SetDrawingMode(B_OP_BLEND);
-		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR, 
+		Editor()->SetDrawingMode(B_OP_BLEND);
+		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, 
 					  dest->fillColor, dest->highlightColor, true);
-		lEditor.SetDrawingMode(B_OP_COPY);
+		Editor()->SetDrawingMode(B_OP_COPY);
 	}
-	else if (ev.IsSelected() && editor.IsSelectionVisible())
+	else if (ev.IsSelected() && Editor()->IsSelectionVisible())
 	{
-		DrawNoteShape(&lEditor, r, SELECTED_BORDER_COLOR,
+		DrawNoteShape(Editor(), r, SELECTED_BORDER_COLOR,
 					  dest->fillColor, dest->highlightColor, true);
 	}
 	else 
 	{
-		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
+		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR,
 					  dest->fillColor, dest->highlightColor, true);
 	}
 
@@ -630,81 +669,82 @@ CLinearNoteEventHandler::Draw(
 
 BRect
 CLinearNoteEventHandler::Extent(
-	CEventEditor &editor,
 	const Event &ev) const
 {
-	CLinearEditor &lEditor = (CLinearEditor &)editor;
 	BRect r;
-	r.left = lEditor.TimeToViewCoords(ev.Start());
-	r.right = lEditor.TimeToViewCoords(ev.Stop()),
-	r.bottom = lEditor.PitchToViewCoords(ev.note.pitch);
-	r.top = r.bottom - lEditor.m_whiteKeyStep;
+	r.left = Editor()->TimeToViewCoords(ev.Start());
+	r.right = Editor()->TimeToViewCoords(ev.Stop()),
+	r.bottom = Editor()->PitchToViewCoords(ev.note.pitch);
+	r.top = r.bottom - Editor()->m_whiteKeyStep;
 
 	return r;
 }
 
 long
 CLinearNoteEventHandler::Pick(
-	CEventEditor &editor,
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
-	CLinearEditor &lEditor = (CLinearEditor &)editor;
-	int bottom	= lEditor.PitchToViewCoords(ev.note.pitch);
-	int top = bottom - lEditor.m_whiteKeyStep;
+	int bottom	= Editor()->PitchToViewCoords(ev.note.pitch);
+	int top = bottom - Editor()->m_whiteKeyStep;
 
-	return lEditor.PickDurationEvent(ev, top, bottom, pickPt, partCode);
+	return Editor()->PickDurationEvent(ev, top, bottom, pickPt, partCode);
 }
 
-const uint8 *
-CLinearNoteEventHandler::CursorImage(
-	short partCode) const
+const BCursor *
+CLinearNoteEventHandler::Cursor(
+	short partCode,
+	int32 editMode,
+	bool dragging) const
 {
-	switch (partCode)
+	if ((editMode == CEventEditor::TOOL_SELECT)
+	 || (editMode == CEventEditor::TOOL_CREATE))
 	{
-		case 0:
+		switch (partCode)
 		{
-			return B_HAND_CURSOR;
+			case 0:
+			{
+				if (dragging)
+					return CCursorCache::GetCursor(CCursorCache::DRAGGING);
+				return CCursorCache::GetCursor(CCursorCache::DRAGGABLE);
+			}
+			case 1:
+			{
+				return CCursorCache::GetCursor(CCursorCache::HORIZONTAL_RESIZE);
+			}
 		}
-		case 1:
-		{
-			if (resizeCursor == NULL)
-				resizeCursor = ResourceUtils::LoadCursor(2);
-			return resizeCursor;
-		}
+		return NULL;
 	}
-	
-	return NULL;
+	else
+	{
+		return Editor()->CursorFor(editMode);
+	}
 }
 
 long
 CLinearNoteEventHandler::QuantizeDragValue(
-	CEventEditor &editor,
-	const Event &inClickEvent,
+	const Event &ev,
 	short partCode,
-	BPoint inClickPos,
-	BPoint inDragPos) const
+	BPoint clickPos,
+	BPoint dragPos) const
 {
-	CLinearEditor	&lEditor = (CLinearEditor &)editor;
-
 	// Get the pitch and y position of the old note.
-	long oldPitch = inClickEvent.note.pitch;
-	float oldYPos = lEditor.PitchToViewCoords(oldPitch);
+	long oldPitch = ev.note.pitch;
+	float oldYPos = Editor()->PitchToViewCoords(oldPitch);
 	long newPitch;
 
 	// Add in the vertical drag delta to the note position,
 	// and compute the new pitch.
-	newPitch = lEditor.ViewCoordsToPitch(oldYPos + inDragPos.y
-										 - inClickPos.y - lEditor.m_whiteKeyStep / 2,
-										 false);
+	newPitch = Editor()->ViewCoordsToPitch(oldYPos + dragPos.y - clickPos.y
+										   - Editor()->m_whiteKeyStep / 2,
+										   false);
 					
 	return newPitch - oldPitch;
 }
 
 EventOp *
 CLinearNoteEventHandler::CreateDragOp(
-	CEventEditor &editor,
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -718,7 +758,6 @@ CLinearNoteEventHandler::CreateDragOp(
 
 EventOp *
 CLinearNoteEventHandler::CreateTimeOp(
-	CEventEditor &editor,
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -726,9 +765,39 @@ CLinearNoteEventHandler::CreateTimeOp(
 {
 	if (partCode == 1)
 		return new DurationOffsetOp(timeDelta);
-	else
-		return CAbstractEventHandler::CreateTimeOp(editor, ev, partCode,
-												   timeDelta, valueDelta);
+
+	return CEventHandler::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
+}
+
+void
+CLinearNoteEventHandler::DrawNoteShape(	
+	BView *view,
+	BRect rect,
+	rgb_color outline,
+	rgb_color fill,
+	rgb_color highlight,
+	bool drawHighlight,
+	pattern apattern)
+{
+	rgb_color contrast;
+	contrast.red = (fill.red + 128) % 255;
+	contrast.green = (fill.green + 128) % 255;
+	contrast.blue = (fill.blue + 128) % 255;
+
+	view->SetHighColor(fill);
+	view->SetLowColor(contrast);
+	view->FillRect(rect.InsetByCopy(1.0, 1.0), apattern);
+	view->SetHighColor(outline);
+	view->StrokeRoundRect(rect, 3.0, 3.0, B_SOLID_HIGH);
+	if (drawHighlight && ((rect.Width() >= 4.0) && (rect.Height() >= 4.0))) {
+		BPoint pLeft(rect.left + 2.0, rect.top + 2.0);
+		BPoint pRight(rect.right - 2.0, rect.top + 2.0);
+		view->SetHighColor(255, 255, 255, 255);
+		view->StrokeLine(pLeft, pLeft, B_SOLID_HIGH);
+		pLeft.x++;
+		view->SetHighColor(highlight);
+		view->StrokeLine(pLeft, pRight, B_SOLID_HIGH);
+	}
 }
 
 // ---------------------------------------------------------------------------

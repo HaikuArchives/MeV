@@ -384,7 +384,7 @@ void CEventTrack::SelectAll( CEventEditor *inEditor )
 			if (!ev->IsSelected())
 			{
 				((Event *)ev)->SetSelected( true );
-				(inEditor->Handler( *ev )).Invalidate( *inEditor, *ev );
+				(inEditor->HandlerFor(*ev))->Invalidate(*ev);
 			}
 		}
 	}
@@ -425,7 +425,7 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 			if (ev->IsSelected())
 			{
 				((Event *)ev)->SetSelected( false );
-				(inEditor->Handler( *ev )).Invalidate( *inEditor, *ev );
+				(inEditor->HandlerFor(*ev))->Invalidate(*ev);
 			}
 		}
 	}
@@ -643,9 +643,9 @@ void CEventTrack::ModifySelectedEvents(
 				// Invalidate the new and old positions of the event
 			if (inEditor != NULL)
 			{
-				const CAbstractEventHandler		&handler = inEditor->Handler( *ev );
-				handler.Invalidate( *inEditor, *ev );
-				handler.Invalidate( *inEditor, newEv );
+				const CEventHandler *handler = inEditor->HandlerFor(*ev);
+				handler->Invalidate(*ev);
+				handler->Invalidate(newEv);
 			}
 
 				// replace the event in the sequence.
@@ -674,10 +674,10 @@ void CEventTrack::ModifySelectedEvents(
 
 			if (inEditor != NULL)
 			{
-				const CAbstractEventHandler		&handler = inEditor->Handler( *ev );
-				handler.Invalidate( *inEditor, *ev );
-				op( *ev, clockType );
-				handler.Invalidate( *inEditor, *ev );
+				const CEventHandler	*handler = inEditor->HandlerFor(*ev);
+				handler->Invalidate(*ev);
+				op(*ev, clockType);
+				handler->Invalidate(*ev);
 			}
 			else
 			{
@@ -849,7 +849,7 @@ void CEventTrack::CopySelectedEvents(
 		op( *ev, clockType );
 		if (inEditor != NULL)
 		{
-			(inEditor->Handler( *ev )).Invalidate( *inEditor, *ev );
+			(inEditor->HandlerFor(*ev))->Invalidate(*ev);
 		}
 	}
 
