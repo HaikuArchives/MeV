@@ -356,20 +356,13 @@ CLinearEditor::MouseMoved(
 {
 	CEventEditor::MouseMoved(point, transit, message);
 
-	if (transit == B_EXITED_VIEW)
+	if (Window()->IsActive())
 	{
-		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
-		TrackWindow()->SetVerticalPositionInfo("");
-		return;
+		if (transit == B_EXITED_VIEW)
+			TrackWindow()->SetVerticalPositionInfo("");
+		else
+			DisplayPitchInfo(point);
 	}
-	
-	TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));
-	DisplayPitchInfo(point);
-
-	StSubjectLock trackLock(*Track(), Lock_Shared);
-	EventMarker marker(Track()->Events());
-
-	bounds = Bounds();
 }
 
 void

@@ -1076,14 +1076,14 @@ CEventEditor::MouseMoved(
 			m_frame.ScrollBy(MIN((point.x - r.right) / 4, 10.0), B_HORIZONTAL);
 		else if (point.x < r.left)
 			m_frame.ScrollBy(MAX((point.x - r.left) / 4, -10.0), B_HORIZONTAL);
-		
+
 		// Implement auto-scrolling (vertical for editor)
 		if (point.y > r.bottom)
 			ScrollBy(MIN((point.y - r.bottom) / 4, 10.0), B_VERTICAL);
 		else if (point.y < r.top)
 			ScrollBy(MAX((point.y - r.top) / 4, - 10.0), B_VERTICAL);
 	}
-	else
+	else if (Window()->IsActive())
 	{
 		if ((transit == B_ENTERED_VIEW) || (transit == B_INSIDE_VIEW))
 		{
@@ -1094,10 +1094,12 @@ CEventEditor::MouseMoved(
 				be_app->SetCursor(HandlerFor(*ev)->Cursor(partCode, editMode));
 			else
 				be_app->SetCursor(CursorFor(editMode));
+			TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));
 		}
 		else
 		{
 			be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::DEFAULT));
+			TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
 		}
 	}
 }
