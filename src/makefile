@@ -7,6 +7,7 @@ SRCS= \
 	MeVDoc.cpp \
 	MeVPlugin.cpp \
 	Framework/AppWindow.cpp \
+	Framework/DialogWindow.cpp \
 	Framework/DocApp.cpp \
 	Framework/Document.cpp \
 	Framework/DocWindow.cpp \
@@ -56,6 +57,8 @@ SRCS= \
 	UI/BitmapTool.cpp \
 	UI/BorderButton.cpp \
 	UI/BorderView.cpp \
+	UI/ColorDialogWindow.cpp \
+	UI/ColorWell.cpp \
 	UI/ConsoleView.cpp \
 	UI/ContinuousValueEditor.cpp \
 	UI/CursorCache.cpp \
