@@ -1039,8 +1039,7 @@ CEventEditor::DrawPlaybackMarkers(
 	{
 		if ((markers[i] >= startTime) && (markers[i] <= stopTime))
 		{
-			//
-			p1.x = p2.x = TimeToViewCoords(markers[i]-Track()->Document().MaxDestinationLatency(Track()->ClockType()));
+			p1.x = p2.x = TimeToViewCoords(markers[i]);
 			AddLine(p1, p2, black);
 		}
 	}

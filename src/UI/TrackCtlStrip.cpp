@@ -26,29 +26,15 @@
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 
-static rgb_color GREY_PALETTE [] =
-{
-	{0xff, 0xff, 0xff},
-	{0xee, 0xee, 0xee},
-	{0xdd, 0xdd, 0xdd},
-	{0xcc, 0xcc, 0xcc},
-	{0xbb, 0xbb, 0xbb},
-	{0x77, 0x77, 0x77}
-};
-
-static rgb_color BLUE_PALETTE [] =
-{
-	{0xff, 0xff, 0xff},
-	{0xdd, 0xff, 0xff},
-	{0xcc, 0xcc, 0xff},
-	{0xbb, 0xbb, 0xff},
-	{0x88, 0x88, 0xff},
-	{0x66, 0x66, 0xff}
-};
-
 class CTrackEventHandler
 	:	public CEventHandler
 {
+
+public:							// Constants
+
+	static const rgb_color 		GREY_PALETTE[6];
+	
+	static const rgb_color 		BLUE_PALETTE[6];
 
 public:							// Constructor/Destructor
 
@@ -109,6 +95,28 @@ public:							// Accessors
 
 	CTrackCtlStrip * const		Editor() const
 								{ return (CTrackCtlStrip *)CEventHandler::Editor(); }
+};
+
+const rgb_color
+CTrackEventHandler::GREY_PALETTE[] =
+{
+	{0xff, 0xff, 0xff},
+	{0xee, 0xee, 0xee},
+	{0xdd, 0xdd, 0xdd},
+	{0xcc, 0xcc, 0xcc},
+	{0xbb, 0xbb, 0xbb},
+	{0x77, 0x77, 0x77}
+};
+	
+const rgb_color
+CTrackEventHandler::BLUE_PALETTE[] =
+{
+	{0xff, 0xff, 0xff},
+	{0xdd, 0xff, 0xff},
+	{0xcc, 0xcc, 0xff},
+	{0xbb, 0xbb, 0xff},
+	{0x88, 0x88, 0xff},
+	{0x66, 0x66, 0xff}
 };
 
 void
@@ -253,7 +261,7 @@ CRepeatEventHandler::Draw(
 	r.top = Editor()->VPosToViewCoords(ev.repeat.vPos) + 1.0;
 	r.bottom = r.top + Editor()->BarHeight() - 2.0;
 
-	rgb_color *color;
+	const rgb_color *color;
 	if (shadowed && (Editor()->DragOperation() != NULL))
 	{
 		Editor()->SetDrawingMode(B_OP_BLEND);
@@ -365,7 +373,7 @@ CSequenceEventHandler::Draw(
 	r.top = Editor()->VPosToViewCoords(ev.repeat.vPos) + 1.0;
 	r.bottom = r.top + Editor()->BarHeight() - 2.0;
 
-	rgb_color *color;
+	const rgb_color *color;
 	if (shadowed && (Editor()->DragOperation() != NULL))
 	{
 		Editor()->SetDrawingMode(B_OP_BLEND);
@@ -398,8 +406,8 @@ CSequenceEventHandler::Draw(
 	Editor()->SetHighColor(color[shadowed ? 3 : 2 ]);
 	Editor()->FillRect(r);
 	
-	CTrack *track = Editor()->Track()->Document().FindTrack(ev.sequence.sequence);
-	if (track != NULL) 
+	CTrack *track = Document()->FindTrack(ev.sequence.sequence);
+	if (track != NULL)
 	{
 		int32 length = track->LogicalLength();
 		for (int32 t = ev.Start() + length; t < ev.Stop(); t += length)
@@ -748,9 +756,7 @@ CProgramChangeEventHandler::Draw(
 		Editor()->SetHighColor(0, 0, 0, 128);
 		Editor()->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
 		Editor()->DrawBitmap(m_icon, iconRect.LeftTop());
-		fillColor.alpha = textColor.alpha = 128;
-		fillColor = tint_color(fillColor, B_LIGHTEN_2_TINT);
-		textColor = tint_color(textColor, B_LIGHTEN_2_TINT);
+		Editor()->SetDrawingMode(B_OP_BLEND);
 	}
 	else if (ev.IsSelected() && Editor()->IsSelectionVisible())
 	{
@@ -760,6 +766,7 @@ CProgramChangeEventHandler::Draw(
 		Editor()->SetHighColor(0, 0, 0, 180);
 		Editor()->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
 		Editor()->DrawBitmap(m_icon, iconRect.LeftTop());
+		Editor()->SetDrawingMode(B_OP_OVER);
 	}
 	else
 	{
@@ -767,11 +774,10 @@ CProgramChangeEventHandler::Draw(
 		Editor()->DrawBitmap(m_icon, iconRect.LeftTop());
 	}
 
-	Editor()->SetLowColor(fillColor);
-	Editor()->SetDrawingMode(B_OP_COPY);
-	Editor()->FillRect(frameRect, B_SOLID_LOW);
-	Editor()->SetDrawingMode(B_OP_OVER);
+	Editor()->SetHighColor(fillColor);
+	Editor()->FillRect(frameRect);
 
+	Editor()->SetDrawingMode(B_OP_OVER);
 	Editor()->SetHighColor(textColor);
 	Editor()->DrawString(patchName.String(), textRect.LeftBottom());
 }
