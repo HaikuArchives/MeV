@@ -21,12 +21,6 @@
  *  Contributor(s): 
  *		Christopher Lenz (cell)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *	A window class that keeps track of it's state (position, open-ness)
- *	in a seperate structure which can be used to manipulate the window,
- *	even if the window is not open.
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
@@ -85,6 +79,13 @@ private:							// Instance Data
 	CWindowState *					m_state;
 };
 
+/**
+ *	A window class that keeps track of it's state (position, open-ness)
+ *	in a seperate structure which can be used to manipulate the window,
+ *	even if the window is not open.
+ *	@author		Talin, Christopher Lenz
+ *	@package	Framework
+ */
 class CWindowState {
 	friend class CAppWindow;
 
