@@ -41,46 +41,63 @@
 #include "WindowState.h"
 #include "Observer.h"
 
+class CTempoEditControl;
 class CTimeEditControl;
 class CTextSlider;
 class CEventTrack;
 class CMeVDoc;
 
-class CTransportWindow : public CAppWindow, public CObserver {
-	BControl			*playButton,
-					*stopButton,
-					*pauseButton,
-					*recordButton,
-					*loopButton,
-					*punchButton;
-	CTimeEditControl	*realTimeDisplay,
-					*meteredTimeDisplay;
-	CTextSlider		*tempoSlider;
-	bool				finalTempo;
-	CEventTrack		*track;
-	CMeVDoc			*document;
+class CTransportWindow
+	:	public CAppWindow,
+		public CObserver
+{
 
-	void MessageReceived( BMessage* theMessage );
-	void SetButtons();
+public:							// Constructor/Destructor
 
-		/**	If the app wants us to stop looking at the track, then oblige it.
-			Overridden from the CObserver class.
-		*/
-	void OnDeleteRequested( BMessage *inMsg );
+								CTransportWindow(
+									BPoint pos,
+									CWindowState &state);
 
-		/**	Update inspector info when we get an observer update message.
-			Overridden from the CObserver class.
-		*/
-	void OnUpdate( BMessage *inMsg );
+public:							// CAppWindow Implementation
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	void						SetButtons();
+
+public:							// CObserver Implementation
+
+	/**	If the app wants us to stop looking at the track, then oblige it.
+		Overridden from the CObserver class.
+	*/
+	virtual void				OnDeleteRequested(
+									BMessage *message);
+
+	/**	Update inspector info when we get an observer update message.
+		Overridden from the CObserver class.
+	*/
+	virtual void				OnUpdate(
+									BMessage *message);
 
 public:
 
-	CTransportWindow( BPoint pos, CWindowState &inState );
-	
-	void UpdateDisplay();
+	/**	Handle transport functions for the current track */
+	void						WatchTrack(
+									CEventTrack *track);
 
-		/**	Handle transport functions for the current track */
-	void WatchTrack( CEventTrack *inTrack );
+private:						// Instance Data
+
+	CMeVDoc	*					m_document;
+
+	CEventTrack *				m_track;
+
+	BControl *					m_playButton;
+	BControl *					m_stopButton;
+	BControl *					m_pauseButton;
+
+	CTempoEditControl *			m_tempoCtl;
+
+	CTimeEditControl *			m_timeCtl;
 };
 
 #endif /* __C_TransportWindow_H__ */

@@ -203,9 +203,6 @@ void
 CTrackWindow::SetHorizontalPositionInfo(
 	BString text)
 {
-	PRINT(("CTrackWindow::SetHorizontalPositionInfo(%s)\n",
-			text.String()));
-
 	m_hPosInfoView->SetText(text.String());
 	m_hPosInfoView->Invalidate();
 }
@@ -242,9 +239,6 @@ void
 CTrackWindow::SetVerticalPositionInfo(
 	BString text)
 {
-	PRINT(("CTrackWindow::SetVerticalPositionInfo(%s)\n",
-			text.String()));
-
 	m_vPosInfoView->SetText(text.String());
 	m_vPosInfoView->Invalidate();
 }
