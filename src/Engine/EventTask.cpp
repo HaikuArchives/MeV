@@ -110,7 +110,7 @@ CEventTask::Play()
 	while (nextRepeatTime <= currentTime)
 	{
 		// Play all of the events before the repeat.
-		for (const Event *ev = (const Event *)playPos; ev != NULL; )
+		for (const CEvent *ev = (const CEvent *)playPos; ev != NULL; )
 		{
 			if (ev->Start() >= nextRepeatTime)
 				break;
@@ -142,7 +142,7 @@ CEventTask::Play()
 		targetTime = timeBase.seekTime;
 	}
 
-	for (const Event *ev = (const Event *)playPos; ev != NULL; )
+	for (const CEvent *ev = (const CEvent *)playPos; ev != NULL; )
 	{
 		long t = ev->Start() + originTime;
 
@@ -234,7 +234,7 @@ CEventTask::_repeat()
 
 		// Now, back-seek to find any events which got skipper over.
 		EventMarker	sPos( playPos );
-		const Event	*s;
+		const CEvent	*s;
 		int32		count = 0;
 
 		// Back up in sequence, until we reach either the beginning of
@@ -316,294 +316,107 @@ CEventTask::_repeat()
 
 void
 CEventTask::_stackEvent(
-	const Event &ev,
+	const CEvent &ev,
 	CEventStack &stack,
 	long origin)
 {
 	D_INTERNAL(("CEventTask::_stackEvent([%ld] %s)\n",
 				ev.Command(), ev.NameText()));
 
-	using namespace Midi;
-
-	CPlayer::ChannelState *chState = NULL;
-	CMidiDestination *dest = NULL;
-
-	Event stackedEvent(ev);
+	CEvent stackedEvent(ev);
 
 	// Make a copy of the duration field before we kick it to death (below).
-	int32 duration = stackedEvent.common.duration;
+	int32 duration = stackedEvent.common.duration - 1;
 
 	// Process a copy of the event event through the filters...
 	((CEventTrack *)track)->FilterEvent(stackedEvent);
 
 	// filter event though virtual channel table
-	if  (group.Document()->IsDefinedDest(ev.note.vChannel))
+	if (ev.HasProperty(CEvent::Prop_MIDI))
 	{
-		dest = (CMidiDestination *)group.Document()->FindDestination(ev.common.vChannel);
-		if (!dest->ReadLock(500))
-			return;
-		chState = &thePlayer.m_portInfo[0].channelStates[dest->Channel()];
-		
-		// assign actual port
-		stackedEvent.stack.actualPort = dest->Producer();
-		stackedEvent.stack.actualChannel = dest->Channel();
-		stackedEvent.stack.start -= (dest->Latency() / 1000);
+		CDestination *dest = group.Document()->FindDestination(ev.common.vChannel);
+		stackedEvent.stack.start += origin;
+		stackedEvent.stack.task = taskID;
+		if (dest->ReadLock(500))
+		{
+			dest->Stack(stackedEvent, *this, stack, duration);
+			dest->ReadUnlock();
+		}
+		return;
 	}
 	else
-	{
-		stackedEvent.stack.actualPort = NULL;
-		stackedEvent.stack.actualChannel = 0;
-	}
+	{	
+		// Modify the stack
+		stackedEvent.stack.start += origin;
+		stackedEvent.stack.task = taskID;
+		stackedEvent.stack.destination = NULL;
 
-	// Modify the stack
-	stackedEvent.stack.start += origin;
-	stackedEvent.stack.task = taskID;
-	
-	switch (ev.Command())
-	{
-		case EvtType_Note:
+		switch (ev.Command())
 		{
-			// Ignore the note event if locating
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
-				break;
-			
-			if (dest->IsMuted()) 
-				break;
-			
-			// REM: Here we would apply velocity contour.
-			// REM: Here we would do the VU meter code...
-			
-			// +++ move this to CEventTrack::FilterEvent ?
-			stackedEvent.note.pitch += transposition;
-	
-			// If pitch went out of bounds, then don't play the note.
-			// +++++ CLIPPING WOULD BE MUCH NICER!
-			if (stackedEvent.note.pitch & 0x80)
-				break;
-
-			// If there was room on the stack to push the note-off, then
-			// play the note-on
-			stackedEvent.stack.start		+= duration;
-			stackedEvent.stack.command	= EvtType_NoteOff;
-	
-			if (stack.Push( stackedEvent ))
+			case EvtType_Repeat:
 			{
-				stackedEvent.stack.start		-= duration;
-				stackedEvent.stack.command	= EvtType_Note;
-				stack.Push( stackedEvent );
-			}
-			break;
-		}
-		case EvtType_PitchBend:
-		{
-			// Play nothing if muted
-			if (dest->IsMuted())
-				break;
-			
-			// If locating, update channel state table but don't stack the event
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
-			{
-				chState->pitchBendState = ev.pitchBend.targetBend;
+				_beginRepeat(ev.Start(), ev.Duration(), ev.repeat.repeatCount);
 				break;
 			}
-	
-			if ((duration > 0) && (ev.pitchBend.updatePeriod > 0))
+			case EvtType_Sequence:
 			{
-				// Push a "start interpolating" event
-				stackedEvent.startInterpolate.command = EvtType_StartInterpolate;
-				stackedEvent.startInterpolate.interpolationType = Interpolation_PitchBend;
-				stackedEvent.startInterpolate.startValue = ev.pitchBend.startBend;
-				stackedEvent.startInterpolate.targetValue = ev.pitchBend.targetBend;
-				stackedEvent.SetStart(stackedEvent.stack.start);
-				stack.Push(stackedEvent);
+				CTrack *tr = group.doc->FindTrack(ev.sequence.sequence);
+				CPlaybackTask *p;
 	
-				// Push an "interpolation" event
-				stackedEvent.interpolate.command = EvtType_Interpolate;
-				stackedEvent.interpolate.interpolationType = Interpolation_PitchBend;
-				stackedEvent.interpolate.duration = duration;
-				stackedEvent.interpolate.timeStep = ev.pitchBend.updatePeriod;
-				stackedEvent.SetStart(stackedEvent.stack.start + ev.pitchBend.updatePeriod);
-				stack.Push(stackedEvent);
-			}
-			else
-			{
-				// Just push an ordinary pitch bend event...
-				stack.Push(stackedEvent);
-			}
-			break;
-		}
-		case EvtType_ProgramChange:
-		{
-			// Play nothing if muted
-			if (dest->IsMuted())
-				break;
+				if (tr == NULL)
+					break;
 	
-			// If locating, update channel state table but don't stack the event
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
-			{
-				MIDIDeviceInfo *mdi = ((CMeVApp *)be_app)->LookupInstrument(0, dest->Channel());
-				// Only update the channel bank state if this device supports banks
-				if ((mdi != NULL)
-				 && (mdi->SupportsProgramBanks())
-				 && (ev.programChange.bankMSB < 128)
-				 && (ev.programChange.bankLSB < 128))
+				StSubjectLock lock(*tr, Lock_Shared);
+				for (p = this; p != NULL; p = p->Parent())
 				{
-					// Update the channel state
-					chState->ctlStates[0] = ev.programChange.bankMSB;
-					chState->ctlStates[32] = ev.programChange.bankLSB;
+					// Don't allow tracks to call each other recursively.
+					if (p->Track() == tr)
+						return;
 				}
-	
-				chState->program = ev.programChange.program;
-				break;
-			}
-			
-			stack.Push(stackedEvent);
-			break;
-		}
-		case EvtType_ChannelATouch:
-		{
-			// Play nothing if muted
-			if (dest->IsMuted())
-				break;
-	
-				// If locating, update channel state table but don't stack the event
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
-			{
-				chState->channelAfterTouch = ev.aTouch.value;
-				break;
-			}
-
-			stack.Push(stackedEvent);
-			break;
-		}
-		case EvtType_Controller:
-		{
-			// Play nothing if muted
-			if (dest->IsMuted())
-				break;
-		
-			// REM: Data entry controls should probably be passed through, since they
-			// can't be summarized in a simple way.
-			// (Actually, the ideal would be to aggregate data entry -- but that's a job for
-			// another time and another event type.)
-
-			// If locating, update channel state table but don't stack the event
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
-			{
-				uint8 lsbIndex;
-
-				// Check if it's a 16-bit controller
-				lsbIndex = controllerInfoTable[ev.controlChange.controller].LSBNumber;
-		
-				// Otherwise, it's an 8-bit controller
-				if ((lsbIndex == ev.controlChange.controller)
-				 || (lsbIndex > 127))
-				{
-					chState->ctlStates[ev.controlChange.controller] = ev.controlChange.MSB;
-				}
-				else
-				{
-					if (ev.controlChange.MSB < 128)
-					{
-						chState->ctlStates[ev.controlChange.controller] = ev.controlChange.MSB;
-						chState->ctlStates[lsbIndex] = 0;
-					}
-
-					if (ev.controlChange.LSB < 128)
-					{
-						chState->ctlStates[lsbIndex] = ev.controlChange.LSB;
-					}
-				}
-				break;
-			}
-	
-			stack.Push(stackedEvent);
-			break;
-		}
-		case EvtType_PolyATouch:
-		{
-			// Ignore the event if locating
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
-				break;
-
-			// Play nothing if muted
-			if (dest->IsMuted())
-				break;
-	
-			stack.Push(stackedEvent);
-			break;
-		}
-		case EvtType_SysEx:
-		{
-			stack.Push(stackedEvent);
-			break;
-		}
-		case EvtType_Repeat:
-		{
-			_beginRepeat(ev.Start(), ev.Duration(), ev.repeat.repeatCount);
-			break;
-		}
-		case EvtType_Sequence:
-		{
-			CTrack *tr = group.doc->FindTrack(ev.sequence.sequence);
-			CPlaybackTask *p;
-
-			if (tr == NULL)
-				break;
-
-			StSubjectLock lock(*tr, Lock_Shared);
-			for (p = this; p != NULL; p = p->Parent())
-			{
-				// Don't allow tracks to call each other recursively.
-				if (p->Track() == tr)
-					return;
-			}
-			
-			CEventTrack	*tk = dynamic_cast<CEventTrack *>(tr);
-			
-			// If it's an event track and not empty or muted
-			if ((tk != NULL) && !tk->Events().IsEmpty()
-			 && !tk->Muted() && !tk->MutedFromSolo())
-			{
-				CEventTask *th;
-				int32 start = stackedEvent.stack.start;
-				int32 stop = start + duration;
 				
-				// Launch based on clock type.
-				if (tr->ClockType() == ClockType_Real)
+				CEventTrack	*tk = dynamic_cast<CEventTrack *>(tr);
+				
+				// If it's an event track and not empty or muted
+				if ((tk != NULL) && !tk->Events().IsEmpty()
+				 && !tk->Muted() && !tk->MutedFromSolo())
 				{
-					if (track->ClockType() == ClockType_Metered)
-					{
-						start = group.tempo.ConvertMeteredToReal(start);
-						stop = group.doc->TempoMap().ConvertMeteredToReal(stop);
-						duration = stop - start;
-					}
+					CEventTask *th;
+					int32 start = stackedEvent.stack.start;
+					int32 stop = start + duration;
 					
-					th = new CRealClockEventTask(group, tk, this, start,
-												 duration);
-					th->interruptable = (ev.sequence.flags & Event::Seq_Interruptable);
-				}
-				else
-				{
-					if (track->ClockType() == ClockType_Real)
+					// Launch based on clock type.
+					if (tr->ClockType() == ClockType_Real)
 					{
-						start = group.tempo.ConvertRealToMetered(start);
-						stop = group.doc->TempoMap().ConvertRealToMetered(stop);
-						duration = stop - start;
+						if (track->ClockType() == ClockType_Metered)
+						{
+							start = group.tempo.ConvertMeteredToReal(start);
+							stop = group.doc->TempoMap().ConvertMeteredToReal(stop);
+							duration = stop - start;
+						}
+						
+						th = new CRealClockEventTask(group, tk, this, start,
+													 duration);
+						th->interruptable = (ev.sequence.flags & CEvent::Seq_Interruptable);
 					}
-				
-					th = new CMeteredClockEventTask(group, tk, this, start,
-													duration);
-					th->interruptable = (ev.sequence.flags & Event::Seq_Interruptable);
+					else
+					{
+						if (track->ClockType() == ClockType_Real)
+						{
+							start = group.tempo.ConvertRealToMetered(start);
+							stop = group.doc->TempoMap().ConvertRealToMetered(stop);
+							duration = stop - start;
+						}
+					
+						th = new CMeteredClockEventTask(group, tk, this, start,
+														duration);
+						th->interruptable = (ev.sequence.flags & CEvent::Seq_Interruptable);
+					}
+					th->transposition = ev.sequence.transposition;
 				}
-				th->transposition = ev.sequence.transposition;
+				break;
 			}
-			break;
 		}
 	}
-
-	if (dest != NULL)
-		dest->ReadUnlock();
 }
 
 // ---------------------------------------------------------------------------

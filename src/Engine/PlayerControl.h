@@ -129,7 +129,7 @@ public:							// Operations
 									CMeVDoc	*doc,
 									enum E_EventAttribute feedbackAttribute,
 									uint8 attributeValue,
-									const Event *demoEvent);
+									const CEvent *demoEvent);
 		
 	static void					InitPlayer();
 

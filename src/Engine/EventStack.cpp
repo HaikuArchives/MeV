@@ -17,12 +17,21 @@
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
-CEventStack::CEventStack()
+CEventStack::CEventStack(
+	long capacity)
 {
-	D_ALLOC(("CEventStack::CEventStack()\n"));
+	D_ALLOC(("CEventStack::CEventStack(%ld)\n", capacity));
 
+	m_stack = new CEvent[capacity];
 	m_current = m_stack;
-	m_max = &m_stack[sizeof(m_stack) / sizeof(Event)];
+	m_max = &m_stack[capacity];
+}
+
+CEventStack::~CEventStack()
+{
+	D_ALLOC(("CEventStack::~CEventStack()\n"));
+	
+	delete [] m_stack;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,7 +67,7 @@ CEventStack::NextTime(
 
 bool
 CEventStack::Push(
-	const Event &ev)
+	const CEvent &ev)
 {
 	D_OPERATION(("CEventStack::Push()\n"));
 
@@ -73,13 +82,13 @@ CEventStack::Push(
 	// While search pointer is greater than bottom of stack and the
 	// element being displaced is earlier, then bubble old event up
 	// and continue searching.
-	Event *search = m_current;
+	CEvent *search = m_current;
 	while ((search > m_stack) && IsTimeGreater(search[-1].stack.start, ev.stack.start))
 		search--;
 
 	if (search < m_current)
-		Event::Relocate(search + 1, search, m_current - search);
-	Event::Construct(search, &ev, 1);
+		CEvent::Relocate(search + 1, search, m_current - search);
+	CEvent::Construct(search, &ev, 1);
 	m_current++;
 
 	return true;
@@ -87,7 +96,7 @@ CEventStack::Push(
 
 bool
 CEventStack::Push(
-	const Event &ev,
+	const CEvent &ev,
 	long time)
 {
 	D_OPERATION(("CEventStack::Push(time)\n"));
@@ -103,13 +112,13 @@ CEventStack::Push(
 	// While search pointer is greater than bottom of stack and the
 	// element being displaced is earlier, then bubble old event up
 	// and continue searching.
-	Event *search = m_current;
+	CEvent *search = m_current;
 	while ((search > m_stack) && IsTimeGreater(search[-1].stack.start, time))
 		search--;
 
 	if (search < m_current)
-		Event::Relocate(search + 1, search, m_current - search);
-	Event::Construct(search, &ev, 1);
+		CEvent::Relocate(search + 1, search, m_current - search);
+	CEvent::Construct(search, &ev, 1);
 	search->stack.start = time;
 	m_current++;
 
@@ -118,7 +127,7 @@ CEventStack::Push(
 
 bool
 CEventStack::PushList(
-	Event *list,
+	CEvent *list,
 	int16 count,
 	long startTime)
 {
@@ -141,7 +150,7 @@ CEventStack::PushList(
 
 bool
 CEventStack::Pop(
-	Event &ev)
+	CEvent &ev)
 {
 	D_OPERATION(("CEventStack::Pop()\n"));
 
@@ -152,15 +161,15 @@ CEventStack::Pop(
 		return false;
 
 	// pop one item and return it.
-	Event::Destruct(&ev, 1);
-	Event::Relocate(&ev, --m_current, 1);
+	CEvent::Destruct(&ev, 1);
+	CEvent::Relocate(&ev, --m_current, 1);
 
 	return true;
 }
 
 bool
 CEventStack::Pop(
-	Event &ev,
+	CEvent &ev,
 	long time)
 {
 	D_OPERATION(("CEventStack::Pop(time)\n"));
@@ -173,8 +182,8 @@ CEventStack::Pop(
 		return false;
 
 	// pop one item and return it.
-	Event::Destruct(&ev, 1);
-	Event::Relocate(&ev, --m_current, 1);
+	CEvent::Destruct(&ev, 1);
+	CEvent::Relocate(&ev, --m_current, 1);
 
 	return true;
 }
@@ -195,12 +204,12 @@ CEventStackIterator::~CEventStackIterator()
 		m_read = m_stack.m_current;
 	if ((m_read > m_write) && (m_stack.m_current > m_read))
 	{
-		Event::Relocate(m_write, m_read, m_stack.m_current - m_read);
+		CEvent::Relocate(m_write, m_read, m_stack.m_current - m_read);
 		m_stack.m_current = m_read;
 	}
 }
 
-Event *
+CEvent *
 CEventStackIterator::Current() const
 {
 	return (m_read < m_stack.m_current) ? m_read : NULL;
@@ -213,7 +222,7 @@ CEventStackIterator::Next()
 		return false;
 
 	if (m_read > m_write)
-		Event::Relocate(m_write, m_read, 1);
+		CEvent::Relocate(m_write, m_read, 1);
 
 	m_read++;
 	m_write++;
@@ -225,7 +234,7 @@ CEventStackIterator::Remove()
 {
 	if (m_read < m_stack.m_current)
 	{
-		Event::Destruct(m_read, 1);
+		CEvent::Destruct(m_read, 1);
 		m_read++;
 	}
 }

@@ -73,7 +73,7 @@ public:
 	EventOp( MeVPlugIn *inCreator );
 
 		/**	The function call operater applies the function to the event. */
-	virtual void operator()( Event &, TClockType ) = 0;
+	virtual void operator()( CEvent &, TClockType ) = 0;
 	
 		/**	Returns the name of the plug-in that created this event operator.
 			This is used for archiving the state of the operator.

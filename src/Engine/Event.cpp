@@ -6,55 +6,57 @@
 #include "Event.h"
 #include "Destination.h"
 #include "MathUtils.h"
+
 #include <stdio.h>
+
 /** ======================================================================= **
-	Event Members
+	CEvent Members
  ** ======================================================================= **/
 
 // ---------------------------------------------------------------------------
-// Event Properties Table ~~~EVENTLIST
+// CEvent Properties Table ~~~EVENTLIST
 
-unsigned char Event::propTable[ EvtType_Count ];
+unsigned char CEvent::propTable[ EvtType_Count ];
 
 // ---------------------------------------------------------------------------
-// Event Names Table ~~~EVENTLIST
+// CEvent Names Table ~~~EVENTLIST
 
-const char *Event::nameTable[ EvtType_Count ];
+const char *CEvent::nameTable[ EvtType_Count ];
 
 // ---------------------------------------------------------------------------
 // Define table of events
 
-inline void Event::DefineEvent( enum E_EventType type, const char *name, int32 properties )
+inline void CEvent::DefineEvent( enum E_EventType type, const char *name, int32 properties )
 {
 	propTable[ type ] = properties;
 	nameTable[ type ] = name;
 }
 
-#define MIDI_FLAGS (Event::Prop_Channel | Event::Prop_MIDI)
-#define MIDI_DURATION_FLAGS (Event::Prop_Channel | Event::Prop_Duration | Event::Prop_MIDI)
+#define MIDI_FLAGS (CEvent::Prop_Channel | CEvent::Prop_MIDI)
+#define MIDI_DURATION_FLAGS (CEvent::Prop_Channel | CEvent::Prop_Duration | CEvent::Prop_MIDI)
 
-void Event::InitTables()
+void CEvent::InitTables()
 {
 	DefineEvent(EvtType_Note, "Note", MIDI_DURATION_FLAGS );
 	DefineEvent(EvtType_NoteOff, "Note Off", MIDI_FLAGS );
 	DefineEvent(EvtType_ChannelATouch, "Channel Aftertouch", MIDI_DURATION_FLAGS );
 	DefineEvent(EvtType_PolyATouch, "Polyphonic Aftertouch", MIDI_FLAGS );
 	DefineEvent(EvtType_Controller,	 "Control Change", MIDI_DURATION_FLAGS );
-	DefineEvent(EvtType_ProgramChange, "Program Change", MIDI_FLAGS | Event::Prop_VertPos );
+	DefineEvent(EvtType_ProgramChange, "Program Change", MIDI_FLAGS | CEvent::Prop_VertPos );
 	DefineEvent(EvtType_PitchBend,	 "Pitch Bend", MIDI_DURATION_FLAGS );
 	DefineEvent(EvtType_SysEx, "System Exclusive", 
-		Event::Prop_ExtraData	| Event::Prop_MIDI	| Event::Prop_VertPos );
+		CEvent::Prop_ExtraData	| CEvent::Prop_MIDI	| CEvent::Prop_VertPos );
 	DefineEvent(EvtType_End, "End", 0 );
-	DefineEvent(EvtType_Text, "Text", Event::Prop_ExtraData | Event::Prop_VertPos );
-	DefineEvent(EvtType_UserEvent, "User Event", Event::Prop_ExtraData );
-	DefineEvent(EvtType_Repeat, "Repeat", Event::Prop_Duration );
-	DefineEvent(EvtType_Sequence, "Part", Event::Prop_Duration | Event::Prop_VertPos );
-	DefineEvent(EvtType_Branch, "Conditional Branch", Event::Prop_VertPos );
-	DefineEvent(EvtType_ChannelMute, "Channel Mute", Event::Prop_Duration );
+	DefineEvent(EvtType_Text, "Text", CEvent::Prop_ExtraData | CEvent::Prop_VertPos );
+	DefineEvent(EvtType_UserEvent, "User Event", CEvent::Prop_ExtraData );
+	DefineEvent(EvtType_Repeat, "Repeat", CEvent::Prop_Duration );
+	DefineEvent(EvtType_Sequence, "Part", CEvent::Prop_Duration | CEvent::Prop_VertPos );
+	DefineEvent(EvtType_Branch, "Conditional Branch", CEvent::Prop_VertPos );
+	DefineEvent(EvtType_ChannelMute, "Channel Mute", CEvent::Prop_Duration );
 	DefineEvent(EvtType_ChannelTranspose, "Channel Tranpose", 0 );
-	DefineEvent(EvtType_ChannelVolume, 	"Channel Volume", Event::Prop_VertPos );
-	DefineEvent(EvtType_MuteTrack, 	"Mute Part", Event::Prop_Duration );
-	DefineEvent(EvtType_Tempo, "Tempo", Event::Prop_Duration | Event::Prop_VertPos );
+	DefineEvent(EvtType_ChannelVolume, 	"Channel Volume", CEvent::Prop_VertPos );
+	DefineEvent(EvtType_MuteTrack, 	"Mute Part", CEvent::Prop_Duration );
+	DefineEvent(EvtType_Tempo, "Tempo", CEvent::Prop_Duration | CEvent::Prop_VertPos );
 	DefineEvent(EvtType_TimeSig, "Time Signature", 0 );
 	DefineEvent(EvtType_TaskMarker, "Task Marker", 0);
 };
@@ -127,7 +129,7 @@ UEventAttributeTable::EvAttr UEventAttributeTable::attrTable[ EvAttr_Count ] = {
 // ---------------------------------------------------------------------------
 // A function to iterate through the event-specific attributes
 
-enum E_EventAttribute Event::QueryAttribute( int32 index ) const
+enum E_EventAttribute CEvent::QueryAttribute( int32 index ) const
 {
 	switch (Command()) {
 	case EvtType_Note:
@@ -277,7 +279,7 @@ enum E_EventAttribute Event::QueryAttribute( int32 index ) const
 // ---------------------------------------------------------------------------
 // Returns true if the event possesses the attribute.
 
-bool Event::HasAttribute( enum E_EventAttribute inAttr ) const
+bool CEvent::HasAttribute( enum E_EventAttribute inAttr ) const
 {
 	uint8		cmd = Command();
 
@@ -378,7 +380,7 @@ bool Event::HasAttribute( enum E_EventAttribute inAttr ) const
 // ---------------------------------------------------------------------------
 // Get the value of an attribute.
 
-int32 Event::GetAttribute( enum E_EventAttribute inAttr ) const
+int32 CEvent::GetAttribute( enum E_EventAttribute inAttr ) const
 {
 	uint8		cmd = Command();
 
@@ -506,7 +508,7 @@ int32 Event::GetAttribute( enum E_EventAttribute inAttr ) const
 // ---------------------------------------------------------------------------
 // Returns true if the event possesses the attribute.
 
-bool Event::SetAttribute( enum E_EventAttribute inAttr, int32 inValue )
+bool CEvent::SetAttribute( enum E_EventAttribute inAttr, int32 inValue )
 {
 	uint8		cmd = Command();
 
@@ -725,7 +727,7 @@ inline int Quantize16( int length ) { return (length + 15) & ~15; }
 // Function to allocate and deallocate EventExtra data.
 // Does not preserve the data in the event.
 
-void Event::ExtDataPtr::SetLength( size_t length )
+void CEvent::ExtDataPtr::SetLength( size_t length )
 {
 		// If we're deleting the extra data
 	if (length == 0)

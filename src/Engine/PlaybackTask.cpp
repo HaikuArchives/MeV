@@ -93,6 +93,15 @@ CPlaybackTask::~CPlaybackTask()
 }
 
 // ---------------------------------------------------------------------------
+// Accessors
+
+bool
+CPlaybackTask::IsLocating() const
+{
+	return group.flags & CPlaybackTaskGroup::Clock_Locating;
+}
+
+// ---------------------------------------------------------------------------
 // Operations
 
 void
@@ -102,7 +111,7 @@ CPlaybackTask::ReQueue(
 {
 	D_OPERATION(("CPlaybackTask::ReQueue()\n"));
 
-	Event ev;
+	CEvent ev;
 	ev.task.start = time;
 	ev.task.taskPtr	= this;
 	ev.task.command	= EvtType_TaskMarker;

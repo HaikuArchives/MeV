@@ -74,7 +74,7 @@ CContinuousValueEditor::Draw(
 	EventMarker marker(Track()->Events());
 
 	// For each event that overlaps the current view, draw it.
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+	for (const CEvent *ev = marker.FirstItemInRange(startTime, stopTime);
 		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{

@@ -333,7 +333,7 @@ CInspectorWindow::SubjectUpdated(
 	else
 	{
 		StSubjectLock trackLock(*m_track, Lock_Shared);
-		const Event *event = m_track->CurrentEvent();
+		const CEvent *event = m_track->CurrentEvent();
 		if (!event)
 		{
 			Clear();

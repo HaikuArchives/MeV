@@ -5,8 +5,8 @@
 #include "MidiModule.h"
 
 #include "InternalSynth.h"
+#include "MeVDoc.h"
 #include "MidiDestination.h"
-#include "ReconnectingMidiProducer.h"
 
 // Application Kit
 #include <Messenger.h>
@@ -14,6 +14,7 @@
 #include <Bitmap.h>
 // Midi Kit
 #include <MidiConsumer.h>
+#include <MidiProducer.h>
 #include <MidiRoster.h>
 // Support Kit
 #include <Debug.h>
@@ -23,7 +24,7 @@
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)	// Constructor/Destructor
 #define D_ACCESS(x) //PRINT(x)	// Accessors
-#define D_HOOK(x) //PRINT(x)	// Hook Functions
+#define D_HOOK(x) //PRINT(x)	// CMeVModule Implementation
 #define D_MESSAGE(x) //PRINT(x)	// MessageReceived()
 #define D_ROSTER(x) //PRINT(x)	// BMidiRoster Interaction
 
@@ -272,17 +273,14 @@ CMidiModule::CreateDestination(
 {
 	D_HOOK(("CMidiModule::CreateDestination()\n"));
 
+	CDestination *dest;
 	if ((id == NULL) || (name == NULL))
-		return new CMidiDestination(document);
+		dest = new CMidiDestination(document);
 	else
-		return new CMidiDestination(*id, name, document);
-}
+		dest = new CMidiDestination(*id, name, document);
+	dest->AddObserver(this);
 
-void
-CMidiModule::DocumentOpened(
-	CMeVDoc *document)
-{
-	D_HOOK(("CMidiModule::DocumentOpened()\n"));
+	return dest;
 }
 
 status_t
@@ -407,6 +405,8 @@ bool
 CMidiModule::SubjectReleased(
 	CObservable *subject)
 {
+	D_HOOK(("CMidiModule::SubjectReleased()\n"));	
+
 	return false;
 }
 
@@ -414,6 +414,7 @@ void
 CMidiModule::SubjectUpdated(
 	BMessage *message)
 {
+	D_HOOK(("CMidiModule::SubjectUpdated()\n"));	
 }
 
 // ---------------------------------------------------------------------------

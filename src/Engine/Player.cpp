@@ -19,10 +19,9 @@
 // Support Kit
 #include <Debug.h>
 
-#define D_CONTROL(x) //PRINT (x)
-#define D_SYNTH(x) //PRINT (x)
-#define D_EVENT(x) //PRINT (x)
-#define D_WARNING(x) //PRINT (x)
+#define D_CONTROL(x) //PRINT(x)
+#define D_EVENT(x) //PRINT(x)
+#define D_WARNING(x) //PRINT(x)
 
 const int32			maxSleep = 30;
 
@@ -32,18 +31,9 @@ CPlayer				thePlayer;
 // Constructor/Destructor
 
 CPlayer::CPlayer()
+	:	m_songGroup(NULL),
+		m_wildGroup(NULL)
 {
-	for (uint32 i = 0; i < Max_MidiPorts; i++)
-	{
-		m_ports[i] = NULL;
-		strcpy(m_portInfo[i].portName, "");
-		strcpy(m_portInfo[i].devString, "");
-	}
-
-	InitChannelStates();
-
-	songGroup = NULL;
-	wildGroup = NULL;
 }
 
 CPlayer::~CPlayer()
@@ -55,14 +45,7 @@ CPlayer::~CPlayer()
 	// Delete song contexts
 	while ((group = (CPlaybackTaskGroup *)m_groupList.First()))
 		delete group;
-	songGroup = wildGroup = NULL;
-
-	// release ports
-	// REM: Commented out because code crashes...!
-	for (uint32 i = 0; i < Max_MidiPorts; i++)
-	{
-		m_ports[i]->Release();
-	}
+	m_songGroup = m_wildGroup = NULL;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,8 +55,8 @@ CPlaybackTaskGroup *
 CPlayer::FindGroup(
 	CMeVDoc *doc)
 {
-	if ((doc != NULL) && (songGroup->doc == doc))
-		return songGroup;
+	if ((doc != NULL) && (m_songGroup->doc == doc))
+		return m_songGroup;
 	return NULL;
 }
 
@@ -93,45 +76,32 @@ CPlayer::Initialize()
 
 	// Set up a context for playing songs
 	// REM: Should pass the document pointer as parameter
-	songGroup = new CPlaybackTaskGroup( NULL );
-	D_CONTROL((">>>>> songGroup: %p\n", songGroup));
+	m_songGroup = new CPlaybackTaskGroup( NULL );
+	D_CONTROL((">>>>> m_songGroup: %p\n", m_songGroup));
 
 	// Set up a context for miscellaneous note-playing
 	// REM: wildContext->setTime( m_internalTimerTick, 0 );
-	wildGroup = new CPlaybackTaskGroup( NULL );
-	D_CONTROL((">>>>> wildGroup: %p\n", wildGroup));
+	m_wildGroup = new CPlaybackTaskGroup( NULL );
+	D_CONTROL((">>>>> m_wildGroup: %p\n", m_wildGroup));
 
-		// Set up wildContext with current time, and start it.
-	wildGroup->origin = 0; // system_time() / 1000;
-	wildGroup->real.time = 0;
-	wildGroup->metered.time = 0;
-		// set context to "running always"
-	wildGroup->flags = CPlaybackTaskGroup::Clock_Continuous;
+	// Set up wildContext with current time, and start it.
+	m_wildGroup->origin = 0;
+	m_wildGroup->real.time = 0;
+	m_wildGroup->metered.time = 0;
+	// set context to "running always"
+	m_wildGroup->flags = CPlaybackTaskGroup::Clock_Continuous;
 
 	resume_thread(m_thread);
 }
 
-void
-CPlayer::InitChannelStates()
-{
-	// Initialize all channel states...
-	for (uint32 i = 0; i < Max_MidiPorts; i++)
-	{
-		for (int j = 0; j < 16; j++)
-		{
-			memset(&m_portInfo[i].channelStates[j], 0xff, sizeof(ChannelState));
-		}
-	}
-}
-
 bool
 CPlayer::QueueEvents(
-	Event *eventList,
+	CEvent *eventList,
 	uint32 count,
 	long startTime)
 {
 	// Note: Locking not needed since stack has it's own lock.
-	if (wildGroup->real.stack.PushList(eventList, count, startTime))
+	if (m_wildGroup->real.stack.PushList(eventList, count, startTime))
 		return true;
 
 	return false;
@@ -139,166 +109,10 @@ CPlayer::QueueEvents(
 
 bool 
 CPlayer::QueueImmediate(
-	Event *eventList,
+	CEvent *eventList,
 	uint32 count)
 {
 	return QueueEvents(eventList, count, uint32(system_time() / 1000LL));
-}
-
-void
-CPlayer::SendEvent(
-	const Event &ev,
-	BMidiLocalProducer *port,
-	uchar channel,
-	bigtime_t time)
-{
-	if (port == NULL)
-		return;
-
-	// Attempt to send the event.
-	switch (ev.Command())
-	{
-		case EvtType_Note:
-		{
-			D_EVENT(("SendEvent(NoteOn)\n"));
-			port->SprayNoteOn(channel, ev.note.pitch,
-							  ev.note.attackVelocity, time);
-			break;
-		}
-		case EvtType_NoteOff:
-		{
-			D_EVENT(("SendEvent(NoteOff)\n"));
-			port->SprayNoteOff(channel, ev.note.pitch,
-							   ev.note.releaseVelocity, time);
-			break;
-		}
-		case EvtType_ChannelATouch:
-		{
-			D_EVENT(("SendEvent(ChannelATouch)\n"));
-
-			ChannelState *chState = &m_portInfo[0].channelStates[0];
-			if (chState->channelAfterTouch != ev.aTouch.value)
-			{
-				port->SprayChannelPressure(channel, ev.aTouch.value,
-										   time);
-				chState->channelAfterTouch = ev.aTouch.value;
-			}
-			break;
-		}
-		case EvtType_PolyATouch:
-		{
-			D_EVENT(("SendEvent(PolyATouch)\n"));
-			port->SprayKeyPressure(channel, ev.aTouch.pitch,
-								   ev.aTouch.value, time);
-			break;
-		}
-		case EvtType_Controller:
-		{
-			D_EVENT(("SendEvent(Controller)\n"));
-	
-			ChannelState *chState = &m_portInfo[0].channelStates[0];
-			// Check if it's a 16-bit controller
-			uint8 lsbIndex = controllerInfoTable[ev.controlChange.controller].LSBNumber;
-			if ((lsbIndex == ev.controlChange.controller)
-			 || (lsbIndex > 127))
-			{
-				// It's an 8-bit controller.
-				if (ev.controlChange.MSB != chState->ctlStates[ev.controlChange.controller])
-				{
-					port->SprayControlChange(channel, ev.controlChange.controller,
-											 ev.controlChange.MSB, time);
-					chState->ctlStates[ev.controlChange.controller] = ev.controlChange.MSB;
-				}
-			}
-			else
-			{
-				// Handle the MSB first...if the MSB changed, then update LSB state as well
-				if ((ev.controlChange.MSB != chState->ctlStates[ev.controlChange.controller])
-				 && (ev.controlChange.MSB < 128))
-				{
-					port->SprayControlChange(channel,
-											 ev.controlChange.controller,
-											 ev.controlChange.MSB, time);
-					chState->ctlStates[ev.controlChange.controller] = ev.controlChange.MSB;
-					chState->ctlStates[lsbIndex] = 0;
-				}
-
-				// Now deal with the LSB.
-				if ((ev.controlChange.LSB != chState->ctlStates[lsbIndex])
-				 && (ev.controlChange.LSB < 128))
-				{
-					port->SprayControlChange(channel, lsbIndex,
-											 ev.controlChange.LSB, time);
-					chState->ctlStates[lsbIndex] = ev.controlChange.LSB;
-				}
-			}
-			break;
-		}
-		case EvtType_ProgramChange:
-		{
-			D_EVENT(("SendEvent(ProgramChange)\n"));
-
-			ChannelState *chState = &m_portInfo[0].channelStates[0];
-			// Only send bank changes if the instrument understands such...
-			// And only if this event has a valid bank number
-			MIDIDeviceInfo *mdi = NULL;
-			if (mdi != NULL && mdi->SupportsProgramBanks())
-			{
-				// Don't send a bank change if the instrument is already
-				// set to that bank
-				if ((ev.programChange.bankMSB < 128)
-				 && (ev.programChange.bankLSB < 128)
-				 && ((chState->ctlStates[0] != ev.programChange.bankMSB)
-				  || (chState->ctlStates[32] != ev.programChange.bankLSB)))
-				{
-					// Both bank bytes must always be sent...
-					// Send a bank change MSB message
-					port->SprayControlChange(channel, 0x00,
-											 ev.programChange.bankMSB,
-											 time);
-					// Send a bank change LSB message
-					port->SprayControlChange(channel, 0x20,
-											 ev.programChange.bankLSB,
-											 time);
-					// Update the channel state
-					chState->ctlStates[0] = ev.programChange.bankMSB;
-					chState->ctlStates[32] = ev.programChange.bankLSB;
-				}
-			}
-			
-			// Always send a program change, regardless...
-			port->SprayProgramChange(channel, ev.programChange.program,
-									 time);
-			chState->program = ev.programChange.program;
-			break;
-		}	
-		case EvtType_PitchBend:
-		{
-			D_EVENT(("SendEvent(PitchBend)\n"));
-	
-			ChannelState *chState = &m_portInfo[0].channelStates[0];
-			// Don't send un-needed pitch-bends
-			if (chState->pitchBendState != ev.pitchBend.targetBend)
-			{
-				port->SprayPitchBend(channel, ev.pitchBend.targetBend & 0x7f,
-									 ev.pitchBend.targetBend >> 7, time);
-				chState->pitchBendState = ev.pitchBend.targetBend;
-			}
-			break;
-		}
-		case EvtType_SysEx:
-		{
-			D_EVENT(("SendEvent(SysEx)\n"));
-	
-			void *data = ev.ExtendedData();
-			int32 size = ev.ExtendedDataSize();	
-			if ((data != NULL) && (size > 0))
-			{
-				port->SpraySystemExclusive(data, size, time);
-			}
-			break;
-		}
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -370,9 +184,7 @@ CPlayer::ControlThread()
 
 					if (args.document == NULL)
 						break;
-					songGroup->doc = args.document;
-					// Reset all channel state records...
-					InitChannelStates();
+					m_songGroup->doc = args.document;
 	
 					if ((args.trackID >= 0) && (args.trackID <= 1))
 					{
@@ -380,12 +192,12 @@ CPlayer::ControlThread()
 						CTrack *realTrack = args.document->FindTrack(1);
 						if ((meterTrack != NULL) && (realTrack != NULL))
 						{	
-							songGroup->Start(meterTrack, realTrack,
-											 args.locTime,
-											 (enum ELocateTarget)args.locateTarget,
-											 args.duration,
-											 (enum ESyncType)args.syncType,
-											 args.options);
+							m_songGroup->Start(meterTrack, realTrack,
+											   args.locTime,
+											   (enum ELocateTarget)args.locateTarget,
+											   args.duration,
+											   (enum ESyncType)args.syncType,
+											   args.options);
 						}
 					}
 					else
@@ -393,12 +205,12 @@ CPlayer::ControlThread()
 						CTrack	*track = args.document->FindTrack(args.trackID);
 						if (track != NULL)
 						{	
-							songGroup->Start(track, NULL,
-											 args.locTime,
-											 (enum ELocateTarget)args.locateTarget,
-											 args.duration,
-											 (enum ESyncType)args.syncType,
-											 args.options);
+							m_songGroup->Start(track, NULL,
+											   args.locTime,
+											   (enum ELocateTarget)args.locateTarget,
+											   args.duration,
+											   (enum ESyncType)args.syncType,
+											   args.options);
 						}
 					}
 					break;
@@ -409,8 +221,8 @@ CPlayer::ControlThread()
 
 					if (args.document == NULL)
 						break;
-					songGroup->flags |= CPlaybackTaskGroup::Clock_Stopped;
-					songGroup->FlushNotes();
+					m_songGroup->flags |= CPlaybackTaskGroup::Clock_Stopped;
+					m_songGroup->FlushNotes();
 					break;
 				}	
 				case Command_Pause:

@@ -245,8 +245,9 @@ CMeVDoc::ShowWindow(
 	else if (!show)
 	{
 		m_windowState[which].Close();
-		return NULL;
 	}
+
+	return NULL;
 }
 
 bool
@@ -774,7 +775,7 @@ CMeVDoc::_readTrack(
 	uint32 type,
 	CIFFReader &reader)
 {
-	D_SERIALIZE(("CMeVDoc::_readEnvironment()\n"));
+	D_SERIALIZE(("CMeVDoc::_readTrack()\n"));
 
 	CTrack *track;
 	if (type == FMasterRealTrack)

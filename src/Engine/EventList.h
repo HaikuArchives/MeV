@@ -52,11 +52,11 @@ class EventListUndoAction;
 
 	// A block holding a list of events
 
-class EventBlock : public ItemBlock<Event,128>
+class EventBlock : public ItemBlock<CEvent,128>
 {
 	friend class		EventList;
 	friend class		EventMarker;
-	friend class		ItemList<EventBlock,Event>;
+	friend class		ItemList<EventBlock,CEvent>;
 
 private:
 		// This field is set to the stop time of the event which has the last
@@ -102,7 +102,7 @@ public:
 	}
 };
 
-class EventList : public ItemList<EventBlock,Event> {
+class EventList : public ItemList<EventBlock,CEvent> {
 	friend class EventMarker;
 
 		// Override functions in itemList so that we can properly
@@ -122,10 +122,10 @@ class EventList : public ItemList<EventBlock,Event> {
 
 
 	EventBlock *FirstBlock( void ) const
-		{ return (EventBlock *)ItemList<EventBlock,Event>::FirstBlock(); }
+		{ return (EventBlock *)ItemList<EventBlock,CEvent>::FirstBlock(); }
 
 	EventBlock *LastBlock( void ) const
-		{ return (EventBlock *)ItemList<EventBlock,Event>::LastBlock(); }
+		{ return (EventBlock *)ItemList<EventBlock,CEvent>::LastBlock(); }
 
 		// Notifies subclasses that a block has changed. This can be used in case
 		// of extra information associated with a block that needs to be changed.
@@ -139,7 +139,7 @@ public:
 	long MaxTime( void );
 
 		// Merge a list of sorted events into the EventList
-	bool Merge( Event *inEventArray, long inEventCount, EventListUndoAction *inAction );
+	bool Merge( CEvent *inEventArray, long inEventCount, EventListUndoAction *inAction );
 
 		// Extract all selected events from a sequence and place into linear buffer.
 		// Linear buffer is allocated by this function, you must delete it.
@@ -158,7 +158,7 @@ public:
 		/** Append an event to a sequence, matching with earlier events if needed...
 			The list must be sorted....
 		*/
-	bool AppendRawEvents(	Event *inEventArray,
+	bool AppendRawEvents(	CEvent *inEventArray,
 						long inEventCount,
 						EventListUndoAction *ioAction,
 						EventMarker &ioFirstUnmatchedEvent );
@@ -171,10 +171,10 @@ public:
 #endif
 };
 
-class EventMarker : public ItemMarker<EventBlock,Event>
+class EventMarker : public ItemMarker<EventBlock,CEvent>
 {
 		// Skip any item which is not in the range
-	const Event *SkipItemsNotInRange( long minTime, long maxTime );
+	const CEvent *SkipItemsNotInRange( long minTime, long maxTime );
 
 public:
 	// Member functions for??
@@ -182,26 +182,26 @@ public:
 	// Deselecting?
 	
 		/**	Default constructor */
-	EventMarker() : ItemMarker<EventBlock,Event>() {}
+	EventMarker() : ItemMarker<EventBlock,CEvent>() {}
 
 		/**	Construct and associate with list. */
-	EventMarker( EventList &l ) : ItemMarker<EventBlock,Event>( l ) {}
+	EventMarker( EventList &l ) : ItemMarker<EventBlock,CEvent>( l ) {}
 
 		/**	COpy constructor */
-	EventMarker( const EventMarker &r ) : ItemMarker<EventBlock,Event>( r ) {}
+	EventMarker( const EventMarker &r ) : ItemMarker<EventBlock,CEvent>( r ) {}
 
 		/**	Sets the marker at a given time. */
-	const Event *SeekForwardToTime( long time, bool fromStart = 1 );
+	const CEvent *SeekForwardToTime( long time, bool fromStart = 1 );
 
 		/**	Skip this block, and seek to the start of the next one.
 			Used mainly for operating on summary data. */
-	Event *NextBlock( void );
+	CEvent *NextBlock( void );
 
 		/**	Iterators to iterate only the items with a range of times. */
-	const Event *FirstItemInRange( long minTime, long maxTime );
+	const CEvent *FirstItemInRange( long minTime, long maxTime );
 
 		/**	Iterators to iterate only the items with a range of times. */
-	const Event *NextItemInRange( long minTime, long maxTime );
+	const CEvent *NextItemInRange( long minTime, long maxTime );
 
 		/**	Assignment operator. */
 	EventMarker &operator=( EventMarker &em )
@@ -213,17 +213,17 @@ public:
 
 	void SetList( EventList &l )
 	{
-		ItemMarker<EventBlock,Event>::SetList( &l );
+		ItemMarker<EventBlock,CEvent>::SetList( &l );
 	}
 
 		/**	Replace the event with new data, and re-sort if needed. */
-	void Modify( Event &newEvent, EventListUndoAction *inUndoAction );
+	void Modify( CEvent &newEvent, EventListUndoAction *inUndoAction );
 	
 		/**	Return const pointer to event. */
 	operator ConstEventPtr()	{ return Peek( 0 ); }
 };
 
-class EventListUndoAction : public ItemListUndoAction<Event> {
+class EventListUndoAction : public ItemListUndoAction<CEvent> {
 	const char			*description;
 	CObservable	&subject;
 	
@@ -233,7 +233,7 @@ class EventListUndoAction : public ItemListUndoAction<Event> {
 
 public:
 	EventListUndoAction( EventList &inList, CObservable &inSubject, const char *inDescription )
-		: ItemListUndoAction<Event>( inList ),
+		: ItemListUndoAction<CEvent>( inList ),
 		  subject( inSubject )
 	{
 		description = inDescription;

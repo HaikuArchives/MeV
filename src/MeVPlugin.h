@@ -360,7 +360,7 @@ public:
 	void EndUndoAction( bool keep );
 
 		/* Merge a list of sorted events into the EventList. */
-	void Merge( Event *inEventArray, long inEventCount );
+	void Merge( CEvent *inEventArray, long inEventCount );
 
 		/**	Returns a handle to the first event in track. */
 	MeVEventHandle FirstEvent();
@@ -426,13 +426,13 @@ public:
 		/**	Create a new event, and do all appropriate updates, notifications, etc. */
 	void CreateEvent(
 		CEventEditor			*inEditor,
-		Event				&newEv,
+		CEvent				&newEv,
 		const char			*inActionLabel );
 
 		/**	Return the current selection type. */
 //	virtual enum CTrack::E_SelectionTypes SelectionType();
 
-//	const Event *CurrentEvent() { return currentEvent.Peek( 0 ); }
+//	const CEvent *CurrentEvent() { return currentEvent.Peek( 0 ); }
 
 		/**	Return the current gridsnap size. */
 	long TimeGridSize();
@@ -476,7 +476,7 @@ public:
 	void LockChannel( int32 inChannel, bool inLocked = true );
 	
 		/** TRUE if this event is "locked" (but only if the event even has a channel.) */
-	bool IsChannelLocked( const Event &ev );
+	bool IsChannelLocked( const CEvent &ev );
 	
 		/** TRUE if any event in this track is using this channel. */
 	bool IsChannelUsed( int32 inChannel ) { return usedChannels[ inChannel ] ? true : false; }
@@ -511,13 +511,13 @@ public:
 		/**	Returns a copy of the curent event. Returns false if at end
 			of track.
 		*/
-	bool GetEvent( Event *inEvent ) const;
+	bool GetEvent( CEvent *inEvent ) const;
 
 		/**	Returns a pointer to the current event. Do not modify this
 			directly, otherwise the undo information will not be recorded.
 			Returns NULL if not pointing to a real event.
 		*/
-	const Event *EventPtr();
+	const CEvent *EventPtr();
 
 		/**	Return true if pointing at a real event. Returns false if the
 			track has no events, or the reference is pointing beyond the
@@ -528,7 +528,7 @@ public:
 #if 0
 		/**	Modifies the current event, replacing it with the given event.
 		*/
-	bool Modify( const Event *inEv );
+	bool Modify( const CEvent *inEv );
 
 		/**	Delete the current event. All changes are discarded, and the
 			marker is positioned to the event after the deleted one.

@@ -80,21 +80,21 @@ public:							// CAbstractEventRenderer Implementation
 
 	// Invalidate the event
 	virtual void				Invalidate(
-									const Event	&ev) const;
+									const CEvent &ev) const;
 
 	// Draw the event (or an echo)
 	virtual void				Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 
 	// Compute the extent of the event
 	virtual BRect				Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	// Pick a single event and return the part code
 	// (or -1 if event not picked)
 	virtual long				Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
@@ -108,20 +108,20 @@ public:							// CAbstractEventRenderer Implementation
 	// Quantize the vertical position of the mouse based
 	// on the event type and return a value delta.
 	virtual long				QuantizeDragValue(
-									const Event	&inClickEvent,
+									const CEvent &clickEvent,
 									short partCode,
 									BPoint inClickPos,
 									BPoint inDragPos) const;
 
 	// Make a drag op for dragging notes...
 	virtual EventOp *			CreateDragOp(
-									const Event	&ev,
+									const CEvent	&ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
 
 	virtual EventOp *			CreateTimeOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -225,7 +225,7 @@ CLinearEditor::ConstructEvent(
 
 void
 CLinearEditor::DoEventFeedback(
-	const Event &event)
+	const CEvent &event)
 {
 	// Start audio feedback
 	if (gPrefs.FeedbackEnabled(EvAttr_Pitch))
@@ -287,7 +287,7 @@ CLinearEditor::Draw(
 	// which are in the update rect.
 
 	// For each event that overlaps the current view, draw it.
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+	for (const CEvent *ev = marker.FirstItemInRange(startTime, stopTime);
 		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
@@ -482,14 +482,14 @@ CLinearNoteEventRenderer::MIXED_COLORS = { { 0xf0, 0xf0, 0xf0, 0xf0,
 
 void
 CLinearNoteEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
 CLinearNoteEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	BRect r(Extent(ev));
@@ -559,7 +559,7 @@ CLinearNoteEventRenderer::Draw(
 
 BRect
 CLinearNoteEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	BRect r;
 	r.left = Editor()->TimeToViewCoords(ev.Start());
@@ -572,7 +572,7 @@ CLinearNoteEventRenderer::Extent(
 
 long
 CLinearNoteEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
@@ -614,7 +614,7 @@ CLinearNoteEventRenderer::Cursor(
 
 long
 CLinearNoteEventRenderer::QuantizeDragValue(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos) const
@@ -635,7 +635,7 @@ CLinearNoteEventRenderer::QuantizeDragValue(
 
 EventOp *
 CLinearNoteEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -648,7 +648,7 @@ CLinearNoteEventRenderer::CreateDragOp(
 
 EventOp *
 CLinearNoteEventRenderer::CreateTimeOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const

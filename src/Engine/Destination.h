@@ -47,6 +47,9 @@
 #include <Mime.h>
 
 class CConsoleView;
+class CEvent;
+class CEventStack;
+class CEventTask;
 class CMeVDoc;
 
 class BBitmap;
@@ -93,15 +96,35 @@ public:							//Constructor/Destructor
 
 public:							// Hook Functions
 
+	virtual void				DoneLocating(
+									bigtime_t when)
+								{ }
+
+	virtual void				Execute(
+									CEvent &event,
+									bigtime_t when) = 0;
+
 	virtual status_t			GetIcon(
 									icon_size which,
 									BBitmap *outIcon) = 0;
+
+	virtual void				Interpolate(
+									CEvent &ev,
+									CEventStack &stack,
+									long time,
+									long elapsed) = 0;
 
 	virtual CConsoleView *		MakeConfigurationView(
 									BRect frame) = 0;
 
 	virtual CConsoleView *		MakeMonitorView(
 									BRect frame) = 0;
+
+	virtual void				Stack(
+									CEvent &event,
+									const CEventTask &task,
+									CEventStack &stack,
+									long duration);
 
 protected:
 

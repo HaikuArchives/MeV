@@ -80,6 +80,11 @@ public:							// Constructor/Destructor
 	/** Destructor. */
 								~CEventTask();
 
+public:							// Accessors
+
+	int8						Transposition() const
+								{ return transposition; }
+
 protected:						// CPlaybackTask Implementation
 
 	/**	Returns the current time of this track. */
@@ -101,7 +106,7 @@ private:						// Internal Operations
 
 	/** Perform a single event. */
 	void						_stackEvent(
-									const Event &ev,
+									const CEvent &ev,
 									CEventStack &stack,
 									long time);
 

@@ -42,6 +42,8 @@
 /**
  *	A playback task group represents a set of related tasks, such as a song.
  *	@author Talin, Christopher Lenz
+ *	@todo	Clean-up the interpolation model, move most of the calculation from
+ *			CDestination::Interpolate() into here or CEventTask.
  */
 class CPlaybackTaskGroup
 	:	public DNode
@@ -122,14 +124,17 @@ private:
 
 public:							// Accessors
 
-	bool						ClockRunning()
+	bool						ClockRunning() const
 								{ return (flags & Clock_Halted) == 0; }
 	
 	/** Calculate the tempo period for the given clock time. */
 	int32						CurrentTempoPeriod() const;
 
-	CMeVDoc *					Document()
+	CMeVDoc *					Document() const
 								{ return doc; }
+
+	uint16						Flags() const
+								{ return flags; }
 
 public:							// Operations
 
@@ -175,7 +180,7 @@ private:						// Internal Operations
 	 *	and are absolutely ready to go.
 	 */
 	void						_executeEvent(
-									Event &ev,
+									CEvent &ev,
 									TimeState &);
 								
 	/**	Kill all tasks. */

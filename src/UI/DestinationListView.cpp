@@ -213,8 +213,8 @@ CDestinationListView::SubjectUpdated(
 	CReadLock lock(m_track);
 	if (m_track && (m_track->SelectionType() != CTrack::Select_None))
 	{
-		const Event *event = m_track->CurrentEvent();
-		if (event->HasProperty(Event::Prop_Channel))
+		const CEvent *event = m_track->CurrentEvent();
+		if (event->HasProperty(CEvent::Prop_Channel))
 		{
 			int32 destID = event->GetVChannel();
 

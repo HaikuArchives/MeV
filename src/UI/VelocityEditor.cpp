@@ -40,20 +40,20 @@ public:							// CEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
-									const Event &ev) const ;
+									const CEvent &ev) const ;
 
 	// Draw the event (or an echo)
 	void						Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 
 	// Invalidate the event
 	BRect						Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	// Pick a single event and returns the distance.
 	long						Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const
 								{ return 0; }
@@ -68,7 +68,7 @@ public:							// CEventRenderer Implementation
 	// Quantize the vertical position of the mouse based
 	// on the event type and return a value delta.
 	long						QuantizeDragValue(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos) const
@@ -76,14 +76,14 @@ public:							// CEventRenderer Implementation
 
 	// Make a drag op for dragging notes...
 	EventOp *					CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const
 								{ return NULL; }
 
 	EventOp *					CreateTimeOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const
@@ -160,7 +160,7 @@ CVelocityEditor::Draw(
 	// For each event that overlaps the current view, draw it.
 	long startTime = ViewCoordsToTime(updateRect.left - 1.0);
 	long stopTime = ViewCoordsToTime(updateRect.right + 1.0);
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+	for (const CEvent *ev = marker.FirstItemInRange(startTime, stopTime);
 		 ev;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
@@ -308,13 +308,13 @@ CVelocityEditor::DoDrag(
 
 		// For each event that overlaps the current view, draw it.
 		EventMarker marker(Track()->Events());
-		for (const Event *ev = marker.FirstItemInRange(time1, time2);
+		for (const CEvent *ev = marker.FirstItemInRange(time1, time2);
 			 ev;
 			 ev = marker.NextItemInRange(time1, time2))
 		{
 			if (ev->Command() == EvtType_Note)
 			{
-				Event evCopy(*ev);
+				CEvent evCopy(*ev);
 				bool eventSaved = false;
 
 				if (m_coupleAttackRelease)
@@ -385,8 +385,8 @@ CVelocityEditor::DoDrag(
 							// of wether they are modified or not), then we don't
 							// want to take up memory by adding a redundant copy,
 							// so just poke the event directly.
-						const_cast<Event *>(ev)->note.attackVelocity = evCopy.note.attackVelocity;
-						const_cast<Event *>(ev)->note.releaseVelocity = evCopy.note.releaseVelocity;
+						const_cast<CEvent *>(ev)->note.attackVelocity = evCopy.note.attackVelocity;
+						const_cast<CEvent *>(ev)->note.releaseVelocity = evCopy.note.releaseVelocity;
 					}
 
 					RendererFor(*ev)->Invalidate(*ev);
@@ -441,14 +441,14 @@ CVelocityEditor::FinishDrag(
 
 void
 CVelocityNoteEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
 CVelocityNoteEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	CDestination	*dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
@@ -502,7 +502,7 @@ CVelocityNoteEventRenderer::Draw(
 
 BRect
 CVelocityNoteEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	BRect rect(Editor()->Bounds());
 	rect.left = Editor()->TimeToViewCoords(ev.Start());

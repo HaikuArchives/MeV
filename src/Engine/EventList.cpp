@@ -16,7 +16,7 @@
 
 void EventBlock::Summarize( void )
 {
-	const Event		*ev;
+	const CEvent	*ev;
 	long			maxTime = 0;
 	int				i;
 
@@ -24,7 +24,7 @@ void EventBlock::Summarize( void )
 			i < count;
 			ev++, i++ )
 	{
-		if (ev->HasProperty( Event::Prop_Duration ))
+		if (ev->HasProperty( CEvent::Prop_Duration ))
 			maxTime = maxTime > ev->Stop() ? maxTime : ev->Stop();
 		else maxTime = maxTime > ev->Start() ? maxTime : ev->Start();
 	}
@@ -36,7 +36,7 @@ void EventBlock::Summarize( void )
 // ---------------------------------------------------------------------------
 // Set a marker at a given time
 
-const Event *EventMarker::SeekForwardToTime( long time, bool fromStart )
+const CEvent *EventMarker::SeekForwardToTime( long time, bool fromStart )
 {
 	EventBlock		*b, *goodBlock = NULL;
 
@@ -47,7 +47,7 @@ const Event *EventMarker::SeekForwardToTime( long time, bool fromStart )
 		// or equal to the time we are searching for.
 	for (; b; b = (EventBlock *)b->Next() )
 	{
-		const Event	*ev;
+		const CEvent	*ev;
 
 			// If block has no entries, then skip
 		if (b->count > 0)
@@ -70,7 +70,7 @@ const Event *EventMarker::SeekForwardToTime( long time, bool fromStart )
 	if (goodBlock == NULL) Last();
 	else
 	{
-		const Event	*ev;
+		const CEvent	*ev;
 		int16		i = fromStart ? 0 : index;
 
 			// We found the correct block. Now, linearly search for the first
@@ -87,13 +87,13 @@ const Event *EventMarker::SeekForwardToTime( long time, bool fromStart )
 		SetIndex( i );
 	}
 
-	return (Event *)item;
+	return (CEvent *)item;
 }
 
 // ---------------------------------------------------------------------------
 // Skip this block, and seek to the start of the next one.
 
-Event *EventMarker::NextBlock()
+CEvent *EventMarker::NextBlock()
 {
 	EventBlock		*b = (EventBlock *)block;
 
@@ -106,7 +106,7 @@ Event *EventMarker::NextBlock()
 
 		SetBlock( b );
 		SetIndex( index );
-		return (Event *)item;
+		return (CEvent *)item;
 	}
 
 	SetBlock( NULL );
@@ -118,7 +118,7 @@ Event *EventMarker::NextBlock()
 // Note that this properly handles long-duration events which may begin before
 // the range of time.
 
-const Event *EventMarker::SkipItemsNotInRange( long minTime, long maxTime )
+const CEvent *EventMarker::SkipItemsNotInRange( long minTime, long maxTime )
 {
 	EventBlock		*b = (EventBlock *)block;
 
@@ -154,9 +154,9 @@ const Event *EventMarker::SkipItemsNotInRange( long minTime, long maxTime )
 			// in our range.
 		for (int i = index; i < b->count; i++)
 		{
-			const Event *ev = b->ItemAddress( i );
+			const CEvent *ev = b->ItemAddress( i );
 	
-			if (ev->HasProperty( Event::Prop_Duration ))
+			if (ev->HasProperty( CEvent::Prop_Duration ))
 			{
 					// If the event has a stop time, and the event stops before
 					// the range, then skip it.
@@ -175,7 +175,7 @@ const Event *EventMarker::SkipItemsNotInRange( long minTime, long maxTime )
 				// Remember the last event we searched, and then quit.
 			SetBlock( b );
 			SetIndex( i );
-			return (Event *)item;
+			return (CEvent *)item;
 		}
 
 			// Skip to the next block.
@@ -188,7 +188,7 @@ const Event *EventMarker::SkipItemsNotInRange( long minTime, long maxTime )
 // ---------------------------------------------------------------------------
 // Return the first item in the specified range
 
-const Event *EventMarker::FirstItemInRange( long minTime, long maxTime )
+const CEvent *EventMarker::FirstItemInRange( long minTime, long maxTime )
 {
 	First();
 	return SkipItemsNotInRange( minTime, maxTime );
@@ -197,7 +197,7 @@ const Event *EventMarker::FirstItemInRange( long minTime, long maxTime )
 // ---------------------------------------------------------------------------
 // Return the next item in the specified range
 
-const Event *EventMarker::NextItemInRange( long minTime, long maxTime )
+const CEvent *EventMarker::NextItemInRange( long minTime, long maxTime )
 {
 	Seek( 1 );
 	return SkipItemsNotInRange( minTime, maxTime );
@@ -207,16 +207,16 @@ const Event *EventMarker::NextItemInRange( long minTime, long maxTime )
 // Replace a musical event, and if the time changed, re-insert in correct position.
 // Note that summary data is automatically invaliated by this operation.
 
-void EventMarker::Modify( Event &newEvent, EventListUndoAction *inUndoAction )
+void EventMarker::Modify( CEvent &newEvent, EventListUndoAction *inUndoAction )
 {
-	const Event		*ev = Peek( 0 );		// address of event
+	const CEvent		*ev = Peek( 0 );		// address of event
 
 		// If they are the same, don't bother.
-	if (memcmp( ev, &newEvent, sizeof (Event) ) == 0) return;
+	if (memcmp( ev, &newEvent, sizeof (CEvent) ) == 0) return;
 
 	if (newEvent.common.start != ev->common.start)
 	{
-		const Event	*nextEv = Peek( 1 ),
+		const CEvent	*nextEv = Peek( 1 ),
 					*prevEv = Peek( -1 );
 
 			// If the start time of this event is between the start times of
@@ -250,7 +250,7 @@ void EventMarker::Modify( Event &newEvent, EventListUndoAction *inUndoAction )
 // Modified to optimze event insertion by inserting events in clumps where
 // possible.
 
-bool EventList::Merge( Event *inEvents, long count, EventListUndoAction *inAction )
+bool EventList::Merge( CEvent *inEvents, long count, EventListUndoAction *inAction )
 {
 	bool			status = true;
 	EventMarker		marker( *this );
@@ -303,8 +303,8 @@ long EventList::ExtractSelected( EventPtr &result, EventListUndoAction *inAction
 {
 	EventMarker		marker( *this ),
 					firstSelected( *this );
-	const Event		*ev;
-	Event			*list,
+	const CEvent		*ev;
+	CEvent			*list,
 					*put;
 	long				count = 0,
 					index;
@@ -321,7 +321,7 @@ long EventList::ExtractSelected( EventPtr &result, EventListUndoAction *inAction
 	}
 
 		// Make a list of the number of selected events
-	list = new Event[ count ];
+	list = new CEvent[ count ];
 	put = list;
 	marker = firstSelected;
 
@@ -329,10 +329,11 @@ long EventList::ExtractSelected( EventPtr &result, EventListUndoAction *inAction
 		// selected events.
 	for ( ev = (ConstEventPtr)marker, index = 0; index < count; )
 	{
-			// For each selected event
+		// For each selected event
 		if (ev->IsSelected())
 		{
-			*put++ = *(Event *)ev;		// Copy to temporary list
+			// Copy to temporary list
+			*put++ = *const_cast<CEvent *>(ev);
 			marker.Remove( 1, inAction );	// Delete from original list
 			ev = (ConstEventPtr)marker;	// Increment to next event
 			index++;
@@ -349,13 +350,13 @@ long EventList::ExtractSelected( EventPtr &result, EventListUndoAction *inAction
 // This function is useful in importing from a MIDI file, and in recording.
 
 bool EventList::AppendRawEvents(
-	Event				*inEvents,
+	CEvent				*inEvents,
 	long					inEventCount,
 	EventListUndoAction	*ioAction,
 	EventMarker			&ioFirstUnmatchedEvent )
 {
 	EventMarker			marker( *this );
-	const Event			*ev;
+	const CEvent			*ev;
 	bool					status = true;
 	
 	if (inEventCount < 1) return true;
@@ -383,14 +384,14 @@ bool EventList::AppendRawEvents(
 		if (		inEvents->Command() == EvtType_NoteOff
 			||	(inEvents->Command() == EvtType_Note && inEvents->note.attackVelocity == 0))
 		{
-			if ((const Event *)ioFirstUnmatchedEvent == NULL)
+			if ((const CEvent *)ioFirstUnmatchedEvent == NULL)
 				ioFirstUnmatchedEvent.First();
 
 			bool			pastFirst = false;
 			EventMarker	matchPos( ioFirstUnmatchedEvent );
 		
 				// Seek forward to first note-on that has no matching note off.
-			for (ev = (const Event *)matchPos; ev; ev = matchPos.Seek( 1 ) )
+			for (ev = (const CEvent *)matchPos; ev; ev = matchPos.Seek( 1 ) )
 			{
 					// If this is a note that has no matching note off...
 				if (		ev->Command() == EvtType_Note
@@ -403,11 +404,12 @@ bool EventList::AppendRawEvents(
 					{
 							// Change the release velocity
 						if (inEvents->Command() == EvtType_NoteOff)
-							((Event *)ev)->note.releaseVelocity = inEvents->note.attackVelocity;
-						else ((Event *)ev)->note.releaseVelocity = MIDIReleaseSpecial;
+							(const_cast<CEvent *>(ev))->note.releaseVelocity = inEvents->note.attackVelocity;
+						else
+							(const_cast<CEvent *>(ev))->note.releaseVelocity = MIDIReleaseSpecial;
 						
 							// Change the duration
-						((Event *)ev)->SetDuration( inEvents->Start() - ev->Start() );
+						(const_cast<CEvent *>(ev))->SetDuration( inEvents->Start() - ev->Start() );
 						
 							// And we're done...
 						break;
@@ -450,8 +452,8 @@ long EventList::CopySelected( EventPtr &result )
 {
 	EventMarker		marker( *this ),
 					firstSelected( *this );
-	const Event		*ev;
-	Event			*list,
+	const CEvent		*ev;
+	CEvent			*list,
 					*put;
 	long				count = 0,
 					index;
@@ -467,22 +469,23 @@ long EventList::CopySelected( EventPtr &result )
 		}
 	}
 
-		// Make a list of the number of selected events
-	list = new Event[ count ];
+	// Make a list of the number of selected events
+	list = new CEvent[count];
 	put = list;
 	marker = firstSelected;
 
-		// Iterate through only that part of the sequence that contained
-		// selected events.
-	for ( ev = (ConstEventPtr)marker, index = 0; index < count; )
+	// Iterate through only that part of the sequence that contained
+	// selected events.
+	for (ev = (ConstEventPtr)marker, index = 0; index < count; )
 	{
-			// For each selected event
+		// For each selected event
 		if (ev->IsSelected())
 		{
-			*put++ = *(Event *)ev;		// Copy to temporary list
+			// Copy to temporary list
+			*put++ = *const_cast<CEvent *>(ev);
 			index++;
 		}
-		ev = marker.Seek( 1 );
+		ev = marker.Seek(1);
 	}
 
 	result = list;
@@ -496,7 +499,7 @@ long EventList::CopySelected( EventPtr &result )
 void EventList::InsertTime( long startTime, long offset, EventListUndoAction *inAction )
 {
 	EventMarker		marker( *this );
-	const Event		*ev;
+	const CEvent		*ev;
 
 		// Seek to the time we want to modify.
 	ev = marker.SeekForwardToTime( startTime, false );
@@ -506,7 +509,7 @@ void EventList::InsertTime( long startTime, long offset, EventListUndoAction *in
 		// a higher level?
 	for ( ; ev; ev = marker.Seek( 1 ))
 	{
-		Event		modifiedEvent;
+		CEvent		modifiedEvent;
 
 		marker.Get( &modifiedEvent );
 		modifiedEvent.common.start += offset;
@@ -521,13 +524,13 @@ void EventList::InsertTime( long startTime, long offset, EventListUndoAction *in
 void EventList::DeleteTime( long startTime, long offset, EventListUndoAction *inAction )
 {
 	EventMarker		marker( *this );
-	const Event		*ev;
+	const CEvent		*ev;
 
 	ev = marker.SeekForwardToTime( startTime, false );
 
 	for ( ; ev; ev = marker.Seek( 1 ))
 	{
-		Event		modifiedEvent;
+		CEvent		modifiedEvent;
 
 		marker.Get( &modifiedEvent );
 		if (modifiedEvent.common.start < startTime + offset)
@@ -542,13 +545,13 @@ void EventList::DeleteTime( long startTime, long offset, EventListUndoAction *in
 
 void EventList::ConstructItems( void *outDst, void *inSrc, long inItemCount )
 {
-	Event		*srcEv = (Event *)inSrc,
-				*dstEv = (Event *)outDst;
+	CEvent		*srcEv = (CEvent *)inSrc,
+				*dstEv = (CEvent *)outDst;
 
 		// For each event
 	while (inItemCount--)
 	{
-		new ( dstEv ) Event( *srcEv );
+		new ( dstEv ) CEvent( *srcEv );
 		
 		dstEv++;
 		srcEv++;
@@ -560,8 +563,8 @@ void EventList::ConstructItems( void *outDst, void *inSrc, long inItemCount )
 
 void EventList::CopyItems( void *outDst, void *inSrc, long inItemCount )
 {
-	Event		*srcEv = (Event *)inSrc,
-				*dstEv = (Event *)outDst;
+	CEvent		*srcEv = (CEvent *)inSrc,
+				*dstEv = (CEvent *)outDst;
 
 		// For each event
 	while (inItemCount--)
@@ -576,8 +579,8 @@ void EventList::CopyItems( void *outDst, void *inSrc, long inItemCount )
 void EventList::MoveItems( void *outDst, void *inSrc, long inItemCount )
 {
 #if 0
-	Event		*srcEv = (Event *)inSrc,
-				*dstEv = (Event *)outDst;
+	CEvent		*srcEv = (CEvent *)inSrc,
+				*dstEv = (CEvent *)outDst;
 				
 	if (dstEv > srcEv)
 	{
@@ -588,7 +591,7 @@ void EventList::MoveItems( void *outDst, void *inSrc, long inItemCount )
 		while (inItemCount--)
 		{
 			*--dstEv = *--srcEv;
-			srcEv->~Event();
+			srcEv->~CEvent();
 		}
 	}
 	else
@@ -597,7 +600,7 @@ void EventList::MoveItems( void *outDst, void *inSrc, long inItemCount )
 		while (inItemCount--)
 		{
 			*dstEv++ = *srcEv;
-			srcEv->~Event();
+			srcEv->~CEvent();
 			srcEv++;
 		}
 	}
@@ -607,7 +610,7 @@ void EventList::MoveItems( void *outDst, void *inSrc, long inItemCount )
 		// use any sort of circular lists or back-pointers to the event structure. As long
 		// as the reference count is properly maintained (in this case it is, since the number
 		// of valid items remains constant) everything should be OK.
-	memmove( outDst, inSrc, inItemCount * sizeof (Event) );
+	memmove( outDst, inSrc, inItemCount * sizeof (CEvent) );
 }
 
 // ---------------------------------------------------------------------------
@@ -615,12 +618,12 @@ void EventList::MoveItems( void *outDst, void *inSrc, long inItemCount )
 
 void EventList::DestroyItems( void *outDst, long inItemCount )
 {
-	Event		*dstEv = (Event *)outDst;
+	CEvent		*dstEv = (CEvent *)outDst;
 
 		// For each event
 	while (inItemCount--)
 	{
-		dstEv->~Event();
+		dstEv->~CEvent();
 		dstEv++;
 	}
 }
@@ -649,18 +652,18 @@ void EventListUndoAction::Undo()
 {
 	int32			maxTime = LONG_MIN,
 					minTime = LONG_MAX;
-	Event			*ev;
+	CEvent			*ev;
 	CUndoIterator	iter( sizeof *ev );
 					
-	for (ev = (Event *)iter.First( *this ); ev != NULL; ev = (Event *)iter.Next() )
+	for (ev = (CEvent *)iter.First( *this ); ev != NULL; ev = (CEvent *)iter.Next() )
 	{
 		minTime = minTime < ev->Start() ? minTime : ev->Start();
 		maxTime = maxTime > ev->Stop() ? maxTime : ev->Stop();
 	}
 
-	ItemListUndoAction<Event>::Undo();
+	ItemListUndoAction<CEvent>::Undo();
 	
-	for (ev = (Event *)iter.First( *this ); ev != NULL; ev = (Event *)iter.Next() )
+	for (ev = (CEvent *)iter.First( *this ); ev != NULL; ev = (CEvent *)iter.Next() )
 	{
 		minTime = minTime < ev->Start() ? minTime : ev->Start();
 		maxTime = maxTime > ev->Stop() ? maxTime : ev->Stop();
@@ -683,18 +686,18 @@ void EventListUndoAction::Redo()
 {
 	int32			maxTime = LONG_MIN,
 					minTime = LONG_MAX;
-	Event			*ev;
+	CEvent			*ev;
 	CUndoIterator	iter( sizeof *ev );
 					
-	for (ev = (Event *)iter.First( *this ); ev != NULL; ev = (Event *)iter.Next() )
+	for (ev = (CEvent *)iter.First( *this ); ev != NULL; ev = (CEvent *)iter.Next() )
 	{
 		minTime = minTime < ev->Start() ? minTime : ev->Start();
 		maxTime = maxTime > ev->Stop() ? maxTime : ev->Stop();
 	}
 
-	ItemListUndoAction<Event>::Redo();
+	ItemListUndoAction<CEvent>::Redo();
 	
-	for (ev = (Event *)iter.First( *this ); ev != NULL; ev = (Event *)iter.Next() )
+	for (ev = (CEvent *)iter.First( *this ); ev != NULL; ev = (CEvent *)iter.Next() )
 	{
 		minTime = minTime < ev->Start() ? minTime : ev->Start();
 		maxTime = maxTime > ev->Stop() ? maxTime : ev->Stop();
@@ -720,7 +723,7 @@ void EventList::Validate()
 		// Start by determining if the events are in order
 
 		// For each event that overlaps the current view, draw it.
-	for (const Event *ev = marker.First(); ev; ev = marker.Seek( 1 ), index++ )
+	for (const CEvent *ev = marker.First(); ev; ev = marker.Seek( 1 ), index++ )
 	{
 		long		time = ev->Start();
 
@@ -731,7 +734,7 @@ void EventList::Validate()
 		prevTime = time;
 	}
 	
-	ItemList<EventBlock,Event>::Validate();
+	ItemList<EventBlock,CEvent>::Validate();
 }
 #endif
 
@@ -805,7 +808,7 @@ void WriteEventList( CWriter &writer, EventList &inEvents )
 {
 	int32			prevTime = 0;
 	EventMarker		marker( inEvents );
-	const Event		*ev;
+	const CEvent		*ev;
 
 	for (	ev = marker.First(); ev; ev = marker.Seek( 1 ))
 	{
@@ -816,12 +819,12 @@ void WriteEventList( CWriter &writer, EventList &inEvents )
 		
 			// write command byte (incl. selection bit)
 		writer << ev->common.command;
-		if (ev->HasProperty( Event::Prop_Duration ))
+		if (ev->HasProperty( CEvent::Prop_Duration ))
 		{
 				// Write the event's duration
 			WriteDeltaValue( writer, ev->Duration() );
 		}
-		else if (ev->HasProperty( Event::Prop_ExtraData ))
+		else if (ev->HasProperty( CEvent::Prop_ExtraData ))
 		{
 				// Write the event's extended data
 			WriteDeltaValue( writer, ev->ExtendedDataSize() );
@@ -829,7 +832,7 @@ void WriteEventList( CWriter &writer, EventList &inEvents )
 		}
 		else WriteDeltaValue( writer, 0 );						// write fake duration
 
-		if (ev->HasProperty( Event::Prop_Channel ))
+		if (ev->HasProperty( CEvent::Prop_Channel ))
 			writer << ev->common.vChannel;
 		
 		switch (ev->Command()) {
@@ -928,7 +931,7 @@ void WriteEventList( CWriter &writer, EventList &inEvents )
 
 void ReadEventList( CReader &reader, EventList &outEvents )
 {
-	Event		ev;
+	CEvent		ev;
 	int32		prevTime = 0;
 	int32		dataSize = 0;
 	EventMarker	marker( outEvents );
@@ -958,12 +961,12 @@ void ReadEventList( CReader &reader, EventList &outEvents )
 		ev.common.start = prevTime;
 		reader >> ev.common.command;
 		
-		if (ev.HasProperty( Event::Prop_Duration ))
+		if (ev.HasProperty( CEvent::Prop_Duration ))
 		{
 				// Read the event's duration
 			ev.common.duration = ReadDeltaValue( reader );
 		}
-		else if (ev.HasProperty( Event::Prop_ExtraData ))
+		else if (ev.HasProperty( CEvent::Prop_ExtraData ))
 		{
 				// Read the event's extended data
 			ev.common.duration = 0;
@@ -972,7 +975,7 @@ void ReadEventList( CReader &reader, EventList &outEvents )
 		}
 		else ReadDeltaValue( reader );						// discard fake duration
 
-		if (ev.HasProperty( Event::Prop_Channel ))
+		if (ev.HasProperty( CEvent::Prop_Channel ))
 			reader >> ev.common.vChannel;
 					
 		switch (ev.Command()) {

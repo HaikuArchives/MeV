@@ -88,7 +88,7 @@ public:							// Accessors
 	long						MaxSelectTime() const
 								{ return maxSelectTime; }
 	
-	const Event *				CurrentEvent()
+	const CEvent *				CurrentEvent()
 								{ return currentEvent.Peek(0); }
 
 	/** Gain access to the event list. */
@@ -173,7 +173,7 @@ public:							// Operations
 						bool inDoUpdate = true );
 
 	// delete a specific event
-	void DeleteEvent(const Event *which);
+	void DeleteEvent(const CEvent *which);
 
 		/**	Delete all selected events. */
 	void DeleteSelection();
@@ -194,12 +194,12 @@ public:							// Operations
 		/**	Create a new event, and do all appropriate updates, notifications, etc. */
 	void CreateEvent(
 		CEventEditor			*inEditor,
-		Event				&newEv,
+		CEvent				&newEv,
 		const char			*inActionLabel );
 
 		/** Merge-in an event stream. */
 	void MergeEvents(
-		Event				*inEvents,
+		CEvent				*inEvents,
 		int32				eventCount,
 		EventListUndoAction	*undoAction);
 
@@ -212,7 +212,7 @@ public:							// Operations
 	}
 
 		// Filter an event through the filters assigned to this track
-	void FilterEvent( Event &ioEv );
+	void FilterEvent( CEvent &ioEv );
 	
 		// Compile list of operators.
 	void CompileOperators();
@@ -270,15 +270,15 @@ public:							// CSerializable Implementation
 private:						// Internal Operations
 
 	void						_eventAdded(
-									const Event *ev);
+									const CEvent *ev);
 
 	void						_eventRemoved(
-									const Event *ev);
+									const CEvent *ev);
 
 	void						_initUsedDestinations();
 
 	int32						Bytes()
-								{ return sizeof *this + CountEvents() * sizeof(Event); }
+								{ return sizeof *this + CountEvents() * sizeof(CEvent); }
 
 	void						RecalcSigMap();
 
@@ -352,7 +352,7 @@ public:							// Constructor/Destructor
 
 								CEventUpdateHint(
 									const CEventTrack &track,
-									const Event &event);
+									const CEvent &event);
 
 };
 

@@ -40,8 +40,8 @@
  *
  * ===================================================================== */
 
-#ifndef _EVENT_H
-#define _EVENT_H
+#ifndef __C_Event_H__
+#define __C_Event_H__
 
 #include "MeVSpec.h"
 
@@ -49,11 +49,9 @@
 #include <string.h>
 // Support Kit
 #include <OS.h>
-#include <MidiProducer.h>
-// ---------------------------------------------------------------------
-//	Forward declarations
 
-class MeVSpec Event;
+class CDestination;
+class CEvent;
 
 /* ============================================================================ *
 	Time Signature structure
@@ -276,7 +274,7 @@ class				CPlaybackTask;
 	// An Event is a single musical data item. It is a low-level structure
 	// designed to be handled in bulk. Programmatic access to events are probably
 	// better handled by Event.
-class Event {
+class CEvent {
 
 		// Static tables for calculating event properties
 	static unsigned char		propTable[];
@@ -318,11 +316,12 @@ class Event {
 
 public:
 
-		// These constants define the "selected" flag, and the command
-		// mask for retrieving it.
-	enum {
-		selected = (1<<7),						// selected event bit
-		commandMask = 0x7f					// mask out selected bit
+	// These constants define the "selected" flag, and the command
+	// mask for retrieving it.
+	enum
+	{
+		SELECTED		= (1 << 7),			// selected event bit
+		COMMAND_MASK 	= 0x7f				// mask out selected bit
 	};
 
 		// These constants define "event properties" which can be used to
@@ -355,8 +354,7 @@ public:
 						data4,					// 4th data byte
 						data5,					// 5th data byte
 						data6;					// 6th data byte
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} common;
 
 			// In events which are placed on the playback stack, the
@@ -380,7 +378,7 @@ public:
 						data4,					// 4th data byte
 						data5,					// 5th data byte
 						data6;					// 6th data byte
-			BMidiLocalProducer		*actualPort;	
+			CDestination *destination;
 		} stack;
 
 		struct {
@@ -394,8 +392,7 @@ public:
 						data4,					// 4th data byte (not used)
 						data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} note;
 
 		struct {
@@ -408,8 +405,7 @@ public:
 						data3,				// 3rd data bute (not used)
 						data4;					// 4th data byte (not used)
 			uint16		updatePeriod;			// # of clock cycles per increment
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} aTouch;
 
 		struct {
@@ -422,8 +418,7 @@ public:
 						LSB,					// controller LSB (or unused)
 						data4;					// 4th data byte (not used)
 			uint16		updatePeriod;			// # of interpolation steps
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} controlChange;
 
 		struct {
@@ -437,8 +432,7 @@ public:
 						bankLSB,				// program bank LSB (or unused)
 						data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} programChange;
 
 		struct {
@@ -449,8 +443,7 @@ public:
 			uint16		targetBend,			// target bend value
 						startBend,			// initial bend value
 						updatePeriod;			// # of clock cycles per increment
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} pitchBend;
 
 			// Rem: Could short sysex messages be stored IN the data 2-6?
@@ -463,8 +456,7 @@ public:
 						data1,					// 1st data byte (not used)
 						vPos;					// vertical position
 			ExtDataPtr	extData;				// pointer to sysex buffer
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} sysEx;
 
 		struct {
@@ -475,8 +467,7 @@ public:
 						textType,				// type of text (lyric, cue, etc)
 						vPos;					// vertical position
 			ExtDataPtr	extData;				// pointer to null-terminated text buffer
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} text;
 
 		struct {
@@ -489,8 +480,7 @@ public:
 			uint32		newTempo;				// new tempo (packed 7)
 												// tempo is in 1000ths of a beat
 												// per minute
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} tempo;
 
 		struct {
@@ -501,8 +491,7 @@ public:
 						data1,					// 1st data byte (not used)
 						vPos;					// vertical position
 			uint32		period;					// microseconds per qtr note
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} exactTempo;
 
 		struct {
@@ -516,8 +505,7 @@ public:
 			uint8		denominator;			// denominator of timesig
 			uint8		data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} sigChange;
 
 		struct {
@@ -530,8 +518,7 @@ public:
 			uint16		repeatCount;			// # of times to repeat (0xffff == infinity)
 			uint8		data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
-						BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} repeat;
 
 		struct {
@@ -544,8 +531,7 @@ public:
 			int8		transposition;			// sequence transposition
 			uint8		flags;					// flags, none defined
 			uint16		sequence;				// which sequence ID to play
-		BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} sequence;
 
 			// REM: I'm not sure this is right, looks like a copy of the sequence
@@ -560,8 +546,7 @@ public:
 						vPos;					// vertical position
 			uint16		condition,				// condition bits to match
 						mask;					// mask of bits
-				BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} branch;
 
 		struct {								// contour control vertex
@@ -575,8 +560,7 @@ public:
 			uint8		contour;				// contour number
 			uint8		data5,					// 5th data byte (not used)
 						data6;					// 6th data byte (not used)
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} contour;
 
 		struct {
@@ -584,31 +568,28 @@ public:
 			CPlaybackTask *taskPtr;				// pointer to playback task
 			uint8		command,				// command = EvtType_TaskMarker
 						pad[ 7 ];				// unused
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} task;
 
 		struct {
-			int32		start;				// start time of event
+			int32		start;					// start time of event
 			uint32		pad;					// duration of event
-			uint8		command,			// event type
+			uint8		command,				// event type
 						interpolationType;		// what type of interpolation
-			uint16		startValue,			// start interpolation value
+			uint16		startValue,				// start interpolation value
 						targetValue,			// final interpolation value
 						pad2;
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} startInterpolate;
 
 		struct {
-			int32		start;				// start time of event
+			int32		start;					// start time of event
 			uint32		pad;					// duration of event
-			uint8		command,			// event type
+			uint8		command,				// event type
 						interpolationType;		// what type of interpolation
 			uint16		timeStep;				// time step between interpolations
 			uint32		duration;				// total duration of interpolation
-			BMidiLocalProducer		*actualPort;	
-		
+			CDestination *destination;
 		} interpolate;
 	};
 
@@ -617,90 +598,86 @@ private:
 		// event.
 	void UseExtendedData()
 	{
-		if (HasProperty( Event::Prop_ExtraData ))	sysEx.extData.Use();
+		if (HasProperty( CEvent::Prop_ExtraData ))	sysEx.extData.Use();
 	}
 
 		// Release the extended data (used when destructing an event)
 	void ReleaseExtendedData()
 	{
-		if (HasProperty( Event::Prop_ExtraData ))	sysEx.extData.Release();
+		if (HasProperty( CEvent::Prop_ExtraData ))	sysEx.extData.Release();
 	}
 
-public:
+public:							// Constructor/Destructor
 
-		// Constructor
-	Event()
-	{
-			// Initialize to a type which has no data.
-		common.command = EvtType_End;
-// 	sysEx.extData.Init();
-	}
+	/** Constructor. */
+								CEvent()
+								{
+									// Initialize to a type which has no data.
+									common.command = EvtType_End;
+									common.destination = NULL;
+								}
 
-	Event( const Event &inEvent );
-#if 0
-	Event( const Event &inEvent )
-	{
-		memcpy( this, &inEvent, sizeof *this );
-		UseExtendedData();
-	}
-#endif
+	/** Copy constructor. */
+								CEvent(
+									const CEvent &event);
 
-		// Destructor
-	~Event()
-	{
-		ReleaseExtendedData();
-	}
+	/** Destructor. */
+								~CEvent()
+								{ ReleaseExtendedData(); }
 
-		// assignment '=' operator
-	Event &operator=( Event &inEvent );
-#if 0
-	Event &operator=( Event &inEvent )
-	{
-		ReleaseExtendedData();
-		memcpy( this, &inEvent, sizeof *this );
-		UseExtendedData();
-		return *this;
-	}
-#endif
+public:							// Overloaded Operators
 
-		// Access functions for start time
-	int32 Start() const { return common.start; }
-	void SetStart( const int32 inStart ) { common.start = inStart; }
+	// assignment '=' operator
+	CEvent &					operator=(
+									CEvent &event);
 
-		// Access functions for duration
-	int32 Duration() const { return common.duration; }
-	void SetDuration( const int32 inDuration ) { common.duration = inDuration; }
-	
-		// Access functions for stop time (start + duration)
-	int32 Stop() const { return common.start + Duration(); }
+public:							// Accessors
 
-		// Access functions for selected bit
-	bool IsSelected() const { return common.command & selected; }
-	void SetSelected( bool inSelected )
-	{
-		if (inSelected)
-			common.command |= selected;
-		else common.command &= ~selected;
-	}
+	// Access functions for start time
+	int32						Start() const
+								{ return common.start; }
+	void						SetStart(
+									const int32 start)
+								{ common.start = start; }
 
-		// Access functions for command field
-	uint8 Command() const { return common.command & commandMask; }
-	void SetCommand( uint8 inCommand )
-	{
-			// Delete extra data whenever changing command types.
-		if (inCommand != Command())
-		{
-			ReleaseExtendedData();
-			common.command = common.command & 0x80 | inCommand;
-			if (HasProperty( Event::Prop_ExtraData )) sysEx.extData.Init();
-		}
-	}
+	// Access functions for duration
+	int32						Duration() const
+								{ return common.duration; }
+	void						SetDuration(
+									const int32 duration)
+								{ common.duration = duration; }
 
-		// Access functions for VChannel field
-	uint8 GetVChannel() const { return common.vChannel; }
-	void SetVChannel( uint8 inChannel ) { common.vChannel = inChannel; }
+	// Access functions for stop time (start + duration)
+	int32						Stop() const
+								{ return common.start + Duration(); }
 
-		// Properties query functions
+	// Access functions for selected bit
+	bool						IsSelected() const
+								{ return common.command & SELECTED; }
+	void						SetSelected(
+									bool selected)
+								{
+									if (selected)
+										common.command |= SELECTED;
+									else
+										common.command &= ~SELECTED;
+								}
+
+	// Access functions for command field
+	uint8						Command() const
+								{ return common.command & COMMAND_MASK; }
+	void						SetCommand(
+									uint8 command);
+
+	// Access functions for VChannel field
+	// DEPRECATED
+	uint8						GetVChannel() const
+								{ return common.vChannel; }
+	void						SetVChannel(
+									uint8 vchannel)
+								{ common.vChannel = vchannel; }
+
+	// Properties query functions
 	static void InitTables();
 	int Properties() const { return propTable[ Command() ]; }
 	static int Properties( int inCommand ) { return propTable[ inCommand ]; }
@@ -714,11 +691,11 @@ public:
 		// Functions dealing with extra data
 	size_t ExtendedDataSize() const
 	{
-		return HasProperty( Event::Prop_ExtraData ) ? sysEx.extData.Length() : 0;
+		return HasProperty( CEvent::Prop_ExtraData ) ? sysEx.extData.Length() : 0;
 	}
 	bool SetExtendedDataSize( int inLength )
 	{
-		if (HasProperty( Event::Prop_ExtraData ))
+		if (HasProperty( CEvent::Prop_ExtraData ))
 		{
 			sysEx.extData.SetLength( inLength );
 			return true;
@@ -727,7 +704,7 @@ public:
 	}
 	void *ExtendedData() const
 	{
-		return HasProperty( Event::Prop_ExtraData ) ? sysEx.extData.Data() : NULL;
+		return HasProperty( CEvent::Prop_ExtraData ) ? sysEx.extData.Data() : NULL;
 	}
 
 		/**	Ask this event about its Nth event-specific attribute. */
@@ -748,10 +725,10 @@ public:
 		*/
 	bool SetAttribute( enum E_EventAttribute inAttr, int32 inValue );
 
-	// void shareExtendedData( Event *ev );
+	// void shareExtendedData( CEvent *ev );
 	
 		// Static functions for event management
-	static void Construct( Event *inEventArray, int32 count )
+	static void Construct( CEvent *inEventArray, int32 count )
 	{
 		while (count--)
 		{
@@ -761,9 +738,9 @@ public:
 		}
 	}
 
-	static void Construct( Event *inDst, const Event *inSrc, int32 count )
+	static void Construct( CEvent *inDst, const CEvent *inSrc, int32 count )
 	{
-		memmove( inDst, inSrc, count * sizeof (Event) );
+		memmove( inDst, inSrc, count * sizeof (CEvent) );
 		while (count--)
 		{
 				// Copy event into blank memory
@@ -772,7 +749,7 @@ public:
 		}
 	}
 
-	static void Destruct( Event *inEventArray, int32 count )
+	static void Destruct( CEvent *inEventArray, int32 count )
 	{
 		while (count--)
 		{
@@ -782,31 +759,49 @@ public:
 		}
 	}
 
-	static void Relocate( Event *inDst, const Event *inSrc, int32 count )
+	static void Relocate( CEvent *inDst, const CEvent *inSrc, int32 count )
 	{
-		memmove( inDst, inSrc, count * sizeof (Event) );
+		memmove( inDst, inSrc, count * sizeof (CEvent) );
 	}
 };
 
-inline Event::Event( const Event &inEvent )
+inline 
+CEvent::CEvent(
+	const CEvent &event)
 {
-	memcpy( this, &inEvent, sizeof *this );
+	memcpy(this, &event, sizeof(*this));
 	UseExtendedData();
 }
 
-		// assignment '=' operator
-inline Event &Event::operator=( Event &inEvent )
+inline CEvent &
+CEvent::operator=(
+	CEvent &event)
 {
 	ReleaseExtendedData();
-	memcpy( this, &inEvent, sizeof *this );
+	memcpy(this, &event, sizeof(*this));
 	UseExtendedData();
 	return *this;
 }
 
-typedef Event		*EventPtr;
-typedef const Event	*ConstEventPtr;
+inline void
+CEvent::SetCommand(
+	uint8 command)
+{
+	// Delete extra data whenever 
+	// changing command types.
+	if (command != Command())
+	{
+		ReleaseExtendedData();
+		common.command = common.command & 0x80 | command;
+		if (HasProperty(CEvent::Prop_ExtraData))
+			sysEx.extData.Init();
+	}
+}
 
-	/**	A class which returns information about an event attribute. */
+typedef CEvent *		EventPtr;
+typedef const CEvent *	ConstEventPtr;
+
+/**	A class which returns information about an event attribute. */
 class UEventAttributeTable {
 
 	struct EvAttr {
@@ -839,4 +834,4 @@ public:
 	}
 };
 
-#endif // _EVENT_H
+#endif // __C_Event_H__

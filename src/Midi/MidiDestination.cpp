@@ -5,11 +5,13 @@
 #include "MidiDestination.h"
 
 #include "DestinationConfigView.h"
+#include "Event.h"
+#include "EventTask.h"
 #include "GeneralMidi.h"
 #include "InternalSynth.h"
 #include "MeVDoc.h"
 #include "MidiModule.h"
-#include "ReconnectingMidiProducer.h"
+#include "PlaybackTaskGroup.h"
 
 // Interface Kit
 #include <Rect.h>
@@ -17,13 +19,14 @@
 #include <View.h>
 // Midi Kit
 #include <MidiConsumer.h>
+#include <MidiProducer.h>
 // Support Kit
 #include <Debug.h>
 
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)		// Hook Functions
 #define D_ACCESS(x) //PRINT(x)		// Accessors
-#define D_OPERATION(x) // PRINT(x)	// Operations
+#define D_OPERATION(x) //PRINT(x)	// Operations
 #define D_SERIALIZE(x) //PRINT(x)	// Serialization
 
 using namespace Midi;
@@ -43,9 +46,9 @@ CMidiDestination::CMidiDestination(
 	CMeVDoc *document)
 	:	CDestination('MIDI', id, name, document),
 		m_producer(NULL),
-		m_consumerID(0),
 		m_channel(0),
-		m_generalMidi(false)
+		m_generalMidi(false),
+		m_currentPitch(0xff)
 {
 	D_ALLOC(("CMidiDestination::CMidiDestination()\n"));
 
@@ -53,7 +56,7 @@ CMidiDestination::CMidiDestination(
 
 	BString producerName = "MeV: ";
 	producerName << Name();
-	m_producer = new Midi::CReconnectingMidiProducer(producerName.String());
+	m_producer = new BMidiLocalProducer(producerName.String());
 	_updateIcons();
 	m_producer->Register();
 }
@@ -62,15 +65,15 @@ CMidiDestination::CMidiDestination(
 	CMeVDoc *document)
 	:	CDestination('MIDI', document),
 		m_producer(NULL),
-		m_consumerID(0),
 		m_channel(0),
-		m_generalMidi(false)
+		m_generalMidi(false),
+		m_currentPitch(0xff)
 {
 	D_ALLOC(("CMidiDestination::CMidiDestination(deserialize)\n"));
 
 	CWriteLock lock(this);
 
-	m_producer = new Midi::CReconnectingMidiProducer("");
+	m_producer = new BMidiLocalProducer("");
 	_updateIcons();
 	m_producer->Register();
 }
@@ -134,72 +137,11 @@ CMidiDestination::IsConnectedTo(
 	D_ACCESS(("CMidiDestination::IsConnectedTo()\n"));
 	ASSERT(consumer != NULL);
 
-	if ((consumer->ID() == m_consumerID)
+	if ((m_consumerName == consumer->Name())
 	 && (m_producer->IsConnected(consumer)))
 		return true;
 
 	return false;
-}
-
-void
-CMidiDestination::ConnectTo(
-	BMidiConsumer *consumer)
-{
-	D_ACCESS(("CMidiDestination::ConnectTo(consumer)\n"));
-	ASSERT(consumer != NULL);
-
-	Disconnect();
-
-	BMessage props;
-	if (consumer->GetProperties(&props) == B_OK)
-	{
-		if (props.HasBool("mev:internal_synth"))
-			// init internal synth
-			((Midi::CInternalSynth *)consumer)->Init();
-		if (props.HasBool("mev:general_midi"))
-			m_generalMidi = true;
-	}
-	m_producer->Connect(consumer);
-	m_consumerID = consumer->ID();
-	SetLatency(consumer->Latency());
-}
-
-void
-CMidiDestination::ConnectTo(
-	int32 id)
-{
-	D_ACCESS(("CMidiDestination::ConnectTo(id)\n"));
-
-	BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(id);
-	if (consumer != NULL)
-		ConnectTo(consumer);
-}
-
-void
-CMidiDestination::ConnectTo(
-	const char *name)
-{
-	D_ACCESS(("CMidiDestination::ConnectTo(name)\n"));
-
-	BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(name);
-	if (consumer != NULL)
-		ConnectTo(consumer);
-	// +++ else remember name
-}
-
-void
-CMidiDestination::Disconnect()
-{
-	D_ACCESS(("CMidiDestination::Disconnect()\n"));
-
-	CMidiModule *mm = CMidiModule::Instance();
-	if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
-	{
-		m_producer->Disconnect(mm->FindConsumer(m_consumerID));
-		m_generalMidi = false;
-		m_consumerID = 0;
-		SetLatency(0);
-	}
 }
 
 void
@@ -219,7 +161,193 @@ CMidiDestination::SetChannel(
 }
 
 // ---------------------------------------------------------------------------
+// Operations
+
+void
+CMidiDestination::ConnectTo(
+	BMidiConsumer *consumer)
+{
+	D_OPERATION(("CMidiDestination::ConnectTo(consumer)\n"));
+	ASSERT(consumer != NULL);
+
+	Disconnect();
+
+	BMessage props;
+	if (consumer->GetProperties(&props) == B_OK)
+	{
+		if (props.HasBool("mev:internal_synth"))
+			// init internal synth
+			((Midi::CInternalSynth *)consumer)->Init();
+		if (props.HasBool("mev:general_midi"))
+			m_generalMidi = true;
+	}
+
+	m_consumerName = consumer->Name();
+	status_t error = m_producer->Connect(consumer);
+	if (error)
+		D_OPERATION((" -> error connecting to %s: %s\n",
+					 consumer->Name(), strerror(error)));
+	SetLatency(consumer->Latency());
+}
+
+void
+CMidiDestination::ConnectTo(
+	int32 id)
+{
+	D_OPERATION(("CMidiDestination::ConnectTo(id)\n"));
+
+	BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(id);
+	if (consumer != NULL)
+		ConnectTo(consumer);
+}
+
+void
+CMidiDestination::ConnectTo(
+	const char *name)
+{
+	D_OPERATION(("CMidiDestination::ConnectTo(name)\n"));
+	ASSERT(name != NULL);
+
+	Disconnect();
+
+	m_consumerName = name;
+	BMidiConsumer *consumer = CMidiModule::Instance()->FindConsumer(name);
+	if (consumer != NULL)
+		ConnectTo(consumer);
+}
+
+void
+CMidiDestination::Disconnect()
+{
+	D_OPERATION(("CMidiDestination::Disconnect()\n"));
+
+	CMidiModule *mm = CMidiModule::Instance();
+	BMidiConsumer *consumer = mm->FindConsumer(m_consumerName);
+	if ((consumer != NULL) && m_producer->IsConnected(consumer))
+	{
+		m_producer->Disconnect(consumer);
+		m_generalMidi = false;
+		SetLatency(0LL);
+	}
+}
+
+// ---------------------------------------------------------------------------
 // CDestination Implementation
+
+void
+CMidiDestination::DoneLocating(
+	bigtime_t when)
+{
+	D_HOOK(("CMidiDestination::DoneLocating(%Ld)\n",
+			when));
+
+	// we use this hook to flush the various cached states
+	map<event_type, CEvent>::iterator i;
+	for (i = m_state.begin(); i != m_state.end(); ++i)
+		Execute(i->second, when);
+	m_state.clear();
+}
+
+void
+CMidiDestination::Execute(
+	CEvent &event,
+	bigtime_t time)
+{
+	D_HOOK(("CMidiDestination::Execute(%s, %Ld)\n",
+			event.NameText(), time));
+
+	// Attempt to send the event.
+	switch (event.Command())
+	{
+		case EvtType_Note:
+		{
+			m_producer->SprayNoteOn(m_channel, event.note.pitch,
+									event.note.attackVelocity, time);
+			break;
+		}
+		case EvtType_NoteOff:
+		{
+			m_producer->SprayNoteOff(m_channel, event.note.pitch,
+									 event.note.releaseVelocity, time);
+			break;
+		}
+		case EvtType_ChannelATouch:
+		{
+			m_producer->SprayChannelPressure(m_channel, event.aTouch.value,
+											 time);
+			break;
+		}
+		case EvtType_PolyATouch:
+		{
+			m_producer->SprayKeyPressure(m_channel, event.aTouch.pitch,
+										 event.aTouch.value, time);
+			break;
+		}
+		case EvtType_Controller:
+		{
+			// Check if it's a 16-bit controller
+			uint8 lsbIndex = controllerInfoTable[event.controlChange.controller].LSBNumber;
+			if ((lsbIndex == event.controlChange.controller)
+			 || (lsbIndex > 127))
+			{
+				// It's an 8-bit controller.
+				m_producer->SprayControlChange(m_channel, event.controlChange.controller,
+											   event.controlChange.MSB, time);
+			}
+			else
+			{
+				// Handle the MSB first...if the MSB changed, then update LSB state as well
+				if (event.controlChange.MSB < 128)
+					m_producer->SprayControlChange(m_channel,
+												   event.controlChange.controller,
+												   event.controlChange.MSB, time);
+
+				// Now deal with the LSB.
+				if (event.controlChange.LSB < 128)
+					m_producer->SprayControlChange(m_channel, lsbIndex,
+												   event.controlChange.LSB, time);
+			}
+			break;
+		}
+		case EvtType_ProgramChange:
+		{
+			m_producer->SprayProgramChange(m_channel,
+										   event.programChange.program,
+										   time);
+			break;
+		}	
+		case EvtType_StartInterpolate:
+		{	
+			if (event.startInterpolate.interpolationType == Interpolation_PitchBend)
+			{
+				m_currentPitch = event.startInterpolate.startValue;
+				m_targetPitch = event.startInterpolate.targetValue;
+				m_producer->SprayPitchBend(m_channel,
+										   m_currentPitch & 0x7f,
+										   m_currentPitch >> 7,
+										   time);
+			}
+			break;
+		}
+		case EvtType_PitchBend:
+		{
+			// Don't send un-needed pitch-bends
+			m_producer->SprayPitchBend(m_channel,
+									   event.pitchBend.targetBend & 0x7f,
+									   event.pitchBend.targetBend >> 7,
+									   time);
+			break;
+		}
+		case EvtType_SysEx:
+		{
+			void *data = event.ExtendedData();
+			int32 size = event.ExtendedDataSize();	
+			if ((data != NULL) && (size > 0))
+				m_producer->SpraySystemExclusive(data, size, time);
+			break;
+		}
+	}
+}
 
 status_t
 CMidiDestination::GetIcon(
@@ -257,6 +385,50 @@ CMidiDestination::GetIcon(
 	return B_OK;
 }
 
+void
+CMidiDestination::Interpolate(
+	CEvent &event,
+	CEventStack &stack,
+	long time,
+	long elapsed)
+{
+	D_HOOK(("CMidiDestination::Interpolate(%s, %ld, %ld)\n",
+			event.NameText(), time, elapsed));
+
+	// Here's the amount by which the value would have changed in that time.
+	int32 delta = ((int32)m_targetPitch - (int32)m_currentPitch)
+				  * elapsed / (int32)event.interpolate.duration;
+
+	// If pitch bend has never been set, then center it.
+	if (m_currentPitch > 0x3fff)
+		m_currentPitch = 0x2000;
+
+	// Calculate the current state
+	int32 newValue = (int32)m_currentPitch + (int32)delta;
+
+	// Now, we're going to modify the interpolation event so that it
+	// is shorter, and later... and we're going to push that back onto
+	// the execution stack so that it gets sent back to us later.
+	event.interpolate.start += elapsed;
+	event.interpolate.duration -= elapsed;
+
+	// If there's more left to do in this interpolation, then push the event
+	// on the stack for the next iteration
+	if ((unsigned long)elapsed < event.interpolate.duration)
+		stack.Push(event);
+	else
+		newValue = m_targetPitch;
+
+	// Now, we need to construct a pitch bend event...
+	if (newValue != m_currentPitch)
+	{
+		event.pitchBend.command = EvtType_PitchBend;
+		event.pitchBend.targetBend = newValue;
+		Execute(event, time);
+		m_currentPitch = newValue;
+	}
+}
+
 CConsoleView *
 CMidiDestination::MakeConfigurationView(
 	BRect rect)
@@ -275,25 +447,32 @@ void
 CMidiDestination::ReadChunk(
 	CIFFReader &reader)
 {
+	D_SERIALIZE(("CMidiDestination::ReadChunk()\n"));
 	ASSERT(IsWriteLocked());
 
 	switch (reader.ChunkID())
 	{
 		case CONNECTION_NAME_CHUNK:
 		{
+			D_SERIALIZE((" -> CONNECTION_NAME_CHUNK\n"));
 			char buffer[Midi::CONNECTION_NAME_LENGTH];
 			reader.MustRead(buffer, MIN((size_t)reader.ChunkLength(),
 										Midi::CONNECTION_NAME_LENGTH));
-			ConnectTo(buffer);
+			D_SERIALIZE((" -> buffer = %s\n", buffer));
+			if (strlen(buffer) > 0)
+				ConnectTo(buffer);
 			break;
 		}
 		case DESTINATION_SETTINGS_CHUNK:
 		{
+			D_SERIALIZE((" -> DESTINATION_SETTINGS_CHUNK\n"));
 			reader >> m_channel;
+			D_SERIALIZE((" -> channel: %d\n", m_channel + 1));
 			break;
 		}
 		default:
 		{
+			D_SERIALIZE((" -> pass on to CDestination\n"));
 			CDestination::ReadChunk(reader);
 		}
 	}
@@ -319,6 +498,135 @@ CMidiDestination::Serialize(
 	writer.Push(Midi::DESTINATION_SETTINGS_CHUNK);
 	writer << m_channel;
 	writer.Pop();
+}
+
+void
+CMidiDestination::Stack(
+	CEvent &event,
+	const CEventTask &task,
+	CEventStack &stack,
+	long duration)
+{
+	D_HOOK(("CMidiDestination::Stack(%s, %ld)\n",
+			event.NameText(), duration));
+
+	if (IsMuted())
+		return;
+
+	CDestination::Stack(event, task, stack, duration);
+
+	switch (event.Command())
+	{
+		case EvtType_Note:
+		{
+			// Ignore the note event if locating
+			if (task.IsLocating())
+				break;
+			
+			// REM: Here we would do the VU meter code...
+			
+			// +++ move this to CEventTrack::FilterEvent ?
+			event.note.pitch += task.Transposition();
+
+			// If pitch went out of bounds, then don't play the note.
+			// +++++ CLIPPING WOULD BE MUCH NICER!
+			if (event.note.pitch & 0x80)
+				break;
+
+			// If there was room on the stack to push the note-off, then
+			// play the note-on
+			event.stack.start += duration;
+			event.stack.command = EvtType_NoteOff;
+			if (stack.Push(event))
+			{
+				event.stack.start -= duration;
+				event.stack.command	= EvtType_Note;
+				stack.Push(event);
+			}
+			break;
+		}
+		case EvtType_PitchBend:
+		{
+			// If locating, update channel state table but don't stack the event
+			if (task.IsLocating())
+			{
+				m_state[EvtType_PitchBend] = event;
+				break;
+			}
+
+			if ((duration > 0) && (event.pitchBend.updatePeriod > 0))
+			{
+				// Make a copy of the event
+				CEvent copy(event);
+
+				// Push a "start interpolating" event
+				copy.startInterpolate.command = EvtType_StartInterpolate;
+				copy.startInterpolate.interpolationType = Interpolation_PitchBend;
+				copy.startInterpolate.startValue = event.pitchBend.startBend;
+				copy.startInterpolate.targetValue = event.pitchBend.targetBend;
+				stack.Push(copy);
+
+				// Push an "interpolation" event
+				copy.interpolate.command = EvtType_Interpolate;
+				copy.interpolate.interpolationType = Interpolation_PitchBend;
+				copy.interpolate.duration = duration;
+				copy.interpolate.timeStep = event.pitchBend.updatePeriod;
+				copy.interpolate.start += event.pitchBend.updatePeriod;
+				stack.Push(copy);
+			}
+			else
+			{
+				// Just push an ordinary pitch bend event...
+				stack.Push(event);
+			}
+			break;
+		}
+		case EvtType_ProgramChange:
+		{
+			// If locating, update channel state table but don't stack the event
+			if (task.IsLocating())
+				m_state[EvtType_ProgramChange] = event;
+			else
+				stack.Push(event);
+			break;
+		}
+		case EvtType_ChannelATouch:
+		{
+			// If locating, update channel state table but don't stack the event
+			if (task.IsLocating())
+				m_state[EvtType_ChannelATouch] = event;
+			else
+				stack.Push(event);
+			break;
+		}
+		case EvtType_Controller:
+		{
+			// REM: Data entry controls should probably be passed through, since they
+			// can't be summarized in a simple way.
+			// (Actually, the ideal would be to aggregate data entry -- but that's a job for
+			// another time and another event type.)
+
+			// If locating, update channel state table but don't stack the event
+			if (task.IsLocating())
+				m_state[EvtType_Controller] = event;
+			else
+				stack.Push(event);
+			break;
+		}
+		case EvtType_PolyATouch:
+		{
+			// Ignore the event if locating
+			if (task.IsLocating())
+				break;
+			stack.Push(event);
+			break;
+		}
+		case EvtType_SysEx:
+		{
+			stack.Push(event);
+			break;
+		}
+	}
 }
 
 void

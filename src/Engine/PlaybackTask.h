@@ -105,6 +105,8 @@ public:							// Hook Functions
 
 public:							// Accessors
 
+	bool						IsLocating() const;
+
 	/**	Returns pointer to parent track, if any. */
 	CPlaybackTask *				Parent() const
 								{ return parent; }
@@ -112,7 +114,7 @@ public:							// Accessors
 	/**	Returns pointer to track. */
 	CTrack *					Track() const
 								{ return track; }
-	
+
 public:							// Operations
 
 	/** Re-queue this task on the list of tasks to do. */

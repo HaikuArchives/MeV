@@ -44,8 +44,15 @@ class CEventStack
 
 public:							// Constructor/Destructor
 
-	/** Default constructor. */
-								CEventStack();
+	/** Constructor.
+	 *	@param	capacity	Determines how many events the stack is able
+	 * 						to hold at a time. Default is 256.
+	 */
+								CEventStack(
+									long capacity = 256);
+
+	/** Destructor. */
+								~CEventStack();
 
 public:							// Accessors
 
@@ -60,38 +67,38 @@ public:							// Operations
 
 	/** Add event to stack. */
 	bool						Push(
-									const Event &ev);
+									const CEvent &ev);
 
 	/** Add event to stack at a specfic time. */
 	bool						Push(
-									const Event &ev,
+									const CEvent &ev,
 									long time);
 
 	/** push a list of events (all or none). */
 	bool						PushList(
-									Event *eventList,
+									CEvent *eventList,
 									int16 count,
 									long startTime);
 
 	/** Pop event from stack. */
 	bool						Pop(
-									Event &ev);
+									CEvent &ev);
 
 	/** Pop event to stack if time reached. */
 	bool						Pop(
-									Event &ev,
+									CEvent &ev,
 									long time);
 
 private:						// Instance Data
 
+	/** The stack of items. */
+	CEvent *					m_stack;
+
 	/** Top item of stack. */
-	Event *						m_current;
+	CEvent *					m_current;
 
 	/** Max item of stack. */
-	Event *						m_max;
-
-	/** The stack of items. */
-	Event						m_stack[256];
+	CEvent *					m_max;
 };
 
 /**	A class used in selectively filtering events from the event stack. */
@@ -110,7 +117,7 @@ public:							// Constructor/Destructor
 public:							// Accessors
 
 	/**	Returns pointer to current event, if any. */
-	Event *						Current() const;
+	CEvent *					Current() const;
 
 public:							// Operations
 
@@ -122,9 +129,9 @@ public:							// Operations
 
 private:						// Instance Data
 
-	Event *						m_read;
+	CEvent *					m_read;
 
-	Event *						m_write;
+	CEvent *					m_write;
 
 	CEventStack &				m_stack;
 };

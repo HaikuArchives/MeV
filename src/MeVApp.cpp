@@ -189,7 +189,7 @@ CMeVApp::CMeVApp()
 		 appPrefsOpen = false,
 		 aboutPlugOpen = false;
 
-	Event::InitTables();
+	CEvent::InitTables();
 	activeTrack = NULL;
 	filter = new CMeVRefFilter;
 	m_importFilter = new CImportRefFilter;

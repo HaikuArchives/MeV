@@ -49,15 +49,15 @@ public:							// CEventRenderer Implementation
 
 	/** Invalidate the event. */
 	virtual void				Invalidate(
-									const Event &ev) const ;
+									const CEvent &ev) const ;
 
 	/** Invalidate the event. */
 	virtual BRect				Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	/** Pick a single event and returns the distance. */
 	virtual long				Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
@@ -71,7 +71,7 @@ public:							// CEventRenderer Implementation
 	/** Quantize the vertical position of the mouse based
 		on the event type and return a value delta. */
 	virtual long				QuantizeDragValue(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos) const;
@@ -79,7 +79,7 @@ public:							// CEventRenderer Implementation
 	/** Make a drag op for dragging notes...
 		@param timeDelta The horizontal drag delta */
 	virtual EventOp *			CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -88,7 +88,7 @@ public:							// CEventRenderer Implementation
 	 @param timeDelta The horizontal drag delta
 	*/
 	virtual EventOp *			CreateTimeOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -123,14 +123,14 @@ CTrackEventRenderer::BLUE_PALETTE[] =
 
 void
 CTrackEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 BRect
 CTrackEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	BRect rect;
 	rect.left = Editor()->TimeToViewCoords(ev.Start());
@@ -143,7 +143,7 @@ CTrackEventRenderer::Extent(
 
 long
 CTrackEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
@@ -187,7 +187,7 @@ CTrackEventRenderer::Cursor(
 
 long
 CTrackEventRenderer::QuantizeDragValue(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos) const
@@ -204,7 +204,7 @@ CTrackEventRenderer::QuantizeDragValue(
 
 EventOp *
 CTrackEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -217,7 +217,7 @@ CTrackEventRenderer::CreateDragOp(
 
 EventOp *
 CTrackEventRenderer::CreateTimeOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -248,13 +248,13 @@ public:							// CTrackEventRenderer Implementation
 
 	/** Draw the event (or an echo) */
 	void						Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 };
 
 void
 CRepeatEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	BRect r;
@@ -360,13 +360,13 @@ public:							// CTrackEventRenderer Implementation
 
 	/** Draw the event (or an echo) */
 	void						Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 };
 
 void
 CSequenceEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	BRect r;
@@ -471,34 +471,34 @@ public:							// CEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	// Draw the event (or an echo)
 	void						Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 
 	// Invalidate the event
 	BRect						Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	// Pick a single event and returns the distance.
 	long						Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
 	// Quantize the vertical position of the mouse based
 	// on the event type and return a value delta.
 	long						QuantizeDragValue(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos) const;
 
 	// Make a drag op for dragging notes...
 	EventOp *					CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -511,14 +511,14 @@ public:							// Accessors
 
 void
 CTimeSigEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
 CTimeSigEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	BString sigText;
@@ -556,7 +556,7 @@ CTimeSigEventRenderer::Draw(
 
 BRect
 CTimeSigEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	char text[32];
 	sprintf(text, "%d/%d", ev.sigChange.numerator, 1 << (ev.sigChange.denominator));
@@ -573,7 +573,7 @@ CTimeSigEventRenderer::Extent(
 
 long
 CTimeSigEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
@@ -590,7 +590,7 @@ CTimeSigEventRenderer::Pick(
 
 long
 CTimeSigEventRenderer::QuantizeDragValue(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos) const
@@ -607,7 +607,7 @@ CTimeSigEventRenderer::QuantizeDragValue(
 
 EventOp *
 CTimeSigEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -635,27 +635,27 @@ public:							// CAbstractEventRenderer Implementation
 
 	/** Invalidate the event. */
 	virtual void				Invalidate(
-									const Event &ev) const ;
+									const CEvent &ev) const ;
 
 	/** Draw the event (or an echo). */
 	virtual void				Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 
 	/** Invalidate the event. */
 	virtual BRect				Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	/** Pick a single event and returns the distance. */
 	virtual long				Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
 	/** Quantize the vertical position of the mouse based
 		on the event type and return a value delta. */
 	virtual long				QuantizeDragValue(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos) const;
@@ -664,7 +664,7 @@ public:							// CAbstractEventRenderer Implementation
 		@param timeDelta The horizontal drag delta
 	*/
 	virtual EventOp *			CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -679,7 +679,7 @@ private:						// Internal Operations
 	/** Acquires the patch name of the given program change 
 		event and stuffs the name into outName. */
 	void						GetProgramName(
-									const Event &ev,
+									const CEvent &ev,
 									char *outName) const;
 
 private:						// Instance Data
@@ -709,7 +709,7 @@ CProgramChangeEventRenderer::~CProgramChangeEventRenderer()
 
 void
 CProgramChangeEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	BRect r;
 	r.left = Editor()->TimeToViewCoords(ev.Start());
@@ -729,7 +729,7 @@ CProgramChangeEventRenderer::Invalidate(
 
 void
 CProgramChangeEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	BRect extent;
@@ -801,7 +801,7 @@ CProgramChangeEventRenderer::Draw(
 
 BRect
 CProgramChangeEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	char programName[PROGRAM_NAME_LENGTH];
 	GetProgramName(ev, programName);
@@ -825,7 +825,7 @@ CProgramChangeEventRenderer::Extent(
 
 long
 CProgramChangeEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
@@ -842,7 +842,7 @@ CProgramChangeEventRenderer::Pick(
 
 long
 CProgramChangeEventRenderer::QuantizeDragValue(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos ) const
@@ -859,7 +859,7 @@ CProgramChangeEventRenderer::QuantizeDragValue(
 
 EventOp *
 CProgramChangeEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -869,7 +869,7 @@ CProgramChangeEventRenderer::CreateDragOp(
 
 void
 CProgramChangeEventRenderer::GetProgramName(
-	const Event &ev,
+	const CEvent &ev,
 	char *outName) const
 {
 	using namespace Midi;
@@ -899,20 +899,20 @@ public:							// CAbstractEventRenderer Implementation
 
 	/** Invalidate the event. */
 	virtual void				Invalidate(
-									const Event &ev) const ;
+									const CEvent &ev) const ;
 
 	/** Draw the event (or an echo). */
 	virtual void				Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 
 	/** Invalidate the event. */
 	virtual BRect				Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	/** Pick a single event and returns the distance. */
 	virtual long				Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
@@ -926,7 +926,7 @@ public:							// CAbstractEventRenderer Implementation
 	/** Quantize the vertical position of the mouse based
 		on the event type and return a value delta. */
 	virtual long				QuantizeDragValue(
-									const Event &inClickEvent,
+									const CEvent &inClickEvent,
 									short partCode,
 									BPoint inClickPos,
 									BPoint inDragPos) const;
@@ -934,7 +934,7 @@ public:							// CAbstractEventRenderer Implementation
 	/** Make a drag op for dragging notes...
 		@param timeDelta The horizontal drag delta */
 	virtual EventOp *			CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -943,7 +943,7 @@ public:							// CAbstractEventRenderer Implementation
 		@param timeDelta The horizontal drag delta
 	*/
 	virtual EventOp *			CreateTimeOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -973,14 +973,14 @@ CTempoEventRenderer::~CTempoEventRenderer()
 
 void
 CTempoEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
 CTempoEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	BRect extent;
@@ -1041,7 +1041,7 @@ CTempoEventRenderer::Draw(
 
 BRect
 CTempoEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	BString tempoText;
 	tempoText << static_cast<float>(ev.tempo.newTempo / 1000.0) << " bpm";
@@ -1065,7 +1065,7 @@ CTempoEventRenderer::Extent(
 
 long
 CTempoEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
@@ -1123,7 +1123,7 @@ CTempoEventRenderer::Cursor(
 
 long
 CTempoEventRenderer::QuantizeDragValue(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos) const
@@ -1140,7 +1140,7 @@ CTempoEventRenderer::QuantizeDragValue(
 
 EventOp *
 CTempoEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -1153,7 +1153,7 @@ CTempoEventRenderer::CreateDragOp(
 
 EventOp *
 CTempoEventRenderer::CreateTimeOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -1236,7 +1236,7 @@ CTrackCtlStrip::Draw(
 	EventMarker marker(Track()->Events());
 
 	// For each event that overlaps the current view, draw it.
-	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
+	for (const CEvent *ev = marker.FirstItemInRange(startTime, stopTime);
 		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
@@ -1396,7 +1396,7 @@ CTrackCtlStrip::MouseMoved(
 							return;
 
 						// Initialize a new event.
-						Event dragEv;
+						CEvent dragEv;
 						dragEv.SetCommand(EvtType_Sequence);
 						int32 time = RendererFor(dragEv)->QuantizeDragTime(dragEv,
 																		  0, BPoint(16.0, 0.0),
@@ -1475,7 +1475,7 @@ CTrackCtlStrip::SubjectUpdated(
 		// instance in the current bounds
 		StSubjectLock trackLock(*Track(), Lock_Shared);
 		EventMarker	marker(Track()->Events());
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
@@ -1505,11 +1505,11 @@ CTrackCtlStrip::SubjectUpdated(
 		EventMarker	marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if ((ev->HasProperty(Event::Prop_Channel))
+			if ((ev->HasProperty(CEvent::Prop_Channel))
 			 && (ev->GetVChannel() == channel))
 			{
 				RendererFor(*ev)->Invalidate(*ev);
@@ -1522,7 +1522,7 @@ CTrackCtlStrip::SubjectUpdated(
 		EventMarker marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
@@ -1540,7 +1540,7 @@ CTrackCtlStrip::SubjectUpdated(
 		// of these events get included in the damage region. This is in addition
 		// to invalidating the entire damage region, since there are also cases
 		// where simply invalidating the events isn't enough.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{

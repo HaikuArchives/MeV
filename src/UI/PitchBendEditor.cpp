@@ -76,7 +76,7 @@ public:							// Constructor
 public:							// Operators
 
 	void						operator()(
-									Event &ev,
+									CEvent &ev,
 									TClockType clockType);
 
 public:							// EventOp Implementation
@@ -91,7 +91,7 @@ public:							// Instance Data
 
 void
 DualBendOffsetOp::operator()(
-	Event &ev,
+	CEvent &ev,
 	TClockType clockType)
 {
 	if (ev.Command() == EvtType_PitchBend)
@@ -132,20 +132,20 @@ public:							// CEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
-									const Event	&ev) const ;
+									const CEvent &ev) const ;
 
 	// Draw the event (or an echo)
 	void						Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const;
 
 	// Invalidate the event
 	BRect						Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 		// Pick a single event and returns the distance.
 	long						Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
@@ -157,7 +157,7 @@ public:							// CEventRenderer Implementation
 									bool dragging = false) const;
 
 	long						QuantizeDragTime(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos,
@@ -166,20 +166,20 @@ public:							// CEventRenderer Implementation
 	// Quantize the vertical position of the mouse based
 	// on the event type and return a value delta.
 	long						QuantizeDragValue(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos ) const;
 
 	// Make a drag op for dragging notes...
 	EventOp *					CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
 
 	EventOp *					CreateTimeOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -192,14 +192,14 @@ protected:						// Accessors
 
 void
 CPitchBendEventRenderer::Invalidate(
-	const Event &ev ) const
+	const CEvent &ev ) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
 CPitchBendEventRenderer::Draw(
-	const Event &ev,
+	const CEvent &ev,
 	bool shadowed) const
 {
 	CDestination *dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
@@ -258,7 +258,7 @@ CPitchBendEventRenderer::Draw(
 
 BRect
 CPitchBendEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	float yStart = Editor()->ValueToViewCoords(ev.pitchBend.startBend - 0x2000);
 	float yStop = Editor()->ValueToViewCoords(ev.pitchBend.targetBend - 0x2000);
@@ -274,7 +274,7 @@ CPitchBendEventRenderer::Extent(
 
 long
 CPitchBendEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {
@@ -352,7 +352,7 @@ CPitchBendEventRenderer::Cursor(
 
 long
 CPitchBendEventRenderer::QuantizeDragValue(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos) const
@@ -364,7 +364,7 @@ CPitchBendEventRenderer::QuantizeDragValue(
 
 long
 CPitchBendEventRenderer::QuantizeDragTime(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos,
@@ -375,7 +375,7 @@ CPitchBendEventRenderer::QuantizeDragTime(
 
 EventOp *
 CPitchBendEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -395,7 +395,7 @@ CPitchBendEventRenderer::CreateDragOp(
 
 EventOp *
 CPitchBendEventRenderer::CreateTimeOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const

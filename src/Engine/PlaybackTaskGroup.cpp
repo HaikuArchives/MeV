@@ -76,7 +76,7 @@ CPlaybackTaskGroup::FlushEvents()
 
 	// Pop all events off of the stack!
 	// But only execute the note-offs.
-	Event ev;
+	CEvent ev;
 	while (real.stack.Pop(ev))
 	{
 		if (ev.Command() == EvtType_NoteOff)
@@ -267,122 +267,64 @@ CPlaybackTaskGroup::_changeTempo(
 
 void
 CPlaybackTaskGroup::_executeEvent(
-	Event &ev,
+	CEvent &ev,
 	TimeState &tState)
 {
 	D_INTERNAL(("CPlaybackTaskGroup::_executeEvent(%s)\n",
 				ev.NameText()));
 
-	uint8 cmd = ev.Command();
-	if (ev.HasProperty( Event::Prop_MIDI ))
+	switch (ev.Command())
 	{
-		if ((cmd == EvtType_Note) && (flags & Clock_Locating))
-			// no notes while locating
-			return;
-
-		thePlayer.SendEvent(ev, ev.stack.actualPort, ev.stack.actualChannel,
-							system_time());
-	}
-	else
-	{
-		CPlayer::ChannelState *chState;
-		switch (cmd)
+		case EvtType_TaskMarker:
 		{
-			case EvtType_TaskMarker:
+			if (ev.task.taskPtr->flags & CPlaybackTask::Task_Finished)
 			{
-				if (ev.task.taskPtr->flags & CPlaybackTask::Task_Finished)
+				delete ev.task.taskPtr;
+				if (tasks.Empty())
 				{
-					delete ev.task.taskPtr;
-					if (tasks.Empty())
-					{
-						BMessage message(Player_ChangeTransportState);
-						be_app->PostMessage(&message);
-					}
+					BMessage message(Player_ChangeTransportState);
+					be_app->PostMessage(&message);
 				}
-				else
-				{
-					ev.task.taskPtr->Play();
-				}
+			}
+			else
+			{
+				ev.task.taskPtr->Play();
+			}
+			return;
+		}
+		case EvtType_Interpolate:
+		{
+			// I was originally supposed to have executed at ev.Start() + timeStep,
+			// but I may be a bit later than that -- take the difference into account.
+			// Here's how much time has elapsed since I was dispatched...
+			int32 elapsed = tState.time - ev.Start()
+							+ ev.interpolate.timeStep;
 
-				break;
-			}		
-			case EvtType_StartInterpolate:
-			{	
-				chState = &thePlayer.m_portInfo[0].channelStates[ev.stack.actualChannel];
-				
-				switch (ev.startInterpolate.interpolationType)
-				{
-					case Interpolation_PitchBend:
-					{
-						// You know, one thing we COULD do is to search through the playback
-						// stack looking for interpolations to kill....do that at the time of the
-						// push I think.
-		
-						chState->pitchBendTarget = ev.startInterpolate.targetValue;
-		
-						ev.pitchBend.command = EvtType_PitchBend;
-						ev.pitchBend.targetBend = ev.startInterpolate.startValue;
-						thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
-					}
-				}
-				break;
-			}
-			case EvtType_Interpolate:
+			// If we went past the end, then clip the time.
+			if ((unsigned long)elapsed > ev.interpolate.duration)
+				elapsed = ev.interpolate.duration;
+
+			CDestination *dest = ev.common.destination;
+			if (dest != NULL)
 			{
-				chState = &thePlayer.m_portInfo[0].channelStates[ev.stack.actualChannel];
-				
-				switch (ev.startInterpolate.interpolationType)
+				if (dest->ReadLock(500))
 				{
-					case Interpolation_PitchBend:
-					{
-						int32		elapsed;
-						int32		delta;
-						int32		newValue;
-		
-						// I was originally supposed to have executed at ev.Start() + timeStep,
-						// but I may be a bit later than that -- take the difference into account.
-						// Here's how much time has elapsed since I was dispatched...
-						elapsed = tState.time - ev.Start() + ev.interpolate.timeStep;
-		
-						// If we went past the end, then clip the time.
-						if ((unsigned long)elapsed > ev.interpolate.duration)
-							elapsed = ev.interpolate.duration;
-		
-						// Here's the amount by which the value would have changed in that time.
-						delta = ((int32)chState->pitchBendTarget - (int32)chState->pitchBendState)
-							* elapsed / (int32)ev.interpolate.duration;
-							
-						// If pitch bend has never been set, then center it.
-						if (chState->pitchBendState > 0x3fff)
-							chState->pitchBendState = 0x2000;
-		
-						// Calculate the current state
-						newValue = (int32)chState->pitchBendState + (int32)delta;
-							
-						// Now, we're going to modify the interpolation event so that it
-						// is shorter, and later... and we're going to push that back onto
-						// the execution stack so that it gets sent back to us later.
-						ev.interpolate.start += elapsed;
-						ev.interpolate.duration -= elapsed;
-		
-						// If there's more left to do in this interpolation, then push the event
-						// on the stack for the next iteration
-						if ((unsigned long)elapsed < ev.interpolate.duration)
-							tState.stack.Push(ev);
-						else
-							newValue = chState->pitchBendTarget;
-		
-						// Now, we need to construct a pitch bend event...
-						if (newValue != chState->pitchBendState)
-						{
-							ev.pitchBend.command = EvtType_PitchBend;
-							ev.pitchBend.targetBend = newValue;
-							thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
-						}
-					}
-					break;
+					dest->Interpolate(ev, tState.stack, system_time(),
+									  elapsed);
+					dest->ReadUnlock();
 				}
 			}
+			return;
+		}
+	}
+
+	CDestination *dest = ev.common.destination;
+	if (dest != NULL)
+	{
+		if (dest->ReadLock(500))
+		{
+			dest->Execute(ev, system_time());
+			dest->ReadUnlock();
 		}
 	}
 }
@@ -394,7 +336,7 @@ CPlaybackTaskGroup::_flushNotes(
 	CEventStackIterator iter(stack);
 	for (;;)
 	{
-		Event *ev = iter.Current();
+		CEvent *ev = iter.Current();
 		if (ev == NULL)
 			break;
 		if (ev->Command() == EvtType_NoteOff)
@@ -480,15 +422,13 @@ CPlaybackTaskGroup::_locate()
 					{
 						int32 endTime = pbOptions & PB_Loop ? LONG_MAX
 															: metered.end;
-						th[ 1 ] = new CMeteredClockEventTask(*this,
-															 (CEventTrack *)tr,
-															 NULL, 0,
-															 endTime);
+						th[1] = new CMeteredClockEventTask(*this,
+														   (CEventTrack *)tr,
+														   NULL, 0, endTime);
 					}
 				}
 			}
 		}
-
 		flags &= ~(Locator_Reset | Locator_Find);
 	}
 
@@ -565,6 +505,17 @@ CPlaybackTaskGroup::_locate()
 	origin = thePlayer.m_internalTimerTick - real.time;
 	flags &= ~Clock_Locating;
 
+	// notify all destinations that locating has finished
+	if (doc->ReadLock(500))
+	{
+		CDestination *destination = NULL;
+		int32 index = 0;
+		bigtime_t now = system_time();
+		while ((destination = doc->GetNextDestination(&index)) != NULL)
+			destination->DoneLocating(now);
+		doc->ReadUnlock();
+	}
+
 	// Poke the main player task to make sure it handles the first
 	// event promptly. It doesn't have to actually do anything with
 	// this command.
@@ -582,7 +533,7 @@ CPlaybackTaskGroup::_locateNextChunk(
 	// they are needed, this code will not pop them until they are ready.
 	// this means that when we start the piece, there may be stuff already
 	// waiting on the stack. That's OK.
-	Event ev;
+	CEvent ev;
 	int32 count = 0;
 	while (tState.stack.Pop(ev, tState.seekTime) && (count < LOCATE_MAX))
 	{
@@ -632,7 +583,7 @@ void
 CPlaybackTaskGroup::_update(
 	long internalTicks)
 {
-	Event ev;
+	CEvent ev;
 
 	switch (syncType)
 	{

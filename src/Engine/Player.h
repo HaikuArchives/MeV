@@ -66,11 +66,13 @@
 #include "PlaybackTaskGroup.h"
 #include "PlayerControl.h"
 
-// Midi Kit
-#include <MidiEndpoint.h>
-#include <MidiProducer.h>
 // Support Kit
 #include <Locker.h>
+
+namespace Midi
+{
+	class CMidiOutput;
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -96,34 +98,6 @@ class CPlayer
 	friend class CMeteredTimeEventTask;
 	friend class CMasterEventTask;
 	friend class CPlayerControl;
-
-private:
-
-	struct ChannelState
-	{
-		/** Current pitch bend value. */
-		uint16	pitchBendState;
-
-		/** Target of interpolated pitch bend. */
-		uint16	pitchBendTarget;
-
-		uint8	program;
-
-		uint8	channelAfterTouch;
-
-		/** Controller states */
-		uint16	ctlStates[128];
-	};
-
-	struct PortInfo 
-	{
-		char			portName[64];
-
-		char			devString[32];
-
-		/** MIDI State information for each channel. */
-		ChannelState	channelStates[16];
-	};
 
 public:							// Constructor/Destructor
 
@@ -158,9 +132,6 @@ public:							// Operations
 	// Start all tasks and threads
 	void						Initialize();
 
-	// Initialize all channel state records...
-	void						InitChannelStates();
-
 	void						SetExternalTime(
 									int32 time);
 
@@ -168,23 +139,14 @@ public:							// Operations
 		check to see if it's time to wake up.
 	*/
 	bool						QueueEvents(
-									Event *eventList,
+									CEvent *eventList,
 									uint32 count,
 									int32 startTime);
 
 	/** Queue given events for immediate execution. */
 	bool						QueueImmediate(
-									Event *eventList,
+									CEvent *eventList,
 									uint32 count);
-
-	/** Send an event directly to a MIDI port. You probably shouldn't call
-		this directly (no locking, for one thing).
-	*/
-	void						SendEvent(
-									const Event &inEvent,
-									BMidiLocalProducer *inPort,
-									uint8 inActualChannel,
-									bigtime_t inTime);
 
 private:						// Internal Operations
 
@@ -224,15 +186,10 @@ private:						// Instance Data
 	DList						m_groupList;
 
 	/** context for playing songs */
-	CPlaybackTaskGroup *		songGroup;
+	CPlaybackTaskGroup *		m_songGroup;
 
 	/** context for playing seperate data */
-	CPlaybackTaskGroup *		wildGroup;
-
-	/** List of virtual midi ports */
-	BMidiLocalProducer *		m_ports[Max_MidiPorts];
-
-	PortInfo					m_portInfo[Max_MidiPorts];
+	CPlaybackTaskGroup *		m_wildGroup;
 };
 
 // Global instance of the player

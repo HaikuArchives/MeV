@@ -39,14 +39,13 @@
 #define __StdEventOps_H__
 
 #include "EventOp.h"
-//#include "sylvan/apptypes.h"
 
 /** ---------------------------------------------------------------------------
 	A null operation
 */
 
 class NullOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 	const char *UndoDescription() const { return "Nothing"; }
 };
 
@@ -55,7 +54,7 @@ class NullOp : public EventOp {
 */
 
 class PitchOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int16			deltaPitch;
@@ -72,7 +71,7 @@ class TimeOffsetOp : public EventOp {
 private:
 
 	int32			deltaTime;
-	void operator()( Event &ev, TClockType ) { ev.common.start += deltaTime; }
+	void operator()( CEvent &ev, TClockType ) { ev.common.start += deltaTime; }
 public:
 
 	virtual bool CanModifyOrder() const { return deltaTime != 0; }
@@ -89,9 +88,9 @@ private:
 
 	int32			deltaTime;
 
-	void operator()( Event &ev, TClockType )
+	void operator()( CEvent &ev, TClockType )
 	{
-		if (ev.HasProperty( Event::Prop_Duration ))
+		if (ev.HasProperty( CEvent::Prop_Duration ))
 		{
 			ev.SetDuration((ev.Duration() + deltaTime) > 1 ? (ev.Duration() + deltaTime) : 1);
 		}
@@ -111,9 +110,9 @@ private:
 
 	uint8			channel;
 
-	void operator()( Event &ev, TClockType )
+	void operator()( CEvent &ev, TClockType )
 	{
-		if (ev.HasProperty( Event::Prop_Channel )) ev.SetVChannel( channel );
+		if (ev.HasProperty( CEvent::Prop_Channel )) ev.SetVChannel( channel );
 	}
 
 public:
@@ -127,7 +126,7 @@ public:
 */
 
 class VPosOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int16			deltaPos;
@@ -145,7 +144,7 @@ class PairOp : public EventOp {
 					*op2;
 					
 public:
-	void operator()( Event &ev, TClockType cl ) { if (op1) (*op1)( ev, cl ); if (op2) (*op2)( ev, cl ); }
+	void operator()( CEvent &ev, TClockType cl ) { if (op1) (*op1)( ev, cl ); if (op2) (*op2)( ev, cl ); }
 	PairOp( EventOp *a, EventOp *b ) : op1( a ), op2( b )
 	{
 		if (op1) op1->Acquire();
@@ -169,7 +168,7 @@ public:
 // An operator which modifies target pitch bend
 
 class BendOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int32			delta;
@@ -182,7 +181,7 @@ public:
 // An operator which modifies initial pitch bend
 
 class IBendOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int32			delta;

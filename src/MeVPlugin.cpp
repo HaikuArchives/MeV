@@ -505,7 +505,7 @@ void MeVTrackRef::EndUndoAction( bool keep )
 }
 
 		/* Merge a list of sorted events into the EventList. */
-void MeVTrackRef::Merge( Event *inEventArray, long inEventCount )
+void MeVTrackRef::Merge( CEvent *inEventArray, long inEventCount )
 {
 	CEventTrack		*track = (CEventTrack *)(CTrack *)trackData;
 
@@ -563,18 +563,18 @@ MeVEventRef::~MeVEventRef()
 	delete data;
 }
 
-bool MeVEventRef::GetEvent(Event* inEvent) const
+bool MeVEventRef::GetEvent(CEvent* inEvent) const
 {
 	const EventMarker* marker = reinterpret_cast<const EventMarker*>(data);
 
 	return marker->Get(inEvent) == 1;
 }
 
-const Event* MeVEventRef::EventPtr()
+const CEvent* MeVEventRef::EventPtr()
 {
 	EventMarker* marker = reinterpret_cast<EventMarker*>(data);
 
-	return Valid() ? (const Event *)*marker : 0;
+	return Valid() ? (const CEvent *)*marker : 0;
 }
 
 bool MeVEventRef::Valid()

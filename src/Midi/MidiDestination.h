@@ -39,15 +39,21 @@
 #define __C_MidiDestination_H__
 
 #include "Destination.h"
+#include "Event.h"
+
+// Standard Template Library
+#include <map>
+// Support Kit
+#include <String.h>
 
 #define NOTE_NAME_LENGTH 128
 #define PROGRAM_NAME_LENGTH 128
 
 class CMeVDoc;
 
-namespace Midi {
+class BMidiLocalProducer;
 
-class CReconnectingMidiProducer;
+namespace Midi {
 
 /**	Destinations, allow routing and remapping of MIDI data
 	upon playback.
@@ -104,6 +110,13 @@ public:							// Accessors
 									BMidiConsumer *consumer) const;
 	BMidiConsumer *				ConnectedTo() const;
 
+	uint8						Channel() const
+								{ return m_channel; }
+	void 						SetChannel(
+									uint8 channel);
+
+public:							// Operations
+
 	void						ConnectTo(
 									BMidiConsumer *consumer);
 	void						ConnectTo(
@@ -113,20 +126,24 @@ public:							// Accessors
 
 	void						Disconnect();
 
-
-	BMidiLocalProducer *		Producer() const
-								{ return m_producer; }
-
-	uint8						Channel() const
-								{ return m_channel; }
-	void 						SetChannel(
-									uint8 channel);
-
 public:							// CDestination Implementation
+
+	virtual void				DoneLocating(
+									bigtime_t when);
+
+	virtual void				Execute(
+									CEvent &event,
+									bigtime_t when);
 
 	virtual status_t			GetIcon(
 									icon_size which,
 									BBitmap *outIcon);
+
+	virtual void				Interpolate(
+									CEvent &ev,
+									CEventStack &stack,
+									long time,
+									long elapsed);
 
 	virtual CConsoleView *		MakeConfigurationView(
 									BRect frame);
@@ -139,6 +156,12 @@ public:							// CDestination Implementation
 
 	virtual void				Serialize(
 									CIFFWriter &writer);
+
+	virtual void				Stack(
+									CEvent &event,
+									const CEventTask &task,
+									CEventStack &stack,
+									long duration);
 
 protected:
 
@@ -179,13 +202,18 @@ private:						// Instance Data
 	BMidiLocalProducer *		m_producer;					
 
 	/** ID of the consumer the producer has been connected to via MeV. */
-	int32						m_consumerID;
+	BString						m_consumerName;
 
 	/** MIDI channel. */
 	uint8						m_channel;
 
 	/** Whether or not this destination supports General Midi. */
 	bool						m_generalMidi;
+
+	map<event_type, CEvent>		m_state;
+
+	uint16						m_currentPitch;
+	uint16						m_targetPitch;
 };
 
 };

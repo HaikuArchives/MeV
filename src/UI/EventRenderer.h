@@ -39,7 +39,7 @@
 // Interface Kit
 #include <Rect.h>
 
-class Event;
+class CEvent;
 class CEventEditor;
 class EventOp;
 class CMeVDoc;
@@ -80,13 +80,13 @@ public:							// Hook Functions
 	 *	events when the drag operation is completed.
 	 */
 	virtual EventOp *			CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
 
 	virtual EventOp *			CreateTimeOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const;
@@ -101,22 +101,22 @@ public:							// Hook Functions
 	
 	/** Draw the event (or an echo). */
 	virtual	void				Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const = 0;
 
 	/** Invalidate the event. */
 	virtual	BRect				Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	/** Invalidate the event. */
 	virtual	void				Invalidate(
-									const Event &ev) const = 0;
+									const CEvent &ev) const = 0;
 
 	/** Pick a single event and return the part code,
 	 *	or -1 if event not picked.
 	 */
 	virtual long				Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint point,
 									short &partCode) const;
 
@@ -124,7 +124,7 @@ public:							// Hook Functions
 	 *	return a time delta.
 	 */
 	virtual long				QuantizeDragTime(
-									const Event &clickedEvent,
+									const CEvent &clickedEvent,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos,
@@ -134,7 +134,7 @@ public:							// Hook Functions
 	 *	on the event type and return a value delta.
 	 */
 	virtual long				QuantizeDragValue(
-									const Event &clickedEvent,
+									const CEvent &clickedEvent,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos) const;
@@ -168,12 +168,12 @@ public:							// CAbstractEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
-									const Event &ev) const
+									const CEvent &ev) const
 								{ }
 
 	// Draw the event (or an echo)
 	void						Draw(
-									const Event &ev,
+									const CEvent &ev,
 									bool shadowed) const
 								{ }
 };
@@ -196,19 +196,19 @@ public:							// CAbstractEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	// Draw the event (or an echo)
 	void						Draw(
-									const Event	&ev,
+									const CEvent &ev,
 									bool shadowed) const;
 	// Invalidate the event
 	BRect						Extent(
-									const Event &ev) const;
+									const CEvent &ev) const;
 
 	// Pick a single event and returns the distance.
 	long						Pick(
-									const Event &ev,
+									const CEvent &ev,
 									BPoint pickPt,
 									short &partCode) const;
 
@@ -222,7 +222,7 @@ public:							// CAbstractEventRenderer Implementation
 	// Quantize the vertical position of the mouse based
 	// on the event type and return a value delta.
 	long						QuantizeDragValue(
-									const Event &clickedEvent,
+									const CEvent &clickedEvent,
 									short partCode,
 									BPoint clickPos,
 									BPoint dragPos) const
@@ -230,7 +230,7 @@ public:							// CAbstractEventRenderer Implementation
 
 	// Make a drag op for dragging notes...
 	EventOp *					CreateDragOp(
-									const Event &ev,
+									const CEvent &ev,
 									short partCode,
 									long timeDelta,
 									long valueDelta) const

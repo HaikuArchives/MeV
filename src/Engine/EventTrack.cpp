@@ -101,7 +101,7 @@ void CEventTrack::SummarizeSelection()
 	selectionCount = 0;
 
 	EventMarker		marker( events );
-	const Event		*ev;
+	const CEvent		*ev;
 
 	lastEventTime = logicalLength = 0;
 
@@ -124,7 +124,7 @@ void CEventTrack::SummarizeSelection()
 				last;
 				
 			// last <== the stop time of the event
-		if (ev->HasProperty( Event::Prop_Duration ))
+		if (ev->HasProperty( CEvent::Prop_Duration ))
 			last = ev->Stop();
 		else last = first;
 
@@ -182,7 +182,7 @@ void CEventTrack::SummarizeSelection()
 				// -- but only if it does not already point to a selected event.
 			if (selectionCount == 0)
 			{
-				const Event	*cEv = currentEvent;
+				const CEvent	*cEv = currentEvent;
 			
 				if (cEv == NULL || !cEv->IsSelected()) currentEvent = marker;
 			}
@@ -347,20 +347,20 @@ void CEventTrack::SelectAll( CEventEditor *inEditor )
 		// For each event, select it.
 	if (inEditor != NULL)
 	{
-		for (const Event *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
+		for (const CEvent *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
 		{
 			if (!ev->IsSelected())
 			{
-				((Event *)ev)->SetSelected( true );
+				const_cast<CEvent *>(ev)->SetSelected( true );
 				(inEditor->RendererFor(*ev))->Invalidate(*ev);
 			}
 		}
 	}
 	else
 	{
-		for (const Event *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
+		for (const CEvent *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
 		{
-			((Event *)ev)->SetSelected( true );
+			const_cast<CEvent *>(ev)->SetSelected( true );
 		}
 	}
 
@@ -378,7 +378,7 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 	StSubjectLock					lock( *this, Lock_Exclusive );
 	EventMarker					marker( events );
 	CEventSelectionUpdateHint		hint( *this, true );
-	const Event					*ev;
+	const CEvent					*ev;
 
 	if (inEditor != NULL)
 	{
@@ -389,7 +389,7 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 		{
 			if (ev->IsSelected())
 			{
-				((Event *)ev)->SetSelected( false );
+				const_cast<CEvent *>(ev)->SetSelected( false );
 				(inEditor->RendererFor(*ev))->Invalidate(*ev);
 			}
 		}
@@ -401,7 +401,7 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 				ev;
 				ev = marker.NextItemInRange( MinSelectTime(), MaxSelectTime() ) )
 		{
-			((Event *)ev)->SetSelected( false );
+			const_cast<CEvent *>(ev)->SetSelected( false );
 		}
 	}
 
@@ -415,7 +415,7 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 
 void
 CEventTrack::DeleteEvent(
-	const Event *which)
+	const CEvent *which)
 {
 	StSubjectLock lock(*this, Lock_Exclusive);
 	CEventUpdateHint hint(*this, *which);
@@ -434,14 +434,14 @@ CEventTrack::DeleteEvent(
 	// If the operations did not effect the ordering of
 	// events, then things are much simpler.
 	// For each selected event.
-	for (const Event *ev = marker.First();
+	for (const CEvent *ev = marker.First();
 		 ev != NULL;
 		 ev = marker.Seek(1))
 	{
 		if (ev == which)
 		{
 			// make a copy of the event
-			Event evCopy(*ev);
+			CEvent evCopy(*ev);
 
 			// Delete from original list
 			marker.Remove(1, undoAction);
@@ -495,7 +495,7 @@ void CEventTrack::DeleteSelection()
 		// events, then things are much simpler.
 	
 	// For each selected event.
-	for (const Event *ev = marker.FirstItemInRange(MinSelectTime(), MaxSelectTime());
+	for (const CEvent *ev = marker.FirstItemInRange(MinSelectTime(), MaxSelectTime());
 		 ev != NULL;
 		 )
 	{
@@ -503,16 +503,16 @@ void CEventTrack::DeleteSelection()
 		{
 			// Remember what event types we changed
 			eventsModified[ev->Command()] = true;
-			Event evCopy(*ev);
+			CEvent evCopy(*ev);
 			// Delete from original list
 			marker.Remove(1, undoAction);
 			_eventRemoved(&evCopy);
 			// Increment to next event
-			ev = (const Event *)marker;
+			ev = (const CEvent *)marker;
 		}
 		else
 		{
-			ev = (const Event *)marker.Seek(1);
+			ev = (const CEvent *)marker.Seek(1);
 		}
 	}
 
@@ -591,27 +591,26 @@ void CEventTrack::ModifySelectedEvents(
 
 		marker.Track( EventMarker::Track_Next );
 
-			// Applying a modifier to the events which can
-			// cause a change in event order
-	
-			// For each selected event.
-		for (	Event *ev = (Event *)marker.First();
-				ev;
-				ev = (Event *)marker.Seek( 1 ) )
+		// Applying a modifier to the events which can
+		// cause a change in event order
+
+		// For each selected event.
+		for (CEvent *ev = const_cast<CEvent *>(marker.First());
+			 ev;
+			 ev = const_cast<CEvent *>(marker.Seek(1)))
 		{
-			Event		newEv;
+			if (!ev->IsSelected())
+				continue;
 
-			if (!ev->IsSelected()) continue;
+			// Remember what event types we changed
+			eventsModified[ev->Command()] = true;
 
-				// Remember what event types we changed
-			eventsModified[ ev->Command() ] = true;
-
-				// Temporarily copy the event, and apply the vertical
-				// component of the dragging to it.
-			newEv = *ev;
+			// Temporarily copy the event, and apply the vertical
+			// component of the dragging to it.
+			CEvent newEv(*ev);
 			op( newEv, clockType );
 
-				// Invalidate the new and old positions of the event
+			// Invalidate the new and old positions of the event
 			if (inEditor != NULL)
 			{
 				const CEventRenderer *renderer = inEditor->RendererFor(*ev);
@@ -619,8 +618,8 @@ void CEventTrack::ModifySelectedEvents(
 				renderer->Invalidate(newEv);
 			}
 
-				// replace the event in the sequence.
-			marker.Replace( &newEv, 1, undoAction );
+			// replace the event in the sequence.
+			marker.Replace(&newEv, 1, undoAction);
 		}
 	}
 	else
@@ -699,7 +698,7 @@ void CEventTrack::ModifySelectedEvents(
 	// Create a new event
 void CEventTrack::CreateEvent(
 	CEventEditor			*inEditor,
-	Event				&newEv,
+	CEvent				&newEv,
 	const char			*inActionLabel )
 {
 	StSubjectLock			trackLock( *this, Lock_Exclusive );
@@ -862,7 +861,7 @@ void CEventTrack::CopySelectedEvents(
 
 	// Merge-in an event stream.
 void CEventTrack::MergeEvents(
-	Event				*inEvents,
+	CEvent				*inEvents,
 	int32				eventCount,
 	EventListUndoAction	*undoAction)
 {
@@ -922,7 +921,7 @@ void CEventTrack::MergeEvents(
 }
 
 	// Filter an event through all of the filters assigned to this track.
-void CEventTrack::FilterEvent( Event &ioEv )
+void CEventTrack::FilterEvent( CEvent &ioEv )
 {
 	for (int i = 0; i < filterCount; i++)
 	{
@@ -1026,12 +1025,12 @@ void CEventTrack::AddUndoAction( UndoAction *inAction )
 
 void
 CEventTrack::_eventAdded(
-	const Event *ev)
+	const CEvent *ev)
 {
 	D_INTERNAL(("CEventTrack::_eventAdded()\n"));
 
 	// update list of used destinations if necessary
-	if (ev->HasProperty(Event::Prop_Channel))
+	if (ev->HasProperty(CEvent::Prop_Channel))
 	{
 		CDestination *dest = Document().FindDestination(ev->GetVChannel());
 		
@@ -1056,12 +1055,12 @@ CEventTrack::_eventAdded(
 
 void
 CEventTrack::_eventRemoved(
-	const Event *ev)
+	const CEvent *ev)
 {
 	D_INTERNAL(("CEventTrack::_eventRemoved()\n"));
 
 	// update list of used destinations if necessary
-	if (ev->HasProperty(Event::Prop_Channel))
+	if (ev->HasProperty(CEvent::Prop_Channel))
 	{
 		CDestination *dest = Document().FindDestination(ev->GetVChannel());
 		m_destinations[dest]--;
@@ -1088,11 +1087,11 @@ CEventTrack::_initUsedDestinations()
 
 	// Check the destination of each event
 	EventMarker	marker(events);
-	for (Event *ev = (Event *)marker.First();
+	for (CEvent *ev = const_cast<CEvent *>(marker.First());
 		 ev != NULL;
-		 ev = (Event *)marker.Seek(1))
+		 ev = const_cast<CEvent *>(marker.Seek(1)))
 	{
-		if (ev->HasProperty(Event::Prop_Channel))
+		if (ev->HasProperty(CEvent::Prop_Channel))
 		{
 			CDestination *dest = Document().FindDestination(ev->GetVChannel());
 			if (m_destinations.find(dest) == m_destinations.end())
@@ -1181,7 +1180,7 @@ CEventSelectionUpdateHint::CEventSelectionUpdateHint(
 
 CEventUpdateHint::CEventUpdateHint(
 	const CEventTrack &track,
-	const Event &event)
+	const CEvent &event)
 {
 	AddInt32("MinTime", event.Start());
 	AddInt32("MaxTime", event.Stop());

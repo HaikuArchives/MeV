@@ -22,12 +22,12 @@ const char *EventOp::CreatorName() const
 // ---------------------------------------------------------------------------
 // A null operation
 
-void NullOp::operator()( Event &, TClockType ) {}
+void NullOp::operator()( CEvent &, TClockType ) {}
 
 // ---------------------------------------------------------------------------
 // An operator which modifies pitch in a relative fashion
 
-void PitchOffsetOp::operator()( Event &ev, TClockType )
+void PitchOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Note)
 	{
@@ -40,7 +40,7 @@ void PitchOffsetOp::operator()( Event &ev, TClockType )
 // An operator which modifies attack velocity
 
 class AttackVelOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int16			delta;
@@ -49,7 +49,7 @@ public:
 	const char *UndoDescription() const { return "Change Attack Velocity"; }
 };
 
-void AttackVelOffsetOp::operator()( Event &ev, TClockType )
+void AttackVelOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Note)
 	{
@@ -62,7 +62,7 @@ void AttackVelOffsetOp::operator()( Event &ev, TClockType )
 // An operator which modifies release velocity
 
 class ReleaseVelOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int16			delta;
@@ -71,7 +71,7 @@ public:
 	const char *UndoDescription() const { return "Change Release Velocity"; }
 };
 
-void ReleaseVelOffsetOp::operator()( Event &ev, TClockType )
+void ReleaseVelOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Note)
 	{
@@ -83,7 +83,7 @@ void ReleaseVelOffsetOp::operator()( Event &ev, TClockType )
 // ---------------------------------------------------------------------------
 // An operator which modifies target pitch bend
 
-void BendOffsetOp::operator()( Event &ev, TClockType )
+void BendOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_PitchBend)
 	{
@@ -95,7 +95,7 @@ void BendOffsetOp::operator()( Event &ev, TClockType )
 // ---------------------------------------------------------------------------
 // An operator which modifies initial pitch bend
 
-void IBendOffsetOp::operator()( Event &ev, TClockType )
+void IBendOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_PitchBend)
 	{
@@ -108,7 +108,7 @@ void IBendOffsetOp::operator()( Event &ev, TClockType )
 // An operator which modifies pitch bend
 
 class SetUpdateRateOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int32			v;
@@ -117,7 +117,7 @@ public:
 	const char *UndoDescription() const { return "Change Update Rate"; }
 };
 
-void SetUpdateRateOp::operator()( Event &ev, TClockType )
+void SetUpdateRateOp::operator()( CEvent &ev, TClockType )
 {
 	if (	ev.Command() == EvtType_PitchBend
 		|| ev.Command() == EvtType_Controller
@@ -131,7 +131,7 @@ void SetUpdateRateOp::operator()( Event &ev, TClockType )
 // An operator which sets the repeat count of a repeat event
 
 class SetRepeatOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint16			v;
@@ -140,7 +140,7 @@ public:
 	const char *UndoDescription() const { return "Set Repeat Count"; }
 };
 
-void SetRepeatOp::operator()( Event &ev, TClockType )
+void SetRepeatOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Repeat) ev.repeat.repeatCount = v;
 }
@@ -149,7 +149,7 @@ void SetRepeatOp::operator()( Event &ev, TClockType )
 // An operator which sets the program value of a program change
 
 class SetProgramOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint16			v;
@@ -158,7 +158,7 @@ public:
 	const char *UndoDescription() const { return "Set Program"; }
 };
 
-void SetProgramOp::operator()( Event &ev, TClockType )
+void SetProgramOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_ProgramChange) ev.programChange.program = v;
 }
@@ -167,7 +167,7 @@ void SetProgramOp::operator()( Event &ev, TClockType )
 // An operator which sets the program bank of a program change
 
 class SetBankOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint16			v;
@@ -176,7 +176,7 @@ public:
 	const char *UndoDescription() const { return "Set Program Bank"; }
 };
 
-void SetBankOp::operator()( Event &ev, TClockType )
+void SetBankOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_ProgramChange)
 	{
@@ -189,7 +189,7 @@ void SetBankOp::operator()( Event &ev, TClockType )
 // An operator which sets the beat count of a timesig event
 
 class SetBeatCountOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint16			v;
@@ -198,7 +198,7 @@ public:
 	const char *UndoDescription() const { return "Set Time Signature"; }
 };
 
-void SetBeatCountOp::operator()( Event &ev, TClockType )
+void SetBeatCountOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_TimeSig) ev.sigChange.numerator = v;
 }
@@ -207,7 +207,7 @@ void SetBeatCountOp::operator()( Event &ev, TClockType )
 // An operator which sets the beat count of a timesig event
 
 class SetScaledTempoOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint32			v;
@@ -216,7 +216,7 @@ public:
 	const char *UndoDescription() const { return "Set Tempo"; }
 };
 
-void SetScaledTempoOp::operator()( Event &ev, TClockType )
+void SetScaledTempoOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Tempo) ev.tempo.newTempo = v;
 }
@@ -225,7 +225,7 @@ void SetScaledTempoOp::operator()( Event &ev, TClockType )
 // An operator which sets the beat size of a timesig event
 
 class SetBeatSizeOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint16			v;
@@ -234,7 +234,7 @@ public:
 	const char *UndoDescription() const { return "Set Time Signature"; }
 };
 
-void SetBeatSizeOp::operator()( Event &ev, TClockType )
+void SetBeatSizeOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_TimeSig) ev.sigChange.denominator = v;
 }
@@ -243,7 +243,7 @@ void SetBeatSizeOp::operator()( Event &ev, TClockType )
 // An operator which sets the sequence number
 
 class SetSequenceNumOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	uint16			v;
@@ -252,7 +252,7 @@ public:
 	const char *UndoDescription() const { return "Set Part"; }
 };
 
-void SetSequenceNumOp::operator()( Event &ev, TClockType )
+void SetSequenceNumOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Sequence)
 	{
@@ -264,7 +264,7 @@ void SetSequenceNumOp::operator()( Event &ev, TClockType )
 // An operator which modifies transposition
 
 class TransposeOffsetOp : public EventOp {
-	void operator()( Event &, TClockType );
+	void operator()( CEvent &, TClockType );
 
 public:
 	int16			delta;
@@ -273,7 +273,7 @@ public:
 	const char *UndoDescription() const { return "Change Transpose"; }
 };
 
-void TransposeOffsetOp::operator()( Event &ev, TClockType )
+void TransposeOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	if (ev.Command() == EvtType_Sequence)
 	{
@@ -285,7 +285,7 @@ void TransposeOffsetOp::operator()( Event &ev, TClockType )
 // ---------------------------------------------------------------------------
 // An operator which modifies explicit vertical position
 
-void VPosOffsetOp::operator()( Event &ev, TClockType )
+void VPosOffsetOp::operator()( CEvent &ev, TClockType )
 {
 	switch (ev.Command()) {
 	case EvtType_Repeat:

@@ -74,7 +74,7 @@ public:							// CEventEditor Implementation
 
 	/**	Do additional audio feedback or selection for this event.	*/
 	virtual void				DoEventFeedback(
-									const Event &event);
+									const CEvent &event);
 
 	virtual void				Draw(
 									BRect updateRect);

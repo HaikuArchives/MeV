@@ -5,7 +5,6 @@
 #include "PlayerControl.h"
 
 #include "MeVDoc.h"
-#include "MidiDestination.h"
 #include "PlaybackTask.h"
 #include "Player.h"
 
@@ -17,14 +16,14 @@ CPlayerControl::DoAudioFeedback(
 	CMeVDoc *doc,
 	enum E_EventAttribute feedbackAttribute,
 	uint8 attributeValue,
-	const Event *demoEvent)
+	const CEvent *demoEvent)
 {
 	using namespace Midi;
 
-	Event fbEvents[3];
-	Event *modEvent = &fbEvents[0];
-	Event *noteStart = &fbEvents[1];
-	Event *noteStop = &fbEvents[2];
+	CEvent fbEvents[3];
+	CEvent *modEvent = &fbEvents[0];
+	CEvent *noteStart = &fbEvents[1];
+	CEvent *noteStop = &fbEvents[2];
 
 	if (doc && demoEvent)
 	{
@@ -33,14 +32,8 @@ CPlayerControl::DoAudioFeedback(
 					   : demoEvent->GetVChannel();
 		if (doc->ReadLock(500))
 		{
-			CMidiDestination *dest = (CMidiDestination *)doc->FindDestination(destID);
+			modEvent->stack.destination = doc->FindDestination(destID);
 			doc->ReadUnlock();
-			if (dest->ReadLock(500))
-			{
-				modEvent->stack.actualPort = dest->Producer();	
-				modEvent->stack.actualChannel = dest->Channel();
-				dest->ReadUnlock();
-			}
 		}
 	}
 	else
@@ -48,8 +41,7 @@ CPlayerControl::DoAudioFeedback(
 		int32 channel = (feedbackAttribute == EvAttr_Channel)
 						? attributeValue
 						: 0;
-		modEvent->stack.actualPort = NULL;
-		modEvent->stack.actualChannel = channel;
+		modEvent->stack.destination = NULL;
 	}
 
 	// Set up a default list of events which plays an average note.
@@ -114,7 +106,7 @@ CPlayerControl::DoAudioFeedback(
 	StPlayerLock lock;
 
 	// Kill the previous feedback event
-	thePlayer.wildGroup->FlushEvents();
+	thePlayer.m_wildGroup->FlushEvents();
 
 	// If it's a note event, play the note.
 	// If the doc is already playing, play only the feedback event, no note,

@@ -37,21 +37,12 @@
 #ifndef __C_EventEditor_H__
 #define __C_EventEditor_H__
 
-// General
-#include "MeVSpec.h"
-// Engine
-#include "Event.h"
-// Framework
-#include "Observer.h"
-// User Interface
 #include "BorderView.h"
+#include "Event.h"
+#include "MeVSpec.h"
+#include "Observer.h"
 #include "StripView.h"
 #include "TrackWindow.h"
-
-/**
- *		Base class for event editor strip views.
- *		@author	Talin, Christoper Lenz.  
- */
 
 class CEventRenderer;
 class CEventTrack;
@@ -62,9 +53,13 @@ class EventOp;
 
 const unsigned int MAX_PLAYBACK_MARKERS = 8;
 
-class CEventEditor :
-	public CStripView,
-	public CObserver
+/**
+ *	Base class for event editor strip views.
+ *	@author	Talin, Christoper Lenz.  
+ */
+class CEventEditor
+	:	public CStripView,
+		public CObserver
 {
 	friend class		CEndEventRenderer;
 
@@ -141,7 +136,7 @@ public:							// Hook Functions
 
 	// Do additional audio feedback or selection for this event
 	virtual void				DoEventFeedback(
-									const Event &ev)
+									const CEvent &ev)
 								{ }
 
 	// Draw standard grid lines representing time
@@ -197,7 +192,7 @@ public:							// Accessors
 								{ m_renderers[type] = renderer; }
 
 	CEventRenderer *			RendererFor(
-									const Event &ev) const
+									const CEvent &ev) const
 								{ return m_renderers[ev.Command()]; }
 	CEventRenderer *			RendererFor(
 									event_type type) const
@@ -224,12 +219,12 @@ public:							// Operations
 
 	// Helps subclasses in picking events
 	long						PickDurationEvent( 
-									const Event &ev,
+									const CEvent &ev,
 									int yTop,
 									int yBottom,
 									BPoint pickPt,
 									short &partCode);
-	const Event *				PickEvent(
+	const CEvent *				PickEvent(
 									EventMarker &resultMarker,
 									const BPoint &pickPt,
 									short &resultPartCode);
@@ -376,7 +371,7 @@ protected:						// Instance Data
 	long						m_valueDelta;
 
 	// Newly-created event
-	Event						m_newEv;
+	CEvent						m_newEv;
 
 	// For drag selection
 	BPoint						m_anchorPos;

@@ -105,12 +105,6 @@ public:							// CMeVModule Implementation
 									int32 *id = NULL,
 									const char *name = NULL);
 
-	/** Called by the app when a document has been created or loaded.
-		We should start observing the document at this point.
-	 */
-	virtual void				DocumentOpened(
-									CMeVDoc *document);
-
 	/** Returns the generic icon for this module. */
 	virtual status_t			GetIcon(
 									icon_size which,
@@ -169,14 +163,6 @@ private:						// Instance Data
 	BMidiRoster *				m_roster;
 
 	CInternalSynth *			m_internalSynth;
-
-	/**	Maps MidiConsumer IDs to destinations. */
-	typedef multimap<string, CDestination *>
-								dest_map;
-	typedef multimap<string, CDestination *>::const_iterator
-								dest_iter;
-
-	dest_map					m_destinations;
 
 private:						// Class Data
 

@@ -4,6 +4,7 @@
 
 #include "Destination.h"
 
+#include "EventTask.h"
 #include "MeVDoc.h"
 #include "MeVFileID.h"
 
@@ -88,6 +89,23 @@ CDestination::CDestination(
 CDestination::~CDestination()
 {
 	D_ALLOC(("CDestination::~CDestination()\n"));
+}
+
+// ---------------------------------------------------------------------------
+// Hook Functions
+
+void
+CDestination::Stack(
+	CEvent &event,
+	const CEventTask &task,
+	CEventStack &stack,
+	long duration)
+{
+	D_HOOK(("CDestination::Stack(%s, %ld)\n",
+			event.NameText(), duration));
+
+	event.stack.destination = this;
+	event.stack.start -= (Latency() / 1000);
 }
 
 // ---------------------------------------------------------------------------
@@ -386,7 +404,8 @@ CDestination::Serialize(
 // Internal Operations
 
 bool 
-CDestination::_addFlag(int32 flag)
+CDestination::_addFlag(
+	int32 flag)
 {
 	if (!(m_flags & flag))
 	{
@@ -396,8 +415,10 @@ CDestination::_addFlag(int32 flag)
 
 	return false;
 }
+
 bool 
-CDestination::_removeFlag (int32 flag)
+CDestination::_removeFlag(
+	int32 flag)
 {
 	if (m_flags & flag)
 	{

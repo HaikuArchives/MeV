@@ -33,7 +33,7 @@ CEventRenderer::CEventRenderer(
 
 EventOp *
 CEventRenderer::CreateDragOp(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -43,7 +43,7 @@ CEventRenderer::CreateDragOp(
 
 EventOp *
 CEventRenderer::CreateTimeOp(
-	const Event	&ev,
+	const CEvent	&ev,
 	short partCode,
 	long timeDelta,
 	long valueDelta) const
@@ -82,14 +82,14 @@ CEventRenderer::Cursor(
 
 BRect
 CEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	return BRect(0.0, 0.0, -1.0, -1.0);
 }
 
 long
 CEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint point,
 	short &partCode) const
 {
@@ -98,7 +98,7 @@ CEventRenderer::Pick(
 
 long
 CEventRenderer::QuantizeDragTime(
-	const Event &ev,
+	const CEvent &ev,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos,
@@ -117,7 +117,7 @@ CEventRenderer::QuantizeDragTime(
 
 long
 CEventRenderer::QuantizeDragValue(
-	const Event &clickedEvent,
+	const CEvent &clickedEvent,
 	short partCode,
 	BPoint clickPos,
 	BPoint dragPos) const
@@ -145,7 +145,7 @@ CEventRenderer::Editor() const
 
 void
 CEndEventRenderer::Invalidate(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
@@ -154,7 +154,7 @@ static const pattern endPt = { { 0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff } };
 
 void
 CEndEventRenderer::Draw(
-	const Event	&ev,
+	const CEvent	&ev,
 	bool shadowed) const
 {
 	BRect r(Editor()->Bounds());
@@ -184,7 +184,7 @@ CEndEventRenderer::Draw(
 
 BRect
 CEndEventRenderer::Extent(
-	const Event &ev) const
+	const CEvent &ev) const
 {
 	BRect r(Editor()->Bounds());
 
@@ -196,7 +196,7 @@ CEndEventRenderer::Extent(
 
 long
 CEndEventRenderer::Pick(
-	const Event &ev,
+	const CEvent &ev,
 	BPoint pickPt,
 	short &partCode) const
 {

@@ -162,7 +162,7 @@ CEventEditor::DoDrag(
 			StSubjectLock trackLock(*Track(), Lock_Exclusive);
 			long newTimeDelta, newValueDelta;
 			EventOp	*newValueOp, *newTimeOp, *newDragOp;
-			const Event	*dragEvent;
+			const CEvent	*dragEvent;
 			
 			if (m_dragType == DragType_Create)
 				dragEvent = &m_newEv;
@@ -208,7 +208,7 @@ CEventEditor::DoDrag(
 			// and only if we're dragging something that can be fed back.
 			if ((newValueOp != NULL) && (newValueDelta != m_valueDelta))
 			{
-				Event feedbackEvent(*dragEvent);
+				CEvent feedbackEvent(*dragEvent);
 	
 				// REM: EvAttr_Pitch should not be hard coded.
 				// This should be in fact computed from the renderer.
@@ -219,7 +219,7 @@ CEventEditor::DoDrag(
 			
 			if (m_dragType == DragType_Create)
 			{
-				Event evCopy(m_newEv);
+				CEvent evCopy(m_newEv);
 	
 				if (m_dragOp)
 					(*m_dragOp)(evCopy, Track()->ClockType());
@@ -254,7 +254,7 @@ CEventEditor::DoDrag(
 			StSubjectLock trackLock(*Track(), Lock_Exclusive);
 			EventMarker marker(Track()->Events());
 			short partCode;
-			const Event *event = PickEvent(marker, point, partCode);
+			const CEvent *event = PickEvent(marker, point, partCode);
 			if (event)
 			{
 				Track()->DeleteEvent(event);
@@ -291,7 +291,7 @@ CEventEditor::DrawEchoEvents(
 
 	// Initialize an event marker for this Track().
 	EventMarker	marker(Track()->Events());
-	const Event *ev;
+	const CEvent *ev;
 	TClockType clockType = Track()->ClockType();
 
 	// For each event that overlaps the current view, draw it.
@@ -301,7 +301,7 @@ CEventEditor::DrawEchoEvents(
 	{
 		if (ev->IsSelected())
 		{
-			Event evCopy(*ev);
+			CEvent evCopy(*ev);
 			(*echoOp)(evCopy, clockType);
 			if ((evCopy.Start() <= stopTime) && (evCopy.Stop() >= startTime))
 				RendererFor(evCopy)->Draw(evCopy, true);
@@ -382,7 +382,7 @@ CEventEditor::FinishDrag(
 	int32 editMode = TrackWindow()->CurrentTool();
 	EventMarker marker(Track()->Events());
 	short partCode;
-	const Event	*ev;
+	const CEvent	*ev;
 	if ((ev = PickEvent(marker, point, partCode)) != NULL)
 		be_app->SetCursor(RendererFor(*ev)->Cursor(partCode, editMode));
 	else
@@ -422,8 +422,8 @@ CEventEditor::FinishDrag(
 					Track()->ModifySelectedEvents(this, *m_dragOp, "Drag");
 
 					// Update document default attributes
-					const Event *selectedEvent = Track()->CurrentEvent();
-					if (selectedEvent && selectedEvent->HasProperty(Event::Prop_Duration))
+					const CEvent *selectedEvent = Track()->CurrentEvent();
+					if (selectedEvent && selectedEvent->HasProperty(CEvent::Prop_Duration))
 						TrackWindow()->Document()->SetDefaultAttribute(EvAttr_Duration,
 																	   selectedEvent->Duration());
 				}
@@ -455,7 +455,7 @@ CEventEditor::InvalidateSelection()
 {
 	StSubjectLock trackLock(*Track(), Lock_Shared);
 	EventMarker marker(Track()->Events());
-	const Event *ev;
+	const CEvent *ev;
 
 	// For each event that overlaps the current view, draw it.
 	for (ev = marker.FirstItemInRange(Track()->MinSelectTime(), Track()->MaxSelectTime());
@@ -471,7 +471,7 @@ void
 CEventEditor::InvalidateSelection(
 	EventOp &inOp)
 {
-	const Event	*ev;
+	const CEvent	*ev;
 	StSubjectLock trackLock( *Track(), Lock_Shared );
 	EventMarker	marker( Track()->Events() );
 	TClockType clockType = Track()->ClockType();
@@ -485,7 +485,7 @@ CEventEditor::InvalidateSelection(
 		// by not invalidating notes outside the time range
 		if (ev->IsSelected())
 		{
-			Event evCopy(*ev);
+			CEvent evCopy(*ev);
 			inOp(evCopy, clockType);
 			RendererFor(*ev)->Invalidate(evCopy);
 		}
@@ -502,7 +502,7 @@ CEventEditor::StartDrag(
 	ulong modifierKeys = modifiers();
 	int32 toolState = TrackWindow()->CurrentTool();
 
-	const Event	*ev;
+	const CEvent	*ev;
 	EventMarker marker(Track()->Events());
 	short partCode;
 	if ((ev = PickEvent(marker, point, partCode)) != NULL)
@@ -523,7 +523,7 @@ CEventEditor::StartDrag(
 				wasSelected = true;
 				if (modifierKeys & B_SHIFT_KEY)
 				{
-					((Event *)ev)->SetSelected( false );
+					const_cast<CEvent *>(ev)->SetSelected(false);
 					RendererFor(*ev)->Invalidate(*ev);
 				
 					// This could be faster.
@@ -540,14 +540,14 @@ CEventEditor::StartDrag(
 				if (!(modifierKeys & B_SHIFT_KEY))
 					Track()->DeselectAll(this);
 
-				((Event *)ev)->SetSelected(true);
+				const_cast<CEvent *>(ev)->SetSelected(true);
 				RendererFor(*ev)->Invalidate(*ev);
-	
+
 				// This could be faster.
 				Track()->SummarizeSelection();
-	
+
 				// Update document default attributes
-				if (ev->HasProperty(Event::Prop_Duration))
+				if (ev->HasProperty(CEvent::Prop_Duration))
 					TrackWindow()->Document()->SetDefaultAttribute(EvAttr_Duration,
 																   ev->Duration());
 
@@ -704,11 +704,11 @@ CEventEditor::SubjectUpdated(
 		EventMarker	marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if ((ev->HasProperty(Event::Prop_Channel))
+			if ((ev->HasProperty(CEvent::Prop_Channel))
 			 && (ev->GetVChannel() == channel))
 			{
 				RendererFor(*ev)->Invalidate(*ev);
@@ -721,7 +721,7 @@ CEventEditor::SubjectUpdated(
 		EventMarker marker(Track()->Events());
 
 		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+		for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
@@ -786,7 +786,7 @@ CEventEditor::DoLassoTracking(
 		// Now, select all events in the rectangle...
 		// For each event that overlaps the current view, draw it.
 		EventMarker	marker(Track()->Events());
-		const Event *ev;
+		const CEvent *ev;
 		bool selectionChanged = false;
 		for (ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
@@ -801,14 +801,14 @@ CEventEditor::DoLassoTracking(
 			if (!ev->IsSelected() && r.Intersects(extent)
 			 && IsRectInLasso(extent, gPrefs.inclusiveSelection))
 			{
-				const_cast<Event *>(ev)->SetSelected(true);
+				const_cast<CEvent *>(ev)->SetSelected(true);
 				selectionChanged = true;
 				renderer->Invalidate(*ev);
 			}
 			else if (ev->IsSelected()
 			 && !IsRectInLasso(extent, gPrefs.inclusiveSelection))
 			{
-				const_cast<Event *>(ev)->SetSelected(false);
+				const_cast<CEvent *>(ev)->SetSelected(false);
 				selectionChanged = true;
 				renderer->Invalidate(*ev);
 			}
@@ -871,7 +871,7 @@ CEventEditor::DoRectangleTracking(
 		// Now, select all events in the rectangle...
 		// For each event that overlaps the current view, draw it.
 		EventMarker	marker(Track()->Events());
-		const Event	*ev;
+		const CEvent	*ev;
 		bool selectionChanged = false;
 		for (ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
@@ -887,7 +887,7 @@ CEventEditor::DoRectangleTracking(
 			 && (gPrefs.inclusiveSelection ? r.Intersects(extent)
 			 							   : r.Contains(extent)))
 			{
-				const_cast<Event *>(ev)->SetSelected(true);
+				const_cast<CEvent *>(ev)->SetSelected(true);
 				selectionChanged = true;
 				renderer->Invalidate(*ev);
 			}
@@ -895,7 +895,7 @@ CEventEditor::DoRectangleTracking(
 			 && (gPrefs.inclusiveSelection ? !r.Intersects(extent)
 			 							   : !r.Contains(extent)))
 			{
-				const_cast<Event *>(ev)->SetSelected(false);
+				const_cast<CEvent *>(ev)->SetSelected(false);
 				selectionChanged = true;
 				renderer->Invalidate(*ev);
 			}
@@ -955,7 +955,7 @@ CEventEditor::ViewCoordsToTime(
 	return m_frame.ViewCoordsToTime(relPos, m_track->ClockType());
 }
 
-const Event *
+const CEvent *
 CEventEditor::PickEvent(
 	EventMarker	&resultMarker,
 	const BPoint &pickPt,
@@ -973,7 +973,7 @@ CEventEditor::PickEvent(
 
 	// Initialize an event marker for this Track().
 	EventMarker marker(Track()->Events());
-	const Event *ev;
+	const CEvent *ev;
 
 	// For each event that overlaps the current view, draw it.
 	for (ev = marker.FirstItemInRange(startTime, stopTime);
@@ -997,7 +997,7 @@ CEventEditor::PickEvent(
 
 long
 CEventEditor::PickDurationEvent( 
-	const Event &ev,
+	const CEvent &ev,
 	int yTop,
 	int yBottom,
 	BPoint pickPt,
@@ -1177,7 +1177,7 @@ CEventEditor::DrawCreateEcho(
 	if (echoOp == NULL)
 		echoOp = m_dragOp;
 
-	Event evCopy(m_newEv);
+	CEvent evCopy(m_newEv);
 
 	if (echoOp)
 		(*echoOp)(evCopy, Track()->ClockType());
@@ -1365,7 +1365,7 @@ CEventEditor::MouseMoved(
 		{
 			EventMarker marker(Track()->Events());
 			short partCode;
-			const Event	*ev;
+			const CEvent	*ev;
 			if ((ev = PickEvent(marker, point, partCode)) != NULL)
 				be_app->SetCursor(RendererFor(*ev)->Cursor(partCode, editMode));
 			else
@@ -1397,7 +1397,7 @@ CEventEditor::MouseUp(
 	else
 	{
 		EventMarker marker(Track()->Events());
-		const Event	*ev;
+		const CEvent	*ev;
 		int32 editMode = TrackWindow()->CurrentTool();
 		short partCode;
 		if ((ev = PickEvent(marker, point, partCode)) != NULL)
@@ -1499,11 +1499,11 @@ CEventEditor::_destinationUpdated(
 			// that destination
 			CReadLock lock(Track());
 			EventMarker	marker(Track()->Events());
-			for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			for (const CEvent *ev = marker.FirstItemInRange(minTime, maxTime);
 				 ev;
 				 ev = marker.NextItemInRange(minTime, maxTime))
 			{
-				if ((ev->HasProperty(Event::Prop_Channel))
+				if ((ev->HasProperty(CEvent::Prop_Channel))
 				 && (ev->GetVChannel() == destID))
 				{
 					RendererFor(*ev)->Invalidate(*ev);
