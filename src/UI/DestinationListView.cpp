@@ -148,7 +148,7 @@ CDestinationListView::Update()
 		BRect icon_r;
 		icon_r.Set(0,0,15,15); 
 		//this isn't working zzz--
-		while (dest=(Document()->FindNextHigherDestinationID(id)))
+		while ((dest = Document()->FindNextHigherDestinationID(id)) != NULL)
 		{
 			if (dest)
 			{
@@ -203,7 +203,7 @@ void CDestinationListView::SetChannel( int inChannel )
 	int c=0;
 	int id=-1;
 	CDestination *dest;
-	while (dest=(Document()->FindNextHigherDestinationID(id)))
+	while ((dest = Document()->FindNextHigherDestinationID(id)) != NULL)
 	{	
 		id=dest->GetID();
 		if (Document()->SelectedDestination()==dest->GetID())
