@@ -62,90 +62,47 @@
 #ifndef __C_QuickKeyMenuItem_H__
 #define __C_QuickKeyMenuItem_H__
 
-#include <interface/MenuItem.h>
+// Interface Kit
+#include <MenuItem.h>
+// Support Kit
+#include <String.h>
 
-class CQuickKeyMenuItem : public BMenuItem {
+class CQuickKeyMenuItem
+	:	public BMenuItem
+{
+								
+public:							// Constructor/Destructor
 
-	char			*shortLabel;
-	char			shortKey;
+								CQuickKeyMenuItem(
+									const char *label,
+									BMessage *message,
+									char shortcutKey,
+									char *shortcutLabel);
+
+public:							// BMenuItem Implementation
+
+	virtual void				DrawContent();
+
+	virtual void				GetContentSize(
+									float *width,
+									float *height);
 	
-public:
+	// Given an unmodified shortcut key, search a menu for a
+	// menu item which has a matching shortcut key, and invoke it.
+	// Returns true if such an item was found.
+	// You should call this in your app when you recieve a
+	// keydown event which does not have a command modifier
+	// (unless, of course, the current focus view is a BTextView
+	// of other view which could logically accept the key.)
+	static bool					TriggerShortcutMenu(
+									BMenu *menu,
+									char key);
 
-	CQuickKeyMenuItem(	const char	*inLabel,
-						BMessage		*inMessage,
-						char			inShortcutKey,
-						char			*inShortcutLabel )
-		: BMenuItem( inLabel, inMessage, 0, 0 )
-	{
-		shortKey = inShortcutKey;
-		shortLabel = inShortcutLabel;
-	}
+private:						// Instance Data
 
-	void DrawContent()
-	{
-		BRect		r( Frame() );
-		BFont		font;
-		font_height	fh;
-		
-		Menu()->GetFont( &font );
-		font.GetHeight( &fh );
-	
-		BMenuItem::DrawContent();
-		Menu()->MovePenTo(	r.right - 2 - Menu()->StringWidth( shortLabel ),
-							r.bottom - fh.descent - fh.leading );
-		Menu()->DrawString( shortLabel );
-	}
+	char						m_shortcutKey;
 
-	void GetContentSize( float *width, float *height )
-	{
-		BMenuItem::GetContentSize( width, height );
-		*width += 20.0 + Menu()->StringWidth( shortLabel );
-	}
-	
-		/**	Given an unmodified shortcut key, search a menu for a
-			menu item which has a matching shortcut key, and invoke it.
-			Returns true if such an item was found.
-			
-			<p>You should call this in your app when you recieve a
-			keydown event which does not have a command modifier
-			(unless, of course, the current focus view is a BTextView
-			of other view which could logically accept the key.)
-		*/
-	static bool TriggerShortcutMenu( BMenu *inMenu, char inKey )
-	{
-		int32		count = inMenu->CountItems();
-		BMenu		*subMenu;
-
-			// Search all menu items.
-		for (int32 i = 0; i < count; i++)
-		{
-			BMenuItem			*mi = inMenu->ItemAt( i );
-			CQuickKeyMenuItem	*kqmi;	
-			
-			if (!mi->IsEnabled()) continue;
-		
-				// If it's one of ours, and it has a matching key...
-			if ((kqmi = dynamic_cast<CQuickKeyMenuItem *>(mi)) != NULL)
-			{
-				if (kqmi->shortKey == inKey)
-				{
-						// Unfortunately, BMenuItem makes Invoker a private
-						// function, so we're going to have to do without
-						// it's added functionality.
-					kqmi->BInvoker::Invoke();
-					return true;
-				}
-			}
-			
-				// Search submenus
-			if ((subMenu = mi->Submenu()) != NULL)
-			{
-					// Recursive search
-				if (TriggerShortcutMenu( subMenu, inKey )) return true;
-			}
-		}
-		return false;
-	}
+	BString						m_shortcutLabel;
 };
 
 #endif /* __C_QuickKeyMenuItem_H__ */
