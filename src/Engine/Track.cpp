@@ -103,7 +103,7 @@ void
 CTrack::SetName(
 	const char *name)
 {
-	strncpy(m_name, name, 64);
+	strncpy(m_name, name, TRACK_NAME_LENGTH);
 
 	// Tell everyone that the name of the track changed
 	CUpdateHint hint;
@@ -160,8 +160,7 @@ void CTrack::ReadTrackChunk( CIFFReader &reader )
 		break;
 		
 	case Track_Name_ID:
-		reader.MustRead(m_name, MIN(reader.ChunkLength(), sizeof(m_name)));
-		m_name[sizeof(m_name - 1)] = '\0';
+		reader.MustRead(m_name, MIN(reader.ChunkLength(), TRACK_NAME_LENGTH));
 		break;
 	}
 }
@@ -180,7 +179,7 @@ void CTrack::WriteTrack( CIFFWriter &writer )
 	writer << flags << clock;
 	writer.Pop();
 
-	writer.WriteChunk(Track_Name_ID, m_name, strlen(m_name) + 1);
+	writer.WriteChunk(Track_Name_ID, m_name, TRACK_NAME_LENGTH);
 }
 
 // ---------------------------------------------------------------------------

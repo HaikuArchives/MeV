@@ -49,6 +49,8 @@ class CMeVDoc;
 class CIFFReader;
 class CIFFWriter;
 
+#define TRACK_NAME_LENGTH 64
+
 class CTrack
 	:	public CObservableSubject
 {
@@ -57,7 +59,9 @@ class CTrack
 private:						// Instance Data
 
 	short			trackID;				// id number of this track
-	char			m_name[64];				// name of the track
+
+	/** name of the track */
+	char			m_name[TRACK_NAME_LENGTH];
 	CMeVDoc			&document;				// pointer to parent document
 	
 	bool			muted;						// track is muted
