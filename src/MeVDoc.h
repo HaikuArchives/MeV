@@ -74,7 +74,7 @@ public:							// Constants
 	{
 								ASSEMBLY_WINDOW = 0,
 
-								ENVIRONMENT_WINDOW,
+								MIX_WINDOW,
 
 								OPERATORS_WINDOW,
 

@@ -17,6 +17,7 @@
 #include "MeVFileID.h"
 #include "MidiDestination.h"
 #include "MidiDeviceInfo.h"
+#include "MixWindow.h"
 #include "OperatorWindow.h"
 #include "PlayerControl.h"
 #include "ScreenUtils.h"
@@ -60,7 +61,7 @@ CMeVDoc::CMeVDoc(
 	_init();
 	_addDefaultOperators();
 	m_windowState[ASSEMBLY_WINDOW] = BRect(40, 40, 480, 280);
-	m_windowState[ENVIRONMENT_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
+	m_windowState[MIX_WINDOW] = BRect(80, 80, 520, 320);
 	m_windowState[OPERATORS_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 
 	m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0,
@@ -87,7 +88,7 @@ CMeVDoc::CMeVDoc(
 	_init();
 	_addDefaultOperators();
 	m_windowState[ASSEMBLY_WINDOW] = BRect(40, 40, 480, 280);
-	m_windowState[ENVIRONMENT_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
+	m_windowState[MIX_WINDOW] = BRect(80, 80, 420, 220);
 	m_windowState[OPERATORS_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 
 	while (reader.NextChunk())
@@ -196,9 +197,6 @@ CMeVDoc::OperatorAt(
 // ---------------------------------------------------------------------------
 // Window Management
 
-// ---------------------------------------------------------------------------
-// Window Management
-
 BWindow *
 CMeVDoc::ShowWindow(
 	uint32 which,
@@ -212,7 +210,7 @@ CMeVDoc::ShowWindow(
 
 	if (show && (m_windowState[which].Activate() == false))
 	{
-		BWindow *window;
+		CAppWindow *window;
 		switch (which)
 		{
 			case ASSEMBLY_WINDOW:
@@ -220,15 +218,18 @@ CMeVDoc::ShowWindow(
 				ShowWindowFor(m_masterMeterTrack);
 				break;
 			}
-			case ENVIRONMENT_WINDOW:
+			case MIX_WINDOW:
 			{
-				// nyi
+				window = new CMixWindow(m_windowState[which], this);
+				window->Show();
+				m_windowState[which].WindowOpened(window);
 				break;
 			}
 			case OPERATORS_WINDOW:
 			{
 				window = new COperatorWindow(m_windowState[which], *this);
 				window->Show();
+				m_windowState[which].WindowOpened(window);
 				break;
 			}
 		}
@@ -237,9 +238,8 @@ CMeVDoc::ShowWindow(
 	else if (!show)
 	{
 		m_windowState[which].Close();
+		return NULL;
 	}
-
-	return NULL;
 }
 
 bool
