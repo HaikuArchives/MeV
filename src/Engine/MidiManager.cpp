@@ -207,13 +207,13 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 }
 BMidiLocalProducer * CMidiManager::InternalSynth()
 {
-	if (m_isynth_sink)
+	if (m_isynth_sink!=NULL)
 	{
 		return (m_isynth_source);
 	}
 	else
 	{
-		CInternalSynth *m_isynth_sink=new CInternalSynth("Internal Synth");
+		m_isynth_sink=new CInternalSynth("Internal Synth");
 		m_isynth_source->Connect(m_isynth_sink);
 		return (m_isynth_source);
 	}

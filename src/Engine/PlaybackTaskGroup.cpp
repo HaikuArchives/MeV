@@ -697,7 +697,6 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 
 				ev.pitchBend.command = EvtType_PitchBend;
 				ev.pitchBend.targetBend = ev.startInterpolate.startValue;
-				printf("2!!\n");
 				thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
 				break;
 

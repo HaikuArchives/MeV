@@ -2,6 +2,7 @@
 #include <MidiSynth.h>
 #include <Midi.h>
 #include <stdio.h>
+#include <iostream.h>
 CInternalSynth::CInternalSynth(char *name) : BMidiLocalConsumer(name)
 {
 	m_midiSynth=new BMidiSynth;
@@ -22,9 +23,6 @@ void CInternalSynth::NoteOn(uchar channel,
                          bigtime_t time)
 {
         m_midiSynth->NoteOn(channel,note,velocity,time/1000);
-		printf ("The time now is %ld\n",B_NOW);
-		printf ("The play time is %ld\n",time);
-		printf ("The diff is %ld\n",B_NOW-time);
 }
 void CInternalSynth::KeyPressure(uchar channel,
                               uchar note,
@@ -83,8 +81,6 @@ void CInternalSynth::TempoChange(int32 bpm, bigtime_t time = B_NOW)
 
 CInternalSynth::~CInternalSynth()
 {
-	printf("~CInternalSynth yo\n");
-   // Release();
     delete m_midiSynth;
 }
 

@@ -78,7 +78,6 @@ class CMidiManager : public BLooper{
 		static CMidiManager *m_instance;
 		BList m_midiProducers;
 		int32 m_pos;
-	
 		BMidiRoster *m_roster;
 		void _addProducer(int32 id);
 		void _addConsumer(int32 id);
