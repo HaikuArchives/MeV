@@ -4,171 +4,222 @@
 
 #include "StdBevels.h"
 
-void DrawBorderBevel(	BView				&view,
-					BRect				r,
-					enum EBevelStates	state )
+// Interface Kit
+#include <View.h>
+// Support Kit
+#include <Debug.h>
+
+// Debugging Macros
+#define D_OPERATION(x) //PRINT (x)			// Operations
+
+// ---------------------------------------------------------------------------
+// Operations
+
+void
+StdBevels::DrawBorderBevel(
+	BView *target,
+	BRect rect,
+	bevel_state state)
 {
+	D_OPERATION(("StdBevels::DrawBorderBevel()\n"));
+
+	static rgb_color normal_greys[] = 
+	{{128, 128, 128},
+	 {255, 255, 255},
+	 {190, 190, 190},
+	 {220, 220, 220}};
+
+	static rgb_color depressed_greys[] =
+	{{128, 128, 128},
+	 {140, 140, 140},
+	 {200, 200, 200},
+	 {180, 180, 180}};
+
+	static rgb_color dimmed_greys[] =
+	{{180, 180, 180},
+	 {230, 230, 230},
+	 {210, 210, 210},
+	 {220, 220, 220}};
+
 	rgb_color		*colors;
+	switch (state)
+	{
+		case DIMMED_BEVEL:
+		{
+			colors = dimmed_greys;
+			break;
+		}
+		case DEPRESSED_BEVEL:
+		{
+			colors = depressed_greys;
+			break;
+		}
+		default: // NORMAL_BEVEL
+		{
+			colors = normal_greys;
+			break;
+		}
+	}
 
-	static rgb_color	normal_greys[] = {	{ 128, 128, 128 },		// outline
-										{ 255, 255, 255 },
-										{ 190, 190, 190 },
-										{ 220, 220, 220 } };
+	target->BeginLineArray(10);
+		target->AddLine(rect.LeftTop(), rect.RightTop(), colors[0]);
+		target->AddLine(rect.RightTop(), rect.RightBottom(), colors[0]);
+		target->AddLine(rect.RightBottom(), rect.LeftBottom(), colors[0]);
+		target->AddLine(rect.LeftBottom(), rect.LeftTop(), colors[0]);
+		rect.InsetBy(1.0, 1.0);
+		target->AddLine(rect.LeftBottom(), rect.LeftTop(), colors[1]);
+		target->AddLine(rect.LeftTop(), rect.RightTop(), colors[1]);
+		target->AddLine(rect.RightTop(), rect.RightBottom(), colors[2]);
+		target->AddLine(rect.RightBottom(), rect.LeftBottom(), colors[2]);
+		target->AddLine(rect.LeftBottom(), rect.LeftBottom(), colors[3]);
+		target->AddLine(rect.RightTop(), rect.RightTop(), colors[3]);
+	target->EndLineArray();
 
-	static rgb_color	depressed_greys[] = {	{ 128, 128, 128 },		// outline
-										{ 140, 140, 140 },
-										{ 200, 200, 200 },
-										{ 180, 180, 180 } };
-
-	static rgb_color	dimmed_greys[] = {	{ 180, 180, 180 },		// outline
-										{ 230, 230, 230 },
-										{ 210, 210, 210 },
-										{ 220, 220, 220 } };
-
-	if (state == Bevel_Dimmed)			colors = dimmed_greys;
-	else if (state == Bevel_Depressed)	colors = depressed_greys;
-	else									colors = normal_greys;
-	
-	view.SetHighColor( 128, 128, 128 );
-	view.StrokeRect( r );
-	r.InsetBy( 1.0, 1.0 );
-
-	view.SetHighColor( colors[ 1 ] );
-	view.FillRect( BRect( r.left, r.top, r.left, r.bottom - 1 ) );
-	view.FillRect( BRect( r.left, r.top, r.right - 1, r.top ) );
-	
-	view.SetHighColor( colors[ 2 ] );
-	view.FillRect( BRect( r.right, r.top, r.right, r.bottom - 1 ) );
-	view.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-	
-	view.SetHighColor( colors[ 3 ] );
-	view.FillRect( BRect( r.left, r.bottom, r.left, r.bottom ) );
-	view.FillRect( BRect( r.right, r.top, r.right, r.top ) );
-	r.InsetBy( 1.0, 1.0 );
-	view.FillRect( r );
+	rect.InsetBy(1.0, 1.0);
+	target->SetHighColor(colors[3]);
+	target->FillRect(rect);
 }
 
-void DrawButtonBevel(	BView				&view,
-					BRect				r,
-					enum EBevelStates	state )
+void
+StdBevels::DrawButtonBevel(
+	BView *target,
+	BRect rect,
+	bevel_state state)
 {
-	view.SetHighColor( 80, 80, 80 );
-	view.FillRect( BRect( r.left + 1, r.top, r.right - 1, r.top ) );
-	view.FillRect( BRect( r.left + 1, r.bottom, r.right - 1, r.bottom ) );
-	view.FillRect( BRect( r.left, r.top + 1, r.left, r.bottom - 1 ) );
-	view.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom - 1 ) );
-	r.InsetBy( 1.0, 1.0 );
+	D_OPERATION(("StdBevels::DrawBorderBevel()\n"));
+
+	target->SetHighColor( 80, 80, 80 );
+	target->FillRect( BRect( rect.left + 1, rect.top, rect.right - 1, rect.top ) );
+	target->FillRect( BRect( rect.left + 1, rect.bottom, rect.right - 1, rect.bottom ) );
+	target->FillRect( BRect( rect.left, rect.top + 1, rect.left, rect.bottom - 1 ) );
+	target->FillRect( BRect( rect.right, rect.top + 1, rect.right, rect.bottom - 1 ) );
+	rect.InsetBy( 1.0, 1.0 );
 
 	switch (state) {
-	case Bevel_Normal:
-			// 1st highlight
-		view.SetHighColor( 235, 235, 235 );
-		view.FillRect( BRect( r.left, r.top, r.right, r.top ) );
-		view.FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
-			// Main highlight
-		view.SetHighColor( 255, 255, 255 );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.right - 1, r.top + 1 ) );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.left + 1, r.bottom - 1 ) );
-			// Deep shadow
-		view.SetHighColor( 168, 168, 168 );
-		view.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-		view.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom ) );
-			// Mild shadow
-		view.SetHighColor( 200, 200, 200 );
-		view.FillRect( BRect( r.left + 2, r.bottom - 1, r.right - 1, r.bottom - 1 ) );
-		view.FillRect( BRect( r.right - 1, r.top + 2, r.right - 1, r.bottom - 1 ) );
+		case DEPRESSED_BEVEL:
+		{
+				// 1st highlight
+			target->SetHighColor( 96, 96, 96 );
+			
+			target->FillRect( BRect( rect.left, rect.top, rect.right, rect.top ) );
+			target->FillRect( BRect( rect.left, rect.top, rect.left, rect.bottom ) );
+				// 2nd highlight
+			target->SetHighColor( 120, 120, 120 );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.right - 1, rect.top + 1 ) );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.left + 1, rect.bottom - 1 ) );
+				// Deep shadow
+			target->SetHighColor( 184, 184, 184 );
+			target->FillRect( BRect( rect.left + 1, rect.bottom, rect.right, rect.bottom ) );
+			target->FillRect( BRect( rect.right, rect.top + 1, rect.right, rect.bottom ) );
+				// Mild Shadow
+			target->SetHighColor( 176, 176, 176 );
+			target->FillRect( BRect( rect.left + 2, rect.bottom - 1, rect.right - 1, rect.bottom - 1 ) );
+			target->FillRect( BRect( rect.right - 1, rect.top + 2, rect.right - 1, rect.bottom - 1 ) );
+				// Fill
+			target->SetHighColor( 168, 168, 168 );
+			target->FillRect( BRect( rect.left + 2, rect.top + 2, rect.right - 2, rect.bottom - 2 ) );
+			break;
+		}
+		case DIMMED_BEVEL:
+		{
+			target->SetHighColor( 220, 220, 220 );
+			target->FillRect( rect );
+			break;
+		}
+		default:
+		{
+				// 1st highlight
+			target->SetHighColor( 235, 235, 235 );
+			target->FillRect( BRect( rect.left, rect.top, rect.right, rect.top ) );
+			target->FillRect( BRect( rect.left, rect.top, rect.left, rect.bottom ) );
+				// Main highlight
+			target->SetHighColor( 255, 255, 255 );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.right - 1, rect.top + 1 ) );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.left + 1, rect.bottom - 1 ) );
+				// Deep shadow
+			target->SetHighColor( 168, 168, 168 );
+			target->FillRect( BRect( rect.left + 1, rect.bottom, rect.right, rect.bottom ) );
+			target->FillRect( BRect( rect.right, rect.top + 1, rect.right, rect.bottom ) );
+				// Mild shadow
+			target->SetHighColor( 200, 200, 200 );
+			target->FillRect( BRect( rect.left + 2, rect.bottom - 1, rect.right - 1, rect.bottom - 1 ) );
+			target->FillRect( BRect( rect.right - 1, rect.top + 2, rect.right - 1, rect.bottom - 1 ) );
 
-			// Fill
-		view.SetHighColor( 235, 235, 235 );
-		view.FillRect( BRect( r.left + 2, r.top + 2, r.right - 2, r.bottom - 2 ) );
-		break;
-
-	case Bevel_Depressed:
-			// 1st highlight
-		view.SetHighColor( 96, 96, 96 );
-		view.FillRect( BRect( r.left, r.top, r.right, r.top ) );
-		view.FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
-			// 2nd highlight
-		view.SetHighColor( 120, 120, 120 );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.right - 1, r.top + 1 ) );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.left + 1, r.bottom - 1 ) );
-			// Deep shadow
-		view.SetHighColor( 184, 184, 184 );
-		view.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-		view.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom ) );
-			// Mild Shadow
-		view.SetHighColor( 176, 176, 176 );
-		view.FillRect( BRect( r.left + 2, r.bottom - 1, r.right - 1, r.bottom - 1 ) );
-		view.FillRect( BRect( r.right - 1, r.top + 2, r.right - 1, r.bottom - 1 ) );
-			// Fill
-		view.SetHighColor( 168, 168, 168 );
-		view.FillRect( BRect( r.left + 2, r.top + 2, r.right - 2, r.bottom - 2 ) );
-		break;
-
-	case Bevel_Dimmed:
-		view.SetHighColor( 220, 220, 220 );
-		view.FillRect( r );
-		break;
+				// Fill
+			target->SetHighColor( 235, 235, 235 );
+			target->FillRect( BRect( rect.left + 2, rect.top + 2, rect.right - 2, rect.bottom - 2 ) );
+			break;
+		}
 	}
 }
 
-void DrawSquareBevel(	BView				&view,
-					BRect				r,
-					enum EBevelStates	state )
+void
+StdBevels::DrawSquareBevel(
+	BView *target,
+	BRect rect,
+	bevel_state state)
 {
-	view.SetHighColor( 80, 80, 80 );
-	view.StrokeRect( r );
-	r.InsetBy( 1.0, 1.0 );
+	D_OPERATION(("StdBevels::DrawBorderBevel()\n"));
+
+	target->SetHighColor( 80, 80, 80 );
+	target->StrokeRect( rect );
+	rect.InsetBy( 1.0, 1.0 );
 
 	switch (state) {
-	case Bevel_Normal:
+		case DEPRESSED_BEVEL:
+		{
 			// 1st highlight
-		view.SetHighColor( 235, 235, 235 );
-		view.FillRect( BRect( r.left, r.top, r.right, r.top ) );
-		view.FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
-			// Main highlight
-		view.SetHighColor( 255, 255, 255 );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.right - 1, r.top + 1 ) );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.left + 1, r.bottom - 1 ) );
-			// Deep shadow
-		view.SetHighColor( 168, 168, 168 );
-		view.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-		view.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom ) );
-			// Mild shadow
-		view.SetHighColor( 200, 200, 200 );
-		view.FillRect( BRect( r.left + 2, r.bottom - 1, r.right - 1, r.bottom - 1 ) );
-		view.FillRect( BRect( r.right - 1, r.top + 2, r.right - 1, r.bottom - 1 ) );
-
-			// Fill
-		view.SetHighColor( 235, 235, 235 );
-		view.FillRect( BRect( r.left + 2, r.top + 2, r.right - 2, r.bottom - 2 ) );
-		break;
-
-	case Bevel_Depressed:
-			// 1st highlight
-		view.SetHighColor( 96, 96, 96 );
-		view.FillRect( BRect( r.left, r.top, r.right, r.top ) );
-		view.FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
+			target->SetHighColor( 96, 96, 96 );
+			target->FillRect( BRect( rect.left, rect.top, rect.right, rect.top ) );
+			target->FillRect( BRect( rect.left, rect.top, rect.left, rect.bottom ) );
 			// 2nd highlight
-		view.SetHighColor( 120, 120, 120 );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.right - 1, r.top + 1 ) );
-		view.FillRect( BRect( r.left + 1, r.top + 1, r.left + 1, r.bottom - 1 ) );
+			target->SetHighColor( 120, 120, 120 );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.right - 1, rect.top + 1 ) );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.left + 1, rect.bottom - 1 ) );
 			// Deep shadow
-		view.SetHighColor( 184, 184, 184 );
-		view.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-		view.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom ) );
+			target->SetHighColor( 184, 184, 184 );
+			target->FillRect( BRect( rect.left + 1, rect.bottom, rect.right, rect.bottom ) );
+			target->FillRect( BRect( rect.right, rect.top + 1, rect.right, rect.bottom ) );
 			// Mild Shadow
-		view.SetHighColor( 176, 176, 176 );
-		view.FillRect( BRect( r.left + 2, r.bottom - 1, r.right - 1, r.bottom - 1 ) );
-		view.FillRect( BRect( r.right - 1, r.top + 2, r.right - 1, r.bottom - 1 ) );
+			target->SetHighColor( 176, 176, 176 );
+			target->FillRect( BRect( rect.left + 2, rect.bottom - 1, rect.right - 1, rect.bottom - 1 ) );
+			target->FillRect( BRect( rect.right - 1, rect.top + 2, rect.right - 1, rect.bottom - 1 ) );
 			// Fill
-		view.SetHighColor( 168, 168, 168 );
-		view.FillRect( BRect( r.left + 2, r.top + 2, r.right - 2, r.bottom - 2 ) );
-		break;
+			target->SetHighColor( 168, 168, 168 );
+			target->FillRect( BRect( rect.left + 2, rect.top + 2, rect.right - 2, rect.bottom - 2 ) );
+			break;
+		}
+		case DIMMED_BEVEL:
+		{
+			target->SetHighColor( 220, 220, 220 );
+			target->FillRect( rect );
+			break;
+		}
+		default: // NORMAL_BEVEL
+		{
+				// 1st highlight
+			target->SetHighColor( 235, 235, 235 );
+			target->FillRect( BRect( rect.left, rect.top, rect.right, rect.top ) );
+			target->FillRect( BRect( rect.left, rect.top, rect.left, rect.bottom ) );
+				// Main highlight
+			target->SetHighColor( 255, 255, 255 );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.right - 1, rect.top + 1 ) );
+			target->FillRect( BRect( rect.left + 1, rect.top + 1, rect.left + 1, rect.bottom - 1 ) );
+				// Deep shadow
+			target->SetHighColor( 168, 168, 168 );
+			target->FillRect( BRect( rect.left + 1, rect.bottom, rect.right, rect.bottom ) );
+			target->FillRect( BRect( rect.right, rect.top + 1, rect.right, rect.bottom ) );
+				// Mild shadow
+			target->SetHighColor( 200, 200, 200 );
+			target->FillRect( BRect( rect.left + 2, rect.bottom - 1, rect.right - 1, rect.bottom - 1 ) );
+			target->FillRect( BRect( rect.right - 1, rect.top + 2, rect.right - 1, rect.bottom - 1 ) );
 
-	case Bevel_Dimmed:
-		view.SetHighColor( 220, 220, 220 );
-		view.FillRect( r );
-		break;
+				// Fill
+			target->SetHighColor( 235, 235, 235 );
+			target->FillRect( BRect( rect.left + 2, rect.top + 2, rect.right - 2, rect.bottom - 2 ) );
+			break;
+		}
 	}
 }
+
+// END - StdBevels.cpp

@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/18/2000	cell
+ *		Updated DrawBorderBevel() to use BViews' LineArray API
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -38,28 +40,36 @@
 #ifndef __StdBevels_H__
 #define __StdBevels_H__
 
-#include <interface/Control.h>
+class BRect;
+class BView;
 
-enum EBevelStates {
-	Bevel_Normal,
-	Bevel_Depressed,
-	Bevel_Dimmed,
-};
+namespace StdBevels
+{
+	// Constants
+	enum bevel_state {
+		NORMAL_BEVEL,
+		DEPRESSED_BEVEL,
+		DIMMED_BEVEL
+	};
 
 	// Bevels with coloration similar to Be Scrollbars, for placing in
 	// window borders...
-void DrawBorderBevel(	BView				&view,
-					BRect				rect,
-					enum EBevelStates	state );
+	void DrawBorderBevel(
+		BView *view,
+		BRect rect,
+		bevel_state state);
 
 	// Bevels with same coloration as Be buttons.
-void DrawButtonBevel(	BView				&view,
-					BRect				rect,
-					enum EBevelStates	state );
+	void DrawButtonBevel(
+		BView *view,
+		BRect rect,
+		bevel_state state);
 
 	// Same as button bevel but with square corners.
-void DrawSquareBevel(	BView				&view,
-					BRect				rect,
-					enum EBevelStates	state );
+	void DrawSquareBevel(
+		BView *view,
+		BRect rect,
+		bevel_state state);
+};
 
-#endif /* __C_StdBevels_H__ */
+#endif /* __StdBevels_H__ */
