@@ -33,6 +33,7 @@
  *  07/28/2000  dwalton
  *      Changed from struct to class.
  *		Added producer pointer.
+ *  
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -41,6 +42,7 @@
 #ifndef __C_Destination_H__
 #define __C_Destination_H__
 #include "MeV.h"
+#include "Observable.h"
 #include "BitSet.h"
 #include <MidiProducer.h>
 #include "ReconnectingMidiProducer.h"
@@ -62,7 +64,6 @@ class CMeVDoc;
  * ============================================================================ */
 
 class CDestination
-	: public CObservableSubject
 {
 
 		friend class CMeVDoc; //only for saving
@@ -104,8 +105,6 @@ public:					// Accessors
 	
 	bool 				IsValid () const;   //if not disabled or deleted.
 	
-
-	
 	void 				SetMuted (bool muted);
 	bool				Muted () const;
 						
@@ -134,7 +133,6 @@ public:					// Accessors
 						{return m_channel;}
 	
 	void SetConnect (BMidiConsumer *sink, bool connect);
-	void ToggleConnect (BMidiConsumer *sink);
 	bool IsConnected (BMidiConsumer *sink) const;
 	CReconnectingMidiProducer * GetProducer() const
 	{ return m_producer; }
@@ -156,30 +154,26 @@ public:							//Hook Functions
 	virtual int32				Bytes()
 								{ return sizeof *this; }
 
-
+public:							//debug function
+	void 						PrintSelf();
 private:
 	bool _addFlag (int32 flag);
 	bool _removeFlag(int32 flag);	
 	
 	
 private:   	
-	void _addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
-	BBitmap * 			CreateIcon (BRect r);
+	void 					_addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
+	BBitmap * 				CreateIcon (BRect r);
 	static const rgb_color m_defaultColorTable[ 16 ] ;
 	
-	// REM: Replace with string class
-	//char				name[ 24 ];				// channel name
+	
 	int32				m_id;
-	//uint8				port;					// midi port number
 	uint8				m_channel,				// real midi channel
-						m_flags,					// various flags
-						m_velocityContour,		// which envelope to use
-						m_VUMeter,				// Vu-like meter bar height
-						m_pad;					// not used
+						m_flags;					// various flags
 	bigtime_t			m_latency;
-						//defined;				// pad replaced with defined,
-												// so the manager knows what is
-												// defined.
+	int32				m_consumer_id;			//this is the id that that this dest
+												//is connected to.
+
 	CMeVDoc 			*m_doc;
 	BString 			m_name;					// in the future we may not need this.
 	CReconnectingMidiProducer *m_producer;					
