@@ -138,7 +138,7 @@ public:
 	TClockType ClockType() { return clockType; }
 	virtual int32 Bytes() { return sizeof *this; }
 	bool Deleted() { return deleted; }
-	virtual int32 TrackType() = 0;
+	virtual int32 TrackType() const = 0;
 	
 		// ---------- Setters
 

@@ -441,6 +441,62 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 // ---------------------------------------------------------------------------
 // Delete all selected events.
 
+void
+CEventTrack::DeleteEvent(
+	const Event *which)
+{
+	StSubjectLock lock(*this, Lock_Exclusive);
+	CEventUpdateHint hint(*this, *which);
+
+	// Create a new undo action to record all of the changes
+	// we are about to make to the event list. If we fail to
+	// complete the edit, we can roll back the edit to this point.
+	EventListUndoAction *undoAction = new EventListUndoAction(events,
+															  *this,
+															  "Delete Event");
+	// Initialize an event marker for this track.
+	EventMarker marker(events);
+
+	marker.Track(EventMarker::Track_Next);
+
+	// If the operations did not effect the ordering of
+	// events, then things are much simpler.
+	// For each selected event.
+	for (const Event *ev = marker.First();
+		 ev != NULL;
+		 ev = marker.Seek(1))
+	{
+		if (ev == which)
+		{
+			// Remember what event types we changed
+			uint8 eventType = ev->Command();
+
+			// Delete from original list
+			marker.Remove(1, undoAction);
+
+			// If the delete event was a time signature event, then
+			// go head and invalidate the track's signature map.
+			if (eventType == EvtType_TimeSig)
+				InvalidateSigMap();
+
+			// If the deleted event was a tempo change event, then
+			// go head and invalidate the document's tempo map.
+			else if (eventType == EvtType_Tempo)
+				InvalidateTempoMap();
+
+			// REM: We should be smarter about this update...
+			SummarizeSelection();
+			PostUpdate(&hint, NULL);
+
+			// Add the undo action to the undo list for this observable
+			if (undoAction)
+				AddUndoAction(undoAction);
+			Document().SetModified();
+			break;
+		}
+	}
+}
+
 void CEventTrack::DeleteSelection()
 {
 	StSubjectLock					lock( *this, Lock_Exclusive );
@@ -989,17 +1045,27 @@ void CEventTrack::AddUndoAction( UndoAction *inAction )
 	}
 }
 
-CEventSelectionUpdateHint::CEventSelectionUpdateHint( const CEventTrack &inTrack, bool inSelChangeOnly )
+CEventSelectionUpdateHint::CEventSelectionUpdateHint(
+	const CEventTrack &track,
+	bool selChangeOnly)
 {
-	AddInt32( "MinTime", inTrack.MinSelectTime() );
-	AddInt32( "MaxTime", inTrack.MaxSelectTime() );
-	if (inSelChangeOnly) AddBool( "SelChange", true );
+	if (track.CountItems())
+	{
+		AddInt32("MinTime", track.MinSelectTime());
+		AddInt32("MaxTime", track.MaxSelectTime());
+	}
+	if (selChangeOnly)
+	{
+		AddBool("SelChange", true);
+	}
 }
 
-CEventUpdateHint::CEventUpdateHint( const CEventTrack &inTrack, const Event &inEvent )
+CEventUpdateHint::CEventUpdateHint(
+	const CEventTrack &track,
+	const Event &event)
 {
-	AddInt32( "MinTime", inEvent.Start() );
-	AddInt32( "MaxTime", inEvent.Stop() );
+	AddInt32("MinTime", event.Start());
+	AddInt32("MaxTime", event.Stop());
 }
 
 		/** Write the VCTable to a MeV file. */

@@ -99,9 +99,9 @@ public:
 	void SummarizeSelection();
 	
 		/** Returns the count of the number of events in this track */
-	int32 CountItems() { return events.TotalItems(); }
+	int32 CountItems() const { return events.TotalItems(); }
 
-	int32 TrackType() { return TrackType_Event; }
+	int32 TrackType() const { return TrackType_Event; }
 
 	long MinSelectTime() const { return minSelectTime; }
 	long MaxSelectTime() const { return maxSelectTime; }
@@ -168,6 +168,9 @@ public:
 		/**	Deselect all events. */
 	void DeselectAll(	CEventEditor *inEditor,	// Active editor window, or NULL
 						bool inDoUpdate = true );
+
+	// delete a specific event
+	void DeleteEvent(const Event *which);
 
 		/**	Delete all selected events. */
 	void DeleteSelection();
