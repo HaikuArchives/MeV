@@ -515,9 +515,9 @@ CDestinationList::ToggleConnectFor(
 	Destination *dest = m_tablerep[id];
 	sink->GetProperties(&props);
 	bool flag;
-	if (props.FindBool("mev:internalSynth",&flag)==B_OK)
+	if (props.FindBool("mev:internalSynth", &flag) == B_OK)
 	{
-		((CInternalSynth *)sink)->Init();
+		m_midimanager->PostMessage(CInternalSynth::INIT_INTERNAL_SYNTH);
 	}
 	if (dest->m_producer->IsConnected(sink))
 	{

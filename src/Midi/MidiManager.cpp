@@ -292,11 +292,17 @@ CMidiManager::MessageReceived(BMessage *msg)
 		case B_MIDI_EVENT:
 		{
 			_handleMidiEvent(msg);
-		}
-		break;
-		default:
-			BHandler::MessageReceived(msg);
 			break;
+		}
+		case CInternalSynth::INIT_INTERNAL_SYNTH:
+		{
+			m_internalSynth->Init();
+			break;
+		}
+		default:
+		{
+			BHandler::MessageReceived(msg);
+		}
 	}
 }
 void CMidiManager::_handleMidiEvent(BMessage *msg)
