@@ -25,6 +25,7 @@
 #include "TrackWindow.h"
 #include "ReconnectingMidiProducer.h"
 #include "MidiManager.h"
+
 // Gnu C Library
 #include <stdio.h>
 // Interface Kit
@@ -39,19 +40,7 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
-
-// REM: Move these elsewhere, eventually
-inline CAbstractWriter &operator<<( CAbstractWriter& writer, rgb_color &inColor )
-{
-	writer << inColor.red << inColor.green << inColor.blue << inColor.alpha;
-	return writer;
-}
-
-inline CAbstractReader &operator>>( CAbstractReader& reader, rgb_color &outColor )
-{
-	reader >> outColor.red >> outColor.green >> outColor.blue >> outColor.alpha;
-	return reader;
-}
+#define D_SERIALIZE(x) PRINT(x)			// Serialization
 
 // ---------------------------------------------------------------------------
 // Constants Initialization
@@ -140,9 +129,9 @@ CMeVDoc::CMeVDoc(
 	{
 		switch (iffReader.ChunkID(0, &formType))
 		{
-			case DESTINATION_ID:
+			case ENVIRONMENT_CHUNK:
 			{
-				ReadDestination (iffReader);
+				ReadEnvironment(iffReader);
 				break;
 			}
 			case DocTempo_ID:
@@ -572,8 +561,8 @@ CMeVDoc::SetDestinationLatency(
 	int32 index = 0;
 	while ((dest = GetNextDestination(&index)) != NULL)
 	{
-		if (m_maxDestLatency < dest->Latency(ClockType_Real))
-			m_maxDestLatency = dest->Latency(ClockType_Real);
+		if (m_maxDestLatency < dest->Latency())
+			m_maxDestLatency = dest->Latency();
 	}
 }
 
@@ -714,6 +703,10 @@ CMeVDoc::ChangeTrackOrder(
 void
 CMeVDoc::SaveDocument()
 {
+	D_SERIALIZE(("CMeVDoc::SaveDocument()\n"));
+
+	StSubjectLock lock(*this, Lock_Shared);
+
 	// Make a backup of the doc file.
 	char docName[B_FILE_NAME_LENGTH];
 
@@ -740,14 +733,16 @@ CMeVDoc::SaveDocument()
 	iffWriter.Push(Form_ID);
 	iffWriter << (long)MeV_ID;
 
-	
-	for (int i = 0; i < CountDestinations(); i++)
-	{
-		iffWriter.Push(DESTINATION_ID);
-		CDestination *dest=FindDestination(i);
-		dest->WriteDestination (iffWriter);
-		iffWriter.Pop();
-	}
+	// write environment chunk
+	iffWriter.Push(ENVIRONMENT_CHUNK);
+	// write destinations
+	CDestination *destination = NULL;
+	int32 index = 0;
+	while ((destination = GetNextDestination(&index)) != NULL)
+		destination->WriteDestination(iffWriter);
+	// write sources
+	// +++ nyi
+	iffWriter.Pop();
 	
 	iffWriter.Push(DocTempo_ID);
 	iffWriter << InitialTempo();
@@ -817,21 +812,27 @@ CMeVDoc::Export(
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Serialization
+
 void
 CMeVDoc::ReadTrack(
-	uint32 inTrackType,
-	CIFFReader &reader )
+	uint32 type,
+	CIFFReader &reader)
 {
-	CTrack *track;
+	D_SERIALIZE(("CMeVDoc::ReadEnvironment()\n"));
 
-	if (inTrackType == FMasterRealTrack)
+	CTrack *track;
+	if (type == FMasterRealTrack)
 	{
-		m_masterRealTrack  = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
+		m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0,
+											"Master Real");
 		track = m_masterRealTrack;
 	}
-	else if (inTrackType == FMasterMeteredTrack)
+	else if (type == FMasterMeteredTrack)
 	{
-		m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
+		m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1,
+											 "Master Metric");
 		track = m_masterMeterTrack;
 	}
 	else
@@ -849,60 +850,54 @@ CMeVDoc::ReadTrack(
 	}
 	reader.Pop();
 
-	if (inTrackType == TrackType_Event)
+	if (type == TrackType_Event)
 		((CEventTrack *)track)->SummarizeSelection();
 }
-//this belongs in the reader.
-int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength );
-int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength )
-{
-	uint8			sLength;
-	int32			actual;
-	
-	inReader >> sLength;
-	actual = sLength < inMaxLength - 1 ? sLength : inMaxLength - 1;
-	inReader.MustRead( outBuffer, actual );
-	outBuffer[ actual ] = 0;
-	if (actual < sLength) inReader.Skip( sLength - actual );
-	return actual;
-}
+
 void
-CMeVDoc::ReadDestination(
-	CIFFReader &reader)
+CMeVDoc::ReadEnvironment(
+	CIFFReader &iffReader)
 {
-	CMidiManager *manager = CMidiManager::Instance();
-	int32 destID = 0;
-//	BString midiPort;
-	char buff[255];
-	while (reader.BytesAvailable() > 0 )
-	{
-		CDestination *dest;
-		reader >> destID;
-		dest = new CDestination(destID, this, "Untitled Destination");
-		dest->m_producer = new CReconnectingMidiProducer("");
-		reader >> dest->m_channel >> dest->m_flags;
-		rgb_color color;
-		reader >> color.red;
-		reader >> color.green;
-		reader >> color.blue;
+	D_SERIALIZE(("CMeVDoc::ReadEnvironment()\n"));
 
-		dest->SetColor(color);
-		ReadStr255(reader,buff, 255);
-		dest->m_name.SetTo(buff);
-		//set producer name
-		ReadStr255(reader,buff,255);
-		BString prod;
-		prod.SetTo(buff);
-		dest->GetProducer()->SetName(prod.String());
+	iffReader.Push();
+	while (iffReader.NextChunk())
+	{	
+		D_SERIALIZE((" -> reading next chunk\n"));
+		
+		int32 formType;
+		switch (iffReader.ChunkID(0, &formType))
+		{
+			case DESTINATION_CHUNK:
+			{
+				D_SERIALIZE((" -> DESTINATION_CHUNK\n"));
 
-		//load and connect all connections 
-		BString pname;
-		ReadStr255( reader,buff, 255 );
-		pname.SetTo(buff);
-		//connect with name
-		dest->SetConnect(manager->FindConsumer(pname.String()),1);
-		m_destinations.AddItem(dest, destID);
+				char buffer[255];
+				iffReader.ReadStr255(buffer, 255);
+				if (strcmp(buffer, "MIDI") == 0)
+				{
+					D_SERIALIZE((" -> %s destination\n", buffer));
+					CDestination *dest = new CDestination(iffReader, this);
+					m_destinations.AddItem(dest, dest->GetID());
+				}
+				break;
+			}
+			case SOURCE_CHUNK:
+			{
+				D_SERIALIZE((" -> SOURCE_CHUNK\n"));
+
+				char buffer[255];
+				iffReader.ReadStr255(buffer, 255);
+				if (strcmp(buffer, "MIDI") == 0)
+				{
+					D_SERIALIZE((" -> %s source\n", buffer));
+					// nyi
+				}
+				break;
+			}
+		}
 	}
+	iffReader.Pop();
 }
 
 // ---------------------------------------------------------------------------

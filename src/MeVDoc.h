@@ -293,13 +293,6 @@ public:							// Operations
 	void						Export(
 									BMessage *msg);
 
-	/** Read a single track */
-	void						ReadTrack(
-									uint32 inTrackType,
-									CIFFReader &iffReader);
-									
-	void						ReadDestination (CIFFReader &reader );
-
 	/**	Sets a flag indicating that the tempo map needs to be recompiled.
 		This is called by the track editing code whenever a tempo change
 		event is modified.
@@ -327,6 +320,17 @@ public:							// CDocument Implementation
 
 	/** Save the document to it's current location */
 	virtual void				SaveDocument();
+
+private:						// Serialization
+
+	/** Read a single track. */
+	void						ReadTrack(
+									uint32 inTrackType,
+									CIFFReader &iffReader);
+
+	/** Read environment chunk. */
+	void						ReadEnvironment(
+									CIFFReader &iffReader);
 
 private:						// Internal Operations
 

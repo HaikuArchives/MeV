@@ -49,7 +49,7 @@ enum MeVFileIDs
 	MeV_ID				= 'MeV ',		// Idenfies a MeV file
 
 	// Document chunk headers
-	DESTINATION_ID			= 'vctb',		// Destination
+	ENVIRONMENT_CHUNK	= 'envi',		// Environment chunk
 	FMasterRealTrack	= 'mrTk',		// Master real track embedded form
 	FMasterMeteredTrack	= 'mmTk',		// Master metered track embedded form
 	DocTempo_ID			= 'dTem',		// Overall document tempo
@@ -59,6 +59,10 @@ enum MeVFileIDs
 	Track_Name_ID		= 'name',		// Track name chunk
 	Track_Section_ID	= 'sect',		// Section markers chunk
 	Track_Grid_ID		= 'grid',		// Gridsnap chunk
+
+	// Environment chunk headers
+	DESTINATION_CHUNK	= 'dest',		// Destination
+	SOURCE_CHUNK		= 'sorc',		// Source
 
 	// UI chunk headers
 	TRACK_WINDOW_CHUNK	= 'tkwd'		// Track window chunk
