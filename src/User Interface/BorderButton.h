@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/18/2000	cell
+ *		Updated mouse handling to use the new Interface Kit API
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -38,31 +40,46 @@
 #ifndef __C_BorderButton_H__
 #define __C_BorderButton_H__
 
-#include <interface/Control.h>
+// Interface Kit
+#include <Control.h>
 
-class CBorderButton : public BControl {
+class CBorderButton :
+	public BControl
+{
 
-	void Draw( BRect inUpdateRect );
-	void MouseDown( BPoint where );
-	void AttachedToWindow()
-	{
-		BControl::AttachedToWindow();
-		SetViewColor( B_TRANSPARENT_32_BIT );
-	}
-	BBitmap			*glyph[ 2 ];
+public:							//Constructor/Destructor
 
-public:
-	CBorderButton(	BRect frame,
-					const char *name,
-					BBitmap	*inImage,
-					BMessage *message,
-					uint32 resizeMask = B_FOLLOW_LEFT | B_FOLLOW_TOP,
-					uint32 flags = B_WILL_DRAW )
-	: BControl( frame, name, NULL, message, resizeMask, flags )
-	{
-		glyph[ 0 ] = inImage;
-		glyph[ 1 ] = NULL;
-	}
+								CBorderButton(
+									BRect frame,
+									const char *name,
+									BBitmap	*bitmap,
+									BMessage *message,
+									uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP,
+									uint32 flags = B_WILL_DRAW);
+
+public:							// BControl Implementation
+
+	virtual void				Draw(
+									BRect updateRect);
+
+	virtual void				MouseDown(
+									BPoint point);
+
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
+
+	virtual void				MouseUp(
+									BPoint point);
+
+private:						// Instance Data
+	
+	BBitmap	*					m_glyphs[2];
+
+	bool						m_pressed;
+
+	bool						m_tracking;
 };
 
 #endif /* __C_BorderButton_H__ */

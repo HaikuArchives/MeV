@@ -8,47 +8,120 @@
 // Interface Kit
 #include <Bitmap.h>
 #include <Window.h>
+// Support Kit
+#include <Debug.h>
 
-void CBorderButton::Draw( BRect inUpdateRect )
+// Debugging Macros
+#define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT (x)		// BControl Implementation
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
+CBorderButton::CBorderButton(
+	BRect frame,
+	const char *name,
+	BBitmap *bitmap,
+	BMessage *message,
+	uint32 resizingMode,
+	uint32 flags)
+	:	BControl(frame, name, NULL, message, resizingMode, flags),
+		m_pressed(false),
+		m_tracking(false)
 {
-	BRect		r( Bounds() );
-	
-	DrawBorderBevel( *this, r, Value() ? Bevel_Depressed : Bevel_Normal );
-	BBitmap		*image = (Value() && glyph[ 1 ]) ? glyph[ 1 ] : glyph[ 0 ];
-	
-	if (image != NULL)
-	{
-		BRect	br( image->Bounds() );
+	m_glyphs[0] = bitmap;
+	m_glyphs[1] = NULL;
 
-		SetDrawingMode( B_OP_OVER );
-		DrawBitmapAsync( image, BPoint(	(r.left + r.right - br.Width())/2,
-										(r.top + r.bottom - br.Height())/2 ) );
+	SetViewColor(B_TRANSPARENT_COLOR);
+}
+
+// ---------------------------------------------------------------------------
+// BControl Implementation
+
+void
+CBorderButton::Draw(
+	BRect updateRect)
+{
+	D_HOOK(("CBorderButton::Draw()\n"));
+
+	StdBevels::DrawBorderBevel(this, Bounds(),
+							   m_pressed ? StdBevels::DEPRESSED_BEVEL
+										 : StdBevels::NORMAL_BEVEL);
+ 	BBitmap	*bitmap = (m_pressed && m_glyphs[1]) ? m_glyphs[1] : m_glyphs[0];
+	if (bitmap)
+	{
+		SetDrawingMode(B_OP_OVER);
+		BPoint offset((Bounds().Width() - bitmap->Bounds().Width()) / 2,
+					  (Bounds().Height() - bitmap->Bounds().Height()) / 2);
+		DrawBitmapAsync(bitmap, offset);
 	}
 }
 
-void CBorderButton::MouseDown( BPoint point )
+void
+CBorderButton::MouseDown(
+	BPoint point)
 {
-	SetValue( true );
-	uint32		buttons;
-	bool			sel;
+	D_HOOK(("CBorderButton::MouseDown()\n"));
 
-	GetMouse( &point, &buttons, TRUE );
-
-	do
+	int32 buttons = 0;
+	Looper()->CurrentMessage()->FindInt32("buttons", &buttons);
+	if (buttons == B_PRIMARY_MOUSE_BUTTON)
 	{
-		GetMouse( &point, &buttons, TRUE );
-		
-		sel = Bounds().Contains( point );
-
-		if (sel != Value())
-			BControl::SetValue( sel );
-		
-		Window()->UpdateIfNeeded();
-		snooze( 20 * 1000 );
+		// only accept left button clicks
+		m_tracking = true;
+		m_pressed = true;
+		Invalidate();
+		SetMouseEventMask(B_POINTER_EVENTS | B_LOCK_WINDOW_FOCUS);
 	}
-	while (buttons) ;
-	
-	if (Value()) Invoke();
-	BControl::SetValue( false );
 }
 
+void
+CBorderButton::MouseMoved(
+	BPoint point,
+	uint32 transit,
+	const BMessage *message)
+{
+	D_HOOK(("CBorderButton::MouseMoved()\n"));
+
+	if (!m_tracking)
+	{
+		return;
+	}
+
+	switch (transit)
+	{
+		case B_ENTERED_VIEW:
+		{
+			if (!m_pressed) {
+				m_pressed = true;
+				Invalidate();
+			}
+			break;
+		}
+		case B_EXITED_VIEW:
+		{
+			if (m_pressed) {
+				m_pressed = false;
+				Invalidate();
+			}
+			break;
+		}
+	}	
+}
+
+void
+CBorderButton::MouseUp(
+	BPoint point)
+{
+	D_HOOK(("CBorderButton::MouseUp()\n"));
+
+	if (Bounds().Contains(point))
+	{
+		SetValue((Value() == B_CONTROL_OFF) ? B_CONTROL_ON : B_CONTROL_OFF);
+		Invoke(Message());
+	}
+
+	m_pressed = false;
+	m_tracking = false;
+	Invalidate();
+}
