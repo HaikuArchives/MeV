@@ -98,12 +98,16 @@ public:							// Accessors
 
 public:							// Operations
 
+	void						AddType(
+									BString name,
+									BBitmap *icon = NULL);
 	int32						CountTypes() const
 								{ return m_types.CountItems(); }
+	status_t					GetIconForType(
+									int32 index,
+									BBitmap **outIcon) const;
 	BString						TypeAt(
 									int32 index) const;
-	void						AddType(
-									BString name);
 
 	bool						AddStrip(
 									CStripView *view,

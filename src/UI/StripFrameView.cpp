@@ -13,6 +13,7 @@
 #include "TrackWindow.h"
 
 // Interface Kit
+#include <Bitmap.h>
 #include <Window.h>
 // Support Kit
 #include <Autolock.h>
@@ -55,6 +56,16 @@ CStripFrameView::~CStripFrameView()
 		if (info)
 			delete info;
 	}
+
+	while (m_types.CountItems() > 0)
+	{
+		strip_type *type = (strip_type *)m_types.RemoveItem((int32)0);
+		if (type)
+		{
+			delete type->icon;
+			delete type;
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -73,11 +84,31 @@ CStripFrameView::SetClockType(
 
 void
 CStripFrameView::AddType(
-	BString name)
+	BString name,
+	BBitmap *icon)
 {
 	strip_type *type = new strip_type;
 	type->name = name;
+	type->icon = icon;
 	m_types.AddItem(reinterpret_cast<void *>(type));
+}
+
+status_t
+CStripFrameView::GetIconForType(
+	int32 index,
+	BBitmap **outIcon) const
+{
+	if (index < CountTypes())
+	{
+		strip_type *type = (strip_type *)m_types.ItemAt(index);
+		if ((type != NULL) && (type->icon != NULL))
+		{
+			*outIcon = new BBitmap(type->icon);
+			return B_OK;
+		}
+	}
+
+	return B_BAD_INDEX;
 }
 
 BString
@@ -87,7 +118,7 @@ CStripFrameView::TypeAt(
 	if (index < CountTypes())
 	{
 		strip_type *type = (strip_type *)m_types.ItemAt(index);
-		if (type)
+		if (type != NULL)
 			return type->name;
 	}
 

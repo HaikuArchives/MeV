@@ -66,13 +66,13 @@ CAssemblyWindow::CAssemblyWindow(
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
 
 	AddFrameView(rect, (CTrack *)Document()->FindTrack(1));
-	stripFrame->AddType("Metered");
-	stripFrame->AddType("Real");
+	stripFrame->AddType("Arrangement",
+						ResourceUtils::LoadImage("AssemblyStrip"));
 
 	if (!hasSettings)
 	{
 		// add default strip
-		AddStrip("Metered", 1.0);
+		AddStrip("Arrangement", 1.0);
 		stripFrame->PackStrips();
 	}
 
@@ -81,8 +81,6 @@ CAssemblyWindow::CAssemblyWindow(
 
 CAssemblyWindow::~CAssemblyWindow()
 {
-//	Document()->FindTrack((int32)0)->RemoveObserver(this);
-
 	D_ALLOC(("CAssemblyWindow::CAssemblyWindow()\n"));
 }
 
@@ -230,11 +228,11 @@ CAssemblyWindow::AddStrip(
 	CRulerView *ruler = NULL;
 	CStripView *strip = NULL;
 
-	if (type == "Metered")
+	if (type == "Arrangement")
 	{
 		strip = new CTrackCtlStrip(*stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack(1),
-								   "Metered");
+								   "Arrangement");
 		ruler = new CRulerView(BRect(0.0, 0.0, rect.Width(),
 									 CTrackWindow::DEFAULT_RULER_HEIGHT),
 							   "", *this, stripFrame,

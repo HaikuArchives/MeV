@@ -7,6 +7,7 @@
 #include "BorderButton.h"
 #include "EventEditor.h"
 #include "EventTrack.h"
+#include "IconMenuItem.h"
 #include "Idents.h"
 #include "IFFReader.h"
 #include "IFFWriter.h"
@@ -215,7 +216,8 @@ CTrackWindow::SetHorizontalPositionInfo(
 		}
 		else
 		{
-			text << majorUnit + 1 << ":" << minorUnit << ":" << extraTime;
+			text << majorUnit + 1 << ":" << minorUnit + 1 << ":";
+			text << extraTime + 1;
 		}
 		SetHorizontalPositionInfo(text);
 	}
@@ -355,9 +357,12 @@ CTrackWindow::MenusBeginning()
 			for (int32 i = 0; i < stripFrame->CountTypes(); i++)
 			{
 				BMessage *message = new BMessage(CStripView::ADD_STRIP);
-				message->AddString("type", stripFrame->TypeAt(i));
-				subMenu->AddItem(new BMenuItem(stripFrame->TypeAt(i).String(),
-											   message));
+				BString name = stripFrame->TypeAt(i);
+				BBitmap *icon = NULL;
+				stripFrame->GetIconForType(i, &icon);
+				message->AddString("type", name.String());
+				subMenu->AddItem(new CIconMenuItem(name.String(), message,
+												   icon));
 			}
 		}
 	}

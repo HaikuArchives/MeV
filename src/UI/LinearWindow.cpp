@@ -61,16 +61,20 @@ CLinearWindow::CLinearWindow(
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
 	AddFrameView(rect, track);
 
-	stripFrame->AddType("Piano Roll");
-	stripFrame->AddType("Velocity");
-	stripFrame->AddType("Pitch Bend");
-	stripFrame->AddType("Sequence");
+	stripFrame->AddType("Piano Roll",
+						ResourceUtils::LoadImage("PianoRollStrip"));
+	stripFrame->AddType("Velocity",
+						ResourceUtils::LoadImage("VelocityStrip"));
+	stripFrame->AddType("Pitch Bend",
+						ResourceUtils::LoadImage("PitchBendStrip"));
+	stripFrame->AddType("Arrangement",
+						ResourceUtils::LoadImage("AssemblyStrip"));
 	if (!hasSettings)
 	{
 		// create default strips
 		AddStrip("Piano Roll", 0.5);
 		AddStrip("Velocity", 0.25);
-		AddStrip("Sequence", 0.25);
+		AddStrip("Arrangement", 0.25);
 		stripFrame->PackStrips();
 	}
 }
@@ -212,14 +216,10 @@ CLinearWindow::AddStrip(
 	{
 		// nyi
 	}
-	else if (type == "Sequence")
+	else if (type == "Arrangement")
 	{
 		strip = new CTrackCtlStrip(*stripFrame, rect, Track(),
-								   "Sequence");
-	}
-	else if (type == "Record Strip")
-	{
-		//strip = new CRecordStrip (*this, *stripFrame, rect,Track());
+								   "Arrangement");
 	}
 	if (strip)
 	{
