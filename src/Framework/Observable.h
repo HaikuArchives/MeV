@@ -83,6 +83,12 @@ public:							// Operations
 	long						CountObservers() const
 								{ return m_observers.CountItems(); }
 
+	/**	Returns true if this subject is being observed by the given
+	 *	CObservable.
+	 */
+	bool						IsObservedBy(
+									CObserver *observer);
+
 	/** Remove an observer from this subject. */
 	bool						RemoveObserver(
 									CObserver *observer);

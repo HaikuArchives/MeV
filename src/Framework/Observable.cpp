@@ -44,6 +44,16 @@ CObservable::AddObserver(
 }
 
 bool
+CObservable::IsObservedBy(
+	CObserver *observer)
+{
+	ASSERT(observer != NULL);
+
+	CReadLock lock(this);
+	return m_observers.HasItem(observer);
+}
+
+bool
 CObservable::RemoveObserver(
 	CObserver *observer)
 {
