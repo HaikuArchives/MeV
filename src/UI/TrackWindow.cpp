@@ -699,6 +699,8 @@ CTrackWindow::SubjectReleased(
 
 	if (subject == track)
 	{
+		Hide();
+		Sync();
 		track->RemoveObserver(this);
 		track = NULL;
 		return true;

@@ -71,6 +71,9 @@ CTrack::~CTrack()
 {
 	// REM: Delete the signature map.
 
+	// request all observers to stop immediately
+	RequestDelete();
+
 	if (m_windowSettings)
 	{
 		delete m_windowSettings;

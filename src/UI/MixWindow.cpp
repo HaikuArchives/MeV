@@ -20,7 +20,7 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
-#define D_HOOK(x) PRINT(x)		// CDocWindow Implementation
+#define D_HOOK(x) //PRINT(x)		// CDocWindow Implementation
 #define D_MESSAGE(x) //PRINT (x)	// MessageReceived()
 
 // ---------------------------------------------------------------------------

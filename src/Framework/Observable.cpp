@@ -27,6 +27,7 @@ CObservable::~CObservable()
 {
 	D_OBSERVE(("CObservable::~CObservable()\n"));
 
+	// make absolutely sure that all observers have been notified
 	RequestDelete();
 }
 

@@ -27,7 +27,7 @@
 #include <String.h>
 
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
-#define D_HOOK(x) PRINT(x)			// CAppWindow Implementation
+#define D_HOOK(x) //PRINT(x)			// CAppWindow Implementation
 
 // ---------------------------------------------------------------------------
 // Class Data Initialization
@@ -370,7 +370,7 @@ void
 CDocWindow::WindowActivated(
 	bool active)
 {
-	D_HOOK(("CDocWindow::WindowActivated()\n"));
+	D_HOOK(("CDocWindow<%s>::WindowActivated()\n", Name()));
 
 	CAppWindow::WindowActivated(active);
 
@@ -384,7 +384,7 @@ CDocWindow::Zoom(
 	float width,
 	float height)
 {
-	D_HOOK(("CDocWindow::Zoom()\n"));
+	D_HOOK(("CDocWindow<%s>::Zoom()\n", Name()));
 
 	m_zooming = true;
 
