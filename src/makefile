@@ -18,6 +18,7 @@ SRCS= \
 	Framework/RecentDocumentsMenu.cpp \
 	Framework/RefCount.cpp \
 	Framework/ScreenUtils.cpp \
+	Framework/Serializable.cpp \
 	Framework/Undo.cpp \
 	Framework/WindowState.cpp \
 	Engine/Destination.cpp \
