@@ -5,9 +5,10 @@
 #include "TrackListWindow.h"
 #include "TrackListItem.h"
 #include "TrackListView.h"
-#include "EventTrack.h"
+#include "QuickKeyMenuItem.h"
 #include "MeVDoc.h"
 #include "Idents.h"
+#include "EventTrack.h"
 #include "ScreenUtils.h"
 
 // Interface Kit
@@ -22,9 +23,9 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
-#define D_OPERATION(x) PRINT(x)		// Operations
-#define D_HOOK(x) PRINT(x)		// BListView Implementation
-#define D_MESSAGE(x) PRINT(x)	// MessageReceived()
+#define D_OPERATION(x) //PRINT(x)	// Operations
+#define D_HOOK(x) //PRINT(x)		// BListView Implementation
+#define D_MESSAGE(x) //PRINT(x)		// MessageReceived()
 
 // ---------------------------------------------------------------------------
 // Class Data Initialization
@@ -125,7 +126,7 @@ CTrackListWindow::MenusBeginning()
 		itemLabel = "Undo";
 		description = m_doc->UndoDescription();
 		if (description)
-			itemLabel << " " << description;
+			itemLabel << ": " << description;
 		item->SetLabel(itemLabel.String());
 		item->SetEnabled(true);
 	}
@@ -143,7 +144,7 @@ CTrackListWindow::MenusBeginning()
 		itemLabel = "Redo";
 		description = m_doc->RedoDescription();
 		if (description)
-			itemLabel << " " << description;
+			itemLabel << ": " << description;
 		item->SetLabel(itemLabel.String());
 		item->SetEnabled(true);
 	}
@@ -154,13 +155,42 @@ CTrackListWindow::MenusBeginning()
 	}
 
 	bool selected = (m_listView->CurrentSelection() >= 0);
+	item = KeyMenuBar()->FindItem(CTrackListItem::EDIT_TRACK);
+	if (item)
+	{
+		item->SetEnabled(selected);
+		item->SetTarget(m_listView);
+	}
+	item = KeyMenuBar()->FindItem(CTrackListItem::RECORD_TRACK);
+	if (item)
+	{
+		item->SetEnabled(false); // nyi
+		item->SetTarget(m_listView);
+	}
+	item = KeyMenuBar()->FindItem(CTrackListItem::MUTE_TRACK);
+	if (item)
+	{
+		item->SetEnabled(selected);
+		item->SetTarget(m_listView);
+	}
+	item = KeyMenuBar()->FindItem(CTrackListItem::SOLO_TRACK);
+	if (item)
+	{
+		item->SetEnabled(false); // nyi
+		item->SetTarget(m_listView);
+	}
+	item = KeyMenuBar()->FindItem(CTrackListItem::RENAME_TRACK);
+	if (item)
+	{
+		item->SetEnabled(selected);
+		item->SetTarget(m_listView);
+	}
 	item = KeyMenuBar()->FindItem(CTrackListItem::DELETE_TRACK);
 	if (item)
 	{
 		item->SetEnabled(selected);
 		item->SetTarget(m_listView);
 	}
-
 }
 
 void
@@ -171,8 +201,23 @@ CTrackListWindow::MessageReceived(
 
 	switch(message->what)
 	{
+		case MENU_UNDO:
+		{
+			D_MESSAGE((" -> MENU_UNDO\n"));
+			m_doc->Undo();
+			break;
+		}
+		case MENU_REDO:
+		{
+			D_MESSAGE((" -> MENU_REDO\n"));
+
+			m_doc->Redo();
+			break;
+		}
 		case MENU_CREATE_METERED_TRACK:
 		{
+			D_MESSAGE((" -> MENU_CREATE_METERED_TRACK\n"));
+
 			m_doc->NewTrack(TrackType_Event, ClockType_Metered);
 			m_doc->NotifyUpdate(CMeVDoc::Update_AddTrack, NULL);
 			m_doc->SetModified();
@@ -180,6 +225,8 @@ CTrackListWindow::MessageReceived(
 		}
 		case MENU_CREATE_REAL_TRACK:
 		{
+			D_MESSAGE((" -> MENU_CREATE_REAL_TRACK\n"));
+
 			m_doc->NewTrack(TrackType_Event, ClockType_Real);
 			m_doc->NotifyUpdate(CMeVDoc::Update_AddTrack, NULL);
 			m_doc->SetModified();
@@ -330,6 +377,23 @@ CTrackListWindow::AddMenuBar()
 	menu->AddItem(item = new BMenuItem("Redo",
 									   new BMessage(MENU_REDO), 'Z', B_SHIFT_KEY));
 	menu->AddSeparatorItem();
+	menu->AddItem(item = new CQuickKeyMenuItem("Edit",
+									   new BMessage(CTrackListItem::EDIT_TRACK),
+									   B_ENTER, "Enter"));
+	menu->AddSeparatorItem();
+	menu->AddItem(item = new BMenuItem("Record" B_UTF8_ELLIPSIS,
+									   new BMessage(CTrackListItem::RECORD_TRACK),
+									   'R'));
+	menu->AddItem(item = new BMenuItem("Mute",
+									   new BMessage(CTrackListItem::MUTE_TRACK),
+									   'M'));
+	menu->AddItem(item = new BMenuItem("Solo",
+									   new BMessage(CTrackListItem::SOLO_TRACK),
+									   'S'));
+	menu->AddSeparatorItem();
+	menu->AddItem(item = new BMenuItem("Rename",
+									   new BMessage(CTrackListItem::RENAME_TRACK),
+									   'E'));
 	menu->AddItem(item = new BMenuItem("Delete",
 									   new BMessage(CTrackListItem::DELETE_TRACK),
 									   'T'));

@@ -64,6 +64,9 @@ public:							// BListView Implementation
 
 	virtual void				AttachedToWindow();
 
+	virtual void				Draw(
+									BRect updateRect);
+
 	virtual void				GetPreferredSize(
 									float *width,
 									float *height);
@@ -73,10 +76,22 @@ public:							// BListView Implementation
 									int32 index,
 									bool wasSelected);
 
+	virtual void				KeyDown(
+									const char *bytes,
+									int32 numBytes);
+
 	virtual void				MessageReceived(
 									BMessage *message);
 
 	virtual void				MouseDown(
+									BPoint point);
+
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
+
+	virtual void				MouseUp(
 									BPoint point);
 
 protected:						// Operations
@@ -98,6 +113,14 @@ private:						// Instance Data
 	int32						m_lastClickButton;
 
 	BPoint						m_lastClickPoint;
+
+	bool						m_reordering;
+
+	BRect						m_currentReorderMark;
+
+	int32						m_lastReorderIndex;
+
+	BRect						m_lastReorderMark;
 };
 
 #endif /* __C_TrackListView_H__ */

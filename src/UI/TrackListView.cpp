@@ -3,15 +3,12 @@
  * ===================================================================== */
 
 #include "TrackListView.h"
+#include "TrackListItem.h"
+#include "LinearWindow.h"
+#include "EventTrack.h"
 #include "MeVDoc.h"
 #include "Idents.h"
-// Engine
-#include "EventTrack.h"
-// Framework
 #include "ScreenUtils.h"
-// UI
-#include "LinearWindow.h"
-#include "TrackListItem.h"
 
 // Interface Kit
 #include <MenuItem.h>
@@ -32,12 +29,16 @@
 CTrackListView::CTrackListView(
 	BRect frame,
 	CMeVDoc *doc)
-	:	BListView(frame, "SequenceList",
+	:	BListView(frame, "TrackListView",
 				  B_SINGLE_SELECTION_LIST,
 				  B_FOLLOW_ALL_SIDES,
 				  B_WILL_DRAW | B_FRAME_EVENTS),
 		m_doc(doc),
-		m_contextMenu(NULL)
+		m_contextMenu(NULL),
+		m_reordering(false),
+		m_currentReorderMark(0.0, 0.0, -1.0, -1.0),
+		m_lastReorderIndex(-1),
+		m_lastReorderMark(0.0, 0.0, -1.0, -1.0)
 {
 	D_ALLOC(("CTrackListView::CTrackListView()\n"));
 
@@ -58,11 +59,24 @@ CTrackListView::AttachedToWindow()
 	D_HOOK(("CTrackListView::AttachedToWindow()\n"));
 
 	BuildTrackList();
+}
 
-	Window()->AddShortcut('E', B_COMMAND_KEY,
-						  new BMessage(CTrackListItem::EDIT_TRACK), this);
-	Window()->AddShortcut('E', B_COMMAND_KEY | B_SHIFT_KEY,
-						  new BMessage(CTrackListItem::RENAME_TRACK), this);
+void
+CTrackListView::Draw(
+	BRect updateRect)
+{
+	D_HOOK(("CTrackListView::Draw()\n"));
+
+	SetHighColor(ViewColor());
+	FillRect(m_lastReorderMark, B_SOLID_HIGH);
+
+	if (m_reordering)
+	{
+		SetHighColor(64, 64, 64, 255);
+		FillRect(m_currentReorderMark, B_SOLID_HIGH);
+	}
+	
+	BListView::Draw(updateRect);
 }
 
 void
@@ -84,6 +98,7 @@ CTrackListView::GetPreferredSize(
 			*height += item->Height() + 1.0;
 		}
 	}
+	*width += 15.0;
 }
 
 bool
@@ -107,6 +122,32 @@ CTrackListView::InitiateDrag(
 		return true;
 	}
 	return false;
+}
+
+void
+CTrackListView::KeyDown(
+	const char *bytes,
+	int32 numBytes)
+{
+	D_HOOK(("CTrackListView::KeyDown()\n"));
+
+	switch (bytes[0])
+	{
+		case B_ENTER:
+		{
+			Window()->PostMessage(CTrackListItem::EDIT_TRACK, this);
+			break;
+		}
+		case B_DELETE:
+		{
+			Window()->PostMessage(CTrackListItem::DELETE_TRACK, this);
+			break;
+		}
+		default:
+		{
+			BListView::KeyDown(bytes, numBytes);
+		}
+	}
 }
 
 void
@@ -169,7 +210,7 @@ CTrackListView::MessageReceived(
 				CTrack *track = item->GetTrack();
 				CTrackDeleteUndoAction *undoAction;
 				undoAction = new CTrackDeleteUndoAction(track);
-				track->AddUndoAction(undoAction);
+				m_doc->AddUndoAction(undoAction);
 			}
 			break;
 		}
@@ -201,11 +242,49 @@ CTrackListView::MessageReceived(
 			{
 				// name changed
 				CTrack *track = item->GetTrack();
-				track->SetName(name.String());
-				track->NotifyUpdate(CTrack::Update_Name, NULL);
-				m_doc->SetModified();
+				CTrackRenameUndoAction *undoAction;
+				undoAction = new CTrackRenameUndoAction(track, name);
+				m_doc->AddUndoAction(undoAction);
 			}
 			MakeFocus(true);
+			break;
+		}
+		case MeVDragMsg_ID:
+		{
+			D_MESSAGE((" -> MeVDragMsg_ID\n"));
+
+			int32 type;
+			if ((message->FindInt32("Type", &type) != B_OK)
+			 || (type != DragTrack_ID))
+				return;
+
+			// change of track order requested
+			int32 index;
+			message->FindInt32("Index", &index);
+			// find the target index
+			BPoint point = ConvertFromScreen(message->DropPoint());
+			point.y -= ItemFrame(0).Height();
+			int32 dragIndex;
+			if (point.y < 0.0) 
+				dragIndex = -1;
+			else 
+			{
+				dragIndex = IndexOf(point);
+				if (dragIndex < 0)	
+					dragIndex = CountItems() - 1;
+			}
+			// reorder tracks
+			if (dragIndex < index)
+			{
+				m_doc->ChangeTrackOrder(index, dragIndex + 1);
+				m_doc->SetModified();
+			}
+			else if (dragIndex > index)
+			{
+				m_doc->ChangeTrackOrder(index, dragIndex);
+				m_doc->SetModified();
+			}
+
 			break;
 		}
 		default:
@@ -220,7 +299,7 @@ void
 CTrackListView::MouseDown(
 	BPoint point)
 {
-	D_MESSAGE(("CTrackListView::MouseDown()\n"));
+	D_HOOK(("CTrackListView::MouseDown()\n"));
 
 	Window()->Activate();
 
@@ -256,6 +335,94 @@ CTrackListView::MouseDown(
 	}
 }
 
+void
+CTrackListView::MouseMoved(
+	BPoint point,
+	uint32 transit,
+	const BMessage *message)
+{
+	D_HOOK(("CTrackListView::MouseMoved()\n"));
+
+	if (!message || (message->what != MeVDragMsg_ID))
+		return;
+
+	int32 type;
+	if ((message->FindInt32("Type", &type) != B_OK)
+	 || (type != DragTrack_ID))
+		return;
+
+	int32 index;
+	message->FindInt32("Index", &index);
+
+	// calculate target index
+	point.y -= ItemFrame(0).Height();
+	int32 dragIndex;
+	if (point.y < 0.0)
+		dragIndex = -1;
+	else
+	{
+		dragIndex = IndexOf(point);
+		if (dragIndex < 0)	
+			dragIndex = CountItems() - 1;
+	}
+
+	if ((transit == B_OUTSIDE_VIEW)
+	 || (transit == B_EXITED_VIEW))
+	{
+		// disable reordering, pointer device has left window
+		if (m_reordering)
+		{
+			m_reordering = false;
+			m_lastReorderMark = m_currentReorderMark;
+			m_currentReorderMark = BRect(0.0, 0.0, -1.0, -1.0);
+			Invalidate(m_lastReorderMark);
+		}
+	}
+	else if (dragIndex != m_lastReorderIndex)
+	{
+		// only update if necessary
+		m_lastReorderMark = m_currentReorderMark;
+		if (dragIndex < 0)
+		{
+			// special case for moving before first item
+			m_currentReorderMark = ItemFrame(0);
+			m_currentReorderMark.bottom = m_currentReorderMark.top + 1.0;
+		}
+		else
+		{
+			m_currentReorderMark = ItemFrame(dragIndex);
+			m_currentReorderMark.top = m_currentReorderMark.bottom;
+			m_currentReorderMark.bottom += 1.0;
+		}
+		m_reordering = true;
+		Invalidate(m_lastReorderMark);		
+		Invalidate(m_currentReorderMark);
+	}
+	m_lastReorderIndex = dragIndex;
+
+	BListView::MouseMoved(point, transit, message);
+}
+
+void
+CTrackListView::MouseUp(
+	BPoint point)
+{
+	D_HOOK(("CTrackListView::MouseUp()\n"));
+
+	// disable reordering, actually changing the track order
+	// will be done in MessageReceived() when drag message is
+	// received
+	if (m_reordering)
+	{
+		m_reordering = false;
+		m_lastReorderMark = m_currentReorderMark;
+		m_currentReorderMark = BRect(0.0, 0.0, -1.0, -1.0);
+		Invalidate(m_lastReorderMark);
+	}
+
+	BListView::MouseUp(point);
+}
+
 // ---------------------------------------------------------------------------
 // Operations
 
@@ -263,7 +430,11 @@ void
 CTrackListView::BuildTrackList()
 {
 	// remember selection
-	int32 sel = CurrentSelection();
+	int32 selectedTrackID = -1;
+	CTrackListItem *selectedItem = dynamic_cast<CTrackListItem *>
+								   (ItemAt(CurrentSelection()));
+	if (selectedItem)
+		selectedTrackID = selectedItem->GetTrackID();
 
 	// clear list
 	DeselectAll();
@@ -284,10 +455,11 @@ CTrackListView::BuildTrackList()
 		if (!track->Deleted())
 		{
 			AddItem(new CTrackListItem(track));
+			if (track->GetID() == selectedTrackID)
+				Select(i);
 		}
 	}
 
-	Select(sel);
 	Invalidate();
 }
 
@@ -322,17 +494,21 @@ CTrackListView::ShowContextMenu(
 		m_contextMenu->SetFont(be_plain_font);
 
 		m_contextMenu->AddItem(new BMenuItem("Edit",
-											 new BMessage(CTrackListItem::EDIT_TRACK),
-											 'E'));
+											 new BMessage(CTrackListItem::EDIT_TRACK)));
 		m_contextMenu->AddSeparatorItem();
+		m_contextMenu->AddItem(new BMenuItem("Record" B_UTF8_ELLIPSIS,
+											 new BMessage(CTrackListItem::RECORD_TRACK),
+											 'R'));
 		m_contextMenu->AddItem(new BMenuItem("Mute",
-											 new BMessage(CTrackListItem::MUTE_TRACK)));
+											 new BMessage(CTrackListItem::MUTE_TRACK),
+											 'M'));
 		m_contextMenu->AddItem(new BMenuItem("Solo",
-											 new BMessage(CTrackListItem::SOLO_TRACK)));
+											 new BMessage(CTrackListItem::SOLO_TRACK),
+											 'S'));
 		m_contextMenu->AddSeparatorItem();
 		m_contextMenu->AddItem(new BMenuItem("Rename",
 											 new BMessage(CTrackListItem::RENAME_TRACK),
-											 'E', B_SHIFT_KEY));
+											 'E'));
 		m_contextMenu->AddItem(new BMenuItem("Delete",
 											 new BMessage(CTrackListItem::DELETE_TRACK),
 											 'T'));
@@ -340,12 +516,14 @@ CTrackListView::ShowContextMenu(
 		m_contextMenu->SetTargetForItems(this);
 	}
 
-	if (item->GetTrack()->Muted())
-		m_contextMenu->FindItem("Mute")->SetMarked(true);
-	else
-		m_contextMenu->FindItem("Mute")->SetMarked(false);
+	m_contextMenu->FindItem(CTrackListItem::RECORD_TRACK)->SetEnabled(false);
 
-	m_contextMenu->FindItem("Solo")->SetEnabled(false);
+	if (item->GetTrack()->Muted())
+		m_contextMenu->FindItem(CTrackListItem::MUTE_TRACK)->SetMarked(true);
+	else
+		m_contextMenu->FindItem(CTrackListItem::MUTE_TRACK)->SetMarked(false);
+
+	m_contextMenu->FindItem(CTrackListItem::SOLO_TRACK)->SetEnabled(false);
 
 	ConvertToScreen(&point);
 	point -= BPoint(1.0, 1.0);

@@ -16,11 +16,11 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) PRINT (x)		// Constructor/Destructor
-#define D_ACCESS(x) PRINT (x)		// Accessors
-#define D_OPERATION(x) PRINT(x)		// Operations
-#define D_HOOK(x) PRINT (x)			// BListItem Implementation
-#define D_MESSAGE(x) PRINT (x)		// MessageReceived()
+#define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
+#define D_ACCESS(x) //PRINT (x)		// Accessors
+#define D_OPERATION(x) //PRINT(x)	// Operations
+#define D_HOOK(x) //PRINT (x)		// BListItem Implementation
+#define D_MESSAGE(x) //PRINT (x)	// MessageReceived()
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -166,9 +166,6 @@ CTrackListItem::DrawItem(
 	bool drawEverything)
 {
 	D_HOOK(("CTrackListItem::DrawItem()\n"));
-
-	itemRect.PrintToStream();
-	owner->Bounds().PrintToStream();
 
 	owner->SetDrawingMode(B_OP_OVER);
 

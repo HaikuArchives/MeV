@@ -52,17 +52,19 @@ public:							// Constants
 
 	enum messages
 	{
-								EDIT_TRACK = 'tliE',
+								EDIT_TRACK = 'tliA',
 
-								MUTE_TRACK = 'tliM',
+								RECORD_TRACK,
 
-								SOLO_TRACK = 'tliS',
+								MUTE_TRACK,
 
-								DELETE_TRACK = 'tliD',
+								SOLO_TRACK,
 
-								RENAME_TRACK = 'tliR',
+								DELETE_TRACK,
 
-								TRACK_NAME_EDITED = 'tliN'
+								RENAME_TRACK,
+
+								TRACK_NAME_EDITED
 	};
 
 public:							// Constructor/Destructor
