@@ -90,6 +90,8 @@ CEventTask::PlayEvent(
 	if  (group.Document()->IsDefinedDest(ev.note.vChannel))
 	{
 		dest = (CMidiDestination *)group.Document()->FindDestination(ev.common.vChannel);
+		if (!dest->ReadLock(500))
+			return;
 		chState = &thePlayer.m_portInfo[0].channelStates[dest->Channel()];
 		
 		// Process a copy of the event event through the filters...
@@ -349,6 +351,9 @@ CEventTask::PlayEvent(
 			break;
 		}
 	}
+
+	if (dest != NULL)
+		dest->ReadUnlock();
 }
 
 // ---------------------------------------------------------------------------
