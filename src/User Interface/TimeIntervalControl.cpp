@@ -59,31 +59,31 @@ CTimeIntervalControl::CTimeIntervalControl(
 	BPopUpMenu *notesMenu = new BPopUpMenu("Notes", false, false);
 	notesMenu->SetFont(be_plain_font);
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", DOUBLE_NOTE);
+	message->AddInt32("base", DOUBLE_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("Double Note", message,
 										 ResourceUtils::LoadImage("DoubleNote")));
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", WHOLE_NOTE);
+	message->AddInt32("base", WHOLE_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("Whole Note", message,
 										 ResourceUtils::LoadImage("WholeNote")));
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", HALF_NOTE);
+	message->AddInt32("base", HALF_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("Half Note", message,
 										 ResourceUtils::LoadImage("HalfNote")));
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", QUARTER_NOTE);
+	message->AddInt32("base", QUARTER_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("1/4 Note", message,
 										 ResourceUtils::LoadImage("QuarterNote")));
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", EIGHTH_NOTE);
+	message->AddInt32("base", EIGHTH_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("1/8 Note", message,
 										 ResourceUtils::LoadImage("EighthNote")));
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", SIXTEENTH_NOTE);
+	message->AddInt32("base", SIXTEENTH_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("1/16 Note", message,
 										 ResourceUtils::LoadImage("SixteenthNote")));
 	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("duration", THIRTY_SECOND_NOTE);
+	message->AddInt32("base", THIRTY_SECOND_NOTE);
 	notesMenu->AddItem(new CIconMenuItem("1/32 Note", message,
 										 ResourceUtils::LoadImage("ThirtySecondNote")));
 
