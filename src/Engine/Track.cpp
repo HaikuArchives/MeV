@@ -253,6 +253,8 @@ CTrack::WriteTrack(
 		// master real track doesn't have window settings!
 		return;
 
+	StSubjectLock lock(*this, Lock_Exclusive);
+
 	writer.Push(Track_Header_ID);
 	writer << m_trackID;
 	if (Muted())
@@ -271,7 +273,10 @@ CTrack::WriteTrack(
 	if (m_window)
 	{
 		if (m_windowSettings)
+		{
 			delete m_windowSettings;
+			m_windowSettings = NULL;
+		}
 		m_windowSettings = new BMessage();
 		m_window->ExportSettings(m_windowSettings);
 	}

@@ -518,7 +518,6 @@ CDestinationList::ToggleConnectFor(
 	bool flag;
 	if (props.FindBool("mev:internalSynth",&flag)==B_OK)
 	{
-		PRINT(("init internal synth"));
 		((CInternalSynth *)sink)->Init();
 	}
 	if (dest->m_producer->IsConnected(sink))
