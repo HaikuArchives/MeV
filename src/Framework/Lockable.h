@@ -39,8 +39,6 @@
 
 // Kernel Kit
 #include <OS.h>
-// Support Kit
-#include <Debug.h>
 
 /**
  *  Implements single writer, multiple readers locking.
@@ -125,7 +123,7 @@ public:							// Constructor/Destructor
 								{ m_lockable->ReadLock(timeout); }
 
 								~CReadLock()
-								{ m_lockable->ReadUnlock(); }
+								{ m_lockable->ReadUnlock();	}
 
 public:							// Accessors
 
