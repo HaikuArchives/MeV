@@ -82,6 +82,8 @@ public:							// Constants
 		Update_TempoMap	= (1<<6),			// list of operators changed
 	};
 
+	static const double			DEFAULT_TEMPO;
+
 public:							// Constructor/Destructor
 
 								CMeVDoc(
@@ -214,10 +216,10 @@ public:							// Operations
 	const CTempoMap &TempoMap() { return tempoMap; }
 	
 		/** Get the initial tempo of this document */
-	double InitialTempo() { return initialTempo; }
+	double InitialTempo() { return m_initialTempo; }
 	
 		/** Set the initial tempo of this document */
-	void SetInitialTempo( double inTempo ) { initialTempo = inTempo; }
+	void SetInitialTempo( double inTempo ) { m_initialTempo = inTempo; }
 
 		/** Calculate the name of a virtual channel from the instrument table. */
 	void VirtualChannelName( int32 inChannelIndex, char *outBuf );
@@ -232,7 +234,7 @@ public:							// Operations
 	void WriteVCTable( CIFFWriter &writer );
 
 		/** Read a single track */
-	void ReadTrack( long inTrackType, CIFFReader &iffReader );
+	void ReadTrack( uint32 inTrackType, CIFFReader &iffReader );
 	
 		/**	Sets a flag indicating that the tempo map needs to be recompiled.
 			This is called by the track editing code whenever a tempo change
@@ -288,7 +290,7 @@ private:						// Instance Data
 	int32						defaultAttributes[EvAttr_Count];
 
 	// Initial tempo for document
-	double						initialTempo;
+	double						m_initialTempo;
 
 	CTempoMap					tempoMap;
 

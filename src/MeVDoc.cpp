@@ -49,12 +49,19 @@ inline CAbstractReader &operator>>( CAbstractReader& reader, rgb_color &outColor
 }
 
 // ---------------------------------------------------------------------------
+// Constants Initialization
+
+const double
+CMeVDoc::DEFAULT_TEMPO = 90.0;
+
+// ---------------------------------------------------------------------------
 // Constructor/Destructor
 
 CMeVDoc::CMeVDoc(
 	CMeVApp &app)
 	:	CDocument(app),
 		m_newTrackID(2),
+		m_initialTempo(DEFAULT_TEMPO),
 		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
 		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
@@ -76,6 +83,7 @@ CMeVDoc::CMeVDoc(
 	entry_ref &ref)
 	:	CDocument(app, ref),
 		m_newTrackID(2),
+		m_initialTempo(DEFAULT_TEMPO),
 		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
 		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
@@ -124,7 +132,7 @@ CMeVDoc::CMeVDoc(
 			break;
 
 		case DocTempo_ID:
-			iffReader >> initialTempo;
+			iffReader >> m_initialTempo;
 			break;
 
 		case Form_ID:
@@ -582,7 +590,7 @@ void CMeVDoc::SaveDocument()
 	WriteVCTable( iffWriter );
 	
 	iffWriter.Push( DocTempo_ID );
-	iffWriter << initialTempo;
+	iffWriter << InitialTempo();
 	iffWriter.Pop();
 
 		// Write master real track
@@ -680,7 +688,10 @@ void CMeVDoc::WriteVCTable( CIFFWriter &writer )
 	writer.Pop();
 }
 
-void CMeVDoc::ReadTrack( long inTrackType, CIFFReader &reader )
+void
+CMeVDoc::ReadTrack(
+	uint32 inTrackType,
+	CIFFReader &reader )
 {
 	CTrack		*track;
 
@@ -779,13 +790,11 @@ CMeVDoc::Init()
 	defaultAttributes[EvAttr_TSigBeatCount] = 4;
 	defaultAttributes[EvAttr_TSigBeatSize] = 2;
 
-	initialTempo = 64.0;
-
 	tempoMap.list = new CTempoMapEntry[2];
 	tempoMap.count = 2;
 	validTempoMap = false;
 	
-	tempoMap.list[0].SetInitialTempo(RateToPeriod(initialTempo));
+	tempoMap.list[0].SetInitialTempo(RateToPeriod(InitialTempo()));
 	tempoMap.list[1].SetTempo(tempoMap.list[0], RateToPeriod(256.0),
 							  Ticks_Per_QtrNote * 4, Ticks_Per_QtrNote * 4,
 							  ClockType_Metered);
