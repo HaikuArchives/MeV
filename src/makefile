@@ -67,6 +67,7 @@ SRCS= \
 	UI/DestinationModifier.cpp \
 	UI/DestinationView.cpp \
 	UI/EventEditor.cpp \
+	UI/EventRenderer.cpp \
 	UI/GridWindow.cpp \
 	UI/IconMenuItem.cpp \
 	UI/InspectorWindow.cpp \
