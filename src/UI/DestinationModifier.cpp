@@ -7,7 +7,9 @@
 #include <MenuField.h>
 #include "MidiManager.h"
 #include "DestinationListView.h"
+#include "IconMenuItem.h"
 #include <stdio.h>
+#include <MidiConsumer.h>
 enum EVChannelModifierControlID {
 	NAME_ID='name',
 	PORT_SELECT='ptsl',
@@ -16,7 +18,8 @@ enum EVChannelModifierControlID {
 	ADD_ID='add',
 	MOD_ID='mod',
 	VCQUIT='vcqt',
-	MUTE_ID='cmut'
+	MUTE_ID='cmut',
+	SOLO_ID='cslo'
 	};
 	
 CDestinationModifier::CDestinationModifier(BRect frame,int32 id,CDestinationList *tm,BHandler *parent) : 
@@ -41,11 +44,11 @@ CDestinationModifier::_buildUI()
 	m_background=new BView (Bounds(),"bk",B_FOLLOW_LEFT,B_WILL_DRAW);
 	m_background->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	AddChild(m_background);
-	BPoint st(0,0);
-	m_colors=new BColorControl(st,B_CELLS_16x16,1,"dest color",new BMessage(MOD_ID));
+	BPoint st(0,35);
+	m_colors=new BColorControl(st,B_CELLS_32x8,4,"dest color",new BMessage(MOD_ID));
 	m_colors->SetValue(m_vc->fillColor);
 	m_background->AddChild(m_colors);
-	r.Set(100,5,260,20);
+	r.Set(0,5,150,20);
 	m_name=new BTextControl(r,"name","Name: ","",new BMessage (NAME_ID));
 	m_name->SetText(m_vc->name.String());
 	m_name->SetDivider(36);
@@ -56,6 +59,7 @@ CDestinationModifier::_buildUI()
 	m_background->AddChild(m_name);
 	//fill midi port pop up.
 	m_midiPorts=new BPopUpMenu ("Port");
+	m_midiPorts->SetRadioMode(false);
 	m_channels=new BPopUpMenu ("Channel");
 	int c;
 	for (c=0;c<=15;c++)
@@ -72,19 +76,24 @@ CDestinationModifier::_buildUI()
 	BMenuField *channel;
 
 
-	r.Set(10,110,150,130);
+	r.Set(10,140,100,160);
 	channel=new BMenuField(r,"channel","Channel:",m_channels);
 	channel->SetDivider(56);
 	m_background->AddChild(channel);
 	
-	r.Set(10,140,280,160);
+	
+	r.Set(10,110,240,130);
 	port=new BMenuField(r,"port","Port:",m_midiPorts);
 	port->SetDivider(28);
 	m_background->AddChild(port);
 	
-	r.Set(10,170,100,190);
+	r.Set(120,140,170,160);
 	m_mute=new BCheckBox(r,"mutebox","Mute",new BMessage (MUTE_ID));
 	m_background->AddChild(m_mute);
+	
+	r.Set(170,140,220,160);
+	m_solo=new BCheckBox(r,"solobox","Solo",new BMessage (SOLO_ID));
+	m_background->AddChild(m_solo);
 		
 }
 void CDestinationModifier::_updateStatus()
@@ -110,36 +119,58 @@ void CDestinationModifier::AttachedToWindow()
 void
 CDestinationModifier::Update()
 {
-	int c=m_midiPorts->CountItems();
-	while (c>=0)
-	{
-		delete (m_midiPorts->RemoveItem(c--));
-	}
-	for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManager->NextProducer())
-	{
-		BMessage *msg=new BMessage (PORT_SELECT);
-		msg->AddInt32("pid",m_midiManager->CurrentProducerID());
-		BMenuItem *item=new BMenuItem(m_midiManager->CurrentProducerName()->String(),
-									msg);
-		item->SetTarget((BView *)this);
-		m_midiPorts->AddItem(item);
-		if (m_vc->m_producer)
+
+}
+void
+CDestinationModifier::MenusEnded()
+{
+	BMenuItem *item;
+	int i = m_midiPorts->CountItems();
+	while (i>=0)
 		{
-			if (m_vc->m_producer->ID()==m_midiManager->CurrentProducerID())  
-			{
-				item->SetMarked(true);
-			}
-		}	
-	}
+		item=(m_midiPorts->RemoveItem(i));
+		delete item;
+		i--;
+		}
 }
 void CDestinationModifier::OnUpdate(BMessage *msg)
 {
+		
 //i don't really know why this would happen.
 }
 void
 CDestinationModifier::MenusBeginning()
 {
-	Update();
+	int32 id=0;
+
+	BMidiConsumer *con=NULL;
+	while ((con=m_midiManager->NextConsumer(&id))!=NULL)
+	{
+		if (con->IsValid())
+		{
+			BMessage *msg=new BMessage (PORT_SELECT);
+			msg->AddInt32("pid",id);
+			CIconMenuItem *item=new CIconMenuItem(con->Name(),msg,m_midiManager->ConsumerIcon(id,B_MINI_ICON));
+			item->SetTarget((BView *)this);
+			m_midiPorts->AddItem(item);
+			if (m_vc->m_producer->IsConnected(con))
+			{
+					item->SetMarked(true);
+			}
+		}
+	}
+	CInternalSynth *internalSynth=m_midiManager->InternalSynth();
+	BMessage *msg=new BMessage (PORT_SELECT);
+	msg->AddInt32("pid",internalSynth->ID());
+	CIconMenuItem *item=new CIconMenuItem(internalSynth->Name(),msg,
+										m_midiManager->ConsumerIcon(internalSynth->ID(),
+										B_MINI_ICON));
+	item->SetTarget((BView *)this);
+	m_midiPorts->AddItem(item);
+	if (m_vc->m_producer->IsConnected(internalSynth))
+	{
+		item->SetMarked(true);
+	}
 }
 bool 
 CDestinationModifier::QuitRequested()
@@ -170,7 +201,7 @@ CDestinationModifier::MessageReceived(BMessage *msg)
 	break;
 	case PORT_SELECT:
 	{
-		m_tm->SetPortFor(m_id,m_midiManager->GetProducer(msg->FindInt32("pid")));
+		m_tm->ToggleConnectFor(m_id,m_midiManager->FindConsumer(msg->FindInt32("pid")));
 	}
 	break;
 	case NAME_ID:

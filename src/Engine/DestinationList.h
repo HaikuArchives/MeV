@@ -66,7 +66,8 @@ public:
 	//Destination * GetVC(int id);
 	Destination * CurrentDest();
 	int CurrentID();
-	
+	BBitmap * GetIconFor (int id,BRect r) const;
+	void ToggleConnectFor (int id, BMidiConsumer *sink);
 	void SetColorFor(int id, rgb_color color);
 	void SetNameFor(int id,BString name);
 	void SetChannelFor(int id,int channel);

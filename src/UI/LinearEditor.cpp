@@ -537,13 +537,13 @@ DrawNoteShape(
 	bool drawHighlight,
 	pattern apattern=B_SOLID_HIGH)
 {
-	rgb_color grey;
-	grey.red=(fill.red+128) % 255;
-	grey.green=(fill.green+128) % 255;
-	grey.blue=(fill.blue+128) % 255;
+	rgb_color contrast;
+	contrast.red=(fill.red+128) % 255;
+	contrast.green=(fill.green+128) % 255;
+	contrast.blue=(fill.blue+128) % 255;
 	
 	view->SetHighColor(fill);
-	view->SetLowColor(grey);
+	view->SetLowColor(contrast);
 	view->FillRect(inRect.InsetByCopy(1.0, 1.0), apattern);
 	view->SetHighColor(outline);
 	view->StrokeRoundRect(inRect, 3.0, 3.0, B_SOLID_HIGH);

@@ -24,25 +24,31 @@
  * ---------------------------------------------------------------------
  * Purpose:
  *  
- *  Builds a list of MidiProducers one for each consumer in the system.
- *  And otherwise manages midi ports.  We are following the singleton
- *  design pattern.
+ *  
+ *  
+ *  manages midi ports
  *
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
  *		Original implementation
  *		added to the repository...
+ *	8/13/2000		dwalton
+ *		modified to support one producer per destination.
  * ---------------------------------------------------------------------
  * To Do:
  * I imagine that this could be used for all the midi port management including
  * patch names etc.
- *
- * Currently mev doesn't play as nice as it could with other midi2 packages 
- * in beos.  Mev can connect to programs, but programs cannot connect mev 
- * to themselves.  The MMMN (mev master midi node), is the planed solution. 
- * 
- * ===================================================================== */
+
+ * ===================================================================== 
+ some of this code has been based on Be sample code.
+ 
+  Copyright 1999, Be Incorporated.   All Rights Reserved.
+  This file may be used under the terms of the Be Sample Code License.
+ 
+ */
+
+
 
 #ifndef __C_MidiManager_H__
 #define __C_MidiManager_H__
@@ -55,36 +61,38 @@
 #include <List.h>
 #include <String.h>
 #include <Looper.h>
+#include <Bitmap.h>
+#include <Mime.h>
+#include <GraphicsDefs.h>
+#include "GeneralMidi.h"
 #include "PortNameMap.h"
 #include "InternalSynth.h"
 #include "Observer.h"
+
 class CMidiManager : public BLooper,public CObservableSubject{
 	public:
 		static CMidiManager * Instance();
-		BMidiLocalProducer * GetProducer(BString *name);
-		BMidiLocalProducer * GetProducer (int32 id);
+		BMidiConsumer * NextConsumer(int32 *id);
+		BMidiConsumer * FindConsumer (int32 id);
 		
-		//GetConsumer methods need to be added.
-		//
-		//a little cursor kinda deal
-		void FirstProducer();
-		void NextProducer();
-		bool IsLastProducer();
-		BString * CurrentProducerName();
-		int32 CurrentProducerID();
-		void Subscribe(BMessenger *msgr); 
-		void Unsubscribe(BMessenger *msgr);
+		BMidiEndpoint * FindEndpoint (const char* name);
+		BMidiConsumer * FindConsumer (const char* name);
+		BMidiProducer * FindProducer (const char* name);
+		
+		BBitmap * ConsumerIcon(int32 id,icon_size which);
+		void AddIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
+
 		virtual void MessageReceived(BMessage *msg);
 		void AddInternalSynth();
-		BMidiLocalProducer * InternalSynth();
+		CInternalSynth * InternalSynth();
 		void Die();
+		
 	protected:
 		CMidiManager();
 	private:
-		BList m_subscribers;
 		//~CMidiManager();
+		CInternalSynth * m_internalSynth;
 		static CMidiManager *m_instance;
-		BList m_midiProducers;
 		int32 m_pos;
 		BMidiRoster *m_roster;
 		void _notifySubscribers();
@@ -92,14 +100,16 @@ class CMidiManager : public BLooper,public CObservableSubject{
 		void _addConsumer(int32 id);
 		void _removeProducer(int32 id);
 		void _removeConsumer(int32 id);
+		void _connect(int32 prod,int32 con);
+		void _disconnect(int32 prod,int32 con);
 		void _handleMidiEvent(BMessage *msg);
-		BMessenger *m_notifier;
-		BMidiLocalProducer *m_isynth_source;
-		CInternalSynth *m_isynth_sink;
 		//port name map:
 		//we have the ability to let the user change port name...no problem
 		//but there are names they shouldn't see...like /dev/midi/mo/dev
 		//or /dev/midi/awe64/1 so this lets us give better names.
 		CPortNameMap *m_portNameMap;
+		void _copyIcon(const BMessage* smsg,BMessage* dmsg);
+		BBitmap* _createIcon(const BMessage* msg, icon_size which);
+		//void _addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
 };
 #endif

@@ -48,7 +48,7 @@ class CInternalSynth
 public:
     CInternalSynth(char *name);
     ~CInternalSynth();
-
+	void Init();
     virtual	void	NoteOff(uchar channel,
                          uchar note,
                          uchar velocity,

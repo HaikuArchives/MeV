@@ -80,6 +80,8 @@ CDestinationListView::CDestinationListView(
 	BBox *box=new BBox(Bounds());
 	AddChild(box);
 	
+
+	
 }
 
 void CDestinationListView::AttachedToWindow()
@@ -123,17 +125,9 @@ void CDestinationListView::Update()
 			BMessage *vc_message;
 			vc_message=new BMessage(CHANNEL_CONTROL_ID);
 			vc_message->AddInt8("channel",id);
-			BBitmap	*icon = new BBitmap( BRect(0,0,15,15), B_RGBA32 );
-			uint32 *bits = (uint32 *)(icon->Bits());
-			for( int32 i = 0; i < icon->BitsLength()/4; i++ )
-			{
-				bits[i] = int32((VCptr->fillColor.alpha << 24 )
-							+ (VCptr->fillColor.red << 16 )
-							+ (VCptr->fillColor.green << 8 )
-							+ VCptr->fillColor.blue);
-			}
-				
-			icon->SetBits((void *)bits,255,0,B_RGB32);
+			
+			BBitmap	*icon = m_destList->GetIconFor(id,icon_r);
+						
 			vc_item=new CIconMenuItem(VCptr->name.String(),vc_message,icon);
 			vc_item->SetTarget((BView *)this);
 			m_destMenu->AddItem(vc_item);
@@ -142,6 +136,7 @@ void CDestinationListView::Update()
 }
 void CDestinationListView::SetTrack( CEventTrack *inTrack )
 {
+
 	BView::LockLooper();
 	m_destfield->SetEnabled(true);
 	BView::UnlockLooper();
@@ -183,10 +178,6 @@ void CDestinationListView::SetChannel( int inChannel )
 			{
 				m_portName->SetText(dest->m_producer->Name());
 			}
-			else
-			{
-				m_portName->SetText("no port");
-			}
 			BString sch;
 			sch << (dest->channel+1);
 			m_channelValue->SetText(sch.String());
@@ -223,7 +214,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 					else 
 					{
 						BRect r;
-						r.Set(40,40,300,240);
+						r.Set(40,40,300,220);
 						m_modifierMap[m_destList->SelectedId()]=new CDestinationModifier(r,m_destList->SelectedId(),m_destList,(BView *)this);
 						m_modifierMap[m_destList->SelectedId()]->Show();
 					}
@@ -260,7 +251,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 			case NEW_ID:
 			{
 				BRect r;
-				r.Set(40,40,300,240);
+				r.Set(40,40,300,220);
 				int n=m_destList->NewDest();
 				m_modifierMap[n]=new CDestinationModifier(r,n,m_destList,(BView *)this);
 				m_modifierMap[n]->Show();	
@@ -277,11 +268,6 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 				CObserver::MessageReceived(msg);
 			}
 			break;
-			//case VCTM_NOTIFY:
-			//{
-			//	Update();
-			//	SetChannel(m_destList->SelectedId(););
-			//}
 			default:
 				BView::MessageReceived(msg);
 				break;

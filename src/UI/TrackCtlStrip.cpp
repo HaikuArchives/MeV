@@ -4,6 +4,7 @@
 
 #include "TrackCtlStrip.h"
 
+#include "MidiManager.h"
 #include "Idents.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
@@ -890,15 +891,23 @@ CProgramChangeEventHandler::GetPatchName(
 	const Event &ev,
 	BString *outName) const
 {
+	
 	CMeVDoc *doc = &editor.Track()->Document();
 
 	Destination *dest = doc->GetVChannel(ev.GetVChannel());
-	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,
-																dest->channel - 1);
+	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,dest->channel);
+	info=NULL;
 	if (info == NULL)
 	{
+
+//		CMidiManager *mm=CMidiManager::Instance();
+//		outName->SetTo(GeneralMidi::GetPatchNameFor(ev.GetVChannel()));	
+//		printf ("%d -> %s\n",ev.GetVChannel(),GeneralMidi::GetPatchNameFor(ev.GetVChannel()));
+		//*outName = "(Unknown)";
+
 		*outName = "Program ";
 		*outName << ev.programChange.program;
+
 		return false;
 	}
 	

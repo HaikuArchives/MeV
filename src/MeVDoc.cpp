@@ -658,33 +658,12 @@ void CMeVDoc::Export( BMessage *msg )
 void CMeVDoc::ReadVCTable( CIFFReader &reader )
 {
 	m_destlist->ReadVCTable(reader);
-	
-/*	while (reader.BytesAvailable() > 0 )
-	{
-		Destination	*dest = (*m_destlist)[ i ];
-//		ReadStr255( reader, dest.name, sizeof dest.name );
-		//dan 7/17/00 reader >> dest.port >> dest.channel >> dest.flags >> dest.velocityContour >> dest.initialTranspose;
-		reader >> dest->channel >> dest->flags >> dest->velocityContour >> dest->initialTranspose;
-		reader >> dest->fillColor;
-		//CalcHighlightColor( dest->fillColor, dest->highlightColor );
-		i++;		
-	}*/
 }
 
 void CMeVDoc::WriteVCTable( CIFFWriter &writer )
 {
 	writer.Push( VCTable_ID );
-
 	m_destlist->WriteVCTable(writer);
-	/*for (int i = 0; i < Max_Destinations; i++)
-	{
-		Destination	*dest = (*m_destlist)[ i ];
-	
-//		WriteStr255( writer, dest.name, strlen( dest.name ) );
-		//dan 7/17/00writer << dest.port << dest.channel << dest.flags << dest.velocityContour << dest.initialTranspose;
-		writer << dest->channel << dest->flags << dest->velocityContour << dest->initialTranspose;
-		writer << dest->fillColor;
-	}*/
 	writer.Pop();
 }
 

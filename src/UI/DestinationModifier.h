@@ -49,7 +49,6 @@
 #include "MidiManager.h"
 #include "Observer.h"
 #include "DestinationList.h"
-#include <MidiProducer.h>
 class CDestinationModifier :
 	public BWindow,public CObserver {
 private:
@@ -62,6 +61,7 @@ private:
 	BPopUpMenu *m_channels;
 	BTextControl *m_name;
 	BCheckBox *m_mute;
+	BCheckBox *m_solo;
 	BButton *m_done;
 	BButton *m_cancel;
 	BStringView *m_status;
@@ -74,6 +74,7 @@ private:
 	
 virtual void AttachedToWindow();
 virtual void MenusBeginning();
+virtual void MenusEnded();
 void Update();
 public:
 	CDestinationModifier(BRect frame,int32 id,CDestinationList *tm,BHandler *parent);  //new vchannel;

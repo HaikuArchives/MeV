@@ -178,7 +178,6 @@ CMeVApp::CMeVApp()
 	importPanel = NULL;
 
 	CMidiManager *mm = CMidiManager::Instance();
-	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
 
 	// Load in add-ons

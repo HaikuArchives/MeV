@@ -17,6 +17,7 @@
 CEventTrack::CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *inName )
 	: CTrack( inDoc, cType, inID, inName )
 {
+	
 	StSubjectLock		lock( *this, Lock_Exclusive );
 
 		// Set the initial grid size and enable gridsnap
@@ -50,6 +51,12 @@ CEventTrack::CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *in
 
 		// Compile list of track operators
 	CompileOperators();
+	
+	//exp dan start
+//	CEventProducer *t=new CEventProducer(inName);
+//	t->Register();
+//	t->StartProducing(1,this);
+	//exp dan end
 }
 
 // ---------------------------------------------------------------------------

@@ -1,27 +1,29 @@
 #include "DestinationList.h"
 #include "Messenger.h"
 #include "MeVDoc.h"
-#include <stdio.h>
+#include "ReconnectingMidiProducer.h"
+#include "InternalSynth.h"
+#include <Debug.h>
 enum ID {
 	VCTM_NOTIFY='ntfy'
 	};
 const rgb_color CDestinationList::m_defaultColorTable[]= {
-	{ 255, 128, 128 },			// Midi Channel 1
-	{ 255, 128,   0 },			// Midi Channel 2
-	{ 255, 255,   0 },			// Midi Channel 3
-	{ 128, 255,   0 },			// Midi Channel 4
-	{   0, 255, 128 },			// Midi Channel 5
-	{   0, 192,   0 },			// Midi Channel 6
-	{   0, 160, 160 },			// Midi Channel 7
-	{   0, 192, 160 },			// Midi Channel 8
-	{ 128, 255, 255 },			// Midi Channel 9
-	{  47, 130, 255 },			// Midi Channel 10
-	{ 128, 128, 255 },			// Midi Channel 11
-	{ 200,   0, 255 },			// Midi Channel 12
-	{ 255,   0, 255 },			// Midi Channel 13
-	{ 255, 128, 255 },			// Midi Channel 14
-	{ 192, 192, 192 },			// Midi Channel 15
-	{ 128, 128,   0 },			// Midi Channel 16
+	{ 255, 128, 128 },			
+	{ 255, 128,   0 },			
+	{ 255, 255,   0 },		
+	{ 128, 255,   0 },			
+	{   0, 255, 128 },			
+	{   0, 192,   0 },			
+	{   0, 160, 160 },			
+	{   0, 192, 160 },			
+	{ 128, 255, 255 },			
+	{  47, 130, 255 },			
+	{ 128, 128, 255 },			
+	{ 200,   0, 255 },			
+	{ 255,   0, 255 },		
+	{ 255, 128, 255 },	
+	{ 192, 192, 192 },
+	{ 128, 128,   0 },
 };
 CDestinationList::CDestinationList(CMeVDoc *inDoc) : CObservableSubject (),CObserver(* CMidiManager::Instance(),CMidiManager::Instance())
 {
@@ -34,6 +36,7 @@ CDestinationList::CDestinationList(CMeVDoc *inDoc) : CObservableSubject (),CObse
     {	
     	m_tablerep[c]=NULL;
     }
+   	
     m_doc=inDoc;
     m_midimanager=CMidiManager::Instance();
     SetSubject (m_midimanager);
@@ -55,8 +58,12 @@ int CDestinationList::NewDest()
     		m_tablerep[c]=new Destination;
     		m_tablerep[c]->name << "Untitled ";
     		m_tablerep[c]->name << c+1;
-    		m_tablerep[c]->m_producer=NULL;
-    		m_tablerep[c]->producer_name="never name a midiport this";
+    		BString epname;
+    		epname << "MeV: ";
+    		epname << m_tablerep[c]->name;
+    		m_tablerep[c]->m_producer=new CReconnectingMidiProducer(epname.String());
+    		m_tablerep[c]->m_producer->Register();
+    		m_tablerep[c]->producer_name="obsolete";
     		m_tablerep[c]->channel	= 0;
     		m_tablerep[c]->flags		= Destination::transposable;  
     		//m_tablerep[c]->flags		= Destination::mute; 
@@ -140,7 +147,6 @@ Destination * CDestinationList::CurrentDest()
 	{
 	    Destination *dest=new Destination;
    		dest->name.SetTo("blah");
-   		dest->m_producer=NULL;
    		dest->channel	= 1;
    		dest->flags = Destination::transposable;   
    		dest->velocityContour=0;
@@ -181,7 +187,7 @@ void CDestinationList::OnUpdate(BMessage *msg)
 		{
 			case B_MIDI_UNREGISTERED:
 			{
-				msg->FindString("name",&portname);
+				/*msg->FindString("name",&portname);
 				for (First();!IsDone();Next())
 				{
 					Destination *dest=CurrentDest();
@@ -190,12 +196,12 @@ void CDestinationList::OnUpdate(BMessage *msg)
 					{
 						SetDisableFor(CurrentID(),true);
 					}
-				}
+				}*/
 			}
 			break;
 			case B_MIDI_REGISTERED:
 			{
-				msg->FindString("name",&portname);
+				/*msg->FindString("name",&portname);
 				for (First();!IsDone();Next())
 				{
 					Destination *dest=CurrentDest();
@@ -204,7 +210,7 @@ void CDestinationList::OnUpdate(BMessage *msg)
 						dest->m_producer=m_midimanager->GetProducer(&dest->producer_name);
 						SetDisableFor(CurrentID(),false);
 					}
-				}
+				}*/
 			}
 			break;
 		}
@@ -243,25 +249,31 @@ void CDestinationList::ReadVCTable (CIFFReader &reader)
 	{
 		reader >> portid;
 		m_tablerep[portid]=new Destination;
+		m_tablerep[portid]->m_producer=new CReconnectingMidiProducer("");
 		reader >> m_tablerep[portid]->channel >> m_tablerep[portid]->flags >> m_tablerep[portid]->velocityContour >> m_tablerep[portid]->initialTranspose;
 		reader >> m_tablerep[portid]->fillColor.red;
 		reader >> m_tablerep[portid]->fillColor.green;
 		reader >> m_tablerep[portid]->fillColor.blue;
 		ReadStr255( reader,buff, 255 );
 		m_tablerep[portid]->name.SetTo(buff);
-		ReadStr255( reader,buff, 255 );
-		m_tablerep[portid]->producer_name.SetTo(buff);
-		m_tablerep[portid]->m_producer=m_midimanager->GetProducer(&m_tablerep[portid]->producer_name);
-		//m_tablerep[portid]->m_producer=NULL;
-		if (m_tablerep[portid]->m_producer==NULL)
+		//set producer name
+		ReadStr255(reader,buff,255);
+		BString prod;
+		prod.SetTo(buff);
+		m_tablerep[portid]->m_producer->SetName(prod.String());
+		
+		//load and connect all connections 
+		BString pname;
+		while (pname.Compare("connection list end"))
 		{
-			//SetDisableFor(portid,true);
-			m_tablerep[portid]->flags+=Destination::disabled;		
-			m_tablerep[portid]->m_producer=NULL;	
-			CUpdateHint hint;
-			hint.AddInt8("channel",portid);
-			CObservableSubject::PostUpdate(&hint,NULL);
+			ReadStr255( reader,buff, 255 );
+			pname.SetTo(buff);
+			//connect with name
+			ToggleConnectFor  (portid,m_midimanager->FindConsumer(pname.String()));
+			PRINT (("%s loading\n",pname.String()));
 		}
+		
+		
 	}
 	CUpdateHint hint;
 	hint.AddInt8("channel",portid);
@@ -280,20 +292,74 @@ void CDestinationList::WriteVCTable (CIFFWriter &writer)
 		writer << dest->fillColor.green;
 		writer << dest->fillColor.blue;
 		dest->name.CopyInto(buff,0,dest->name.Length());
-		WriteStr255( writer,buff,dest->name.Length() );
-		if (dest->producer_name.Length()>0)
+		WriteStr255 (writer,buff,dest->name.Length());
+		//write name of producer
+		BString prod;
+		prod << dest->m_producer->Name();
+		prod.CopyInto(buff,0,prod.Length());
+		WriteStr255 (writer,buff,prod.Length());
+		
+		
+		//write connections
+		BList *connections=dest->m_producer->Connections();
+		int c=connections->CountItems()-1;
+		while (c>=0)
 		{
-			dest->producer_name.CopyInto(buff,0,dest->producer_name.Length());
-			WriteStr255( writer,buff,dest->producer_name.Length() );		
+			BString name;
+			BMidiProducer *prod=(BMidiProducer *)connections->ItemAt(c--);
+			name=prod->Name();
+			name.CopyInto(buff,0,name.Length());
+			WriteStr255( writer,buff,name.Length() );
+		}
+		WriteStr255 (writer,"connection list end",20);	
+			
+	}
+}
+BBitmap * CDestinationList::GetIconFor (int id,BRect r) const
+{	
+	BBitmap	*icon = new BBitmap( r, B_CMAP8,true );
+	Destination *dest = m_tablerep[id];
+	if (dest)
+	{
+		
+		BView *icon_view = new BView (r,"icon writer",B_FOLLOW_RIGHT,B_FRAME_EVENTS);
+		
+		//BView::LockLooper();
+		icon->Lock();
+		icon->AddChild (icon_view);
+		icon_view->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+		icon_view->FillRect(r,B_SOLID_HIGH);
+		icon_view->SetHighColor(dest->fillColor);
+		
+		if ((dest->flags & Destination::disabled) || (dest->flags & Destination::mute))
+		{
+			rgb_color contrast;
+			contrast.red=(dest->fillColor.red+128) % 255;
+			contrast.green=(dest->fillColor.green+128) % 255;
+			contrast.blue=(dest->fillColor.blue+128) % 255;
+			icon_view->SetLowColor(contrast);
+			pattern mixed_colors = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x0f};
+			icon_view->FillEllipse(r,mixed_colors);
 		}
 		else
 		{
-			BString s="no port";
-			s.CopyInto(buff,0,s.Length());
-			WriteStr255( writer,buff,s.Length() );
-		}	
 			
+			icon_view->FillEllipse(r);
+		}
+		icon_view->SetPenSize(1);
+		rgb_color blk;
+		blk.red=0;
+		blk.green=0;
+		blk.blue=0;
+		icon_view->SetHighColor(blk);
+		//icon_view->StrokeRect(r);		
+		icon_view->Sync();
+		icon_view->RemoveSelf();
+		icon->Unlock();
+		
+		delete (icon_view);
 	}
+	return icon;
 }
 void CDestinationList::SetNameFor(
 	int id,
@@ -307,6 +373,11 @@ void CDestinationList::SetNameFor(
 	CUpdateHint		hint;
 	hint.AddInt8( "channel", id);
 	CObservableSubject::PostUpdate( &hint, NULL );
+	BString epname;
+	epname << "MeV: ";
+	epname << name;
+	dest->m_producer->SetName(epname.String());
+	
 }
 void
 CDestinationList::SetColorFor(
@@ -322,10 +393,25 @@ CDestinationList::SetColorFor(
 		else
 			dest->highlightColor = tint_color(color, B_DARKEN_2_TINT);
 	}
+	
+	//producer icon set here
+	BRect sr,lr;
+	sr.Set(0,0,15,15);
+	lr.Set(0,0,31,31);
+	BMessage msg;
+	dest->m_producer->GetProperties(&msg);
+	m_midimanager->AddIcons(&msg,GetIconFor(id,lr),GetIconFor(id,sr));
+	dest->m_producer->SetProperties(&msg);
+	//end producer set
+	
 	CUpdateHint		hint;
 	hint.AddInt8( "channel", id);
 	CObservableSubject::PostUpdate( &hint, NULL );
 	m_doc->PostUpdateAllTracks(&hint);
+	
+	
+	
+	
 }
 void 
 CDestinationList::SetChannelFor(
@@ -346,26 +432,7 @@ CDestinationList::SetPortFor(
 	int id,
 	BMidiLocalProducer *producer)
 {
-	if (producer!=NULL)
-	{
 	
-		Destination *dest = m_tablerep[id];
-		if (dest)
-		{
-			dest->m_producer=producer;
-			dest->producer_name=producer->Name();
-			CUpdateHint hint;
-			hint.AddInt8("channel",id);
-			CObservableSubject::PostUpdate(&hint,NULL);
-			if (dest->flags & Destination::disabled)
-			{
-			//if disabled, let everyone know about it...no longer disabled.
-					dest->flags-=Destination::disabled;
-					m_doc->PostUpdateAllTracks(&hint);
-			}
-		}
-
-	}
 
 }
 void
@@ -373,25 +440,29 @@ CDestinationList::SetMuteFor(
 	int id,
 	bool muted)
 {
+	Destination *dest = m_tablerep[id];
 	if (muted)
 	{
-		Destination *dest = m_tablerep[id];
 		dest->flags+=Destination::mute;
-		CUpdateHint hint;
-		hint.AddInt8("channel",id);
-		CObservableSubject::PostUpdate(&hint,NULL);
-		m_doc->PostUpdateAllTracks(&hint);
 	}
 	else
 	{
-		Destination *dest = m_tablerep[id];
 		dest->flags-=Destination::mute;
-		CUpdateHint hint;
-		hint.AddInt8("channel",id);
-		CObservableSubject::PostUpdate(&hint,NULL);
-		m_doc->PostUpdateAllTracks(&hint);
 	}
-
+	
+	BRect sr,lr;
+	sr.Set(0,0,15,15);
+	lr.Set(0,0,31,31);
+	BMessage msg;
+	dest->m_producer->GetProperties(&msg);
+	m_midimanager->AddIcons(&msg,GetIconFor(id,sr),GetIconFor(id,lr));
+	dest->m_producer->SetProperties(&msg);
+	
+	
+	CUpdateHint hint;
+	hint.AddInt8("channel",id);
+	CObservableSubject::PostUpdate(&hint,NULL);
+	m_doc->PostUpdateAllTracks(&hint);
 }
 void 
 CDestinationList::SetDeletedFor(
@@ -402,10 +473,12 @@ CDestinationList::SetDeletedFor(
 	if (deleted)
 	{
 		dest->flags+=Destination::deleted;		
-		dest->m_producer=NULL;	
+		dest->m_producer->Unregister();
 		dest->fillColor.red=150;
 		dest->fillColor.green=150;
 		dest->fillColor.blue=150;
+		
+		
 		
 		CUpdateHint hint;
 		hint.AddInt8("channel",id);
@@ -422,7 +495,7 @@ CDestinationList::SetDisableFor(
 	if (disable) 
 	{
 		dest->flags+=Destination::disabled;		
-		dest->m_producer=NULL;	
+		//dest->m_producer=NULL;	
 		CUpdateHint hint;
 		hint.AddInt8("channel",id);
 		CObservableSubject::PostUpdate(&hint,NULL);
@@ -437,7 +510,29 @@ CDestinationList::SetDisableFor(
 		m_doc->PostUpdateAllTracks(&hint);			
 	}	
 }
-
+void
+CDestinationList::ToggleConnectFor(
+	int id,
+	BMidiConsumer *sink)
+{
+	BMessage props;
+	Destination *dest = m_tablerep[id];
+	sink->GetProperties(&props);
+	bool flag;
+	if (props.FindBool("mev:internalSynth",&flag)==B_OK)
+	{
+		PRINT(("init internal synth"));
+		((CInternalSynth *)sink)->Init();
+	}
+	if (dest->m_producer->IsConnected(sink))
+	{
+		dest->m_producer->Disconnect(sink);
+	}
+	else
+	{
+		dest->m_producer->Connect(sink);
+	}
+}
 void
 CDestinationList::SetSoloFor( 
 	int id,
