@@ -43,97 +43,105 @@
 // Support Kit
 #include <List.h>
 
-class CToolBar : public BControl {
-	enum EToolFlags {
-		Tool_Selected		= (1<<0),		// This tool is selected
-		Tool_Enabled		= (1<<1),		// This tool is enabled
-		Tool_Hidden		= (1<<2),		// This tool is not visible
-		Tool_Seperator	= (1<<3),		// A seperator between tools (1/2 of tool button width)
-		Tool_Toggle		= (1<<4),		// A toggle-state tool
+class CTool;
 
-// 	Tool_Diagonal		= (1<<3),		// A diagonal three-state tool (like DPaint)
-// 	Tool_DiagSelect	= (1<<4),		// Set if diagonal state is selected.
-	};
+class CToolBar :
+	public BControl {
 
-	struct CToolDef {
-		int32		group;				// Exclusion group, or -1 if non-exclusive
-		int32		toolID;				// Tool identifier code
-		int32		flags;				// Various flags
-		BBitmap		*bitmap[ 3 ];			// Bitmap for this tool
-		BPopUpMenu	*menu;				// menu item attached to tool
-	};
+	friend class CTool;
 
-	bool			vertical;
-	BList			toolList;
-	BPoint		toolSize;
-	BPicture		*toolPict,
-				*selectPict,
-				*dimPict;
-	BPoint		lastToolPos;
+public:									// Constants
 
-	void SelectTool( CToolDef *def, bool inNotify = true, int32 inNewState = -1 );
-	void DrawTool( CToolDef *tool, const BPoint &p );
-	CToolDef *PickTool( BPoint &inMouse, BPoint &outPos );
-	CToolDef *FindTool( int32 inToolID );
-	BPoint NextToolPos( CToolDef *def, BPoint &outNext );
-	BPoint ToolPos( CToolDef *def );
-	void MouseDown( BPoint point );
-	void AttachedToWindow();
-	void FrameResized( float width, float height );
+	static const float					H_TOOL_BAR_SEPARATOR_WIDTH;
 
-public:
+	static const float					V_TOOL_BAR_SEPARATOR_HEIGHT;
 
-		/**	Constructor */
-	CToolBar(	BRect 		inFrame,
-			BMessage		*inMessage,
-			BPoint		inToolSize,
-			bool			inVertical,
-			uint32		inResizingMode,
-			uint32		inFlags );
+	static const float					H_TOOL_BAR_BORDER;
+
+	static const float					V_TOOL_BAR_BORDER;
+
+public:									// Constructor/Destructor
+
+										CToolBar(
+											BRect frame,
+											const char *name,
+											orientation posture = B_HORIZONTAL,
+											uint32 resizingMode = B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP,
+											uint32 flags = B_WILL_DRAW | B_FRAME_EVENTS);
+
+										~CToolBar();
+
+public:									// Accessors
+
+	// return the number of tools and seperators
+	int32								CountTools()
+										{
+											return m_toolList.CountItems();
+										}
 	
-		/**	Destruct */
-	~CToolBar();
-	
-		/**	Enable or disable a specific tool. */
-	void EnableTool( int32 toolID, bool inEnabled = true );
-	
-		/**	Redraw the toolbar. */
-	void Draw( BRect r );
-	
-		/**	Overrider keydown to deal with navigation. */
-	void KeyDown( const char*, long );
-	
-		/**	Add a tool to the array. (Doesn't redraw) */
-	void AddTool(	int32	inToolID,			// Tool id
-				bool		inToggle,			// TRUE if tool should toggle
-				BBitmap	*img = NULL,		// unselected image
-				BBitmap	*selImg = NULL,	// selected image
-				BBitmap	*altImg = NULL,	// alternate image
-				BPopUpMenu *menu = NULL ); // menu for tool
-				
-		/** Allows changing of tool image. */
-	void SetToolImage( int32 inToolID,
-					BBitmap	*img = NULL,		// unselected image
-					BBitmap	*selImg = NULL,	// selected image
-					BBitmap	*altImg = NULL );	// alternate image
+	CTool *								FindTool(
+											const char *name) const;
 
-		/**	Add a specific tool to an exclusion group. */
-	void ExcludeTool( int32 inToolID, int32 inGroupID );
+	int32								IndexOf(
+											const CTool *tool) const;
+	int32								IndexOf(
+											BPoint point) const;
 
-		/**	Add a seperator */
-	void AddSeperator( int32 toolID = -1 );
-	
-		/**	Delete a tool */
-	void RemoveTool(	int32 inToolID );
-	
-		/**	return the number of tools and seperators */
-	int32 ToolCount() { return toolList.CountItems(); }
-	
-		/**	Select the tool with the given tool ID as though the user had clicked on it. */
-	void Select( int32 toolID, bool selected = true, bool inNotify = false );
+	CTool *								ToolAt(
+											int32 index) const;
 
-		/**	Returns whether the indicated tool is currently selected or not. */
-	bool IsSelected( int32 toolID );
+public:									// Operations
+
+	// Add a separator
+	bool								AddSeparator();
+
+	// Add a tool to the array. (Doesn't redraw)
+	bool								AddTool(
+											CTool *tool);
+
+	// Delete a tool
+	CTool *								RemoveTool(
+											int32 index);
+
+	void								SetRadioMode(
+											int32 index,
+											int32 count);
+
+public:									// BControl Implementation
+
+	virtual void						AttachedToWindow();
+
+	// Redraw the toolbar.
+	virtual void						Draw(
+											BRect updateRect);
+	
+	virtual void						GetPreferredSize(
+											float *width,
+											float *height);
+
+	virtual void						MouseDown(
+											BPoint point);
+
+	virtual void						MouseMoved(
+											BPoint point,
+											uint32 transit,
+											const BMessage *message);
+
+	virtual void						MouseUp(
+											BPoint point);
+
+protected:								// Internal Methods
+
+	BPoint								ContentLocationFor(
+											const CTool *whichTool) const;
+
+private:								// Instance Data
+
+	BList								m_toolList;
+
+	orientation							m_posture;
+
+	CTool *								m_lastSelectedTool;
 };
 
 #endif /* __C_ToolBar_H__ */
