@@ -20,10 +20,8 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Dan Walton (dwalton)
  *
- * ---------------------------------------------------------------------
- * Purpose:
- *  Defines virtual channel table
  * ---------------------------------------------------------------------
  * History:
  *	1997		Joe Pearce
@@ -33,10 +31,8 @@
  *  07/28/2000  dwalton
  *      Changed from struct to class.
  *		Added producer pointer.
- *  
- * ---------------------------------------------------------------------
- * To Do:
- *
+ *	11/10/2000	cell
+ *		Separated MIDI functionality into CMidiDestination subclass
  * ===================================================================== */
 
 #ifndef __C_Destination_H__
@@ -46,21 +42,14 @@
 #include "MeV.h"
 #include "Observable.h"
 #include "Serializable.h"
-#include "ReconnectingMidiProducer.h"
 
-// Midi Kit
-#include <MidiProducer.h>
-// Interface Kit
-#include <Bitmap.h>
-#include <InterfaceDefs.h>
-#include <Rect.h>
-//Support Kit.
-#include <String.h>
+// Support Kit
+#include <Mime.h>
 
 class CMeVDoc;
 
-#define NOTE_NAME_LENGTH 128
-#define PROGRAM_NAME_LENGTH 128
+class BBitmap;
+
 #define DESTINATION_NAME_LENGTH 128
 
 /**	Destinations, allow routing and remapping of MIDI data
@@ -76,19 +65,15 @@ class CDestination
 
 public:							// Constants
 
-	enum EDestUpdateHintBits
+	enum update_hints
 	{
-								Update_Name = (1<<0),
+								Update_Name 		= (1 << 0),
 
-								Update_Color = (1<<1),
+								Update_Latency 		= (1 << 1),
 
-								Update_Channel = (1<<2),
+								Update_Flags		= (1 << 2),
 
-								Update_Connections = (1<<3),
-
-								Update_Flags= (1<<4),
-
-								Update_Latency = (1<<5)
+								Update_Color 		= (1 << 3)
 	};
 
 public:							//Constructor/Destructor
@@ -100,9 +85,44 @@ public:							//Constructor/Destructor
 									CMeVDoc *document);
 
 								CDestination(
+									unsigned long type,
 									CMeVDoc *document);
 
 	virtual						~CDestination();
+
+public:							// Hook Functions
+
+	virtual status_t			GetIcon(
+									icon_size which,
+									BBitmap *outIcon) = 0;
+
+protected:						// Hook Functions
+
+	virtual void				ColorChanged(
+									rgb_color color)
+								{ }
+
+	virtual void				Deleted()
+								{ }
+
+	virtual void				Disabled(
+									bool disabled)
+								{ }
+
+	virtual void				Muted(
+									bool muted)
+								{ }
+
+	virtual void				NameChanged(
+									const char *name)
+								{ }
+
+	virtual void				Soloed(
+									bool solo)
+								{ }	
+
+	virtual void				Undeleted()
+								{ }
 
 public:							// Accessors
 	
@@ -112,14 +132,10 @@ public:							// Accessors
 	/** Returns the ID of the destination. */
 	long						ID() const;
 
-	virtual status_t			GetIcon(
-									icon_size which,
-									BBitmap *outIcon);
-
 	/** Returns true if not disabled or deleted. */
 	bool 						IsValid() const;
 
-	virtual void 				SetMuted(
+	void 						SetMuted(
 									bool muted);
 	/** Returns whether or not the destination is currently muted. If 
 	 *	you provide the fromSolo argument, it is set to true when the
@@ -129,16 +145,16 @@ public:							// Accessors
 	bool						IsMuted(
 									bool *fromSolo = NULL) const;
 
-	virtual void 				SetSolo(
+	void 						SetSolo(
 									bool solo);
 	bool 						IsSolo() const;
 						
-	virtual void 				SetName(
+	void 						SetName(
 									const char *name);
 	const char *				Name() const
 								{ return m_name; }
 
-	virtual void				SetLatency(
+	void						SetLatency(
 									bigtime_t microseconds);
 	bigtime_t					Latency() const
 								{ return m_latency; }
@@ -148,7 +164,7 @@ public:							// Accessors
 	rgb_color					Color() const
 								{ return m_color; }
 
-	virtual void				SetDisabled(
+	void						SetDisabled(
 									bool disabled);
 	bool			 			IsDisabled() const;
 
@@ -170,57 +186,12 @@ public:							// CSerializable Implementation
 	virtual void				Serialize(
 									CIFFWriter &writer);
 
-public:							// Midi specific functionality
-								// +++ move to Midi::CMidiDestination
-
-	/**	Copies a string identifying a note number into outName.
-	 *	outName should point to a string buffer of at least
-	 *	NOTE_NAME_LENGTH bytes.
-	 *	@return		true if a name for the note exists.
-	 */
-	bool						GetNoteName(
-									unsigned char note,
-									char *outName);
-
-	/**	Copies the program name at the given bank and program numbers
-	 *	into outName. outName should point to a string buffer of at least
-	 *	PROGRAM_NAME_LENGTH bytes.
-	 *	@return		true if the program could be identified.
-	 */
-	bool						GetProgramName(
-									unsigned short bank,
-									unsigned char program,
-									char *outName);
-
-	void						SetConnect(
-									BMidiConsumer *sink,
-									bool connect);
-	bool						IsConnected(
-									BMidiConsumer *sink) const;
-	Midi::CReconnectingMidiProducer *GetProducer() const
-								{ return m_producer; }
-
-	void 						SetChannel(
-									uint8 channel);
-	uint8						Channel() const
-								{ return m_channel; }
-
 private:   						// Internal Operations
 
 	bool						_addFlag (int32 flag);
 
 	bool						_removeFlag(int32 flag);	
 	
-	void 						_addIcons(
-									BMessage* msg,
-									BBitmap* largeIcon,
-									BBitmap* miniIcon) const;
-
-	BBitmap * 					_createIcon(
-									BRect r);
-
-	void						_updateIcons();
-
 private:						// Instance Data
 
 	CMeVDoc *					m_doc;
@@ -233,22 +204,9 @@ private:						// Instance Data
 
 	bigtime_t					m_latency;
 
-	// various flags
 	uint8						m_flags;
 
 	rgb_color					m_color;
-
-	// +++ move these to CMidiDestination in the future
-
-	// real midi channel
-	uint8						m_channel;
-
-	//this is the id that that this dest is connected to.
-	int32						m_consumerID;
-
-	Midi::CReconnectingMidiProducer *	m_producer;					
-
-	bool						m_generalMidi;
 };
 
 class CDestinationDeleteUndoAction
