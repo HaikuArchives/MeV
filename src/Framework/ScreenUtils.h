@@ -47,7 +47,6 @@ class BWindow;
 /**
  *  Various utility functions related to the screen.
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
  */
 class AppFrameSpec UScreenUtils
 {

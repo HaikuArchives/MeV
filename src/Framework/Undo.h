@@ -41,7 +41,6 @@
  *	undoable user action. It should be subclassed
  *	to provide specific undo functionality.
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
  */
 
 class UndoAction : public DNode {

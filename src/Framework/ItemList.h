@@ -48,7 +48,6 @@ template<class Item> class ItemListUndoAction ;
  * arbitrary classes including integral types. However, these functions are not
  * particularly optimal, and one would hope that they be replaced for a given type.
  *	@author		Talin
- *	@package	Framework
  */
 template <class T> class ItemFuncs
 {
@@ -86,7 +85,6 @@ public:
 /**
  *	ItemBlock_Base - A Block which holds a number of items
  *	@author		Talin
- *	@package	Framework
  */
 class ItemBlock_Base : private DNode {
 
@@ -110,7 +108,6 @@ protected:
 /**	
  *	A non-template base class representing a list of item blocks.	
  *	@author		Talin
- *	@package	Framework
  */
  
  class ItemList_Base {
@@ -199,7 +196,6 @@ public:
 /**
  *	Template class representing a block of specific-sized items
  *	@author		Talin
- *	@package	Framework
  */
  
 	// The parameters to the template are:
@@ -232,7 +228,6 @@ public:
  *	A template container class which keeps an undo history of changes
  *	ItemList Template - A list of blocks
  *	@author		Talin
- *	@package	Framework
  */
  
 template<class BK,class Item> class ItemList : public ItemList_Base {
@@ -304,7 +299,6 @@ ItemList<BK,Item>::~ItemList()
 /**
  *	ItemMarker_Base -- non-template base class for ItemMarker
  *	@author		Talin
- *	@package	Framework
  */
  
 class ItemMarker_Base : private DNode {
@@ -406,7 +400,6 @@ public:
  *	ItemMarker -- pointer to an item within a block. This will auto-adjust
  *	as edits are made.
  *	@author		Talin
- *	@package	Framework
  */
  
 template<class BK,class Item> class ItemMarker : public ItemMarker_Base {
@@ -516,7 +509,6 @@ protected:
 /**	
  *	Document framework class.
  *	@author		Talin
- *	@package	Framework
  */
 
 class ItemListUndoAction_Base : public UndoAction {
@@ -594,7 +586,6 @@ public:
 /**
  *	Stores undo information
  *	@author		Talin
- *	@package	Framework
  */
 class UndoItem : public DNode {
 	friend class		ItemList_Base;
@@ -635,7 +626,6 @@ public:
 /**
  *	Template version of ItemListUndoAction_Base
  *	@author		Talin
- *	@package	Framework
  */
 template<class Item>
 class ItemListUndoAction : public ItemListUndoAction_Base {

@@ -46,7 +46,6 @@ class BResources;
 /**
  *	Handles document creation, file modification and file saving routines.
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
  */
 class CDocApp : 
 	public BApplication

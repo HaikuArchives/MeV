@@ -47,8 +47,7 @@ class CUpdateHint;
  *	observers can post updates indicating that changes have occured.
  *  Implements the observer pattern
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
-*/
+ */
 class CObserver
 {
 

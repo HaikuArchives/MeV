@@ -37,7 +37,6 @@
  *	This class is basically merges BMenu with the BRoster method 
  *	GetRecentDocuments()
  *	@author		Christopher Lenz
- *	@package	Framework
  */
  
 class CRecentDocumentsMenu

@@ -44,7 +44,6 @@ class CToolBar;
 
 /**	Abstract document window class.
  *		@author		Talin, Christopher Lenz
- *		@package	Framework
  */
 
 class CDocWindow :

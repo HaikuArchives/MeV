@@ -49,8 +49,7 @@ class UndoHistory;
 /**
  *	CObservable is a base class for observable objects
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
-*/
+ */
 class CObservable
 	:	public CLockable
 {
@@ -172,7 +171,6 @@ typedef enum
 /**
  *	Stack-based locker for subjects.
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
  */
 class StSubjectLock
 {
@@ -229,8 +227,7 @@ private:						// Instance Data
 /** 
  *	CUpdateHint is an abstract base class for observer notification hints
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
-*/
+ */
 class CUpdateHint
 	:	public BMessage
 {

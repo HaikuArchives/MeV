@@ -46,7 +46,6 @@
 /**
  *  Framework for reference-counted objects.
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
  */
 class AppFrameSpec CRefCountObject {
 

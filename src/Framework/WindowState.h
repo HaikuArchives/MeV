@@ -49,7 +49,6 @@ class CWindowState;
  *	in a seperate structure which can be used to manipulate the window,
  *	even if the window is not open.
  *	@author		Talin, Christopher Lenz
- *	@package	Framework
  */
 class CWindowState
 {
