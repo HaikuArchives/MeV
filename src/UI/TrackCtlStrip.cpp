@@ -1474,7 +1474,10 @@ CTrackCtlStrip::SubjectUpdated(
 		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
 						   CTrack::Update_TempoMap | CTrack::Update_Name |
 						   CTrack::Update_Flags)))
+		{
+			CEventEditor::SubjectUpdated(message);
 			return;
+		}
 	}
 
 	int32 minTime;

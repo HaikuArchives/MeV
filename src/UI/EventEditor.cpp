@@ -312,6 +312,16 @@ CEventEditor::DrawGridLines(
 					   BPoint(x, updateRect.bottom));
 		}
 	}
+
+	// draw section markers
+	SetHighColor(0, 0, 0, 255);
+	SetLowColor(B_TRANSPARENT_COLOR);
+	x = FrameView().TimeToViewCoords(Track()->SectionStart(), clockType);
+	StrokeLine(BPoint(x, updateRect.top), BPoint(x, updateRect.bottom),
+			   B_MIXED_COLORS);
+	x = FrameView().TimeToViewCoords(Track()->SectionEnd(), clockType);
+	StrokeLine(BPoint(x, updateRect.top), BPoint(x, updateRect.bottom),
+			   B_MIXED_COLORS);
 }
 
 void
@@ -592,7 +602,7 @@ CEventEditor::SubjectUpdated(
 	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 	{
 		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
-						   CTrack::Update_TempoMap)))
+						   CTrack::Update_TempoMap | CTrack::Update_Section)))
 			return;
 	}
 
@@ -1190,7 +1200,7 @@ CEventEditor::MouseMoved(
 		else if (point.y < r.top)
 			ScrollBy(MAX((point.y - r.top) / 4, - 10.0), B_VERTICAL);
 	}
-	else if (Window()->IsActive())
+	else if (Window()->IsActive() && (message == NULL))
 	{
 		if ((transit == B_ENTERED_VIEW) || (transit == B_INSIDE_VIEW))
 		{
