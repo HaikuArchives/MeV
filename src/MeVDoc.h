@@ -64,6 +64,8 @@ class CMeVDoc
 {
 	friend class CTrackDeleteUndoAction;
 	friend class CTrack;
+	friend class CDestination;
+	friend class CDestDeleteUndoAction;
 	friend class MeVTrackRef;
 
 public:							// Constants
@@ -79,9 +81,12 @@ public:							// Constants
 		Update_AddTrack		= (1<<1),			// Track added
 		Update_DelTrack		= (1<<2),			// Track deleted
 		Update_TrackOrder	= (1<<3),			// Track order changed
-		Update_Operator		= (1<<4),			// Operators changed
-		Update_OperList		= (1<<5),			// list of operators changed
-		Update_TempoMap		= (1<<6),			// list of operators changed
+		Update_Operator	= (1<<4),			// Operators changed
+		Update_OperList	= (1<<5),			// list of operators changed
+		Update_TempoMap	= (1<<6),			// list of operators changed
+		Update_AddDest = (1<<7),
+		Update_DelDest = (1<<8)
+
 	};
 
 	static const double			DEFAULT_TEMPO;
@@ -99,11 +104,6 @@ public:							// Constructor/Destructor
 	
 public:							// Accessors
 
-	Destination *				GetVChannel(
-									int channel) const;
-
-	CDestinationList *			GetDestinationList()
-								{ return m_destlist; }
 	
 	static BMimeType *			MimeType();
 
@@ -134,6 +134,7 @@ public:							// Operator Management
 	int32						OperatorIndex(
 									EventOp *op) const
 								{ return operators.IndexOf(op); }
+
 
 	/**	Add an operator to the document's list of operators. */
 	void						AddOperator(
@@ -186,6 +187,31 @@ public:							// Track Management
 	CTrack *					TrackAt(
 									int32 index)
 								{ return (CTrack *)tracks.ItemAt(index); }
+
+								
+public :						//Destination Management
+	CDestination *				NewDestination();
+	
+	int32						GetUniqueDestinationID() const;
+	
+	CDestination *				FindDestination(int32 inID) const;
+	
+	CDestination *				FindNextHigherDestinationID(
+									int32 inID) const ;
+	
+	int32						CountDestinations() const;
+	
+	int32						SelectedDestination() const
+								{ return m_selectedDest; }
+	void						SetSelectedDestination(int32 id)
+								{m_selectedDest=id;}						
+
+	bool 						IsDefinedDest (int32 inID) const;
+	
+	int32						MaxDestinationLatency (uint8 clockType);
+	
+	void						SetDestinationLatency(int32 id,int32 microseconds);
+	
 
 public:							// Window Management
 
@@ -256,6 +282,8 @@ public:							// Operations
 	void						ReadTrack(
 									uint32 inTrackType,
 									CIFFReader &iffReader);
+									
+	void						ReadDestination (CIFFReader &reader );
 
 	/**	Sets a flag indicating that the tempo map needs to be recompiled.
 		This is called by the track editing code whenever a tempo change
@@ -274,6 +302,7 @@ public:							// Operations
 	void						ReplaceTempoMap(
 									CTempoMapEntry *entries,
 									int length);
+
 
 public:							// CDocument Implementation
 
@@ -294,7 +323,12 @@ private:						// Instance Data
 
 	BList						tracks;
 	int32						m_newTrackID;
-
+	
+	BList						m_destinations;
+	//CDestination * m_destTable[Max_Destinations];
+	int32						m_newDestID;
+	int32						m_selectedDest;
+	int32 						m_maxDestLatency;
 	// Opers associated with doc
 	BList						operators;
 
@@ -310,7 +344,6 @@ private:						// Instance Data
 	// Which track is being edited
 	CEventTrack *				m_activeMaster;
 	
-	CDestinationList *			m_destlist;
 
 	int32						defaultAttributes[EvAttr_Count];
 

@@ -75,7 +75,8 @@ CMeVDoc::CMeVDoc(
 	m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
 	m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
 	m_activeMaster = m_masterMeterTrack;
-	SetValid();
+	SetValid(); 
+	NewDestination();
 }
 
 CMeVDoc::CMeVDoc(
@@ -133,14 +134,13 @@ CMeVDoc::CMeVDoc(
 	int32 formType;
 
 	iffReader.ChunkID(1, &formType);
-
 	while (iffReader.NextChunk())
 	{
 		switch (iffReader.ChunkID(0, &formType))
 		{
-			case VCTable_ID:
+			case DESTINATION_ID:
 			{
-				//ReadDestination (iffReader);
+				ReadDestination (iffReader);
 				break;
 			}
 			case DocTempo_ID:
@@ -727,17 +727,15 @@ CMeVDoc::SaveDocument()
 	iffWriter.Push(Form_ID);
 	iffWriter << (long)MeV_ID;
 
-	iffWriter.Push(VCTable_ID);
-	CDestination *dest;
-	int32 id=-1;
-	while (dest=(FindNextHigherDestinationID(id)))
+	
+	for (int i = 0; i < CountDestinations(); i++)
 	{
-		id=dest->GetID();
+		iffWriter.Push(DESTINATION_ID);
+		CDestination *dest=FindDestination(i);
 		dest->WriteDestination (iffWriter);
+		iffWriter.Pop();
 	}
 	
-	iffWriter.Pop();
-
 	iffWriter.Push(DocTempo_ID);
 	iffWriter << InitialTempo();
 	iffWriter.Pop();
@@ -869,13 +867,13 @@ CMeVDoc::ReadDestination (CIFFReader &reader )
 		reader >> destid;
 		dest=new CDestination (destid,*this,"Untitled Destination",0);
 		dest->m_producer=new CReconnectingMidiProducer("");
-		reader >> dest->m_channel >> dest->m_flags >> dest->m_velocityContour >> dest->m_initialTranspose;
+		reader >> dest->m_channel >> dest->m_flags;
 		rgb_color color;
 		reader >> color.red;
 		reader >> color.green;
 		reader >> color.blue;
 		
-		dest->m_fillColor=color;
+		dest->m_fillColor =color;
 		ReadStr255(reader,buff, 255);
 		dest->m_name.SetTo(buff);
 		//set producer name
@@ -886,19 +884,12 @@ CMeVDoc::ReadDestination (CIFFReader &reader )
 		
 		//load and connect all connections 
 		BString pname;
-		while (pname.Compare("connection list end"))
-		{
-			ReadStr255( reader,buff, 255 );
-			pname.SetTo(buff);
-			//connect with name
-			dest->ToggleConnect(manager->FindConsumer(pname.String()));
-		}
+		ReadStr255( reader,buff, 255 );
+		pname.SetTo(buff);
+		//connect with name
+		dest->SetConnect(manager->FindConsumer(pname.String()),1);
 		m_destinations.AddItem(dest,destid);
-		
 	}
-	//CUpdateHint hint;
-	//hint.AddInt8("channel",destid);
-	//NotifyUpdate(CMeVDoc::Update_AddDest,NULL);
 }
 
 // ---------------------------------------------------------------------------
@@ -976,10 +967,9 @@ CMeVDoc::Init()
 							  ClockType_Metered);
 
 
-    m_newDestID=0;
+    m_newDestID=0; //hemm remember me.
     m_maxDestLatency=0;
-   
-    NewDestination();
+     
 }
 
 // END - MeVDoc.cpp
