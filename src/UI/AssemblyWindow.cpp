@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * AssemblyWindow.cpp (MeV/User Interface)
+ * AssemblyWindow.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "AssemblyWindow.h"
@@ -53,6 +53,9 @@ CAssemblyWindow::CAssemblyWindow(
 
 	AddMenuBar();
 	AddToolBar();
+
+	// ++++++ retrieve this from window settings if possible
+	m_toolStates[0] = CEventEditor::TOOL_SELECT;
 
 	// add the default strips
 	BRect rect(Bounds());
@@ -203,12 +206,14 @@ CAssemblyWindow::MessageReceived(
 		}
 		case 'cMet':
 		{
-			stripFrame->SetClockType( ClockType_Metered );
+			// ++++++ what is this ?
+			stripFrame->SetClockType(ClockType_Metered);
 			break;
 		}
 		case 'cRea':
 		{
-			stripFrame->SetClockType( ClockType_Real );
+			// ++++++ what is this ?
+			stripFrame->SetClockType(ClockType_Real);
 			break;
 		}
 		default:
@@ -443,7 +448,7 @@ CAssemblyWindow::AddFrameView(
 	magButton = new CBorderButton(BRect(frame.right - 27, frame.bottom + 1,
 										frame.right - 13, frame.bottom + 15),
 								  NULL, ResourceUtils::LoadImage("SmallPlus"),
-								  new BMessage(ZoomIn_ID),
+								  new BMessage(ZoomIn_ID), true,
 								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 								  B_WILL_DRAW);
 	magButton->SetTarget((CDocWindow *)this);
@@ -452,7 +457,7 @@ CAssemblyWindow::AddFrameView(
 	magButton = new CBorderButton(BRect(frame.right - 41, frame.bottom + 1,
 										frame.right - 27, frame.bottom + 15),
 								  NULL, ResourceUtils::LoadImage("SmallMinus"),
-								  new BMessage(ZoomOut_ID),
+								  new BMessage(ZoomOut_ID), true,
 								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 								  B_WILL_DRAW);
 	magButton->SetTarget((CDocWindow *)this);

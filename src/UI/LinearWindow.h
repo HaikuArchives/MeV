@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * LinearWindow.h (MeV/User Interface)
+ * LinearWindow.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public

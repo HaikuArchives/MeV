@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * LinearWindow.cpp (MeV/User Interface)
+ * LinearWindow.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "LinearWindow.h"
@@ -53,6 +53,9 @@ CLinearWindow::CLinearWindow(
 
 	AddMenuBar();
 	AddToolBar();
+
+	// ++++++ retrieve this from window settings if possible
+	m_toolStates[0] = CEventEditor::TOOL_SELECT;
 
 	rect.top = ToolBar()->Frame().bottom + 1.0;
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
@@ -198,7 +201,7 @@ CLinearWindow::MessageReceived(
 		}
 		default:
 		{
-			CTrackWindow::MessageReceived( message );
+			CTrackWindow::MessageReceived(message);
 			break;
 		}
 	}
@@ -477,7 +480,7 @@ CLinearWindow::AddFrameView(
 	magButton = new CBorderButton(BRect(frame.right - 27, frame.bottom + 1,
 										frame.right - 13, frame.bottom + 15),
 								  NULL, ResourceUtils::LoadImage("SmallPlus"),
-								  new BMessage(ZoomIn_ID),
+								  new BMessage(ZoomIn_ID), true,
 								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 								  B_WILL_DRAW);
 	magButton->SetTarget((CDocWindow *)this);
@@ -486,7 +489,7 @@ CLinearWindow::AddFrameView(
 	magButton = new CBorderButton(BRect(frame.right - 41, frame.bottom + 1,
 										frame.right - 27, frame.bottom + 15),
 								  NULL, ResourceUtils::LoadImage("SmallMinus"),
-								  new BMessage(ZoomOut_ID),
+								  new BMessage(ZoomOut_ID), true,
 								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 								  B_WILL_DRAW);
 	magButton->SetTarget((CDocWindow *)this);
