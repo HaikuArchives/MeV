@@ -21,7 +21,7 @@
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)		// BView Implementation
-#define D_INTERNAL(x) PRINT(x)	// Internal Operations
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
 
 using namespace Midi;
 
