@@ -10,7 +10,6 @@ SRCS= \
 	Framework/DocApp.cpp \
 	Framework/Document.cpp \
 	Framework/DocWindow.cpp \
-	Framework/DynamicMenu.cpp \
 	Framework/ItemList.cpp \
 	Framework/Lockable.cpp \
 	Framework/Observable.cpp \
