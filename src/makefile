@@ -47,7 +47,9 @@ SRCS= \
 	Support/IFFReader.cpp \
 	Support/IFFWriter.cpp \
 	Support/MathUtils.cpp \
+	Support/Reader.cpp \
 	Support/ResourceUtils.cpp \
+	Support/Writer.cpp \
 	UI/AssemblyWindow.cpp \
 	UI/BitmapTool.cpp \
 	UI/BorderButton.cpp \
