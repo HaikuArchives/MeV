@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * MidiManager.h (MeV/Midi)
+ * MidiModule.h (MeV/Midi)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -21,13 +21,6 @@
  *  Contributor(s): 
  *		Dan Walton (dwalton)
  *
- *	Some of this code has been based on Be, Inc. sample code.
- *	Copyright 1999, Be Incorporated.   All Rights Reserved.
- * ---------------------------------------------------------------------
- * Purpose:
- *	This class takes care of building new consumers and connecting...etc.
- *	Manages the external Midi environment.
- *
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
@@ -35,41 +28,29 @@
  *		added to the repository...
  *	8/13/2000		dwalton
  *		modified to support one producer per CDestination.
- * ---------------------------------------------------------------------
- * To Do:
- * I imagine that this could be used for all the midi port management including
- * patch names etc.
+ *	11/24/2000		cell
+ *		modified to inherit from new CMeVModule class, renamed to 
+ *		CMidiModule
  * ===================================================================== */
 
-#ifndef __C_MidiManager_H__
-#define __C_MidiManager_H__
+#ifndef __C_MidiModule_H__
+#define __C_MidiModule_H__
 
-#include "InternalSynth.h"
-#include "Observer.h"
+#include "MeVModule.h"
 
-// Application Kit
-#include <Looper.h>
-// Interface Kit
-#include <Bitmap.h>
-#include <GraphicsDefs.h>
-// Midi Kit
-#include <MidiProducer.h>
-#include <MidiRoster.h>
-#include <MidiConsumer.h>
-// Storage Kit
-#include <Mime.h>
-// Support Kit
-#include <List.h>
-#include <String.h>
 // Standard Template Library
 #include <map>
 #include <string>
 
-class CDestination;
-class CMeVDoc;
+class BMidiConsumer;
+class BMidiEndpoint;
+class BMidiProducer;
+class BMidiRoster;
 
 namespace Midi
 {
+
+class CInternalSynth;
 
 enum chunk_ids
 {
@@ -80,14 +61,13 @@ enum chunk_ids
 
 const size_t CONNECTION_NAME_LENGTH = 256;
 
-class CMidiManager
-	: 	public BLooper,
-		public CObserver
+class CMidiModule
+	: 	public CMeVModule
 {
 
 public:							// Singleton Access
 
-	static CMidiManager *		Instance();
+	static CMidiModule *		Instance();
 
 public:							// Accessors
 
@@ -108,11 +88,6 @@ public:							// Accessors
 	BMidiConsumer *				FindConsumer(
 									const BString &name);
 
-	/** Returns the generic icon for this module. */
-	virtual status_t			GetIcon(
-									icon_size which,
-									BBitmap *outBitmap);
-
 	// returns the icon for a specific BMidiEndpoint
 	status_t					GetIconFor(
 									BMidiEndpoint *endpoint,
@@ -122,7 +97,13 @@ public:							// Accessors
 	CInternalSynth *			InternalSynth() const
 								{ return m_internalSynth; }
 
-public:							// Operations
+public:							// CMeVModule Implementation
+
+	/** Called by the document when a new destination is requested. */
+	virtual CDestination *		CreateDestination(
+									CMeVDoc *document,
+									int32 *id = NULL,
+									const char *name = NULL);
 
 	/** Called by the app when a document has been created or loaded.
 		We should start observing the document at this point.
@@ -130,24 +111,25 @@ public:							// Operations
 	virtual void				DocumentOpened(
 									CMeVDoc *document);
 
-public:							// BLooper Implementation
+	/** Returns the generic icon for this module. */
+	virtual status_t			GetIcon(
+									icon_size which,
+									BBitmap *outBitmap);
 
 	virtual void				MessageReceived(
 									BMessage *message);
 
-public:							// CObserver Implementation
-
-	virtual bool				Released(
+	virtual bool				SubjectReleased(
 									CObservable *subject);
 
-	virtual void				Updated(
+	virtual void				SubjectUpdated(
 									BMessage *message);
 
 protected:						// Hidden Constructor
 
-								CMidiManager();
+								CMidiModule();
 
-	virtual						~CMidiManager();
+	virtual						~CMidiModule();
 
 private:						// Internal Operations
 
@@ -198,9 +180,9 @@ private:						// Instance Data
 
 private:						// Class Data
 
-	static CMidiManager *		s_instance;
+	static CMidiModule *		s_instance;
 };
 
 };
 
-#endif /* __C_MidiManager_H__ */
+#endif /* __C_MidiModule_H__ */

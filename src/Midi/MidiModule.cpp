@@ -1,16 +1,20 @@
 /* ===================================================================== *
- * MidiManager.cpp (MeV/Midi)
+ * MidiModule.cpp (MeV/Midi)
  * ===================================================================== */
 
-#include "MidiManager.h"
+#include "MidiModule.h"
 
-#include "Destination.h"
+#include "InternalSynth.h"
+#include "MidiDestination.h"
 #include "ReconnectingMidiProducer.h"
 
 // Application Kit
 #include <Messenger.h>
+// Interface Kit
+#include <Bitmap.h>
 // Midi Kit
 #include <MidiConsumer.h>
+#include <MidiRoster.h>
 // Support Kit
 #include <Debug.h>
 // Standard C Library
@@ -19,6 +23,7 @@
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)	// Constructor/Destructor
 #define D_ACCESS(x) //PRINT(x)	// Accessors
+#define D_HOOK(x) //PRINT(x)	// Hook Functions
 #define D_MESSAGE(x) //PRINT(x)	// MessageReceived()
 #define D_ROSTER(x) //PRINT(x)	// BMidiRoster Interaction
 
@@ -49,20 +54,20 @@ const unsigned char MINI_ICON_BITS [] = {
 // ---------------------------------------------------------------------------
 // Class Data Initialization
 
-CMidiManager *
-CMidiManager::s_instance = NULL;
+CMidiModule *
+CMidiModule::s_instance = NULL;
 
 // ---------------------------------------------------------------------------
 // Singleton Access
 
-CMidiManager *
-CMidiManager::Instance()
+CMidiModule *
+CMidiModule::Instance()
 {
-	D_ALLOC(("CMidiManager::Instance()\n"));
+	D_ALLOC(("CMidiModule::Instance()\n"));
 
 	if (s_instance == NULL)
 	{	
-		s_instance = new CMidiManager();
+		s_instance = new CMidiModule();
 		s_instance->Run(); 			
 	}
 
@@ -72,12 +77,12 @@ CMidiManager::Instance()
 // ---------------------------------------------------------------------------
 // Hidden Constructor
 
-CMidiManager::CMidiManager()
-	:	BLooper("MidiManager"),
+CMidiModule::CMidiModule()
+	:	CMeVModule('MIDI', "MeV MIDI Module"),
 		m_roster(NULL),
 		m_internalSynth(NULL)
 {
-	D_ALLOC(("CMidiManager::CMidiManager()\n"));
+	D_ALLOC(("CMidiModule::CMidiModule()\n"));
 
 	m_roster = BMidiRoster::MidiRoster();
 	if (m_roster == NULL)
@@ -93,9 +98,9 @@ CMidiManager::CMidiManager()
 	m_internalSynth->Register();
 }
 
-CMidiManager::~CMidiManager()
+CMidiModule::~CMidiModule()
 {
-	D_ALLOC(("CMidiManager::~CMidiManager()\n"));
+	D_ALLOC(("CMidiModule::~CMidiModule()\n"));
 
 	if (m_internalSynth != NULL)
 	{
@@ -105,62 +110,53 @@ CMidiManager::~CMidiManager()
 }
 
 // ---------------------------------------------------------------------------
-// Hook Functions
-
-void
-CMidiManager::DocumentOpened(
-	CMeVDoc *document)
-{
-}
-
-// ---------------------------------------------------------------------------
 // Accessors
 
 BMidiProducer *
-CMidiManager::GetNextProducer(
+CMidiModule::GetNextProducer(
 	int32 *id) const
 {
-	D_ACCESS(("CMidiManager::GetNextProducer(%ld)\n", *id));
+	D_ACCESS(("CMidiModule::GetNextProducer(%ld)\n", *id));
 	ASSERT(m_roster != NULL);
 
 	return (m_roster->NextProducer(id));
 }
 
 BMidiProducer *
-CMidiManager::FindProducer(
+CMidiModule::FindProducer(
 	int32 id)
 {
-	D_ACCESS(("CMidiManager::FindProducer(%ld)\n", id));
+	D_ACCESS(("CMidiModule::FindProducer(%ld)\n", id));
 	ASSERT(m_roster != NULL);
 
 	return (m_roster->FindProducer(id));
 }
 
 BMidiConsumer *
-CMidiManager::GetNextConsumer(
+CMidiModule::GetNextConsumer(
 	int32 *id) const
 {
-	D_ACCESS(("CMidiManager::GetNextConsumer(%ld)\n", *id));
+	D_ACCESS(("CMidiModule::GetNextConsumer(%ld)\n", *id));
 	ASSERT(m_roster != NULL);
 
 	return (m_roster->NextConsumer(id));
 }
 
 BMidiConsumer *
-CMidiManager::FindConsumer(
+CMidiModule::FindConsumer(
 	int32 id)
 {
-	D_ACCESS(("CMidiManager::FindConsumer(%ld)\n", id));
+	D_ACCESS(("CMidiModule::FindConsumer(%ld)\n", id));
 	ASSERT(m_roster != NULL);
 
 	return (m_roster->FindConsumer(id));
 }
 
 BMidiEndpoint *
-CMidiManager::FindEndpoint(
+CMidiModule::FindEndpoint(
 	const BString &name)
 {
-	D_ACCESS(("CMidiManager::FindEndpoint(%s)\n", name.String()));
+	D_ACCESS(("CMidiModule::FindEndpoint(%s)\n", name.String()));
 	ASSERT(m_roster != NULL);
 
 	int32 id = 0;
@@ -180,10 +176,10 @@ CMidiManager::FindEndpoint(
 }
 
 BMidiProducer *
-CMidiManager::FindProducer(
+CMidiModule::FindProducer(
 	const BString &name)
 {
-	D_ACCESS(("CMidiManager::FindProducer(%s)\n", name.String()));
+	D_ACCESS(("CMidiModule::FindProducer(%s)\n", name.String()));
 	ASSERT(m_roster != NULL);
 
 	int32 id = 0;
@@ -203,10 +199,10 @@ CMidiManager::FindProducer(
 }
 
 BMidiConsumer *
-CMidiManager::FindConsumer(
+CMidiModule::FindConsumer(
 	const BString &name)
 {
-	D_ACCESS(("CMidiManager::FindConsumer(%s)\n", name.String()));
+	D_ACCESS(("CMidiModule::FindConsumer(%s)\n", name.String()));
 	ASSERT(m_roster != NULL);
 
 	if (name == "Internal Synth")
@@ -229,26 +225,12 @@ CMidiManager::FindConsumer(
 }
 
 status_t
-CMidiManager::GetIcon(
-	icon_size which,
-	BBitmap *outBitmap)
-{
-	D_ACCESS(("CMidiManager::GetIcon()\n"));
-
-	if (which != B_MINI_ICON)
-		return B_ERROR;
-
-	outBitmap->SetBits(MINI_ICON_BITS, 256, 0, B_CMAP8);
-	return B_OK;
-}
-
-status_t
-CMidiManager::GetIconFor(
+CMidiModule::GetIconFor(
 	BMidiEndpoint *endpoint,
 	icon_size which,
 	BBitmap *outBitmap)
 {
-	D_ACCESS(("CMidiManager::GetIconFor(%s)\n", endpoint->Name()));
+	D_ACCESS(("CMidiModule::GetIconFor(%s)\n", endpoint->Name()));
 
 	BMessage props;
 	if (endpoint && (endpoint->GetProperties(&props) != B_OK))
@@ -280,13 +262,48 @@ CMidiManager::GetIconFor(
 }
 
 // ---------------------------------------------------------------------------
-// BLooper Implementation
+// CMeVModule Implementation
+
+CDestination *
+CMidiModule::CreateDestination(
+	CMeVDoc *document,
+	int32 *id,
+	const char *name)
+{
+	D_HOOK(("CMidiModule::CreateDestination()\n"));
+
+	if ((id == NULL) || (name == NULL))
+		return new CMidiDestination(document);
+	else
+		return new CMidiDestination(*id, name, document);
+}
 
 void
-CMidiManager::MessageReceived(
+CMidiModule::DocumentOpened(
+	CMeVDoc *document)
+{
+	D_HOOK(("CMidiModule::DocumentOpened()\n"));
+}
+
+status_t
+CMidiModule::GetIcon(
+	icon_size which,
+	BBitmap *outBitmap)
+{
+	D_ACCESS(("CMidiModule::GetIcon()\n"));
+
+	if (which != B_MINI_ICON)
+		return B_ERROR;
+
+	outBitmap->SetBits(MINI_ICON_BITS, 256, 0, B_CMAP8);
+	return B_OK;
+}
+
+void
+CMidiModule::MessageReceived(
 	BMessage *message)
 {
-	D_MESSAGE(("CMidiManager::MessageReceived()\n"));
+	D_MESSAGE(("CMidiModule::MessageReceived()\n"));
 
 	switch (message->what)
 	{
@@ -381,50 +398,33 @@ CMidiManager::MessageReceived(
 		}
 		default:
 		{
-			BLooper::MessageReceived(message);
+			CMeVModule::MessageReceived(message);
 		}
 	}
 }
 
-// ---------------------------------------------------------------------------
-// CObservable Implementation
-
 bool
-CMidiManager::Released(
+CMidiModule::SubjectReleased(
 	CObservable *subject)
 {
-	bool released = false;
-
-	if (Lock())
-	{
-		// do anything necessary to let go of the subject
-
-		// if the subject points to a destination, we'll need to remove it
-		// from the multimap and release it
-
-		// if it's a document, just release it
-		Unlock();
-	}
-
-	return released;
+	return false;
 }
 
 void
-CMidiManager::Updated(
+CMidiModule::SubjectUpdated(
 	BMessage *message)
 {
-	PostMessage(message, this);
 }
 
 // ---------------------------------------------------------------------------
 // Internal Operations
 
 void
-CMidiManager::_endpointRegistered(
+CMidiModule::_endpointRegistered(
 	int32 id,
 	const BString &type)
 {
-	D_ROSTER(("CMidiManager::_endpointRegistered(%ld, %s)\n",
+	D_ROSTER(("CMidiModule::_endpointRegistered(%ld, %s)\n",
 			  id, type.String()));
 
 	if (type == "producer")
@@ -438,11 +438,11 @@ CMidiManager::_endpointRegistered(
 }
 
 void
-CMidiManager::_endpointUnregistered(
+CMidiModule::_endpointUnregistered(
 	int32 id,
 	const BString &type)
 {
-	D_ROSTER(("CMidiManager::_endpointUnregistered(%ld, %s)\n",
+	D_ROSTER(("CMidiModule::_endpointUnregistered(%ld, %s)\n",
 			  id, type.String()));
 
 	if (type == "producer")
@@ -457,11 +457,11 @@ CMidiManager::_endpointUnregistered(
 }
 
 void
-CMidiManager::_endpointConnected(
+CMidiModule::_endpointConnected(
 	int32 producerID,
 	int32 consumerID)
 {
-	D_ROSTER(("CMidiManager::_endpointConnected(%ld, %ld)\n",
+	D_ROSTER(("CMidiModule::_endpointConnected(%ld, %ld)\n",
 			  producerID, consumerID));
 
 	BMidiConsumer *consumer = FindConsumer(consumerID);
@@ -480,18 +480,18 @@ CMidiManager::_endpointConnected(
 }
 
 void
-CMidiManager::_endpointDisconnected(
+CMidiModule::_endpointDisconnected(
 	int32 producerID,
 	int32 consumerID)
 {
-	D_ROSTER(("CMidiManager::_endpointDisconnected(%ld, %ld)\n",
+	D_ROSTER(("CMidiModule::_endpointDisconnected(%ld, %ld)\n",
 			  producerID, consumerID));
 
 //	_disconnect(producerID, consumerID);
 }
 
 void
-CMidiManager::_endpointChangedName(
+CMidiModule::_endpointChangedName(
 	int32 id,
 	const BString &type,
 	const BString &name)
@@ -499,7 +499,7 @@ CMidiManager::_endpointChangedName(
 }
 
 void
-CMidiManager::_endpointChangedLatency(
+CMidiModule::_endpointChangedLatency(
 	int32 id,
 	const BString &type,
 	bigtime_t latency)
@@ -507,11 +507,11 @@ CMidiManager::_endpointChangedLatency(
 }
 
 void
-CMidiManager::_endpointChangedProperties(
+CMidiModule::_endpointChangedProperties(
 	int32 id,
 	const BString &type,
 	const BMessage *message)
 {
 }
 
-// END - MidiManager.cpp
+// END - MidiModule.cpp
