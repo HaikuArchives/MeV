@@ -304,11 +304,11 @@ CLinearWindow::AddToolBar()
 	message = new BMessage(SELECT_MODE_CHANGED);
 	message->AddInt32("mev:mode", CEventEditor::RECTANGLE_SELECTION);
 	selectMenu->AddItem(new CIconMenuItem("Rectangle", message,
-										  ResourceUtils::LoadImage("SelRectTool")));
+										  ResourceUtils::LoadImage("ArrowTool")));
 	message = new BMessage(*message);
 	message->ReplaceInt32("mev:mode", CEventEditor::LASSO_SELECTION);
 	selectMenu->AddItem(new CIconMenuItem("Lasso", message,
-										  ResourceUtils::LoadImage("SelLassoTool")));
+										  ResourceUtils::LoadImage("LassoTool")));
 	selectMenu->SetTargetForItems(this);
 
 	// make the pop up menu for 'Create' tool
@@ -358,7 +358,7 @@ CLinearWindow::AddToolBar()
 	toolBar->AddSeparator();
 
 	toolBar->AddTool(tool = new CMenuTool("Select",
-										  ResourceUtils::LoadImage("SelRectTool"),
+										  ResourceUtils::LoadImage("ArrowTool"),
 										  selectMenu,
 										  new BMessage(CEventEditor::TOOL_SELECT)));
 	tool->SetValue(B_CONTROL_ON);

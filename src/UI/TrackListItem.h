@@ -41,9 +41,8 @@
 class CTrack;
 
 /**
- *		@author	Talin, Christoper Lenz.  
+ *	@author	Talin, Christoper Lenz.  
  */
-
 class CTrackListItem
 	:	public BListItem
 {

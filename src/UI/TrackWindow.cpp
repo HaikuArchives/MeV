@@ -521,12 +521,12 @@ CTrackWindow::MessageReceived(
 				{
 					case CEventEditor::RECTANGLE_SELECTION:
 					{
-						bitmap = ResourceUtils::LoadImage("SelRectTool");
+						bitmap = ResourceUtils::LoadImage("ArrowTool");
 						break;
 					}
 					case CEventEditor::LASSO_SELECTION:
 					{
-						bitmap = ResourceUtils::LoadImage("SelLassoTool");
+						bitmap = ResourceUtils::LoadImage("LassoTool");
 						break;
 					}
 				}
