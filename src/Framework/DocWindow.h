@@ -128,7 +128,8 @@ public:							// CAppWindow Implementation
 protected:						// Internal Operations
 
 	void						CalcWindowTitle(
-									const char *documentName = NULL);
+									const char *documentName = NULL,
+									const char *windowName = NULL);
 
 	void						SetWindowNumber(
 									int32 number)

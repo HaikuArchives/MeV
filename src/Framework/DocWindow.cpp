@@ -223,13 +223,17 @@ CDocWindow::AcquireSelectToken()
 
 void
 CDocWindow::CalcWindowTitle(
-	const char *documentName)
+	const char *documentName,
+	const char *windowName)
 {
 	char docName[B_FILE_NAME_LENGTH];
 	if (documentName == NULL)
 		m_document->GetName(docName);
 	else
 		strncpy(docName, documentName, B_FILE_NAME_LENGTH);
+
+	if (windowName != NULL)
+		m_name = windowName;
 
 	BString title = docName;
 	if (m_name.CountChars() > 0)
