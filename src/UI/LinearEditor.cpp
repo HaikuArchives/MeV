@@ -579,7 +579,7 @@ CLinearNoteEventHandler::Draw(
 
 	VChannelEntry *vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 
-	if (vce->flags & VChannelEntry::mute)
+	if ((vce->flags & VChannelEntry::mute) || (vce->flags & VChannelEntry::disabled))
 	{
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
 					  vce->fillColor, vce->highlightColor, true,C_MIXED_COLORS);

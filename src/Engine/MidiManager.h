@@ -52,7 +52,8 @@
 #include <Looper.h>
 #include "PortNameMap.h"
 #include "InternalSynth.h"
-class CMidiManager : public BLooper{
+#include "Observer.h"
+class CMidiManager : public BLooper,public CObservableSubject{
 	public:
 		static CMidiManager * Instance();
 		BMidiLocalProducer * GetProducer(BString *name);
@@ -66,7 +67,8 @@ class CMidiManager : public BLooper{
 		bool IsLastProducer();
 		BString * CurrentProducerName();
 		int32 CurrentProducerID();
-		void Notify(BMessenger *msgr); 
+		void Subscribe(BMessenger *msgr); 
+		void Unsubscribe(BMessenger *msgr);
 		virtual void MessageReceived(BMessage *msg);
 		void AddInternalSynth();
 		BMidiLocalProducer * InternalSynth();
@@ -74,11 +76,13 @@ class CMidiManager : public BLooper{
 	protected:
 		CMidiManager();
 	private:
+		BList m_subscribers;
 		//~CMidiManager();
 		static CMidiManager *m_instance;
 		BList m_midiProducers;
 		int32 m_pos;
 		BMidiRoster *m_roster;
+		void _notifySubscribers();
 		void _addProducer(int32 id);
 		void _addConsumer(int32 id);
 		void _removeProducer(int32 id);

@@ -83,8 +83,10 @@ public:
 						//defined;				// pad replaced with defined,
 												// so the manager knows what is
 												// defined.
+	
 	BString 			name;					// in the future we may not need this.
-	BMidiLocalProducer *m_producer;					
+	BMidiLocalProducer *m_producer;	
+	BString				producer_name;			//for reconnections.				
 	int8				transpose,				// transposition for channel
 						initialTranspose;		// initial transposition value
 

@@ -1,6 +1,6 @@
 #include "MidiManager.h"
 #include "PortNameMap.h"
-
+#include "list.h"
 #include <MidiProducer.h>
 #include <Messenger.h>
 #include <Debug.h>
@@ -19,7 +19,7 @@ CMidiManager* CMidiManager::Instance()
 	return m_instance;
 }
 
-CMidiManager::CMidiManager() : BLooper("MidiHandler")
+CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservableSubject()
 {
 	BMidiRoster* m_roster = BMidiRoster::MidiRoster();
 	if (! m_roster) {
@@ -34,10 +34,8 @@ CMidiManager::CMidiManager() : BLooper("MidiHandler")
 	m_isynth_source=NULL;
 	m_isynth_sink=NULL;
 }
-void CMidiManager::Notify(BMessenger *msgr)
-{
-	m_notifier=msgr;
-}
+
+
 BMidiLocalProducer * CMidiManager::GetProducer (BString *name)
 {
 	int c=m_midiProducers.CountItems()-1;
@@ -99,12 +97,10 @@ CMidiManager::MessageReceived(BMessage *msg)
 	switch (msg->what)
 	{
 		case B_MIDI_EVENT:
-			if (m_notifier!=NULL)
-			{	
-				m_notifier->SendMessage(new BMessage (B_MIDI_EVENT));
-			}
+		{
 			_handleMidiEvent(msg);
-			break;
+		}
+		break;
 		default:
 			BHandler::MessageReceived(msg);
 			break;
@@ -120,6 +116,7 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		return;
 	}
 
+	
 	switch (op) {
 	case B_MIDI_REGISTERED:
 		{
@@ -162,6 +159,7 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 				_removeProducer(id);
 			} else if (! strcmp(type, "consumer")) {
 				_removeConsumer(id);
+
 			}
 		}
 		break;
@@ -224,7 +222,10 @@ void CMidiManager::AddInternalSynth()
 	if (!m_isynth_source)
 	{
 		m_isynth_source=new BMidiLocalProducer("Internal Synth");
-		//m_isynth->Register();	
+		BMidiLocalConsumer *isynth_monitor=new BMidiLocalConsumer("Internal Synth Monitor"); //this is a temp way to keep the 
+																							//i synth from having zero connections
+																							//and be deleted
+		m_isynth_source->Connect(isynth_monitor);
 		m_midiProducers.AddItem(m_isynth_source);
 	}
 }
@@ -237,6 +238,14 @@ void CMidiManager::_addConsumer(int32 id)
 	BMidiLocalProducer *aproducer=new BMidiLocalProducer(theConsumer->Name());//theConsumer->Name());
 	aproducer->Connect(theConsumer);
 	m_midiProducers.AddItem(aproducer);
+	
+	
+	int32 op;
+	op=B_MIDI_REGISTERED;
+	CUpdateHint hint;
+	hint.AddInt32("midiop",op);
+	hint.AddString("name",aproducer->Name());
+	CObservableSubject::PostUpdate(&hint,NULL);
 }
 void CMidiManager::_removeConsumer(int32 id)
 {
@@ -245,18 +254,19 @@ void CMidiManager::_removeConsumer(int32 id)
 	while (c>=0)
 	{
 		BMidiLocalProducer *aproducer=((BMidiLocalProducer *)m_midiProducers.ItemAt(c));
-		PRINT( ("%s has %d connections\n",aproducer->Name(),aproducer->Connections()->CountItems()) );
-		for (int x=0;x<aproducer->Connections()->CountItems();x++)
-		{
-			BMidiConsumer *test=(BMidiConsumer *) aproducer->Connections()->ItemAt(x);
-			PRINT( ("%s is connected to %s\n",aproducer->Name(),test->Name()) );
-		} 
-		
 		if ((aproducer->Connections()->CountItems()==0))
 		{
 			BMidiLocalProducer *removing=((BMidiLocalProducer *)m_midiProducers.RemoveItem(c));
-			PRINT( ("%s connected, releasing\n",removing->Name()) );
-			removing->Unregister();
+			
+			
+			int32 op;
+			op=B_MIDI_UNREGISTERED;
+			CUpdateHint hint;
+			hint.AddInt32("midiop",op);
+			hint.AddString("name",removing->Name());
+			CObservableSubject::PostUpdate(&hint,NULL);
+			
+			//PRINT( ("%s connected, releasing\n",removing->Name()) );
 			removing->Release();
 		}
 		c--;
@@ -273,15 +283,6 @@ void CMidiManager::Die()
 {
 m_isynth_sink->Release();
 
-/*	int c=m_midiProducers.CountItems();
-	int i;
-	BMidiLocalProducer *producer;
-	for (i=0; i<c ;i++)
-	{
-		producer=((BMidiLocalProducer *)m_midiProducers.ItemAt(i));
-		//printf("releasing %s\n",producer->Name());
-		//producer->Release();
-	}*/
 }
 
 

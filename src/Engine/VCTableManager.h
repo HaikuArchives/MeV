@@ -38,15 +38,19 @@
 #include "MeV.h"
 #include "VChannel.h"
 #include "Observer.h"
+#include "IFFWriter.h"
+#include "IFFReader.h"
+#include "MidiManager.h"
 #include <String.h>
 //enum ID {
 //	VCTM_NOTIFY='ntfy'
 //	};
 class CMeVDoc;
 class CVCTableManager :
-	public CObservableSubject {
+	public CObservableSubject,public CObserver {
 public:
 	CVCTableManager(CMeVDoc *inDoc);
+	~CVCTableManager();
 	void _notifyClients();
 	void NotifyClients();
 	void AddClient(BHandler *nhandler);
@@ -67,12 +71,17 @@ public:
 	void SetChannelFor(int id,int channel);
 	void SetPortFor (int id,BMidiLocalProducer *producer);
 	void SetMuteFor (int id, bool mute);
-	int count;
+	void SetSoloFor (int id, bool solo);
+	void SetDisableFor (int id, bool disable);
+	int32 count;
+	void ReadVCTable (CIFFReader &reader);
+	void WriteVCTable (CIFFWriter &writer);
 private:
-	
+	virtual void OnUpdate(BMessage *msg);
+	CMidiManager *m_midimanager;
 	BMessenger *m_notifier;
 	static const rgb_color m_defaultColorTable[ 16 ] ;
-	int pos;
+	int32 pos;
 	VChannelEntry * m_tablerep[Max_VChannels];
 	CMeVDoc *m_doc;
 };

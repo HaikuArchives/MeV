@@ -95,7 +95,7 @@ void CVChannelModifier::AttachedToWindow()
 void
 CVChannelModifier::Update()
 {
-	int c=m_midiPorts->CountItems()-1;
+	int c=m_midiPorts->CountItems();
 	while (c>=0)
 	{
 		delete (m_midiPorts->RemoveItem(c--));
@@ -110,7 +110,7 @@ CVChannelModifier::Update()
 		m_midiPorts->AddItem(item);
 		if (m_vc->m_producer)
 		{
-			if (m_vc->m_producer->ID()==m_midiManager->CurrentProducerID())
+			if (m_vc->m_producer->ID()==m_midiManager->CurrentProducerID())  
 			{
 				item->SetMarked(true);
 			}
