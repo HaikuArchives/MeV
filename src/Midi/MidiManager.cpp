@@ -3,450 +3,512 @@
  * ===================================================================== */
 
 #include "MidiManager.h"
-#include "PortNameMap.h"
-#include "list.h"
 
+#include "Destination.h"
 #include "ReconnectingMidiProducer.h"
-#include <MidiConsumer.h>
+
+// Application Kit
 #include <Messenger.h>
+// Midi Kit
+#include <MidiConsumer.h>
+// Support Kit
 #include <Debug.h>
+// Standard C Library
 #include <stdio.h>
 
 // Debugging Macros
+#define D_ALLOC(x) PRINT(x)	// Constructor/Destructor
+#define D_ACCESS(x) PRINT(x)	// Accessors
+#define D_MESSAGE(x) //PRINT(x)	// MessageReceived()
 #define D_ROSTER(x) //PRINT(x)	// BMidiRoster Interaction
 
 using namespace Midi;
 
-enum EDestinationModifierControlID {
-	NOTIFY='ntfy'
-	};
-CMidiManager* CMidiManager::m_instance=0;
-CMidiManager* CMidiManager::Instance()
+// ---------------------------------------------------------------------------
+// Module Icons
+
+const unsigned char MINI_ICON_BITS [] = {
+	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+	0xff,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xff,0xff,0xff,
+	0xff,0x00,0x3f,0x3f,0x3f,0x3f,0x3f,0x3f,0x3f,0x3f,0x3f,0x3f,0x1b,0x00,0xff,0xff,
+	0xff,0x00,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x3f,0x3f,0x3f,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x0f,0x1b,0x0f,0x00,0x00,0x00,0x00,0x0f,0x1b,0x1b,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x0f,0x0f,0x00,0x00,0x00,0x00,0x00,0x0f,0x00,0x00,0x00,0x0f,0x0f,0xff,
+	0xff,0x00,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x0f,0x3f,0x3f,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x3f,0x3f,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x0f,0x1b,0x0f,0x00,0x00,0x00,0x00,0x0f,0x1b,0x1b,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x0f,0x0f,0x00,0x00,0x00,0x00,0x00,0x0f,0x00,0x00,0x00,0x0f,0x0f,0xff,
+	0xff,0x00,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x0f,0x3f,0x3f,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x3f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x3f,0x3f,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x1b,0x1b,0x1b,0x1b,0x1b,0x1b,0x1b,0x1b,0x1b,0x1b,0x1b,0x00,0x0f,0xff,
+	0xff,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0f,0x0f,0xff,
+	0xff,0xff,0xff,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0x0f,0xff,
+	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+};
+
+// ---------------------------------------------------------------------------
+// Class Data Initialization
+
+CMidiManager *
+CMidiManager::s_instance = NULL;
+
+// ---------------------------------------------------------------------------
+// Singleton Access
+
+CMidiManager *
+CMidiManager::Instance()
 {
-	if (m_instance==0)
+	D_ALLOC(("CMidiManager::Instance()\n"));
+
+	if (s_instance == NULL)
 	{	
-		m_instance=new CMidiManager();
-		m_instance->Run(); 			
+		s_instance = new CMidiManager();
+		s_instance->Run(); 			
 	}
-	return m_instance;
+
+	return s_instance;
 }
 
-CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservable()
+// ---------------------------------------------------------------------------
+// Hidden Constructor
+
+CMidiManager::CMidiManager()
+	:	BLooper("MidiManager"),
+		m_roster(NULL),
+		m_internalSynth(NULL)
 {
-	BMidiRoster* m_roster = BMidiRoster::MidiRoster();
-	if (! m_roster) {
-		D_ROSTER(("Couldn't get MIDI m_roster\n"));
-		be_app->PostMessage(B_QUIT_REQUESTED);
+	D_ALLOC(("CMidiManager::CMidiManager()\n"));
+
+	m_roster = BMidiRoster::MidiRoster();
+	if (m_roster == NULL)
+	{
+		D_ALLOC((" -> couldn't get BMidiRoster !!\n"));
 		return;
 	}
-	BMessenger msgr(this);
-	m_roster->StartWatching(&msgr);
-	m_portNameMap=new CPortNameMap();
-	m_internalSynth=NULL;
-	AddInternalSynth();
+
+	BMessenger messenger(this);
+	m_roster->StartWatching(&messenger);
+
+	m_internalSynth = new CInternalSynth();
+	m_internalSynth->Register();
 }
-BMidiProducer * CMidiManager::NextProducer(int32 *id)
+
+CMidiManager::~CMidiManager()
 {
+	D_ALLOC(("CMidiManager::~CMidiManager()\n"));
+
+	if (m_internalSynth != NULL)
+	{
+		m_internalSynth->Unregister();
+		m_internalSynth->Release();
+	}	
+}
+
+// ---------------------------------------------------------------------------
+// Hook Functions
+
+void
+CMidiManager::DocumentOpened(
+	CMeVDoc *document)
+{
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+BMidiProducer *
+CMidiManager::GetNextProducer(
+	int32 *id) const
+{
+	D_ACCESS(("CMidiManager::GetNextProducer(%ld)\n", *id));
+	ASSERT(m_roster != NULL);
+
 	return (m_roster->NextProducer(id));
 }
-BMidiProducer * CMidiManager::FindProducer (int32 id)
+
+BMidiProducer *
+CMidiManager::FindProducer(
+	int32 id)
 {
+	D_ACCESS(("CMidiManager::FindProducer(%ld)\n", id));
+	ASSERT(m_roster != NULL);
+
 	return (m_roster->FindProducer(id));
 }
-BMidiConsumer * CMidiManager::NextConsumer(int32 *id)
+
+BMidiConsumer *
+CMidiManager::GetNextConsumer(
+	int32 *id) const
 {
+	D_ACCESS(("CMidiManager::GetNextConsumer(%ld)\n", *id));
+	ASSERT(m_roster != NULL);
+
 	return (m_roster->NextConsumer(id));
 }
-BMidiConsumer * CMidiManager::FindConsumer (int32 id)
+
+BMidiConsumer *
+CMidiManager::FindConsumer(
+	int32 id)
 {
+	D_ACCESS(("CMidiManager::FindConsumer(%ld)\n", id));
+	ASSERT(m_roster != NULL);
+
 	return (m_roster->FindConsumer(id));
 }
-BMidiEndpoint* CMidiManager::FindEndpoint(const char* name)
+
+BMidiEndpoint *
+CMidiManager::FindEndpoint(
+	const BString &name)
 {
-	int32 id=0;
-	BMidiEndpoint* object = m_roster->NextEndpoint(&id);
-	while (object) {
-		if (! strcmp(object->Name(), name))
+	D_ACCESS(("CMidiManager::FindEndpoint(%s)\n", name.String()));
+	ASSERT(m_roster != NULL);
+
+	int32 id = 0;
+	BMidiEndpoint* bme = m_roster->NextEndpoint(&id);
+	while (bme)
+	{
+		if (name == bme->Name())
 			break;
 
 		// Don't forget to decrement the refcount
 		// from NextEndpoint!			
-		object->Release();
-		object = m_roster->NextEndpoint(&id);
+		bme->Release();
+		bme = m_roster->NextEndpoint(&id);
 	}
 
-	return object;
+	return bme;
 }
 
-BMidiProducer* CMidiManager::FindProducer(const char* name)
+BMidiProducer *
+CMidiManager::FindProducer(
+	const BString &name)
 {
-	int32 id=0;
-	BMidiProducer* object = m_roster->NextProducer(&id);
-	while (object) {
-		if (! strcmp(object->Name(), name))
+	D_ACCESS(("CMidiManager::FindProducer(%s)\n", name.String()));
+	ASSERT(m_roster != NULL);
+
+	int32 id = 0;
+	BMidiProducer* bmp = m_roster->NextProducer(&id);
+	while (bmp)
+	{
+		if (name == bmp->Name())
 			break;
 			
 		// Don't forget to decrement the refcount
 		// from NextProducer!			
-		object->Release();
-		object = m_roster->NextProducer(&id);
+		bmp->Release();
+		bmp = m_roster->NextProducer(&id);
 	}
 
-	return object;
+	return bmp;
 }
 
-BMidiConsumer* CMidiManager::FindConsumer(const char* name)
+BMidiConsumer *
+CMidiManager::FindConsumer(
+	const BString &name)
 {
-	BString isname="Internal Synth";
-	if (isname.Compare(name)==0)
-	{
+	D_ACCESS(("CMidiManager::FindConsumer(%s)\n", name.String()));
+	ASSERT(m_roster != NULL);
+
+	if (name == "Internal Synth")
 		return InternalSynth();
-	}
-	int32 id=0;
-	BMidiConsumer* object = m_roster->NextConsumer(&id);
-	while (object) {
-		if (! strcmp(object->Name(), name))
+
+	int32 id = 0;
+	BMidiConsumer* bmc = m_roster->NextConsumer(&id);
+	while (bmc)
+	{
+		if (name == bmc->Name())
 			break;
-			
+
 		// Don't forget to decrement the refcount
 		// from NextConsumer!			
-		object->Release();
-		object = m_roster->NextConsumer(&id);
+		bmc->Release();
+		bmc = m_roster->NextConsumer(&id);
 	}
 
-	return object;
+	return bmc;
 }
 
-BBitmap * CMidiManager::ConsumerIcon(int32 id,icon_size which)
+status_t
+CMidiManager::GetIcon(
+	icon_size which,
+	BBitmap *outBitmap)
 {
+	D_ACCESS(("CMidiManager::GetIcon()\n"));
+
+	if (which != B_MINI_ICON)
+		return B_ERROR;
+
+	outBitmap->SetBits(MINI_ICON_BITS, 256, 0, B_CMAP8);
+	return B_OK;
+}
+
+status_t
+CMidiManager::GetIconFor(
+	BMidiEndpoint *endpoint,
+	icon_size which,
+	BBitmap *outBitmap)
+{
+	D_ACCESS(("CMidiManager::GetIconFor(%s)\n", endpoint->Name()));
+
 	BMessage props;
-	BMidiEndpoint *endpoint;
-	endpoint=m_roster->FindEndpoint (id);
-	endpoint->GetProperties(&props);
-	return (_createIcon(&props,B_MINI_ICON));
-}
+	if (endpoint && (endpoint->GetProperties(&props) != B_OK))
+		return B_NAME_NOT_FOUND;
 
-CInternalSynth * CMidiManager::InternalSynth()
-{
-return (m_internalSynth);
-}
-
-void CMidiManager::AddInternalSynth()
-{
-	if (m_internalSynth==NULL)
-	{
-		m_internalSynth=new CInternalSynth();
-		m_internalSynth->Register();
-		D_ROSTER(("adding %s\n",m_internalSynth->Name()));
-	}
-}
-void CMidiManager::_addConsumer(int32 id)
-{
-	/*int32 pid;
-	CReconnectingMidiProducer *prod;
-	BMidiConsumer *con=m_roster->FindConsumer(id);
-	while (prod=(CReconnectingMidiProducer *)m_roster->NextProducer(&pid))
-	{
-		if (prod->IsInConnectList(con->Name()))
-		{
-			prod->Connect(con);
-			prod->RemoveFromConnectList(con->Name());
-		}
-	}
-	
-	int32 op;
-	op=B_MIDI_REGISTERED;
-	CUpdateHint hint;
-	hint.AddInt32("midiop",op);
-	hint.AddString("name",con->Name());
-	CObservable::PostUpdate(&hint,NULL);
-*/
-}
-void CMidiManager::_removeConsumer(int32 id)
-{
-	/*
-	int32 pid;
-	CReconnectingMidiProducer *prod;
-	BMidiConsumer *con=m_roster->FindConsumer(id);
-	while (prod=(CReconnectingMidiProducer *)m_roster->NextProducer(&pid))
-	{
-		if (prod->IsConnected(con))
-		{
-			printf ("adding %s to %s\n",prod->Name(),con->Name());
-			prod->AddToConnectList(con->Name());
-		}
-	}
-	int32 op;
-	op=B_MIDI_UNREGISTERED;
-	CUpdateHint hint;
-	hint.AddInt32("midiop",op);
-	hint.AddString("name",con->Name());
-	CObservable::PostUpdate(&hint,NULL);*/
-}
-void CMidiManager::_addProducer(int32 id)
-{
-}
-void CMidiManager::_removeProducer(int32 id)
-{
-}
-void CMidiManager::Die()
-{
-
-}
-
-void CMidiManager::AddIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const
-{
-	if (! msg->HasData("be:large_icon", 'ICON')) {
-		msg->AddData("be:large_icon", 'ICON', largeIcon->Bits(),
-			largeIcon->BitsLength());
-	} else {
-		msg->ReplaceData("be:large_icon", 'ICON', largeIcon->Bits(),
-			largeIcon->BitsLength());
-	}
-	if (! msg->HasData("be:mini_icon", 'MICN')) {
-		msg->AddData("be:mini_icon", 'MICN', miniIcon->Bits(),
-			miniIcon->BitsLength());
-	} else {
-		msg->ReplaceData("be:mini_icon", 'MICN', miniIcon->Bits(),
-			miniIcon->BitsLength());
-	}
-}
-BBitmap* CMidiManager::_createIcon(const BMessage* msg, icon_size which)
-{
-	float iconSize;
-	uint32 iconType;
-	const char* iconName;
-
-	if (which == B_LARGE_ICON) {
-		iconSize = 32;
-		iconType = 'ICON';
-		iconName = "be:large_icon";
-	} else if (which == B_MINI_ICON) {
-		iconSize = 16;
-		iconType = 'MICN';
-		iconName = "be:mini_icon";
-	} else {
-		return NULL;
-	}
-							
-	const void* data;
+	const void *data;
 	ssize_t size;
-	BBitmap* bitmap = NULL;
-
-	if (msg->FindData(iconName, iconType, &data, &size) == B_OK)
+	status_t error = B_NO_ERROR;
+	switch (which)
 	{
-		BRect r(0, 0, iconSize-1, iconSize-1);
-		bitmap = new BBitmap(r, B_CMAP8);
-		ASSERT((bitmap->BitsLength() == size));
-		memcpy(bitmap->Bits(), data, size);
-	}
-	else if (iconName=="be:mini_icon")
-	{
-	iconName="be:small_icon";
-		if (msg->FindData(iconName, iconType, &data, &size) == B_OK)
+		case B_LARGE_ICON:
 		{
-			BRect r(0, 0, iconSize-1, iconSize-1);
-			bitmap = new BBitmap(r, B_CMAP8);
-			ASSERT((bitmap->BitsLength() == size));
-			memcpy(bitmap->Bits(), data, size);
+			error = props.FindData("be:large_icon", 'ICON', &data, &size);
+			break;
+		}
+		case B_MINI_ICON:
+		{
+			error = props.FindData("be:mini_icon", 'MICN', &data, &size);
+			// some evil endpoints use 'small_icon' instead :P
+			if (error)
+				error = props.FindData("be:small_icon", 'MICN', &data, &size);
+			break;
 		}
 	}
-	return bitmap;
+	if (!error)
+		memcpy(outBitmap->Bits(), data, size);
+
+	return error;
 }
 
-void CMidiManager::_copyIcon(const BMessage* smsg,BMessage* dmsg)
-{
-	float iconSize;
-	uint32 iconType;
-	const char* iconName;
-	const void* data;
-	ssize_t size;
-
-	iconSize = 32;
-	iconType = 'ICON';
-	iconName = "be:large_icon";
-	smsg->FindData(iconName, iconType, &data, &size);
-	dmsg->AddData (iconName, iconType, data, size);
-	iconSize = 16;
-	iconType = 'MICN';
-	iconName = "be:mini_icon";				
-	smsg->FindData(iconName, iconType, &data, &size);
-	dmsg->AddData(iconName,iconType,data, size);
-	
-	iconName = "be:small_icon"; //sometimes its mini, other times its small.
-	smsg->FindData(iconName,iconType, &data, &size);
-	if (size>0)
-	{
-		dmsg->AddData("be:mini_icon",iconType,data, size);
-	}
-}
-void CMidiManager::_disconnect(int32 prod,int32 con)
-{
-	
-//	BMidiProducer *producer = m_roster->FindProducer(prod);
-//	BMidiConsumer *consumer = m_roster->FindConsumer(con);	
-	//printf ("disonnected %s %s\n",producer->Name(),consumer->Name());
-
-}
-void CMidiManager::_connect(int32 prod,int32 con)
-{
-
-}
-
+// ---------------------------------------------------------------------------
+// BLooper Implementation
 
 void
-CMidiManager::MessageReceived(BMessage *msg)
+CMidiManager::MessageReceived(
+	BMessage *message)
 {
-	switch (msg->what)
+	D_MESSAGE(("CMidiManager::MessageReceived()\n"));
+
+	switch (message->what)
 	{
 		case B_MIDI_EVENT:
 		{
-			_handleMidiEvent(msg);
+			D_MESSAGE((" -> B_MIDI_EVENT\n"));
+
+			int32 op;
+			if (message->FindInt32("be:op", &op) != B_OK)
+				return;
+
+			int32 id;
+			BString type;
+			switch (op)
+			{
+				case B_MIDI_REGISTERED:
+				{
+					if (message->FindInt32("be:id", &id) != B_OK)
+						break;
+					if (message->FindString("be:type", &type) != B_OK)
+						break;
+					_endpointRegistered(id, type);
+					break;
+				}
+				case B_MIDI_UNREGISTERED:
+				{
+					if (message->FindInt32("be:id", &id) != B_OK)
+						break;
+					if (message->FindString("be:type", &type) != B_OK)
+						break;
+					_endpointUnregistered(id, type);
+					break;
+				}
+				case B_MIDI_CONNECTED:
+				{
+					int32 producerID, consumerID;
+					if (message->FindInt32("be:producer", &producerID) != B_OK)
+						break;
+					if (message->FindInt32("be:consumer", &consumerID) != B_OK)
+						break;
+					_endpointConnected(producerID, consumerID);
+					break;
+				}
+				case B_MIDI_DISCONNECTED:
+				{
+					int32 producerID, consumerID;
+					if (message->FindInt32("be:producer", &producerID) != B_OK)
+						break;
+					if (message->FindInt32("be:consumer", &consumerID) != B_OK)
+						break;
+					_endpointDisconnected(producerID, consumerID);
+					break;
+				}
+				case B_MIDI_CHANGED_NAME:
+				{
+					BString name;
+					if (message->FindInt32("be:id", &id) != B_OK)
+						break;
+					if (message->FindString("be:type", &type) != B_OK)
+						break;
+					if (message->FindString("be:name", &name) != B_OK)
+						break;
+					_endpointChangedName(id, type, name);
+					break;
+				}
+				case B_MIDI_CHANGED_LATENCY:
+				{
+					bigtime_t latency;
+					if (message->FindInt32("be:id", &id) != B_OK)
+						break;
+					if (message->FindString("be:type", &type) != B_OK)
+						break;
+					if (message->FindInt64("be:latency", &latency) != B_OK)
+						break;
+					_endpointChangedLatency(id, type, latency);
+					break;
+				}
+				case B_MIDI_CHANGED_PROPERTIES:
+				{
+					BMessage props;
+					if (message->FindInt32("be:id", &id) != B_OK)
+						break;
+					if (message->FindString("be:type", &type) != B_OK)
+						break;
+					if (message->FindMessage("be:properties", &props) != B_OK)
+						break;
+					_endpointChangedProperties(id, type, &props);
+					break;
+				}
+			}
 			break;
 		}
 		default:
 		{
-			BHandler::MessageReceived(msg);
+			BLooper::MessageReceived(message);
 		}
 	}
 }
-void CMidiManager::_handleMidiEvent(BMessage *msg)
+
+// ---------------------------------------------------------------------------
+// CObservable Implementation
+
+void
+CMidiManager::Released(
+	CObservable *subject)
 {
-	SET_DEBUG_ENABLED(true);
-	
-	int32 op;
-	if (msg->FindInt32("be:op", &op) != B_OK) {
-		D_ROSTER(("MidiManager::HandleMidiEvent: \"op\" field not found\n"));
-		return;
-	}
+	if (Lock())
+	{
+		// do anything necessary to let go of the subject
 
-	
-	switch (op) {
-	case B_MIDI_REGISTERED:
-		{
-			int32 id;
-			if (msg->FindInt32("be:id", &id) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_REGISTERED event\n"));
-				break;
-			}
-			
-			const char* type;
-			if (msg->FindString("be:type", &type) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_REGISTERED event\n"));
-				break;
-			}
-			
-			D_ROSTER(("MIDI Roster Event B_MIDI_REGISTERED: id=%ld, type=%s\n", id, type));
-			if (! strcmp(type, "producer")) {
-				_addProducer(id);
-			} else if (! strcmp(type, "consumer")) {
-				_addConsumer(id);
-			}
-		}
-		break;
-	case B_MIDI_UNREGISTERED:
-		{
-			int32 id;
-			if (msg->FindInt32("be:id", &id) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_UNREGISTERED\n"));
-				break;
-			}
-			
-			const char* type;
-			if (msg->FindString("be:type", &type) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_UNREGISTERED\n"));
-				break;
-			}
-			
-			D_ROSTER(("MIDI Roster Event B_MIDI_UNREGISTERED: id=%ld, type=%s\n", id, type));
-			if (! strcmp(type, "producer")) {
-				_removeProducer(id);
-			} else if (! strcmp(type, "consumer")) {
-				_removeConsumer(id);
+		// if the subject points to a destination, we'll need to remove it
+		// from the multimap and release it
 
-			}
-		}
-		break;
-	case B_MIDI_CHANGED_PROPERTIES:
-		{
-			int32 id;
-			if (msg->FindInt32("be:id", &id) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
-				break;
-			}
-			
-			const char* type;
-			if (msg->FindString("be:type", &type) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
-				break;
-			}
-			
-			BMessage props;
-			if (msg->FindMessage("be:properties", &props) != B_OK) {
-				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:properties\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
-				break;
-			}
-			
-			D_ROSTER(("MIDI Roster Event B_MIDI_CHANGED_PROPERTIES: id=%ld, type=%s\n", id, type));
-			if (! strcmp(type, "producer")) {
-			//	_updateProducerProps(id, &props);
-			} else if (! strcmp(type, "consumer")) {
-			//	_updateConsumerProps(id, &props);
-			}
-			
-		}
-		break;
-	case B_MIDI_CHANGED_NAME:
-		{
-		//change the name of the destination.
-		break;
-		}
-	case B_MIDI_CHANGED_LATENCY:
-		{
-		//update latency if highest
-		break;
-		}
-	case B_MIDI_CONNECTED:
-		{
-			int32 prod;
-			if (msg->FindInt32("be:producer", &prod) != B_OK) {
-				D_ROSTER(("PatchView::HandleMidiEvent: \"be:producer\" field not found in B_MIDI_CONNECTED\n"));
-				break;
-			}
-			
-			int32 cons;
-			if (msg->FindInt32("be:consumer", &cons) != B_OK) {
-				D_ROSTER(("PatchView::HandleMidiEvent: \"be:consumer\" field not found in B_MIDI_CONNECTED\n"));
-				break;
-			}
-			D_ROSTER(("MIDI Roster Event B_MIDI_CONNECTED: producer=%ld, consumer=%ld\n", prod, cons));
-			_connect(prod, cons);
-		}
-		break;
-	case B_MIDI_DISCONNECTED:
-		{
-			int32 prod;
-			if (msg->FindInt32("be:producer", &prod) != B_OK) {
-				D_ROSTER(("PatchView::HandleMidiEvent: \"be:producer\" field not found in B_MIDI_DISCONNECTED\n"));
-				break;
-			}
-			
-			int32 cons;
-			if (msg->FindInt32("be:consumer", &cons) != B_OK) {
-				D_ROSTER(("PatchView::HandleMidiEvent: \"be:consumer\" field not found in B_MIDI_DISCONNECTED\n"));
-				break;
-			}
-			D_ROSTER(("MIDI Roster Event B_MIDI_DISCONNECTED: producer=%ld, consumer=%ld\n", prod, cons));
-			_disconnect(prod, cons);
-		}
-		break;
-	
-		//we don't care about these right now.
-	break;
-	default:
-		D_ROSTER(("MidiManager::HandleMidiEvent: unknown opcode %ld\n", op));
-		break;
+		// if it's a document, just release it
+
+		Unlock();
 	}
 }
 
+void
+CMidiManager::Updated(
+	BMessage *message)
+{
+	PostMessage(message, this);
+}
 
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CMidiManager::_endpointRegistered(
+	int32 id,
+	const BString &type)
+{
+	D_ROSTER(("CMidiManager::_endpointRegistered(%ld, %s)\n",
+			  id, type.String()));
+
+	if (type == "producer")
+	{
+//		_addProducer(id);
+	}
+	else if (type == "consumer")
+	{
+//		_addConsumer(id);
+	}
+}
+
+void
+CMidiManager::_endpointUnregistered(
+	int32 id,
+	const BString &type)
+{
+	D_ROSTER(("CMidiManager::_endpointUnregistered(%ld, %s)\n",
+			  id, type.String()));
+
+	if (type == "producer")
+	{
+//		_removeProducer(id);
+	}
+	else if (type == "consumer")
+	{
+//		_removeConsumer(id);
+	}
+	
+}
+
+void
+CMidiManager::_endpointConnected(
+	int32 producerID,
+	int32 consumerID)
+{
+	D_ROSTER(("CMidiManager::_endpointConnected(%ld, %ld)\n",
+			  producerID, consumerID));
+
+	BMidiConsumer *consumer = FindConsumer(consumerID);
+	if (consumer)
+	{
+		BMessage props;
+		if ((consumer->GetProperties(&props) == B_OK)
+		 && (props.HasBool("mev:internal_synth")))
+		{
+			D_ROSTER((" -> init internal synth!\n"));
+			m_internalSynth->Init();
+		}
+	}
+
+//	_connect(producerID, consumerID);
+}
+
+void
+CMidiManager::_endpointDisconnected(
+	int32 producerID,
+	int32 consumerID)
+{
+	D_ROSTER(("CMidiManager::_endpointDisconnected(%ld, %ld)\n",
+			  producerID, consumerID));
+
+//	_disconnect(producerID, consumerID);
+}
+
+void
+CMidiManager::_endpointChangedName(
+	int32 id,
+	const BString &type,
+	const BString &name)
+{
+}
+
+void
+CMidiManager::_endpointChangedLatency(
+	int32 id,
+	const BString &type,
+	bigtime_t latency)
+{
+}
+
+void
+CMidiManager::_endpointChangedProperties(
+	int32 id,
+	const BString &type,
+	const BMessage *message)
+{
+}
+
+// END - MidiManager.cpp

@@ -21,9 +21,13 @@
  *  Contributor(s): 
  *		Dan Walton (dwalton)
  *
+ *	Some of this code has been based on Be, Inc. sample code.
+ *	Copyright 1999, Be Incorporated.   All Rights Reserved.
  * ---------------------------------------------------------------------
  * Purpose:
- *  manages midi ports
+ *	This class takes care of building new consumers and connecting...etc.
+ *	Manages the external Midi environment.
+ *
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
@@ -35,83 +39,158 @@
  * To Do:
  * I imagine that this could be used for all the midi port management including
  * patch names etc.
-
- * ===================================================================== 
- some of this code has been based on Be sample code.
- 
-  Copyright 1999, Be Incorporated.   All Rights Reserved.
-  This file may be used under the terms of the Be Sample Code License.
- 
- */
-
-
+ * ===================================================================== */
 
 #ifndef __C_MidiManager_H__
 #define __C_MidiManager_H__
 
-//this class should take care of building new consumers and connecting...etc.
+#include "GeneralMidi.h"
+#include "InternalSynth.h"
+#include "Observer.h"
 
+// Application Kit
+#include <Looper.h>
+// Interface Kit
+#include <Bitmap.h>
+#include <GraphicsDefs.h>
+// Midi Kit
 #include <MidiProducer.h>
 #include <MidiRoster.h>
 #include <MidiConsumer.h>
+// Storage Kit
+#include <Mime.h>
+// Support Kit
 #include <List.h>
 #include <String.h>
-#include <Looper.h>
-#include <Bitmap.h>
-#include <Mime.h>
-#include <GraphicsDefs.h>
-#include "GeneralMidi.h"
-#include "PortNameMap.h"
-#include "InternalSynth.h"
-#include "Observable.h"
+// Standard Template Library
+#include <map>
+#include <string>
+
+class CDestination;
+class CMeVDoc;
 
 namespace Midi
 {
 
-class CMidiManager : public BLooper,public CObservable{
-	public:
-		static CMidiManager * Instance();
-		BMidiProducer * NextProducer(int32 *id);
-		BMidiProducer * FindProducer(int32 id);
-		BMidiConsumer * NextConsumer(int32 *id);
-		BMidiConsumer * FindConsumer (int32 id);
-		
-		BMidiEndpoint * FindEndpoint (const char* name);
-		BMidiConsumer * FindConsumer (const char* name);
-		BMidiProducer * FindProducer (const char* name);
-		
-		BBitmap * ConsumerIcon(int32 id,icon_size which);
-		void AddIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
+class CMidiManager
+	: 	public BLooper,
+		public CObserver
+{
 
-		virtual void MessageReceived(BMessage *msg);
-		void AddInternalSynth();
-		CInternalSynth * InternalSynth();
-		void Die();
+public:							// Singleton Access
+
+	static CMidiManager *		Instance();
+
+public:							// Accessors
+
+	BMidiEndpoint *				FindEndpoint(
+									const BString &name);
 		
-	protected:
-		CMidiManager();
-	private:
-		//~CMidiManager();
-		CInternalSynth * m_internalSynth;
-		static CMidiManager *m_instance;
-		int32 m_pos;
-		BMidiRoster *m_roster;
-		void _notifySubscribers();
-		void _addProducer(int32 id);
-		void _addConsumer(int32 id);
-		void _removeProducer(int32 id);
-		void _removeConsumer(int32 id);
-		void _connect(int32 prod,int32 con);
-		void _disconnect(int32 prod,int32 con);
-		void _handleMidiEvent(BMessage *msg);
-		//port name map:
-		//we have the ability to let the user change port name...no problem
-		//but there are names they shouldn't see...like /dev/midi/mo/dev
-		//or /dev/midi/awe64/1 so this lets us give better names.
-		CPortNameMap *m_portNameMap;
-		void _copyIcon(const BMessage* smsg,BMessage* dmsg);
-		BBitmap* _createIcon(const BMessage* msg, icon_size which);
-		//void _addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
+	BMidiProducer *				GetNextProducer(
+									int32 *id) const;
+	BMidiProducer *				FindProducer(
+									int32 id);
+	BMidiProducer *				FindProducer(
+									const BString &name);
+
+	BMidiConsumer *				GetNextConsumer(
+									int32 *id) const;
+	BMidiConsumer *				FindConsumer(
+									int32 id);
+	BMidiConsumer *				FindConsumer(
+									const BString &name);
+
+	/** Returns the generic icon for this module. */
+	virtual status_t			GetIcon(
+									icon_size which,
+									BBitmap *outBitmap);
+
+	// returns the icon for a specific BMidiEndpoint
+	status_t					GetIconFor(
+									BMidiEndpoint *endpoint,
+									icon_size which,
+									BBitmap *outBitmap);
+
+	CInternalSynth *			InternalSynth() const
+								{ return m_internalSynth; }
+
+public:							// Operations
+
+	/** Called by the app when a document has been created or loaded.
+		We should start observing the document at this point.
+	 */
+	virtual void				DocumentOpened(
+									CMeVDoc *document);
+
+public:							// BLooper Implementation
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+public:							// CObserver Implementation
+
+	virtual void				Released(
+									CObservable *subject);
+
+	virtual void				Updated(
+									BMessage *message);
+
+protected:						// Hidden Constructor
+
+								CMidiManager();
+
+	virtual						~CMidiManager();
+
+private:						// Internal Operations
+
+	void						_endpointRegistered(
+									int32 id,
+									const BString &type);
+
+	void						_endpointUnregistered(
+									int32 id,
+									const BString &type);
+
+	void						_endpointConnected(
+									int32 producerID,
+									int32 consumerID);
+
+	void						_endpointDisconnected(
+									int32 producerID,
+									int32 consumerID);
+
+	void						_endpointChangedName(
+									int32 id,
+									const BString &type,
+									const BString &name);
+
+	void						_endpointChangedLatency(
+									int32 id,
+									const BString &type,
+									bigtime_t latency);
+
+	void						_endpointChangedProperties(
+									int32 id,
+									const BString &type,
+									const BMessage *properties);
+
+private:						// Instance Data
+
+	BMidiRoster *				m_roster;
+
+	CInternalSynth *			m_internalSynth;
+
+	/**	Maps MidiConsumer IDs to destinations. */
+	typedef multimap<string, CDestination *>
+								dest_map;
+	typedef multimap<string, CDestination *>::const_iterator
+								dest_iter;
+
+	dest_map					m_destinations;
+
+private:						// Class Data
+
+	static CMidiManager *		s_instance;
 };
 
 };
