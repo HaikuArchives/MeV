@@ -22,17 +22,11 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  Defines time signatures and structures time
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
 #ifndef __C_SignatureMap_H__
@@ -43,83 +37,126 @@
 // Support Kit
 #include <OS.h>
 
-// ---------------------------------------------------------------------------
-// A structure which manages time-signature changes
+/**	A class which manages time-signature changes.
+ *	Note that this class is only a summary of the actual time-signature 
+ *	events within the event list.
+ */
+class CSignatureMap
+{
 
-// Note that this structure is (I believe) only a summary of the
-// actual time-signature events within the event list.
-
-class CSignatureMap {
 public:
 
-		// Encapsulates structure type for storing precomputed
-		// time-signature changes.
-		
-	struct SigChange {
-		long			sigTime;			// start time of this signature event
-		long			sigMinorUnitDur,	// Duration in ticks of minor unit
-						sigMajorUnitDur;	// Duration in ticks of major unit
+	/** Encapsulates structure type for storing precomputed
+	 *	time-signature changes.
+	 */
+	struct SigChange
+	{
+		/** Start time of this signature event. */
+		long			sigTime;
+
+		/** Duration in ticks of minor unit. */
+		long			sigMinorUnitDur;
+		/** Duration in ticks of major unit. */
+		long			sigMajorUnitDur;
 	};
 
-	SigChange			*entries;			// list of signature changes
-	long				numEntries;			// number of signature entries
-	int16				clockType;			// type of clock
+	/** List of signature changes. */
+	SigChange			*entries;
 
-		// An iterator which iterates over each major and minor unit.
-	class Iterator {
-	private:
-		long			minorTime,			// time of minor time unit
-						majorTime;			// time of major time unit
-		long			minorCount,			// count of major time units
-						majorCount;			// count of minor time units
-		SigChange		*sig;				// current time signature
-		long			numEntries;			// number of sig changes left
+	/** Number of signature entries. */
+	long				numEntries;
 
-			// Constructor
-		void Init(	long		startTime,	// start time of iteration
-					SigChange	*list,		// list of sig changes
-					long		numEntries );// number of sig changes
+	/** Type of clock. */
+	int16				clockType;
 
-	public:
-			// Constructor
-		Iterator(	long		startTime,	// start time of iteration
-					SigChange	*list,		// list of sig changes
-					long		numEntries );// number of sig changes
+	/** An iterator which iterates over each major and minor unit. */
+	class Iterator
+	{
 
-			// Constructor
-		Iterator(	CSignatureMap	&map,
-					long			startTime );
+	public:						// Constructor/Destructor
 
-			// Iteration function
-		long Next( bool &major );
-		long First( bool &major )
-		{
-			major = (minorCount == 0);
-			return minorTime;
-		}
-		
-		int32 MajorCount() { return majorCount; }
-		int32 MinorCount() { return minorCount; }
-		
-		int32 MajorUnitTime() { return sig->sigMajorUnitDur; }
-		int32 MinorUnitTime() { return sig->sigMinorUnitDur; }
+		/** Constructor. */
+								Iterator(
+									long startTime,
+									SigChange *list,
+									long numEntries);
+
+		/** Constructor. */
+								Iterator(
+									CSignatureMap &map,
+									long startTime);
+
+	public:						// Accessors
+
+		// Iteration function
+		long					First(
+									bool &major)
+								{
+									major = (minorCount == 0);
+									return minorTime;
+								}
+
+		long					Next(
+									bool &major);
+
+		int32					MajorCount() const
+								{ return majorCount; }
+		int32					MinorCount() const
+								{ return minorCount; }
+		int32					MajorUnitTime() const
+								{ return sig->sigMajorUnitDur; }
+		int32					MinorUnitTime() const
+								{ return sig->sigMinorUnitDur; }
+
+	private:					// Internal Operations
+
+		/**
+		 *	@param startTime	start time of iteration
+		 *	@param list			list of sig changes
+		 *	@param numEntries	number of sig changes
+		 */
+		void					Init(
+									long startTime,
+									SigChange *list,
+									long numEntries);
+
+	private:					// Instance Data
+
+		/** Time of minor time unit. */
+		long					minorTime;
+
+		/** Time of major time unit. */
+		long					majorTime;
+
+		/** Count of major time units. */
+		long					minorCount;
+
+		/** Count of minor time units. */
+		long					majorCount;
+
+		/** Current time signature. */
+		SigChange *				sig;
+
+		/** Number of sig changes left. */
+		long					numEntries;
 	};
 
-		// Given a start time, locates the previous major unit in time
-	SigChange *PreviousMajorUnit(	long	startTime,
-									long	&majorUnitCount,
-									long	&majorStartTime );
+	/** Given a start time, locates the previous major unit in time. */
+	SigChange *					PreviousMajorUnit(
+									long startTime,
+									long &majorUnitCount,
+									long &majorStartTime);
 
-	SigChange *DecomposeTime(		long startTime,
+	SigChange *					DecomposeTime(
+									long startTime,
 									long &majorUnit,
 									long &minorUnit,
-									long &extraTime );
+									long &extraTime);
 
-	SigChange *DecomposeTime(			long startTime,
+	SigChange *					DecomposeTime(
+									long startTime,
 									long &majorUnit,
-									long &extraTime );
-
-// void TimeToString( long time, CString &str );
+									long &extraTime);
 };
 
 #endif /* __C_SignatureMap_H__ */
