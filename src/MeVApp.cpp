@@ -5,6 +5,7 @@
 #include "MeVApp.h"
 
 #include "AssemblyWindow.h"
+#include "CursorCache.h"
 #include "DocWindow.h"
 #include "EventOp.h"
 #include "EventTrack.h"
@@ -280,6 +281,8 @@ CMeVApp::~CMeVApp()
 	mm->Die();
 	delete filter;
 	delete importFilter;
+
+	CCursorCache::Release();
 
 	if (!editSettings.InitCheck())
 	{
