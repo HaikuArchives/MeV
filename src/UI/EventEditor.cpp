@@ -193,25 +193,16 @@ CEventEditor::DoDrag(
 		}
 		case DragType_Select:
 		{
-			if (m_cursorPos != point)
-			{
-				DrawSelectRect();
-				m_cursorPos = point;
-				DrawSelectRect();
-				TrackWindow()->SetHorizontalPositionInfo(Track(),
-														 ViewCoordsToTime(point.x));
-			}
+			DoRectangleTracking(point);
+			TrackWindow()->SetHorizontalPositionInfo(Track(),
+													 ViewCoordsToTime(point.x));
 			break;
 		}
 		case DragType_Lasso:
 		{
-			if (m_cursorPos != point)
-			{
-				AddLassoPoint(point);
-				m_cursorPos = point;
-				TrackWindow()->SetHorizontalPositionInfo(Track(),
-														 ViewCoordsToTime(point.x));
-			}
+			DoLassoTracking(point);
+			TrackWindow()->SetHorizontalPositionInfo(Track(),
+													 ViewCoordsToTime(point.x));
 			break;
 		}
 	}
@@ -359,11 +350,11 @@ CEventEditor::FinishDrag(
 	}
 	else if (m_dragType == DragType_Select)
 	{
-		DoRectangleSelection();
+		EndRectangleTracking();
 	}
 	else if (m_dragType == DragType_Lasso)
 	{	
-		DoLassoSelection();
+		EndLassoTracking();
 	}
 
 	CRefCountObject::Release(m_dragOp);
@@ -501,9 +492,7 @@ CEventEditor::StartDrag(
 			Track()->DeselectAll(this);
 
 		// If clicking with right button, then also do a lasso drag.
-		m_cursorPos = point;
-		m_dragType = DragType_Lasso;
-		AddLassoPoint(point);
+		BeginLassoTracking(point);
 	}
 	else
 	{
@@ -535,10 +524,7 @@ CEventEditor::StartDrag(
 		}
 		else
 		{
-			// Do a selection rectangle drag...
-			m_cursorPos = m_anchorPos = point;
-			m_dragType = DragType_Select;
-			DrawSelectRect();
+			BeginRectangleTracking(point);
 			TrackWindow()->SetHorizontalPositionInfo(Track(),
 													 ViewCoordsToTime(point.x));
 		}
@@ -579,76 +565,172 @@ CEventEditor::AddLassoPoint(
 }
 
 void
-CEventEditor::DoLassoSelection()
+CEventEditor::BeginLassoTracking(
+	BPoint point)
 {
-	BRect		r = m_lasso->Frame();
-	long			minTime,
-				maxTime;
-	EventMarker	marker( Track()->Events() );
-	const Event	*ev;
+	// start a lasso drag.
+	m_cursorPos = point;
+	m_dragType = DragType_Lasso;
+	AddLassoPoint(point);
+	DrawLasso();
+}
 
-	if (r.Width()  == 0.0) r.right += 1.0;
-	if (r.Height() == 0.0) r.bottom += 1.0;
-
-	minTime = ViewCoordsToTime( r.left );
-	maxTime = ViewCoordsToTime( r.right );
-
-	// Now, select all events in the rectangle...
-	// For each event that overlaps the current view, draw it.
-	for (ev = marker.FirstItemInRange(minTime, maxTime);
-		 ev;
-		 ev = marker.NextItemInRange(minTime, maxTime))
+void
+CEventEditor::DoLassoTracking(
+	BPoint point)
+{
+	if (point != m_cursorPos)
 	{
-		if (!ev->IsSelected())		// No point in selecting if already
+		AddLassoPoint(point);
+		m_cursorPos = point;
+
+		BRect r = m_lasso->Frame();
+		if (r.Width()  == 0.0)
+			r.right += 1.0;
+		if (r.Height() == 0.0)
+			r.bottom += 1.0;
+	
+		// Calculate start and end time
+		long minTime = ViewCoordsToTime(r.left);
+		long maxTime = ViewCoordsToTime(r.right);
+	
+		// Now, select all events in the rectangle...
+		// For each event that overlaps the current view, draw it.
+		EventMarker	marker(Track()->Events());
+		const Event *ev;
+		bool selectionChanged = false;
+		for (ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			const CAbstractEventHandler	&handler(*HandlerFor(*ev));
-			
-			if (&handler == &gNullEventHandler)
+			const CAbstractEventHandler	*handler(HandlerFor(*ev));
+			if (handler == &gNullEventHandler)
 				continue;
 			if (Track()->IsChannelLocked(*ev))
 				continue;
 
-			BRect extent(handler.Extent(*this, *ev));
+			BRect extent(handler->Extent(*this, *ev));
 
-			if (r.Intersects(extent)
+			if (!ev->IsSelected() && r.Intersects(extent)
 			 && IsRectInLasso(extent, gPrefs.inclusiveSelection))
 			{
-				((Event *)ev)->SetSelected(true);
-				handler.Invalidate(*this, *ev);
+				const_cast<Event *>(ev)->SetSelected(true);
+				selectionChanged = true;
+				handler->Invalidate(*this, *ev);
+			}
+			else if (ev->IsSelected()
+			 && !IsRectInLasso(extent, gPrefs.inclusiveSelection))
+			{
+				const_cast<Event *>(ev)->SetSelected(false);
+				selectionChanged = true;
+				handler->Invalidate(*this, *ev);
 			}
 		}
-	}
 	
-	// Delete the lasso points.
-	FinishLasso();
-	Track()->SummarizeSelection();
-
-	// Let the world know the selection has changed
-	CEventSelectionUpdateHint hint(*Track(), true);
-	PostUpdate(&hint, true);
+		if (selectionChanged)
+		{
+			Track()->SummarizeSelection();
+		
+			// Let the world know the selection has changed
+			CEventSelectionUpdateHint hint(*Track(), true);
+			PostUpdate(&hint, true);
+		}
+	}
 }
 
 void
-CEventEditor::DrawLasso()
-{
-	if (m_lasso == NULL)
-		return;
-
-	PushState();
-
-	SetDrawingMode(B_OP_INVERT);
-	StrokePolygon(m_lasso->Points(), m_lasso->CountPoints(),
-				  m_lasso->Frame(), true, B_MIXED_COLORS);
-
-	PopState();
-}
-
-void
-CEventEditor::FinishLasso()
+CEventEditor::EndLassoTracking()
 {
 	DrawLasso();
 	delete m_lasso;
 	m_lasso = NULL;
+}
+
+void
+CEventEditor::BeginRectangleTracking(
+	BPoint point)
+{
+	// Do a selection rectangle drag...
+	m_cursorPos = m_anchorPos = point;
+	m_dragType = DragType_Select;
+	DrawSelectRect();
+}
+
+void
+CEventEditor::DoRectangleTracking(
+	BPoint point)
+{
+	if (point != m_cursorPos)
+	{
+		DrawSelectRect();
+		BPoint oldCursorPos = m_cursorPos;
+		m_cursorPos = point;
+		DrawSelectRect();
+
+		BRect r;
+		r.left = MIN(m_cursorPos.x, m_anchorPos.x);
+		r.right = MAX(m_cursorPos.x, m_anchorPos.x);
+		r.top = MIN(m_cursorPos.y, m_anchorPos.y);
+		r.bottom = MAX(m_cursorPos.y, m_anchorPos.y);
+	
+		if (r.Width() == 0.0)
+			r.right += 1.0;
+		if (r.Height() == 0.0)
+			r.bottom += 1.0;
+
+		long minTime = ViewCoordsToTime(MIN(r.left, oldCursorPos.x));
+		long maxTime = ViewCoordsToTime(MAX(r.right, oldCursorPos.x));
+	
+		// Now, select all events in the rectangle...
+		// For each event that overlaps the current view, draw it.
+		EventMarker	marker(Track()->Events());
+		const Event	*ev;
+		bool selectionChanged = false;
+		for (ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
+		{
+			const CAbstractEventHandler	*handler(HandlerFor(*ev));
+			if (handler == &gNullEventHandler)
+				continue;
+			if (Track()->IsChannelLocked(*ev))
+				continue;
+
+			BRect extent(handler->Extent(*this, *ev));
+
+			if (!ev->IsSelected()
+			 && (gPrefs.inclusiveSelection ? r.Intersects(extent)
+			 							   : r.Contains(extent)))
+			{
+				const_cast<Event *>(ev)->SetSelected(true);
+				selectionChanged = true;
+				handler->Invalidate(*this, *ev);
+			}
+			else if (ev->IsSelected()
+			 && (gPrefs.inclusiveSelection ? !r.Intersects(extent)
+			 							   : !r.Contains(extent)))
+			{
+				const_cast<Event *>(ev)->SetSelected(false);
+				selectionChanged = true;
+				handler->Invalidate(*this, *ev);
+			}
+		}
+
+		if (selectionChanged)
+		{
+			Track()->SummarizeSelection();
+		
+			// Let the world know the selection has changed
+			CEventSelectionUpdateHint hint(*Track(), true);
+			PostUpdate(&hint, true);
+		}
+	}
+}
+
+void
+CEventEditor::EndRectangleTracking()
+{
+	DrawSelectRect();
 }
 
 bool
@@ -812,8 +894,20 @@ CEventEditor::SnapToGrid(
 	return time + (quantizedExtra - extraTime);
 }
 
-// ---------------------------------------------------------------------------
-// Draw selection rectangle
+void
+CEventEditor::DrawLasso()
+{
+	if (m_lasso == NULL)
+		return;
+
+	PushState();
+
+	SetDrawingMode(B_OP_INVERT);
+	StrokePolygon(m_lasso->Points(), m_lasso->CountPoints(),
+				  m_lasso->Frame(), true, B_MIXED_COLORS);
+
+	PopState();
+}
 
 void
 CEventEditor::DrawPlaybackMarkers(
@@ -862,9 +956,12 @@ CEventEditor::DrawSelectRect()
 	if (r.Height() == 0.0)
 		r.bottom += 1.0;
 
+	PushState();
+
 	SetDrawingMode(B_OP_INVERT);
 	StrokeRect(r, B_MIXED_COLORS);
-	SetDrawingMode(B_OP_COPY);
+
+	PopState();
 }
 
 void
@@ -886,61 +983,6 @@ CEventEditor::UpdatePBMarkers()
 
 		DrawPlaybackMarkers(m_pbMarkers, m_pbCount, Bounds(), false);
 	}
-}
-
-void
-CEventEditor::DoRectangleSelection()
-{
-	BRect		r;
-	DrawSelectRect();
-	long			minTime,
-				maxTime;
-	EventMarker	marker( Track()->Events() );
-	const Event	*ev;
-	
-	r.left			= MIN(m_cursorPos.x, m_anchorPos.x );
-	r.right			= MAX(m_cursorPos.x, m_anchorPos.x );
-	r.top			= MIN(m_cursorPos.y, m_anchorPos.y );
-	r.bottom		= MAX(m_cursorPos.y, m_anchorPos.y );
-
-	if (r.Width()  == 0.0)
-		r.right += 1.0;
-	if (r.Height() == 0.0)
-		r.bottom += 1.0;
-
-	minTime = ViewCoordsToTime(r.left);
-	maxTime = ViewCoordsToTime(r.right);
-
-	// Now, select all events in the rectangle...
-	// For each event that overlaps the current view, draw it.
-	for (ev = marker.FirstItemInRange(minTime, maxTime);
-		 ev;
-		 ev = marker.NextItemInRange(minTime, maxTime))
-	{
-		// Don't allow picking of events on locked channels...
-		if (Track()->IsChannelLocked(*ev)) continue;
-
-		if (!ev->IsSelected())
-		{
-			const CAbstractEventHandler	&handler(*HandlerFor(*ev));
-			if (&handler == &gNullEventHandler)
-				continue;
-
-			if (r.Contains(handler.Extent(*this, *ev))
-				|| (gPrefs.inclusiveSelection
-					&& r.Intersects(handler.Extent(*this, *ev))))
-			{
-				((Event *)ev)->SetSelected(true);
-				handler.Invalidate(*this, *ev);
-			}
-		}
-	}
-
-	Track()->SummarizeSelection();
-
-	// Let the world know the selection has changed
-	CEventSelectionUpdateHint hint(*Track(), true);
-	PostUpdate(&hint, true);
 }
 
 void
@@ -1063,13 +1105,14 @@ long CAbstractEventHandler::QuantizeDragTime(
 					t2,
 					timeDelta;
 	
-	timeDelta = editor.ViewCoordsToTime( inDragPos.x - inClickPos.x );
+	timeDelta = editor.ViewCoordsToTime(inDragPos.x - inClickPos.x);
 
-		// If no grid snap, then return just timeDelta
-	if (!editor.Track()->GridSnapEnabled()) return timeDelta;
-	
-	t1 = editor.SnapToGrid( inClickEvent.Start(), inInitial );
-	t2 = editor.SnapToGrid( inClickEvent.Start() + timeDelta, inInitial );
+	// If no grid snap, then return just timeDelta
+	if (!editor.Track()->GridSnapEnabled())
+		return timeDelta;
+
+	t1 = editor.SnapToGrid(inClickEvent.Start(), inInitial);
+	t2 = editor.SnapToGrid(inClickEvent.Start() + timeDelta, inInitial);
 	return t2 - t1;
 }
 

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * EventEditor.h (MeV/User Interface)
+ * EventEditor.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -241,11 +241,17 @@ protected:						// Internal Operations
 	// Draw selection rectangle
 	void						DrawSelectRect();
 
-	// Select all events within the current selection rectangle
-	void						DoRectangleSelection();
+	void						BeginLassoTracking(
+									BPoint point);
+	void						DoLassoTracking(
+									BPoint point);
+	void						EndLassoTracking();
 
-	// Select all events within the current lasso region
-	void						DoLassoSelection();
+	void						BeginRectangleTracking(
+									BPoint point);
+	void						DoRectangleTracking(
+									BPoint point);
+	void						EndRectangleTracking();
 
 	// Done with lassoing...
 	void						FinishLasso();
