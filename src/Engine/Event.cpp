@@ -79,8 +79,8 @@ UEventAttributeTable::EvAttr UEventAttributeTable::attrTable[ EvAttr_Count ] = {
 	{	"Controller",		0, 0,		127			},	// EvAttr_ControllerNumber
 	{	"Value",			0, 0,		127			},	// EvAttr_ControllerValue8
 	{	"Value",			0, 0,		0x3fff		}, 	// EvAttr_ControllerValue16
-	{	"Pitchbend",		-0x2000, 0,0x3fff		}, 	// EvAttr_BendValue
-	{	"Start bend",		-0x2000, 0,0x3fff		}, 	// EvAttr_InitialBend
+	{	"End Pitch",		-0x2000, 0,0x3fff		}, 	// EvAttr_BendValue
+	{	"Start Pitch",		-0x2000, 0,0x3fff		}, 	// EvAttr_InitialBend
 	{	"Update Rate",		0, 0,		0x3fff		}, 	// EvAttr_UpdatePeriod
 	{	"Tempo",			0, 1000*10,1000*500	}, 	//?	EvAttr_TempoValue
 	{	"Repeats",		0, 0,		0x0ffff		},	//?	EvAttr_RepeatCount
@@ -193,8 +193,8 @@ enum E_EventAttribute Event::QueryAttribute( int32 index ) const
 
 	case EvtType_PitchBend:
 		switch (index) {
-		case 0: return EvAttr_BendValue;
-		case 1: return EvAttr_InitialBend;
+		case 0: return EvAttr_InitialBend;
+		case 1: return EvAttr_BendValue;
 		case 2: return EvAttr_UpdatePeriod;
 		}
 		break;
