@@ -63,6 +63,11 @@ public:							// Constructor/Destructor
 										m_frame(frame)
 								{ }
 
+								CWindowState()
+									:	m_window(NULL),
+										m_frame(BRect(0.0, 0.0, -1.0, -1.0))
+								{ }
+
 public:							// Operations
 
 	/**	Call this to activate the window. Returns false if not open. */

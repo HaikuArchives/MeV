@@ -126,7 +126,7 @@ CDocWindow::SetToolBar(
 		if (KeyMenuBar() != NULL)
 			minHeight = KeyMenuBar()->Frame().Height();
 		minHeight += m_toolBar->Frame().Height();
-		minHeight += B_H_SCROLL_BAR_HEIGHT + 2.0;
+		minHeight += B_H_SCROLL_BAR_HEIGHT;
 		SetSizeLimits(minWidth, maxWidth, minHeight, maxHeight);
 	}
 }
