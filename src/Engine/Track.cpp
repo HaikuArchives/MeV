@@ -17,7 +17,7 @@
 #define D_HOOK(x) //PRINT(x)		// Hook Functions
 #define D_ACCESS(x) //PRINT(x)		// Accessors
 #define D_OPERATION(x) // PRINT(x)	// Operations
-#define D_SERIALIZE(x) PRINT(x)		// Serialization
+#define D_SERIALIZE(x) //PRINT(x)		// Serialization
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor

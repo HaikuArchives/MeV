@@ -10,7 +10,7 @@
 
 #include <Debug.h>
 
-#define D_EXECUTE(x) PRINT (x)
+#define D_EXECUTE(x) //PRINT (x)
 
 // ---------------------------------------------------------------------------
 // Constructor for playback context

@@ -26,7 +26,7 @@
 #define D_CONTROL(x) //PRINT (x)
 #define D_SYNTH(x) //PRINT (x)
 #define D_EVENT(x) //PRINT (x)
-#define D_WARNING(x) PRINT (x)
+#define D_WARNING(x) //PRINT (x)
 
 const int32			maxSleep = 30;
 
