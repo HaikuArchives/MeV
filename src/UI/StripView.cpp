@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * StripView.cpp (MeV/User Interface)
+ * StripView.cpp (MeV/StripView)
  * ===================================================================== */
 
 #include "StripView.h"
@@ -15,9 +15,10 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) //PRINT (x)			// Constructor/Destructor
-#define D_HOOK(x) //PRINT (x)			// CScrollTarget Implementation
-#define D_OPERATION(x) //PRINT (x)		// Operations
+#define D_ALLOC(x) PRINT(x)			// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)			// CScrollTarget Implementation
+#define D_MESSAGE(x) PRINT(x)			// MessageReceived()
+#define D_OPERATION(x) //PRINT(x)		// Operations
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -27,16 +28,20 @@ CStripView::CStripView(
 	BRect frame,
 	const char *name,
 	bool makeScroller,
-	bool makeMagButtons )
+	bool makeMagButtons)
 	:	CScrollerTarget(frame.OffsetToCopy(B_ORIGIN),
 	  					name, B_FOLLOW_ALL,
 	  					B_WILL_DRAW | B_FRAME_EVENTS),
 		frame(inFrame),
+		m_labelView(NULL),
 		rightScroller(NULL),
 		rightSpacer(NULL),
 		magIncButton(NULL),
-		magDecButton(NULL)
+		magDecButton(NULL),
+		m_removable(true)
 {
+	D_ALLOC(("CStripView::CStripView()\n"));
+
 	BRect rect(Bounds());
 
 	m_container = new CScrollerTarget(rect, NULL,
@@ -99,6 +104,27 @@ CStripView::CStripView(
 }
 
 // ---------------------------------------------------------------------------
+// Accessors
+
+void
+CStripView::SetLabelView(
+	CStripLabelView *labelView) {	
+
+	if (m_labelView) {
+		delete m_labelView;
+		m_labelView = NULL;
+	}
+
+	if (labelView) {
+		ResizeBy(-labelView->Frame().Width(), 0.0);
+		MoveBy(labelView->Frame().Width(), 0.0);
+		TopView()->AddChild(labelView);
+		m_labelView = labelView;
+		m_labelView->attach(this);
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Operations
 
 void
@@ -118,13 +144,9 @@ CStripView::SetSelectionVisible(
 	{
 		selectionVisible = visible;
 		if (visible)
-		{
 			OnGainSelection();
-		}
 		else
-		{
 			OnLoseSelection();
-		}
 	}
 }
 
@@ -167,6 +189,27 @@ CStripView::FrameResized(
 	float height)
 {
 	AdjustScrollers();
+}
+
+void
+CStripView::MessageReceived(
+	BMessage *message)
+{
+	D_MESSAGE(("CStripView::MessageReceived()\n"));
+
+	switch (message->what)
+	{
+		case HIDE:
+		{
+			D_MESSAGE((" -> HIDE\n"));
+			frame.RemoveChildView(m_container);
+			break;
+		}
+		default:
+		{
+			CScrollerTarget::MessageReceived(message);
+		}
+	}
 }
 
 // END - StripView.cpp

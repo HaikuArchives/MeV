@@ -42,14 +42,24 @@
 
 #include "Scroller.h"
 #include "StripFrameView.h"
+#include "StripLabelView.h"
 
 // Interface Kit
 #include <Control.h>
+
+class CStripLabelView;
 
 class CStripView :
 	public CScrollerTarget
 {
 	friend class			CStripFrameView;
+
+public:							// Constants
+
+	enum messages
+	{
+								HIDE = 'stvA'
+	};
 
 public:							// Constructor/Destructor
 
@@ -65,35 +75,36 @@ public:							// Hook Functions
 	// Called when the window activates to tell this view
 	// to make the selection visible.
 	virtual void				OnGainSelection()
-								{
-									Invalidate();
-								}
+								{ Invalidate(); }
 	
 	// Called when some other window activates to tell this view
 	// to hide the selection.
 	virtual void				OnLoseSelection()
-								{
-									Invalidate();
-								}
+								{ Invalidate(); }
 
 public:							// Accessors
 
+	CStripLabelView *			LabelView() const
+								{ return m_labelView; }
+	void						SetLabelView(
+									CStripLabelView *labelView);
+
 	CScrollerTarget *			TopView()
-								{
-									return m_container;
-								}
+								{ return m_container; }
 
 	// Returns true if this view should display the selection highlight.
 	bool						IsSelectionVisible()
-								{
-									return selectionVisible;
-								}
+								{ return selectionVisible; }
+
+	bool						IsRemovable() const
+								{ return m_removable; }
+	void						SetRemovable(
+									bool removable = true)
+								{ m_removable = removable; }
 
 	// Return cached bounds of view (doesn't require app-server call)
 	const BRect &				ViewBounds()
-								{
-									return bounds;
-								}
+								{ return bounds; }
 
 public:							// Operations
 
@@ -120,11 +131,21 @@ public:							// CScrollerTarget Implementation
 									float width,
 									float height);
 
-private:						// Instance Data
+	virtual void				MessageReceived(
+									BMessage *message);
+
+protected:						// Instance Data
+
+	// Cached bounds
+	BRect						bounds;
+
+private:
 	
 	CStripFrameView	&			frame;
 
 	CScrollerTarget *			m_container;
+
+	CStripLabelView *			m_labelView;
 
 	CScroller *					rightScroller;
 
@@ -137,10 +158,8 @@ private:						// Instance Data
 	// true if selection should be shown
 	bool						selectionVisible;
 
-protected:
-
-	// Cached bounds
-	BRect						bounds;
+	// defaults to true; false will disable the 'Hide' option
+	bool						m_removable;
 };
 
 #endif /* __C_StripView_H__ */

@@ -89,41 +89,33 @@ public:							// Operations
 									orientation inOrient);
 
 	void						SetRuler(
-									CScrollerTarget *inRuler)
-								{
-									m_ruler = inRuler;
-								}
+									CScrollerTarget *ruler)
+								{ m_ruler = ruler; }
 
 public:							// Accessors
 
 	virtual ulong				MinimumViewSize(
 									BView *inChild)
-								{
-									return 0;
-								}
+								{ return 0; }
 
 	CScrollerTarget *			Ruler() const
-								{
-									return m_ruler;
-								}
+								{ return m_ruler; }
 
 	// REM: This is kludged, there should be a parameter.
 	BPoint						FrameSize()
-								{
-									return BPoint( Frame().Width() - 14.0 - 20.0, Frame().Height() );
-								}
+								{ return BPoint(Frame().Width() - 14.0 - 20.0, Frame().Height()); }
 	
 	int32						CountStrips() const
-								{
-									return m_childViews.CountItems();
-								}
+								{ return m_childViews.CountItems(); }
 
 	BView *						StripAt(
-									int32 inIndex) const
-								{
-									return (BView *)m_childViews.ItemAt( inIndex );
-								}
+									int32 index) const
+								{ return (BView *)m_childViews.ItemAt(index); }
 								
+protected:						// Internal Operations
+
+	void						ArrangeViews();
+
 protected:						// Instance Data
 
 	BList						m_childViews;
@@ -133,8 +125,6 @@ protected:						// Instance Data
 	// Optional horizontal ruler frame
 	CScrollerTarget *			m_ruler;
 	
-	void						ArrangeViews();
-
 private:						// Internal Types
 
 	struct ChildInfo {

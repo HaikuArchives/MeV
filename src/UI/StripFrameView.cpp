@@ -69,8 +69,8 @@ CStripFrameView::Draw(
 	}
 	else
 	{
-		float		y;
-		BRect		r( updateRect );
+		float y;
+		BRect r(updateRect);
 	
 		for (int i = 1; i < m_childViews.CountItems(); i++)
 		{
@@ -118,14 +118,10 @@ CStripFrameView::MouseDown(
 	BView		*prevView,
 				*nextView;
 
-		// Which strip did we hit?
-
-	int			y;
-	short		selectedStrip = -1;
-	float		stripPos,
-				stripTopLimit,
-				stripBottomLimit,
-				mouseOffset;
+	// Which strip did we hit?
+	int y;
+	short selectedStrip = -1;
+	float stripPos, stripTopLimit, stripBottomLimit, mouseOffset;
 	
 // buttons = Window()->CurrentMessage()->FindLong( "buttons" );
 
