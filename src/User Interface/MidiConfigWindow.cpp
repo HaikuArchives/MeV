@@ -46,7 +46,7 @@ void	CListDataItem::DrawItem( BView *owner, BRect frame, bool complete )
 {
 	if ( complete || IsSelected() )
 	{
-		if ( IsSelected() )	owner->SetHighColor( 192, 192, 192 );
+		if ( IsSelected() )	owner->SetHighColor( 192, 192, 192, 100 );
 		else				owner->SetHighColor( owner->ViewColor() );
 
 		owner->FillRect( frame, B_SOLID_HIGH );
@@ -177,6 +177,7 @@ CMidiConfigWindow::CMidiConfigWindow( CWindowState &inState )
 
 		// Device and instrument list
 	devList = new BOutlineListView( BRect( 8, 38, 184, r.bottom - 92 ), NULL, B_SINGLE_SELECTION_LIST );
+	devList->SetDrawingMode (B_OP_OVER);
 	devList->SetSelectionMessage( new BMessage( 'dev#' ) );
 	devList->SetInvocationMessage( new BMessage( 'attr' ) );
 	BScrollView *scv = new BScrollView(	NULL,
@@ -199,6 +200,10 @@ CMidiConfigWindow::CMidiConfigWindow( CWindowState &inState )
 	background->AddChild( subButton = new BButton(	BRect( 100, r.bottom - 62, 200, r.bottom - 44 ),
 												"SubInst", "Remove Instrument",
 												new BMessage( 'remi' ), B_FOLLOW_BOTTOM ) );
+	
+	background->AddChild( addspButton = new BButton ( BRect (6, r.bottom - 30, 98,r.bottom -12),
+												"Add Sp...","Add Soft Port",
+												new BMessage( 'adsp' ), B_FOLLOW_BOTTOM ) ); 
 
 		// String label for patch list
 	background->AddChild( new BStringView( BRect( 208, 21, 400, 36 ), "", "Program Names" ) );
@@ -229,7 +234,6 @@ CMidiConfigWindow::CMidiConfigWindow( CWindowState &inState )
 	background->AddChild( addpButton = new BButton(	BRect( 354, r.bottom - 62, 402, r.bottom - 44 ),
 												"AddProg", "Add..",
 												new BMessage( 'addp' ), B_FOLLOW_BOTTOM ) );
-
 	background->AddChild( subpButton = new BButton(	BRect( 404, r.bottom - 62, 453, r.bottom - 44 ),
 												"SubProg", "Remove",
 												new BMessage( 'remp' ), B_FOLLOW_BOTTOM ) );
@@ -316,8 +320,9 @@ void CMidiConfigWindow::BuildPortList()
 
 	DeleteListItems( devList );
 
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < Max_MidiPorts; i++)
 	{
+		if (CPlayerControl::IsDefined(i))
 		devList->AddItem( cp = new CPortListItem( i ) );
 		if (pli && pli->portNum == i) selItem = cp;
 	}
@@ -600,7 +605,7 @@ void CMidiConfigWindow::MessageReceived( BMessage *msg )
 		}
 		break;
 
-	case 'attr':
+	case 'attr':  //we crash when this is called twice.  The parent should be locked until this is done
 		if ((pli = dynamic_cast<CPortListItem *>(cp)))
 		{
 				// Open up port attrs
@@ -612,7 +617,20 @@ void CMidiConfigWindow::MessageReceived( BMessage *msg )
 			app->EditDeviceAttrs( dli->mdi, dli->mdi->portNum );
 		}
 		break;
-	
+	case 'adsp':
+	{
+		int c = CPlayerControl::CountDefinedPorts()+1;
+		if (c >= 16)
+		{
+			addspButton->SetEnabled ( false );
+		}
+		if ((pli = dynamic_cast<CPortListItem *>(cp)))
+		{
+			app->EditPortAttrs( c );
+			BuildPortList();
+		}
+		break;
+	}	
 	case 'addi':
 		if ((pli = dynamic_cast<CPortListItem *>(cp)))
 		{

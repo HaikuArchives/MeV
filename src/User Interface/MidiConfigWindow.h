@@ -30,9 +30,13 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *  05/13/2000  dwalton
+ 		-Added prototype softport system.
+ 		 
  * ---------------------------------------------------------------------
  * To Do:
- *
+ * 		-'adsp' only works when an item is highlighted.
+ 		-add softport should have corrisponding delete softport.
  * ===================================================================== */
 
 #ifndef __C_MidiConfigWindow_H__
@@ -53,7 +57,8 @@ protected:
 					*addButton,
 					*subButton,
 					*addpButton,
-					*subpButton;
+					*subpButton,
+					*addspButton;
 	BMessage			deviceListSave;
 	BTextControl		*patchName;
 	CMultiColumnListView *patchList;
