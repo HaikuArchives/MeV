@@ -12,6 +12,7 @@ SRCS= \
 	Framework/DynamicMenu.cpp \
 	Framework/ItemList.cpp \
 	Framework/Observer.cpp \
+	Framework/RecentDocumentsMenu.cpp \
 	Framework/RefCount.cpp \
 	Framework/ScreenUtils.cpp \
 	Framework/SharedLock.cpp \
