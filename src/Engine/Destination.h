@@ -68,7 +68,6 @@ class CMeVDoc;
 class CDestination
 	:	public CObservable
 {
-	friend class CMeVDoc;
 	friend class CDestinationDeleteUndoAction;
 
 public:							// Constants
@@ -113,6 +112,10 @@ public:							//Constructor/Destructor
 									CMeVDoc *document,
 									const char *name);
 
+								CDestination(
+									CIFFReader &reader,
+									CMeVDoc *document);
+
 	virtual						~CDestination();
 
 public: 		  				// Serialization
@@ -122,13 +125,16 @@ public: 		  				// Serialization
 
 public:							// Accessors
 	
-	/** Returns true if not disabled or deleted. */
-	bool 						IsValid () const;
-
+	virtual status_t			GetIcon(
+									icon_size which,
+									BBitmap *outIcon);
 	int32 						GetID() const
 								{ return m_id; }
 
-	void 						SetMuted(
+	/** Returns true if not disabled or deleted. */
+	bool 						IsValid () const;
+
+	virtual void 				SetMuted(
 									bool muted);
 	bool						Muted() const
 								{ return m_flags & muted; }
@@ -136,20 +142,20 @@ public:							// Accessors
 	bool 						MutedFromSolo() const
 								{ return m_flags & mutedFromSolo; }
 
-	void 						SetSolo(
+	virtual void 				SetSolo(
 									bool solo);
 	bool 						Solo() const
 								{ return m_flags & solo; }
 						
-	void 						SetName (const char *name);	
+	virtual void 				SetName(
+									const BString &name);
 	const char *				Name() const
 								{ return m_name.String(); }
 
-	void						SetLatency(
+	virtual void				SetLatency(
 									bigtime_t microseconds);
-	bigtime_t					Latency(
-									uint8 clockType)
-								{ return 0; } // nyi
+	bigtime_t					Latency() const
+								{ return m_latency; }
 
 	void						SetColor(
 									rgb_color color);
@@ -158,19 +164,16 @@ public:							// Accessors
 	rgb_color					GetHighlightColor() const
 								{ return m_highlightColor; }
 
-	void 						SetChannel(uint8 channel);
-	uint8						Channel() const
-								{ return m_channel; }
-
-	void						SetDisabled(
+	virtual void				SetDisabled(
 									bool disabled);
 	bool			 			Disabled()const
 								{ return m_flags & disabled; }
 
-	CMeVDoc &					Document()
-								{ return *m_doc; } 
+	CMeVDoc *					Document() const
+								{ return m_doc; } 
 	
-public:							// Operations
+public:							// Midi specific functionality
+								// +++ move to Midi::CMidiDestination
 
 	void						SetConnect(
 									BMidiConsumer *sink,
@@ -179,6 +182,13 @@ public:							// Operations
 									BMidiConsumer *sink) const;
 	CReconnectingMidiProducer *	GetProducer() const
 								{ return m_producer; }
+
+	void 						SetChannel(
+									uint8 channel);
+	uint8						Channel() const
+								{ return m_channel; }
+
+public:							// Operations
 
 	void						Delete();
 	void						Undelete(
@@ -189,13 +199,7 @@ public:							// Operations
 public:							//Hook Functions
 
 	virtual int32				Bytes()
-								{ return sizeof *this; }
-
-public:							//debug function
-
-#if DEBUG
-	void 						PrintToStream();
-#endif
+								{ return sizeof(*this); }
 
 private:   						// Internal Operations
 
@@ -226,17 +230,18 @@ private:						// Instance Data
 	// various flags
 	uint8						m_flags;
 
+	rgb_color					m_fillColor;
+	rgb_color					m_highlightColor;
+
+	// +++ move these to CMidiDestination in the future
+
 	// real midi channel
 	uint8						m_channel;
 
 	//this is the id that that this dest is connected to.
-	int32						m_consumer_id;
+	int32						m_consumerID;
 
 	CReconnectingMidiProducer *	m_producer;					
-
-	rgb_color					m_fillColor;
-
-	rgb_color					m_highlightColor;
 
 private:						// Class Data
 
@@ -248,29 +253,29 @@ class CDestinationDeleteUndoAction
 {
 
 public:
-						CDestinationDeleteUndoAction(
-							CDestination *dest);
+								CDestinationDeleteUndoAction(
+									CDestination *dest);
 					
-						~CDestinationDeleteUndoAction();
+								~CDestinationDeleteUndoAction();
 						
 public:
 
 	
-	const char *		Description() const
-						{ return "Delete Destination"; }
+	const char *				Description() const
+								{ return "Delete Destination"; }
 	
-	void				Redo();
+	void						Redo();
 	
-	int32				Size()
-						{return m_dest->Bytes();}
+	int32						Size()
+								{ return m_dest->Bytes(); }
 	
-	void				Undo();
+	void						Undo();
 	
 private:
 	
-	CDestination *		m_dest;
+	CDestination *				m_dest;
 	
-	int32				m_index;
+	int32						m_index;
 };
 
 typedef BitSet<Max_Destinations> VBitTable;

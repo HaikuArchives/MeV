@@ -8,6 +8,7 @@
 #include "IFFWriter.h"
 #include "InternalSynth.h"
 #include "MeVDoc.h"
+#include "MeVFileID.h"
 #include "MidiManager.h"
 #include "Observer.h"
 #include "ReconnectingMidiProducer.h"
@@ -66,16 +67,45 @@ CDestination::CDestination(
 		m_id(id),
 		m_name(name),
 		m_latency(0),
-		m_flags(0)
+		m_flags(0),
+		m_channel(0)
 {
-	m_channel = 0;
 	m_name.SetTo(name);
 	m_name << " " << m_id + 1;
 	m_producer = new CReconnectingMidiProducer(m_name.String());
 	m_producer->Register();
-	m_fillColor = s_defaultColorTable[id % 15];
-	
-	_updateIcons();
+
+	SetColor(s_defaultColorTable[id % 15]);
+}
+
+CDestination::CDestination(
+	CIFFReader &reader,
+	CMeVDoc *document)
+	:	m_doc(document),
+		m_id(0),
+		m_latency(0),
+		m_flags(0),
+		m_channel(0)
+{
+	m_producer = new CReconnectingMidiProducer("");
+
+	char buffer[255];
+	rgb_color color;
+
+	reader >> m_id;
+	reader.ReadStr255(buffer, 255);
+	SetName(buffer);
+	reader >> m_latency;
+	reader >> m_flags;
+	reader >> color;
+
+	// connect with name
+	if (reader.ReadStr255(buffer, 255) > 0)
+		SetConnect(CMidiManager::Instance()->FindConsumer(buffer), true);
+	reader >> m_channel;
+
+	// need the icons first, so...
+	SetColor(color);
 }
 
 CDestination::~CDestination()
@@ -86,56 +116,85 @@ CDestination::~CDestination()
 // ---------------------------------------------------------------------------
 // Serialization
 
-//this in the writer
-void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength );
-void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength )
-{
-	if (inLength > 255) inLength = 255;
-	outWriter << (uint8)inLength;
-	outWriter.MustWrite( inBuffer, inLength );
-}
-
 void
-CDestination::WriteDestination (CIFFWriter &writer)
+CDestination::WriteDestination(
+	CIFFWriter &writer)
 {
-	char buff[255];
-	writer << (int32)GetID(); 
-	writer << m_channel << m_flags;
-	writer << m_fillColor.red;
-	writer << m_fillColor.green;
-	writer << m_fillColor.blue;
-	m_name.CopyInto(buff,0,m_name.Length());
-	WriteStr255 (writer,buff,m_name.Length());
-	//write name of producer
-	BString prod;
-	prod << m_producer->Name();
-	prod.CopyInto(buff,0,prod.Length());
-	WriteStr255 (writer,buff,prod.Length());
-	
-	
-	//write name of consumer
-	BString cons;
+	char buffer[255];
+
+	writer.Push(DESTINATION_CHUNK);
+
+	writer.WriteStr255("MIDI", 4);
+
+	writer << m_id;
+	m_name.CopyInto(buffer, 0, m_name.Length());
+	writer.WriteStr255(buffer, m_name.Length());
+	writer << m_latency;
+	writer << m_flags;
+	writer << m_fillColor;
+
+	// MIDI specific stuff
+	// +++ move to CMidiDestination
 	if (m_producer->Connections()->CountItems() > 0)
 	{
+		BString cons;
 		cons << ((BMidiConsumer *)m_producer->Connections()->ItemAt(0))->Name();
-		cons.CopyInto(buff,0,cons.Length());
-		WriteStr255 (writer,buff,cons.Length());
+		cons.CopyInto(buffer, 0, cons.Length());
+		writer.WriteStr255(buffer, cons.Length());
 	}
 	else
 	{
-		cons << "MEV NO PORT";
-		cons.CopyInto(buff,0,cons.Length());
-		WriteStr255 (writer,buff,cons.Length());
+		writer.WriteStr255(buffer, 0);
 	}
+	writer << m_channel;
+
+	writer.Pop();
 }
 
 // ---------------------------------------------------------------------------
 // Accessors
 
+status_t
+CDestination::GetIcon(
+	icon_size which,
+	BBitmap *outBitmap)
+{
+	ASSERT(outBitmap != NULL);
+
+	BMessage props;
+	if (m_producer && (m_producer->GetProperties(&props) != B_OK))
+		return B_NAME_NOT_FOUND;
+
+	const void *data;
+	ssize_t size;
+	status_t error;
+	switch (which)
+	{
+		case B_LARGE_ICON:
+		{
+			error = props.FindData("be:large_icon", 'ICON', &data, &size);
+			if (error)
+				return error;
+			break;
+		}
+		case B_MINI_ICON:
+		{
+			error = props.FindData("be:mini_icon", 'MICN', &data, &size);
+			if (error)
+				return error;
+			break;
+		}
+	}
+	memcpy(outBitmap->Bits(), data, size);
+
+	return B_ERROR;
+}
+
 bool
 CDestination::IsValid() const
 {
-	return ((m_flags & CDestination::disabled) || (m_flags & CDestination::deleted));
+	return ((m_flags & CDestination::disabled)
+		 || (m_flags & CDestination::deleted));
 }
 
 void
@@ -151,7 +210,7 @@ CDestination::SetMuted(
 	if (changed)
 	{
 		_updateIcons();
-		Document().SetModified();
+		Document()->SetModified();
 
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
@@ -173,7 +232,7 @@ CDestination::SetSolo(
 	if (changed)
 	{
 		_updateIcons();
-		Document().SetModified();
+		Document()->SetModified();
 
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
@@ -184,13 +243,15 @@ CDestination::SetSolo(
 
 void
 CDestination::SetName(
-	const char *name)
+	const BString &name)
 {
-	if (BString(name) != m_name)
+	if (name != m_name)
 	{
-		m_name.SetTo(name);
-		m_producer->SetName(name);
-		Document().SetModified();
+		m_name = name;
+		BString producerName = "MeV: ";
+		producerName << m_name;
+		m_producer->SetName(producerName.String());
+		Document()->SetModified();
 		
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
@@ -203,10 +264,12 @@ void
 CDestination::SetLatency(
 	bigtime_t latency)
 {
+	D_ACCESS(("CDestination::SetLatency(%Ld)\n", latency));
+
 	if (latency != m_latency)
 	{
 		m_latency = latency;
-		Document().SetModified();
+		Document()->SetModified();
 	
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
@@ -231,7 +294,7 @@ CDestination::SetColor(
 			m_highlightColor = tint_color(color, B_DARKEN_2_TINT);
 	
 		_updateIcons();
-		Document().SetModified();
+		Document()->SetModified();
 	
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
@@ -247,7 +310,7 @@ CDestination::SetChannel(
 	if (channel != m_channel)
 	{	
 		m_channel = channel;
-		Document().SetModified();
+		Document()->SetModified();
 
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
@@ -261,28 +324,30 @@ CDestination::SetConnect(
 	BMidiConsumer *sink,
 	bool connect)
 {
+	D_ACCESS(("CDestination::SetConnect(%s)\n", sink ? sink->Name() : "(none)"));
+
 	if (sink)
 	{
-		CMidiManager *mm=CMidiManager::Instance();
-		if (m_producer->IsConnected(mm->FindConsumer(m_consumer_id)))
-		{
-			m_producer->Disconnect(mm->FindConsumer(m_consumer_id));
-		}
-		m_consumer_id=sink->ID();
-		BMessage props;
-		bool flag;
-		sink->GetProperties(&props);
-		if (props.FindBool("mev:internalSynth",&flag)==B_OK)
-		{
-			((CInternalSynth *)sink)->Init();
-		}
+		CMidiManager *mm = CMidiManager::Instance();
+		if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
+			m_producer->Disconnect(mm->FindConsumer(m_consumerID));
+
 		if (connect)
 		{
+			BMessage props;
+			if ((sink->GetProperties(&props) == B_OK)
+			 && (props.HasBool("mev:internal_synth")))
+				// init internal synth
+				((CInternalSynth *)sink)->Init();
 			m_producer->Connect(sink);
+			m_consumerID = sink->ID();
+			SetLatency(sink->Latency());
 		}
 		else
 		{
 			m_producer->Disconnect(sink);
+			m_consumerID = 0;
+			SetLatency(0);
 		}
 	}
 }
@@ -291,7 +356,7 @@ bool
 CDestination::IsConnected(
 	BMidiConsumer *sink) const
 {
-	if ((sink->ID() == m_consumer_id)
+	if ((sink->ID() == m_consumerID)
 	 && (m_producer->IsConnected(sink)))
 		return true;
 
@@ -323,22 +388,22 @@ CDestination::SetDisabled(
 void
 CDestination::Delete ()
 {
-	StSubjectLock lock(Document(), Lock_Shared);
-	int32 originalIndex = Document().IndexOf(this);
+	StSubjectLock lock(*Document(), Lock_Shared);
+	int32 originalIndex = Document()->IndexOf(this);
 	if (_addFlag(CDestination::deleted))
 	{
 		int32 index = 0;
-		CDestination *next = Document().GetNextDestination(&index);
+		CDestination *next = Document()->GetNextDestination(&index);
 		if (next)
-			Document().SetDefaultAttribute(EvAttr_Channel, next->GetID());
+			Document()->SetDefaultAttribute(EvAttr_Channel, next->GetID());
 
-		Document().SetModified();
+		Document()->SetModified();
 		
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
 		hint.AddInt32("DocAttrs", CMeVDoc::Update_DelDest);
 		hint.AddInt32("original_index", originalIndex);
-		Document().PostUpdate(&hint);
+		Document()->PostUpdate(&hint);
 	}
 }
 
@@ -348,12 +413,12 @@ CDestination::Undelete(
 {
 	if (_removeFlag(CDestination::deleted))
 	{
-		Document().SetModified();
+		Document()->SetModified();
 		
 		CUpdateHint hint;
 		hint.AddInt32("DestID", GetID());
 		hint.AddInt32("DocAttrs", CMeVDoc::Update_AddDest);
-		Document().PostUpdate(&hint);
+		Document()->PostUpdate(&hint);
 	}
 }
 
@@ -362,24 +427,22 @@ CDestination::Undelete(
 
 void
 CDestination::_addIcons(
-	BMessage* msg,
-	BBitmap* largeIcon,
-	BBitmap* miniIcon) const
+	BMessage *message,
+	BBitmap *largeIcon,
+	BBitmap *miniIcon) const
 {
-	if (! msg->HasData("be:large_icon", 'ICON')) {
-		msg->AddData("be:large_icon", 'ICON', largeIcon->Bits(),
-			largeIcon->BitsLength());
-	} else {
-		msg->ReplaceData("be:large_icon", 'ICON', largeIcon->Bits(),
-			largeIcon->BitsLength());
-	}
-	if (! msg->HasData("be:mini_icon", 'MICN')) {
-		msg->AddData("be:mini_icon", 'MICN', miniIcon->Bits(),
-			miniIcon->BitsLength());
-	} else {
-		msg->ReplaceData("be:mini_icon", 'MICN', miniIcon->Bits(),
-			miniIcon->BitsLength());
-	}
+	if (!message->HasData("be:large_icon", 'ICON'))
+		message->AddData("be:large_icon", 'ICON', largeIcon->Bits(),
+						 largeIcon->BitsLength());
+	else
+		message->ReplaceData("be:large_icon", 'ICON', largeIcon->Bits(),
+							 largeIcon->BitsLength());
+	if (!message->HasData("be:mini_icon", 'MICN'))
+		message->AddData("be:mini_icon", 'MICN', miniIcon->Bits(),
+						 miniIcon->BitsLength());
+	else
+		message->ReplaceData("be:mini_icon", 'MICN', miniIcon->Bits(),
+							 miniIcon->BitsLength());
 }
 
 BBitmap *
@@ -387,37 +450,32 @@ CDestination::_createIcon(
 	BRect r)
 {
 	BBitmap	*icon = new BBitmap(r, B_CMAP8,true);
-	BView *icon_view = new BView (r, "icon writer", B_FOLLOW_RIGHT,
-								  B_FRAME_EVENTS);
+	BView *iconView = new BView(r, "icon writer", B_FOLLOW_RIGHT,
+								B_FRAME_EVENTS);
 	icon->Lock();
-	icon->AddChild(icon_view);
-	icon_view->SetHighColor(B_TRANSPARENT_COLOR);
-	icon_view->FillRect(r, B_SOLID_HIGH);
-	icon_view->SetHighColor(m_fillColor);
+	icon->AddChild(iconView);
+	iconView->SetHighColor(B_TRANSPARENT_COLOR);
+	iconView->FillRect(r, B_SOLID_HIGH);
+	iconView->SetHighColor(m_fillColor);
 	if ((m_flags & CDestination::disabled) || (m_flags & CDestination::muted))
 	{
 		rgb_color contrast;
-		contrast.red=(m_fillColor.red+128) % 255;
-		contrast.green=(m_fillColor.green+128) % 255;
-		contrast.blue=(m_fillColor.blue+128) % 255;
-		icon_view->SetLowColor(contrast);
-		pattern mixed_colors = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x0f};
-		icon_view->FillEllipse(r,mixed_colors);
+		contrast.red = (m_fillColor.red+128) % 255;
+		contrast.green = (m_fillColor.green+128) % 255;
+		contrast.blue = (m_fillColor.blue+128) % 255;
+		iconView->SetLowColor(contrast);
+		pattern mixedColors = { 0xf0, 0xf0, 0xf0, 0xf0,
+								 0x0f, 0x0f, 0x0f, 0x0f };
+		iconView->FillEllipse(r, mixedColors);
 	}
 	else
 	{
-		icon_view->FillEllipse(r);
+		iconView->FillEllipse(r);
 	}
-	icon_view->SetPenSize(1);
-	rgb_color blk;
-	blk.red=0;
-	blk.green=0;
-	blk.blue=0;
-	icon_view->SetHighColor(blk);	
-	icon_view->Sync();
-	icon_view->RemoveSelf();
+	iconView->Sync();
+	iconView->RemoveSelf();
+	delete iconView;
 	icon->Unlock();
-	delete (icon_view);
 	return icon;
 }
 
@@ -459,23 +517,6 @@ CDestination::_removeFlag (int32 flag)
 
 	return false;
 }
-
-#if DEBUG
-void
-CDestination::PrintToStream()
-{
-	printf("\n");
-	printf("Name=%s\n", Name());
-	printf("ID=%ld\n", m_id);
-	printf("IndexOf=%ld\n", Document().m_destinations.IndexOf(this));
-	printf("Muted=%d\n", Muted());
-	printf("Solod=%d\n", Solo());
-	printf("Deleted=%d\n", Deleted());
-	printf("Disabled=%d\n", Disabled());
-	printf("Valid=%d\n", IsValid());
-	printf("Producer=%s\n", m_producer->Name());	
-}
-#endif
 
 // ---------------------------------------------------------------------------
 // CDestinationDeleteUndoAction: Constructor/Destructor
