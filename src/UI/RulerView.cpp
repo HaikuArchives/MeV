@@ -343,6 +343,11 @@ CRulerView::MouseUp(
 {
 	D_HOOK(("CRulerView::MouseUp()\n"));
 
+	int32 marker = MarkerAt(point);
+	if (marker >= 0)
+		be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::HORIZONTAL_RESIZE));
+	else
+		be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::DEFAULT));
 }
 
 void
@@ -351,6 +356,7 @@ CRulerView::SetScrollValue(
 	orientation which)
 {
 	CScrollerTarget::SetScrollValue(value, which);
+
 	ScrollTo(scrollValue.x, scrollValue.y);
 }
 
@@ -397,7 +403,10 @@ CRulerView::MarkerAt(
 
 	// won't manipulate markers that aren't visible
 	if (!m_showMarkers)
-		return - 1;
+		return -1;
+
+	if ((point.y < Bounds().top) || (point.y > Bounds().bottom))
+		return -1;
 
 	int32 markers[] = { m_track->SectionStart(), m_track->SectionEnd() };
 	for (int i = 0; i < 2; i++)
