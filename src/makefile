@@ -47,7 +47,6 @@ SRCS= \
 	Support/IFFWriter.cpp \
 	Support/MathUtils.cpp \
 	Support/ResourceUtils.cpp \
-	UI/AssemblyRulerView.cpp \
 	UI/AssemblyWindow.cpp \
 	UI/BitmapTool.cpp \
 	UI/BorderButton.cpp \
