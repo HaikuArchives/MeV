@@ -81,7 +81,7 @@ LinkBase *CDictionaryIteratorBase::Next( void )
 	if (node) node = node->next;
 	while (node == NULL)
 	{
-		if (hashVal > b.hashSize || b.hashTable == NULL) return NULL;
+		if (hashVal >= b.hashSize || b.hashTable == NULL) return NULL;
 		node = b.hashTable[ hashVal++ ];
 	}
 
