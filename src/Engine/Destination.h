@@ -60,6 +60,7 @@
 
 class CMeVDoc;
 
+#define NOTE_NAME_LENGTH 128
 #define PROGRAM_NAME_LENGTH 128
 
 /**	Destinations, allow routing and remapping of MIDI data
@@ -192,14 +193,23 @@ public:							//Hook Functions
 public:							// Midi specific functionality
 								// +++ move to Midi::CMidiDestination
 
+	/**	Copies a string identifying a note number into outName.
+	 *	outName should point to a string buffer of at least
+	 *	NOTE_NAME_LENGTH bytes.
+	 *	@return		true if a name for the note exists.
+	 */
+	bool						GetNoteName(
+									unsigned char note,
+									char *outName);
+
 	/**	Copies the program name at the given bank and program numbers
 	 *	into outName. outName should point to a string buffer of at least
 	 *	PROGRAM_NAME_LENGTH bytes.
 	 *	@return		true if the program could be identified.
 	 */
 	bool						GetProgramName(
-									uint16 bank,
-									uint8 program,
+									unsigned short bank,
+									unsigned char program,
 									char *outName);
 
 	void						SetConnect(

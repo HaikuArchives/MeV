@@ -57,6 +57,9 @@ CDestination::s_defaultColorTable[] =
 	{ 128, 128,   0 }
 };
 
+const char *NOTE_NAMES[12] =
+{ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
@@ -378,15 +381,41 @@ CDestination::Undelete(
 // Operations
 
 bool
+CDestination::GetNoteName(
+	unsigned char note,
+	char *outName)
+{
+	if (m_generalMidi && (m_channel == GeneralMidi::DRUM_KIT_CHANNEL))
+	{
+		strncpy(outName, GeneralMidi::GetDrumSoundNameFor(note),
+				NOTE_NAME_LENGTH);
+		return true;
+	}
+	else
+	{
+		unsigned char octave = note / 12;
+		unsigned char key = note % 12;
+		snprintf(outName, NOTE_NAME_LENGTH, "%s%d (%d)",
+				 NOTE_NAMES[key], octave - 2, note);
+		return true;
+	}
+
+	return false;
+}
+
+bool
 CDestination::GetProgramName(
-	uint16 bank,
-	uint8 program,
+	unsigned short bank,
+	unsigned char program,
 	char *outName)
 {
 	if (m_generalMidi)
 	{
-		strncpy(outName, GeneralMidi::GetProgramNameFor(program),
-				PROGRAM_NAME_LENGTH);
+		if (m_channel == GeneralMidi::DRUM_KIT_CHANNEL)
+			snprintf(outName, PROGRAM_NAME_LENGTH, "Drum Kit");
+		else
+			strncpy(outName, GeneralMidi::GetProgramNameFor(program),
+					PROGRAM_NAME_LENGTH);
 		return true;
 	}
 
@@ -420,7 +449,10 @@ CDestination::SetConnect(
 	{
 		Midi::CMidiManager *mm = Midi::CMidiManager::Instance();
 		if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
+		{
 			m_producer->Disconnect(mm->FindConsumer(m_consumerID));
+			m_generalMidi = false;
+		}
 
 		if (connect)
 		{

@@ -7,14 +7,17 @@
 const char *
 GM_PROGRAM_NAMES[128] =
 {
+	// Piano
 	"Acoustic Grand",
-	"Bright Grand",
+	"Bright Acoustic",
 	"Electric Grand",
-	"Honky Tonk",
+	"Honky-Tonk",
 	"Electric Piano 1",
 	"Electric Piano 2",
 	"Harpsichord",
 	"Clavichord",
+
+	// Chromatic Percussion
 	"Celesta",
 	"Glockenspiel",
 	"Music Box",
@@ -23,6 +26,8 @@ GM_PROGRAM_NAMES[128] =
 	"Xylophone",
 	"Tubular Bells",
 	"Dulcimer",
+
+	// Organ
 	"Drawbar Organ",
 	"Percussive Organ",
 	"Rock Organ",
@@ -32,7 +37,7 @@ GM_PROGRAM_NAMES[128] =
 	"Harmonica",
 	"Tango Accordian",
 
-	// Guitars
+	// Guitar
 	"Acoustic Guitar Nylon",
  	"Acoustic Guitar Steel",
  	"Electric Guitar Jazz",
@@ -42,7 +47,7 @@ GM_PROGRAM_NAMES[128] =
  	"Distortion Guitar",
  	"Guitar Harmonics",
 
-	// Basses
+	// Bass
  	"Acoustic Bass",
  	"Electric Bass Finger",
  	"Electric Bass Pick",
@@ -52,7 +57,7 @@ GM_PROGRAM_NAMES[128] =
  	"Synth Bass 1",
  	"Synth Bass 2",
 
-	// Strings
+	// Solo Strings
  	"Violin",
  	"Viola",
  	"Cello",
@@ -62,7 +67,7 @@ GM_PROGRAM_NAMES[128] =
  	"Orchestral Strings",
  	"Timpani",
 
-	// Ensemble strings and voices
+	// Ensemble
  	"String Ensemble 1",
  	"String Ensemble 2",
  	"Synth Strings 1",
@@ -82,7 +87,7 @@ GM_PROGRAM_NAMES[128] =
  	"Synth Brass 1",
  	"Synth Brass 2",
 
-	// Reeds
+	// Reed
  	"Soprano Sax",
  	"Alto Sax",
  	"Tenor Sax",
@@ -92,7 +97,7 @@ GM_PROGRAM_NAMES[128] =
  	"Bassoon",
  	"Clarinet",
 
-	// Pipes
+	// Pipe
  	"Piccolo",
  	"Flute",
  	"Recorder",
@@ -101,8 +106,8 @@ GM_PROGRAM_NAMES[128] =
  	"Shakuhachi",
  	"Whistle",
  	"Ocarina",
-
-	// Synth Leads
+ 
+	// Synth Lead
  	"Square Lead",
  	"Sawtooth Lead",
  	"Calliope Lead",
@@ -112,7 +117,7 @@ GM_PROGRAM_NAMES[128] =
  	"Fifths Lead",
  	"Bass Lead",
 
-	// Synth Pads
+	// Synth Pad
  	"New Age Pad",
  	"Warm Pad",
  	"Polysynth Pad",
@@ -122,7 +127,7 @@ GM_PROGRAM_NAMES[128] =
  	"Halo Pad",
  	"Sweep Pad",
 
-	// Effects
+	// Synth Effects
  	"Rain FX",
  	"Soundtrack FX",
  	"Crystal FX",
@@ -142,7 +147,7 @@ GM_PROGRAM_NAMES[128] =
  	"Fiddle",
  	"Shanai",
 
-	// Percussion
+	// Percussive
  	"Tinkle Bell",
  	"Agogo",
  	"Steel Drums",
@@ -163,11 +168,76 @@ GM_PROGRAM_NAMES[128] =
  	"Gunshot"
 };
 
+#define GM_DRUM_SOUND_FIRST 35
+#define GM_DRUM_SOUND_LAST 81
+
+const char *
+GM_DRUM_SOUND_NAMES[] =
+{
+	"Acoustic Bass Drum",
+	"Bass Drum 1",
+	"Side Stick",
+	"Acoustic Snare",
+	"Hand Clap",
+	"Electric Snare",
+	"Low Floor Tom",
+	"Closed Hi-Hat",
+	"High Floor Tom",
+	"Pedal Hi-Hat",
+	"Low Tom",
+	"Open Hi-Hat",
+	"Low-Mid Tom",
+	"Hi-Mid Tom",
+	"Crash Cymbal 1",
+	"High Tom",
+	"Ride Cymbal 1",
+	"Chinese Cymbal",
+	"Ride Bell",
+	"Tambourine",
+	"Splash Cymbal",
+	"Cowbell",
+	"Crash Cymbal 2",
+	"Vibraslap",
+	"Ride Cymbal 2",
+	"Hi Bongo",
+	"Low Bongo",
+	"Mute Hi Conga",
+	"Open Hi Conga",
+	"Low Conga",
+	"High Timbale",
+	"Low Timbale",
+	"High Agogo",
+	"Low Agogo",
+	"Cabasa",
+	"Maracas",
+	"Short Whistle",
+	"Long Whistle",
+	"Short Guiro",
+	"Long Guiro",
+	"Claves",
+	"Hi Wood Block",
+	"Low Wood Block",
+	"Mute Cuica",
+	"Open Cuica",
+	"Mute Triangle",
+	"Open Triangle"
+};
+
 const char *
 GeneralMidi::GetProgramNameFor(
 	uint8 program)
 {
 	return GM_PROGRAM_NAMES[program];
+}
+
+const char *
+GeneralMidi::GetDrumSoundNameFor(
+	uint8 note)
+{
+	if ((note < GM_DRUM_SOUND_FIRST) || (note > GM_DRUM_SOUND_LAST))
+		return "";
+
+	return GM_DRUM_SOUND_NAMES[note - GM_DRUM_SOUND_FIRST];
 }
 
 // END - GeneralMidi.cpp

@@ -42,9 +42,13 @@
 
 namespace GeneralMidi
 {
+	const unsigned char			DRUM_KIT_CHANNEL = 9;
 
 	const char *				GetProgramNameFor(
 									uint8 program);
+
+	const char *				GetDrumSoundNameFor(
+									uint8 note);
 };
 
 #endif /* __GeneralMidi_H__ */
