@@ -40,16 +40,11 @@
 
 #include "Undo.h"
 
-	// Forward declare undo action.
+#include <new>
+
+// Forward declare undo action.
 class ItemListUndoAction_Base;
 template<class Item> class ItemListUndoAction ;
-
-/*	Issues:
-	1.	Add in overloading of the equals operator for markers and others.
-*/
-
-#pragma overload	void *operator new( size_t size );
-inline void* operator new( size_t, void* p ) { return p; }
 
 /* ===================================================================== *
    A template used for copying, constructing, and destructing unknown types
