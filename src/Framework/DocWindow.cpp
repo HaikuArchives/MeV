@@ -165,7 +165,7 @@ CDocWindow::MessageReceived(
 					Document()->WindowAt(i)->Minimize(false);
 			}
 			if (IsMinimized())
-				Minimize(true);
+				Minimize(false);
 			break;
 		}
 		case B_CANCEL:
