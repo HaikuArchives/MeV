@@ -20,6 +20,39 @@
 #include <Debug.h>
 
 // ---------------------------------------------------------------------------
+// Piano keyboard view
+
+class CPianoKeyboardView
+	:	public CStripLabelView
+{
+
+public:							// Constructor/Destructor
+
+								CPianoKeyboardView(
+									BRect frame,
+									CLinearEditor *editor,
+									uint32 resizeFlags,
+									uint32 flags);
+
+public:							// Operations
+	
+	void						SetSelectedKey(
+									int32 key);
+
+public:							// CStripLabelView Implementation
+
+	virtual void				DrawInto(
+									BView *view,
+									BRect updateRect);
+
+private:						// Instance Data
+
+	CLinearEditor *				m_editor;
+
+	int32						m_selectedKey;
+};
+
+// ---------------------------------------------------------------------------
 // Note handler class for linear editor
 
 class CLinearNoteEventHandler
@@ -96,17 +129,6 @@ protected:						// Accessors
 
 	CLinearEditor * const		Editor() const
 								{ return (CLinearEditor *)CEventHandler::Editor(); }
-
-private:						// Internal Operations
-
-	static void					DrawNoteShape(
-									BView *view,
-									BRect rect,
-									rgb_color outline,
-									rgb_color fill,
-									rgb_color higlight,
-									bool drawHighlight,
-									pattern apattern = B_SOLID_HIGH);
 };
 
 // ---------------------------------------------------------------------------
@@ -162,10 +184,8 @@ CLinearEditor::ConstructEvent(
 	// check if destination is set
 	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
 	if (!TrackWindow()->Document()->IsDefinedDest(destination))
-	{
-		printf("not defined\n");
 		return false;
-	}
+
 	// Initialize a new event
 	m_newEv.SetCommand(TrackWindow()->NewEventType(EvtType_Note));
 
@@ -501,48 +521,68 @@ CLinearNoteEventHandler::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
-	CEventTrack *track = Editor()->Track();
 	BRect r(Extent(ev));
+	CDestination *dest = Document()->FindDestination(ev.GetVChannel());
 
-	if (track->IsChannelLocked(ev.GetVChannel()))
-	{
-		if (!shadowed)
-			DrawNoteShape(Editor(), r, DISABLED_BORDER_COLOR,
-						  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR,
-						  false);
-		return;
-	}
-
-	CDestination *dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
-	if (dest->Deleted())
-	{
-		DrawNoteShape(Editor(), r, DISABLED_BORDER_COLOR,
-					  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR, false);
-	}
-	else if (dest->Muted())
-		  
-	{
-		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, dest->GetFillColor(),
-					  dest->GetHighlightColor(), true, MIXED_COLORS);
-	}
-	else if (shadowed)
-	{
+	if (shadowed)
 		Editor()->SetDrawingMode(B_OP_BLEND);
-		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, 
-					  dest->GetFillColor(), dest->GetHighlightColor(), true);
-		Editor()->SetDrawingMode(B_OP_COPY);
-	}
-	else if (ev.IsSelected() && Editor()->IsSelectionVisible())
+
+	rgb_color fill = dest->GetFillColor();
+	rgb_color shadow = {168, 168, 168, 255};
+	rgb_color outline = ev.IsSelected() ? SELECTED_BORDER_COLOR
+										: DEFAULT_BORDER_COLOR;
+	pattern fillPattern = B_SOLID_HIGH;
+
+	if (dest->Muted() || dest->Disabled())
 	{
-		DrawNoteShape(Editor(), r, SELECTED_BORDER_COLOR,
-					  dest->GetFillColor(), dest->GetHighlightColor(), true);
-	}
-	else 
-	{
-		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR,
-					  dest->GetFillColor(), dest->GetHighlightColor(), true);
+		fillPattern = MIXED_COLORS;
+		Editor()->SetLowColor(shadow);
+		if (dest->Disabled())
+		{
+			fill = tint_color(fill, B_LIGHTEN_1_TINT);
+			outline = DISABLED_BORDER_COLOR;
+		}
 	}
 
+	Editor()->BeginLineArray(12);
+	// draw shadow
+	Editor()->AddLine(BPoint(r.left + 2.0, r.bottom),
+					  BPoint(r.right - 1.0, r.bottom), shadow);
+	Editor()->AddLine(BPoint(r.right, r.top + 2.0),
+					  BPoint(r.right, r.bottom - 1.0), shadow);
+	r.right -= 1.0;
+	r.bottom -= 1.0;
+	Editor()->AddLine(r.RightBottom(), r.RightBottom(), shadow);
+	// draw outline
+	Editor()->AddLine(BPoint(r.left + 1.0, r.top),
+					  BPoint(r.right - 1.0, r.top),
+					  outline);
+	Editor()->AddLine(BPoint(r.right, r.top + 1.0),
+					  BPoint(r.right, r.bottom - 1.0),
+					  outline);
+	Editor()->AddLine(BPoint(r.left + 1.0, r.bottom),
+					  BPoint(r.right - 1.0, r.bottom),
+					  outline);
+	Editor()->AddLine(BPoint(r.left, r.top + 1.0),
+					  BPoint(r.left, r.bottom - 1.0),
+					  outline);
+	r.InsetBy(1.0, 1.0);
+	// draw bevel
+	Editor()->AddLine(r.RightBottom(), r.LeftBottom(),
+					  tint_color(fill, B_DARKEN_1_TINT));
+	Editor()->AddLine(r.RightTop(), r.RightBottom(),
+					  tint_color(fill, B_DARKEN_1_TINT));
+	Editor()->AddLine(r.LeftTop(), r.RightTop(),
+					  tint_color(fill, B_LIGHTEN_1_TINT));
+	Editor()->AddLine(r.LeftBottom(), r.LeftTop(),
+					  tint_color(fill, B_LIGHTEN_1_TINT));
+	Editor()->AddLine(r.LeftTop(), r.LeftTop(),
+					  tint_color(fill, B_LIGHTEN_MAX_TINT));
+	Editor()->EndLineArray();
+
+	r.InsetBy(1.0, 1.0);
+	Editor()->SetHighColor(fill);
+	Editor()->FillRect(r, fillPattern);
 }
 
 BRect
@@ -645,37 +685,6 @@ CLinearNoteEventHandler::CreateTimeOp(
 		return new DurationOffsetOp(timeDelta);
 
 	return CEventHandler::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
-}
-
-void
-CLinearNoteEventHandler::DrawNoteShape(	
-	BView *view,
-	BRect rect,
-	rgb_color outline,
-	rgb_color fill,
-	rgb_color highlight,
-	bool drawHighlight,
-	pattern apattern)
-{
-	rgb_color contrast;
-	contrast.red = (fill.red + 128) % 255;
-	contrast.green = (fill.green + 128) % 255;
-	contrast.blue = (fill.blue + 128) % 255;
-
-	view->SetHighColor(fill);
-	view->SetLowColor(contrast);
-	view->FillRect(rect.InsetByCopy(1.0, 1.0), apattern);
-	view->SetHighColor(outline);
-	view->StrokeRoundRect(rect, 3.0, 3.0, B_SOLID_HIGH);
-	if (drawHighlight && ((rect.Width() >= 4.0) && (rect.Height() >= 4.0))) {
-		BPoint pLeft(rect.left + 2.0, rect.top + 2.0);
-		BPoint pRight(rect.right - 2.0, rect.top + 2.0);
-		view->SetHighColor(255, 255, 255, 255);
-		view->StrokeLine(pLeft, pLeft, B_SOLID_HIGH);
-		pLeft.x++;
-		view->SetHighColor(highlight);
-		view->StrokeLine(pLeft, pRight, B_SOLID_HIGH);
-	}
 }
 
 // ---------------------------------------------------------------------------

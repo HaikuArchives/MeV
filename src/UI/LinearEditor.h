@@ -143,37 +143,4 @@ private:						// Instance Data
 	short int					m_stripLogicalHeight;
 };
 
-// ---------------------------------------------------------------------------
-// Piano keyboard view
-
-class CPianoKeyboardView
-	:	public CStripLabelView
-{
-
-public:							// Constructor/Destructor
-
-								CPianoKeyboardView(
-									BRect frame,
-									CLinearEditor *editor,
-									uint32 resizeFlags,
-									uint32 flags);
-
-public:							// Operations
-	
-	void						SetSelectedKey(
-									int32 key);
-
-public:							// CStripLabelView Implementation
-
-	virtual void				DrawInto(
-									BView *view,
-									BRect updateRect);
-
-private:						// Instance Data
-
-	CLinearEditor *				m_editor;
-	int32						m_selectedKey;
-
-};
-
 #endif /* __C_LinearEditor_H__ */

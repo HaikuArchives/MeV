@@ -730,22 +730,17 @@ CProgramChangeEventHandler::Draw(
 					 + be_plain_font->StringWidth(patchName.String());
 	textRect.top = textRect.bottom - fh.ascent;
 
-	CDestination *dest = Editor()->Track()->Document().FindDestination(ev.GetVChannel());
-	rgb_color lightColor, darkColor;
-	if (Editor()->Track()->IsChannelLocked(ev.GetVChannel()))
-	{
-		lightColor = GREY_PALETTE[0];
-		darkColor = GREY_PALETTE[4];
-	}
-	else
-	{
-		lightColor = dest->GetHighlightColor();
-		darkColor = dest->GetFillColor();
-	}
-
 	BRect frameRect(textRect.InsetByCopy(-1.0, -2.0));
 	frameRect.top += 1.0;
 	frameRect.right -= 1.0;
+
+	CDestination *dest = Document()->FindDestination(ev.GetVChannel());
+	rgb_color fillColor = dest->GetFillColor();
+	if (ev.IsSelected())
+		fillColor = tint_color(fillColor, B_DARKEN_2_TINT);
+	rgb_color textColor = {0, 0, 0, 255};
+	if ((fillColor.red + fillColor.green + fillColor.blue) < 384)
+		textColor = tint_color(textColor, B_LIGHTEN_MAX_TINT);
 
 	if (shadowed)
 	{
@@ -753,13 +748,9 @@ CProgramChangeEventHandler::Draw(
 		Editor()->SetHighColor(0, 0, 0, 128);
 		Editor()->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
 		Editor()->DrawBitmap(m_icon, iconRect.LeftTop());
-
-		lightColor.alpha = darkColor.alpha = 128;
-		Editor()->SetHighColor(lightColor);
-		Editor()->SetLowColor(darkColor);
-		Editor()->SetDrawingMode(B_OP_COPY);
-		Editor()->FillRect(frameRect, B_SOLID_LOW);
-		Editor()->SetDrawingMode(B_OP_OVER);
+		fillColor.alpha = textColor.alpha = 128;
+		fillColor = tint_color(fillColor, B_LIGHTEN_2_TINT);
+		textColor = tint_color(textColor, B_LIGHTEN_2_TINT);
 	}
 	else if (ev.IsSelected() && Editor()->IsSelectionVisible())
 	{
@@ -769,24 +760,19 @@ CProgramChangeEventHandler::Draw(
 		Editor()->SetHighColor(0, 0, 0, 180);
 		Editor()->SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
 		Editor()->DrawBitmap(m_icon, iconRect.LeftTop());
-
-		Editor()->SetHighColor(lightColor);
-		Editor()->SetLowColor(darkColor);
-		Editor()->SetDrawingMode(B_OP_COPY);
-		Editor()->FillRect(frameRect, B_SOLID_LOW);
-		Editor()->SetDrawingMode(B_OP_OVER);
 	}
 	else
 	{
 		Editor()->SetDrawingMode(B_OP_OVER);
 		Editor()->DrawBitmap(m_icon, iconRect.LeftTop());
-
-		Editor()->SetHighColor(darkColor);
-		Editor()->SetLowColor(lightColor);
-		Editor()->SetDrawingMode(B_OP_COPY);
-		Editor()->FillRect(frameRect, B_SOLID_LOW);
-		Editor()->SetDrawingMode(B_OP_OVER);
 	}
+
+	Editor()->SetLowColor(fillColor);
+	Editor()->SetDrawingMode(B_OP_COPY);
+	Editor()->FillRect(frameRect, B_SOLID_LOW);
+	Editor()->SetDrawingMode(B_OP_OVER);
+
+	Editor()->SetHighColor(textColor);
 	Editor()->DrawString(patchName.String(), textRect.LeftBottom());
 }
 

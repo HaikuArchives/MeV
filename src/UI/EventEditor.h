@@ -456,6 +456,9 @@ public:							// Hook Functions
 
 protected:						// Accessors
 
+	CMeVDoc * const				Document() const
+								{ return m_editor->TrackWindow()->Document(); }
+
 	CEventEditor * const		Editor() const
 								{ return m_editor; }
 
