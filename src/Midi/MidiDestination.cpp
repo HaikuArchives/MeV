@@ -48,7 +48,9 @@ CMidiDestination::CMidiDestination(
 {
 	D_ALLOC(("CMidiDestination::CMidiDestination()\n"));
 
-	m_producer = new Midi::CReconnectingMidiProducer(Name());
+	BString producerName = "MeV: ";
+	producerName << Name();
+	m_producer = new Midi::CReconnectingMidiProducer(producerName.String());
 	_updateIcons();
 	m_producer->Register();
 }
@@ -281,7 +283,9 @@ void
 CMidiDestination::NameChanged(
 	const char *name)
 {
-	// +++ update producer name
+	BString producerName = "MeV: ";
+	producerName << name;
+	m_producer->SetName(producerName.String());
 }
 
 void
