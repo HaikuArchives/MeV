@@ -144,7 +144,6 @@ public:							// Operator Management
 									EventOp *op) const
 								{ return operators.IndexOf(op); }
 
-
 	/**	Add an operator to the document's list of operators. */
 	void						AddOperator(
 									EventOp *op);

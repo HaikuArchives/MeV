@@ -68,8 +68,6 @@ CMeVDoc::CMeVDoc(
 	m_activeMaster = m_masterMeterTrack;
 
 	SetValid(); 
-
-	NewDestination();
 }
 
 CMeVDoc::CMeVDoc(
@@ -278,6 +276,9 @@ CMeVDoc::ShowWindowFor(
 		// Create default track if no tracks have been added already
 		if (CountTracks() == 0)
 			NewTrack(TrackType_Event, ClockType_Metered);
+		// Create default destination if no destinations have been added already
+		if (CountDestinations() == 0)
+			NewDestination();
 
 		CEventTrack *eventTrack = dynamic_cast<CEventTrack *>(track);
 		BMessage *settings = eventTrack->GetWindowSettings();
