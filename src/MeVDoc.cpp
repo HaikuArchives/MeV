@@ -122,15 +122,18 @@ CMeVDoc::~CMeVDoc()
 	if (CPlayerControl::IsPlaying(this))
 		CPlayerControl::StopSong(this);
 
+	// request all observers to stop immediately
+	RequestDelete();
+
+	D_ALLOC((" -> delete tracks\n"));
+	for (int i = 0; i < tracks.CountItems(); i++)
+		delete (CTrack *)tracks.RemoveItem(i);
+
 	D_ALLOC((" -> delete master real track\n"));
 	delete m_masterRealTrack;
 
 	D_ALLOC((" -> delete master metered track\n"));
 	delete m_masterMeterTrack;
-
-	D_ALLOC((" -> delete tracks\n"));
-	for (int i = 0; i < tracks.CountItems(); i++)
-		delete (CTrack *)tracks.RemoveItem(i);
 
 	D_ALLOC((" -> delete destinations\n"));
 	for (int i = 0; i < m_destinations.CountItems(); i ++)
