@@ -75,11 +75,6 @@ public:							// Constructor/Destructor
 	
 	virtual						~CAppWindow();
 
-public:							// BWindow Implementation
-
-	virtual void				WindowActivated(
-									bool active );
-
 public:							// Operations
 
 	void						RememberState(
@@ -88,12 +83,6 @@ public:							// Operations
 private:							// Instance Data
 
 	CWindowState *					m_state;
-
-	// Current cursor image
-//	BCursor	*						m_cursor;
-
-	// true if cursor is hidden
-//	bool							m_cursorHidden;
 };
 
 class CWindowState {

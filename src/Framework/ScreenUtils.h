@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * ScreenUtils.h (MeV)
+ * ScreenUtils.h (MeV/Framework)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -48,22 +48,37 @@
 
 class BWindow;
 
-#ifdef __POWERPC__
-#pragma export on
-#endif
+class AppFrameSpec UScreenUtils
+{
 
-class AppFrameSpec UScreenUtils {
-public:
-	static BPoint		windowPos;
+public:							// Operations
 
-	static BRect CenterOnScreen( int32 inWidth, int32 inHeight, screen_id id = B_MAIN_SCREEN_ID );
-	static BRect StackOnScreen( int32 inWidth, int32 inHeight, screen_id id = B_MAIN_SCREEN_ID );
-	static BRect ConstrainToScreen( BRect inRect, screen_id id = B_MAIN_SCREEN_ID );
-	static BRect CenterOnWindow( int32 inWidth, int32 inHeight, BWindow *parent );
+	static BRect				CenterOnScreen(
+									int32 width,
+									int32 height,
+									screen_id id = B_MAIN_SCREEN_ID);
+
+	static BRect				StackOnScreen(
+									int32 width,
+									int32 height,
+									screen_id id = B_MAIN_SCREEN_ID);
+
+	static BRect				ConstrainToScreen(
+									BRect frame,
+									screen_id id = B_MAIN_SCREEN_ID);
+
+	static BRect				CenterOnWindow(
+									int32 width,
+									int32 height,
+									BWindow *parent);
+
+private:						// Internal Constants
+
+	static const BPoint			DEFAULT_WINDOW_POSITION;
+
+	static BPoint				NEXT_WINDOW_POSITION;
+
+	static const BPoint			DEFAULT_WINDOW_OFFSET;
 };
-
-#ifdef __POWERPC__
-#pragma export on
-#endif
 
 #endif /* __U_Screen_Utils_H__ */

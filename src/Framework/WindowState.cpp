@@ -66,13 +66,6 @@ CAppWindow::QuitRequested()
 	return true;
 }
 
-void
-CAppWindow::WindowActivated(
-	bool active)
-{
-//	RestoreCursor();
-}
-
 // ---------------------------------------------------------------------------
 // Operations
 

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * ScreenUtils.cpp (MeV/Application Framework)
+ * ScreenUtils.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "ScreenUtils.h"
@@ -7,71 +7,101 @@
 // Interface Kit
 #include <Screen.h>
 
-BPoint		UScreenUtils::windowPos( 0, 0 );
+// ---------------------------------------------------------------------------
+// Constants Initialization
 
-#pragma export on
-BRect UScreenUtils::CenterOnScreen( int32 inWidth, int32 inHeight, screen_id id )
+const BPoint
+UScreenUtils::DEFAULT_WINDOW_POSITION(20.0, 20.0);
+
+BPoint
+UScreenUtils::NEXT_WINDOW_POSITION(20.0, 20.0);
+
+const BPoint
+UScreenUtils::DEFAULT_WINDOW_OFFSET(17.0, 17.0);
+
+// ---------------------------------------------------------------------------
+// Operations
+
+BRect
+UScreenUtils::CenterOnScreen(
+	int32 width,
+	int32 height,
+	screen_id id)
 {
-	BRect	screenRect = BScreen( id ).Frame();
-	BRect	r( 0, 0, inWidth, inHeight );
-	
-	r.OffsetTo( (screenRect.Width() - inWidth) / 2, (screenRect.Height() - inHeight) / 2 );
-	return r;
+	BRect screenRect = BScreen(id).Frame();
+	BRect windowRect(0.0, 0.0, width, height);
+
+	windowRect.OffsetTo(floor((screenRect.Width() - width) / 2.0),
+						floor((screenRect.Height() - height) / 2.0));
+	return windowRect;
 }
 
-BRect UScreenUtils::StackOnScreen( int32 inWidth, int32 inHeight, screen_id id )
+BRect
+UScreenUtils::StackOnScreen(
+	int32 width,
+	int32 height,
+	screen_id id)
 {
-	BRect	screenRect = BScreen( id ).Frame();
-	BRect	r( 0, 0, inWidth, inHeight );
-	
-	if (inWidth > screenRect.Width() || inHeight > screenRect.Height())
+	BRect screenRect = BScreen(id).Frame();
+	BRect windowRect(0.0, 0.0, width, height);
+
+	if ((width > screenRect.Width()) || (height > screenRect.Height()))
 	{
-		r.OffsetTo( 20, 20 );
+		windowRect.OffsetTo(20.0, 20.0);
 	}
 	else
 	{
-		windowPos += BPoint( 12, 24 );
-		r.OffsetTo( windowPos );
-		if (!screenRect.Contains( r ))
+		NEXT_WINDOW_POSITION += BPoint(DEFAULT_WINDOW_OFFSET);
+		windowRect.OffsetTo(NEXT_WINDOW_POSITION);
+		if (!screenRect.Contains(windowRect))
 		{
-			windowPos.Set( 12, 24 );
-			r.OffsetTo( windowPos );
+			NEXT_WINDOW_POSITION = DEFAULT_WINDOW_POSITION;
+			windowRect.OffsetTo(NEXT_WINDOW_POSITION);
 		}
 	}
 	
-	return r;
+	return windowRect;
 }
 
-BRect UScreenUtils::ConstrainToScreen( BRect inRect, screen_id id )
+BRect
+UScreenUtils::ConstrainToScreen(
+	BRect frame,
+	screen_id id)
 {
-	BRect	screenRect = BScreen( id ).Frame();
-	BPoint	p = inRect.LeftTop();
-	
-	p.x = p.x < screenRect.left ? screenRect.left : 
-								  p.x > screenRect.right - inRect.Width() ? screenRect.right - inRect.Width() :
-								  											p.x;
-	p.y = p.y < screenRect.top ? screenRect.top :
-								 p.y > screenRect.bottom - inRect.Height() ? screenRect.bottom - inRect.Height() :
-								 											 p.y;
-	inRect.OffsetTo( p );
-	
-	return inRect;
+	BRect screenRect = BScreen(id).Frame();
+
+	BPoint p = frame.LeftTop();
+	p.x = (p.x < screenRect.left)
+		  ? screenRect.left
+		  : (p.x > (screenRect.right - frame.Width()))
+		  	? screenRect.right - frame.Width()
+		  	: p.y = p.y < screenRect.top 
+		  	  ? screenRect.top
+		  	  : (p.y > (screenRect.bottom - frame.Height()))
+		  	  	? screenRect.bottom - frame.Height()
+		  	  	: p.y;
+	frame.OffsetTo(p);
+
+	return frame;
 }
 
-BRect UScreenUtils::CenterOnWindow( int32 inWidth, int32 inHeight, BWindow *parent )
+BRect
+UScreenUtils::CenterOnWindow(
+	int32 width,
+	int32 height,
+	BWindow *parent)
 {
-	BRect	pFrame( parent->Frame() );
-	BPoint	p(	(pFrame.left + pFrame.right - inWidth) / 2,
-				(pFrame.top + pFrame.bottom - inHeight) / 2 );
-	BRect screenRect = BScreen( parent ).Frame();
+	BRect parentRect(parent->Frame());
+	BPoint p((parentRect.left + parentRect.right - width) / 2.0,
+			 (parentRect.top + parentRect.bottom - height) / 2.0);
+	BRect screenRect = BScreen(parent).Frame();
 
 	p.x = p.x < screenRect.left ? screenRect.left : 
-								  p.x > screenRect.right - inWidth ? screenRect.right - inWidth :
-								  											p.x;
+								  p.x > screenRect.right - width ? screenRect.right - width :
 	p.y = p.y < screenRect.top ? screenRect.top :
-								 p.y > screenRect.bottom - inHeight ? screenRect.bottom - inHeight :
-																			 p.y;
-	return BRect( p.x, p.y, p.x + inWidth, p.y + inHeight );
+								 p.y > screenRect.bottom - height ? screenRect.bottom - height :
+																	p.y;
+	return BRect(p.x, p.y, p.x + width, p.y + height);
 }
 
-#pragma export off
+// END - ScreenUtils.cpp
