@@ -155,7 +155,7 @@ void CTextSlider::Draw( BRect inInvalRect )
 
 	knobTemp.OffsetBy( kPos, 0 );	
 	clip.Include( r );
-	clip.Exclude( &knobTemp );
+//	clip.Exclude( &knobTemp );
 	ConstrainClippingRegion( &clip );
 
 	SetHighColor( backColor );
@@ -195,8 +195,12 @@ void CTextSlider::Draw( BRect inInvalRect )
 	FillRect( BRect( r.left + 2.0, vCenter + 2.0, r.right - 1.0, vCenter + 2.0 ) );
 	FillRect( BRect( r.right, vCenter - 2.0, r.right, vCenter + 1.0 ) );
 
-	ConstrainClippingRegion( &knobTemp );
+//	ConstrainClippingRegion( &knobTemp );
+/* 
+	I simply removed the clipping between the knob and the backround.
+	Maybe an more elegant solution should be added later but it works now at least
 
+*/
 		// And the knob shadows	
 	if (dim) SetHighColor( 190, 190, 190 );
 	else SetHighColor( 148, 148, 148 );

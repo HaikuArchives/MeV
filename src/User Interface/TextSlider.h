@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/29/2000	vember
+ *		Fixed drawing
  * ---------------------------------------------------------------------
  * To Do:
  *
