@@ -104,8 +104,9 @@ SRCS= \
 #	full path or a relative path to the resource file can be used.
 RSRCS= \
 	../resources/Bitmaps.rsrc \
-	../resources/MeV.rsrc \
-	../resources/Cursor.rsrc
+	../resources/Buttons.rsrc \
+	../resources/Cursor.rsrc \
+	../resources/MeV.rsrc
 
 # @<-src@ 
 #%}
