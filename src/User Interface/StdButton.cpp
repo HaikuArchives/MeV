@@ -14,11 +14,13 @@ void CPushOnButton::Draw( BRect inUpdateRect )
 	
 	if (IsEnabled())
 	{
-		DrawBorderBevel( *this, r, Value() ? Bevel_Depressed : Bevel_Normal );
+		StdBevels::DrawBorderBevel(this, r, 
+								   Value() ? StdBevels::DEPRESSED_BEVEL
+								   		   : StdBevels::NORMAL_BEVEL);
 	}
 	else
 	{
-		DrawBorderBevel( *this, r, Bevel_Dimmed );
+		StdBevels::DrawBorderBevel(this, r, StdBevels::DIMMED_BEVEL);
 	}
 
 	BBitmap		*image = (Value() && glyph[ 1 ]) ? glyph[ 1 ] : glyph[ 0 ];
