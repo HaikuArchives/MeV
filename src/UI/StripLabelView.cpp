@@ -186,19 +186,20 @@ CStripLabelView::MouseMoved(
 	{
 		if (message->what == CStripView::REARRANGE_STRIPS)
 		{
-			CStripView *view;
-			if (message->FindPointer("strip", reinterpret_cast<void **>(&view)) == B_OK)
+			CStripView *strip;
+			if (message->FindPointer("strip", reinterpret_cast<void **>(&strip)) == B_OK)
 			{
-				if (view != Parent())
+				if ((strip->FrameView() == FrameView())
+				 && (strip != m_stripView))
 				{
 					float center = Bounds().Height() / 2;
 					float offset = point.y - Bounds().top;
 					int32 thisIndex = FrameView()->IndexOf(m_stripView);
-					int32 dragIndex = FrameView()->IndexOf(view);
+					int32 dragIndex = FrameView()->IndexOf(strip);
 					if (((dragIndex < thisIndex) && (offset > center))
 					 || ((dragIndex > thisIndex) && (offset < center)))
 					{
-						FrameView()->SwapStrips(view, m_stripView);
+						FrameView()->SwapStrips(strip, m_stripView);
 					}
 				}
 			}
