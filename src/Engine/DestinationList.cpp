@@ -56,7 +56,7 @@ int CDestinationList::NewDest()
     	if (!IsDefined(c))
     	{
     		m_tablerep[c]=new Destination;
-    		m_tablerep[c]->name << "Untitled ";
+    		m_tablerep[c]->name << "Untitled Destination ";
     		m_tablerep[c]->name << c+1;
     		BString epname;
     		epname << "MeV: ";
@@ -66,7 +66,6 @@ int CDestinationList::NewDest()
     		m_tablerep[c]->producer_name="obsolete";
     		m_tablerep[c]->channel	= 0;
     		m_tablerep[c]->flags		= Destination::transposable;  
-    		//m_tablerep[c]->flags		= Destination::mute; 
     		m_tablerep[c]->velocityContour=0;
     		m_tablerep[c]->VUMeter=0;
     		SetColorFor(c, m_defaultColorTable[c % 16]);

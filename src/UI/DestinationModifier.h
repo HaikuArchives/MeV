@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Dan Walton (dwalton)
+ *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -37,48 +38,113 @@
 
 #ifndef __C_VChannelModifier_H__
 #define __C_VChannelModifier_H__
-#include <Window.h>
-#include <View.h>
-#include <MenuItem.h>
-#include <Button.h>
-#include <TextControl.h>
-#include <ColorControl.h> 
-#include <StringView.h>
-#include <Message.h>
-#include <PopUpMenu.h>
+
 #include "MidiManager.h"
 #include "Observer.h"
-#include "DestinationList.h"
-class CDestinationModifier :
-	public BWindow,public CObserver {
-private:
-	Destination *m_vc;   //pointer to the currently selected dest.
-	int32 m_id;
-	BHandler *m_parent;
-	//int m_selected_id;
-	BView *m_background;
-	BPopUpMenu *m_midiPorts;
-	BPopUpMenu *m_channels;
-	BTextControl *m_name;
-	BCheckBox *m_mute;
-	BCheckBox *m_solo;
-	BButton *m_done;
-	BButton *m_cancel;
-	BStringView *m_status;
-	BColorControl *m_colors;
-	CMidiManager *m_midiManager;	
-	void _buildUI();
-	CDestinationList *m_tm;
-	void _updateStatus();
-	virtual void OnUpdate(BMessage *msg);
-	
-virtual void AttachedToWindow();
-virtual void MenusBeginning();
-virtual void MenusEnded();
-void Update();
-public:
-	CDestinationModifier(BRect frame,int32 id,CDestinationList *tm,BHandler *parent);  //new vchannel;
-	virtual void MessageReceived(BMessage *msg);
-	virtual bool QuitRequested();
+
+// Application Kit
+#include <Message.h>
+// Interface Kit
+#include <ColorControl.h> 
+#include <MenuItem.h>
+#include <PopUpMenu.h>
+#include <StringView.h>
+#include <TextControl.h>
+#include <View.h>
+#include <Window.h>
+
+class Destination;
+class CDestinationList;
+
+class CDestinationModifier
+	:	public BWindow,
+		public CObserver
+{
+
+public:							// Constants
+
+	enum messages
+	{
+								NAME_CHANGED = 'dmoA',
+
+								PORT_SELECTED,
+
+								CHANNEL_SELECTED,
+
+								MUTED,
+
+								SOLOED,
+
+								COLOR_CHANGED,
+
+								NOTIFY,
+
+								ADD_ID,
+
+								WINDOW_CLOSED
+	};
+
+public:							// Constructor/Destructor
+
+								CDestinationModifier(
+									BRect frame,
+									int32 id,
+									CDestinationList *tm,
+									BHandler *parent);
+
+public:							// Operations
+
+	void						Update();
+
+public:							// BWindow Implementation
+
+	virtual void				MenusBeginning();
+
+	virtual void				MenusEnded();
+
+	virtual void				MessageReceived(BMessage *msg);
+
+	virtual bool				QuitRequested();
+
+public:							// CObserver Implementation
+
+	virtual void				OnUpdate(
+									BMessage *message);
+
+private:						// Internal Operations
+
+	void						_buildUI();
+
+	void						_populatePortsMenu();
+
+	void						_updateStatus();
+
+private:						// Instance Data
+
+	//pointer to the currently selected dest.
+	Destination *				m_vc;
+
+	int32						m_id;
+
+	CDestinationList *			m_tm;
+
+	CMidiManager *				m_midiManager;	
+
+	BHandler *					m_parent;
+
+	BView *						m_background;
+
+	BTextControl *				m_name;
+
+	BPopUpMenu *				m_midiPorts;
+
+	BPopUpMenu *				m_channels;
+
+	BCheckBox *					m_mute;
+
+	BCheckBox *					m_solo;
+
+	BColorControl *				m_colors;
 };
-#endif
+
+#endif /* __C_DestinationModifier_H__ */

@@ -1,5 +1,5 @@
 /* ===================================================================== * 
- * DestinationListView.h (MeV/User Interface) 
+ * DestinationListView.h (MeV/UI) 
  * --------------------------------------------------------------------- 
  * License: 
  *  The contents of this file are subject to the Mozilla Public 
@@ -20,6 +20,7 @@
  * 
  *  Contributor(s): 
  *              Dan Walton (dwalton) 
+ *				Christopher Lenz (cell)
  * 
  * --------------------------------------------------------------------- 
  * Purpose: 
@@ -32,8 +33,10 @@
  * To Do: 
  * 
  * ===================================================================== */ 
+
 #ifndef __C_DestinationListView_H__ 
 #define __C_DestinationListView_H__ 
+
 #include "EventTrack.h" 
 #include "TextDisplay.h" 
 #include "View.h" 
@@ -49,6 +52,7 @@
 //stl 
 #include <map.h> 
 #include "DestinationModifier.h" 
+
 class CDestinationListView : 
         public BView ,public CObserver{ 
 
@@ -57,14 +61,11 @@ private:
         uint8                   m_default_id; 
         Destination *m_dest;//selected vc. 
         
+        CEventTrack             *track; 
         uint8                   channel; 
         BPopUpMenu              *m_destMenu; 
         BButton                 *m_editButton; 
         BButton                 *m_deleteButton; 
-        BStringView         *m_channel; 
-        CTextDisplay    *m_channelValue; 
-        BStringView     *m_port; 
-        CTextDisplay    *m_portName;
         BMenuField		*m_destfield;
         BCheckBox               *m_mute; 
         BCheckBox               *m_lock; 
@@ -80,7 +81,6 @@ private:
         //update the info on selected channel; 
         
 public: 
-        CEventTrack             *track; 
                 /**     Constructor */ 
         CDestinationListView(BRect               inFrame,
                              BLooper                 *thelooper, 
