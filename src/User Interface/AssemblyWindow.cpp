@@ -1,0 +1,1044 @@
+/* ===================================================================== *
+ * AssemblyWindow.cpp (MeV/User Interface)
+ * ===================================================================== */
+
+#include "AssemblyWindow.h"
+#include "LinearWindow.h"
+#include "PlayerControl.h"
+#include "Idents.h"
+#include "MeVDoc.h"
+#include "MeVApp.h"
+#include "ScreenUtils.h"
+
+#include "TimeIntervalEditor.h"
+#include "QuickKeyMenuItem.h"
+#include "TextDisplay.h"
+#include "BorderView.h"
+#include "ToolBar.h"
+#include "MultiColumnListView.h"
+
+#include "LinearEditor.h"
+#include "TrackCtlStrip.h"
+#include "VelocityEditor.h"
+
+#include "DataSnap.h"
+
+// Gnu C Library
+#include <stdio.h>
+// Interface Kit
+#include <Bitmap.h>
+#include <Box.h>
+#include <MenuBar.h>
+#include <MenuField.h>
+#include <PopUpMenu.h>
+#include <StringView.h>
+
+// ---------------------------------------------------------------------------
+// A palette of draggable items...
+
+class CDragPalette : public BControl {
+
+	BList			icons;
+
+public:
+	CDragPalette(	BRect		frame,
+				const char	*name,
+				BMessage		*msg,
+				uint32		resizingMode,
+				uint32		flags )
+		: BControl( frame, name, NULL, msg, resizingMode, flags )
+	{
+	}
+      	
+	void AttachedToWindow()
+	{
+		BControl::AttachedToWindow();
+		SetViewColor( B_TRANSPARENT_32_BIT );
+	}
+	
+	void AddIcon( BBitmap *inMap )
+	{
+		icons.AddItem( inMap );
+	}
+
+	void Draw( BRect inUpdateRect )
+	{
+		BRect		r( Bounds() );
+		int			count = icons.CountItems();
+		
+		SetHighColor( 0xe8, 0xe8, 0xe8 );
+		FillRect( r );
+		SetHighColor( 0x80, 0x80, 0x80 );
+		StrokeRect( r );
+		SetDrawingMode( B_OP_OVER );
+		
+		if (count > 0)
+		{
+			float		width = ((r.Width() - 1) / count) - 1;
+			float		x = r.left + 1;
+
+			for (int i = 0; i < count; i++)
+			{
+				BBitmap	*bm = (BBitmap *)icons.ItemAt( i );
+				BRect	br( bm->Bounds() );
+	
+				if (i > 0)
+				{
+					StrokeLine( BPoint( x, r.top ), BPoint( x, r.bottom ) );
+					x += 1;
+				}
+
+				DrawBitmapAsync( bm, BPoint(	x + (width - br.Width())/2,
+											(r.top + r.bottom - br.Height())/2 ) );
+											
+				x += width;
+			}
+		}
+	}
+	
+	void MouseDown( BPoint where )
+	{
+		int			count = icons.CountItems();
+		BRect		r( Bounds() );
+		
+		if (count > 0)
+		{
+			float		width = ((r.Width() - 1) / count) - 1;
+//			float		x = r.left + 1;
+			
+			int	index = static_cast<int>(floor((where.x - r.left) / width));
+			
+			if (index >= 0 && index < count)
+			{
+				SetValue( index );
+				Invoke();
+			}
+		}
+	}
+};
+
+// ---------------------------------------------------------------------------
+// Track list view items
+
+class CTrackListItem : public CMultiColumnListItem {
+
+public:
+	CTrackListItem( CTrack *inTrack )
+		: CMultiColumnListItem( inTrack )
+	{
+	}
+	
+	int32 GetFieldIntData( int32 inIndex )
+	{
+		CTrack	*tk = (CTrack *)rowData;
+
+		if (inIndex == 2) return tk->Muted();
+		if (inIndex == 3) return tk->Solo();
+		return 0;
+	}
+
+	char *GetFieldStringData( int32 inIndex )
+	{
+		CTrack	*tk = (CTrack *)rowData;
+	
+		if (inIndex == 0) return "Midi";
+		else if (inIndex == 1) return (char *)tk->Name();
+		return NULL;
+	}
+
+	void *GetFieldData( int32 inIndex )
+	{
+//		CTrack	*tk = (CTrack *)rowData;
+		return NULL;
+	}
+};
+
+class CTrackListView : public CMultiColumnListView {
+	CMeVDoc				*doc;
+
+public:
+		/**	Constructor */
+	CTrackListView(
+		CMeVDoc			*inDoc,
+		BRect			frame,
+		const char		*name,
+		list_view_type	type = B_SINGLE_SELECTION_LIST,
+		uint32			resizeMask = B_FOLLOW_LEFT | B_FOLLOW_TOP,
+		uint32			flags = B_WILL_DRAW | B_FRAME_EVENTS )
+		: CMultiColumnListView( frame, name, type, resizeMask, flags )
+	{
+		doc = inDoc;
+	}
+	
+	virtual bool IsDragAcceptable( const BMessage *dragMsg )
+	{
+		int32			msgType;
+		int32			row;
+		void				*dragDoc;
+
+		if (		dragMsg != NULL
+			&&	dragMsg->what == MeVDragMsg_ID
+			&&	dragMsg->FindInt32( "Type", 0, &msgType ) == B_OK
+			&&	dragMsg->FindInt32( "Index", 0, &row ) == B_OK
+			&&	dragMsg->FindPointer( "Document", 0, &dragDoc ) == B_OK
+			&&	msgType == DragTrack_ID
+			&&	dragDoc == doc )
+		{
+			return true;
+		}
+		return false;
+	}
+	
+	virtual void OnDrop( BMessage *dragMsg, int32 index )
+	{
+		int32			msgType;
+		int32			row;
+		void				*dragDoc;
+
+		if (		dragMsg != NULL
+			&&	dragMsg->what == MeVDragMsg_ID
+			&&	dragMsg->FindInt32( "Type", 0, &msgType ) == B_OK
+			&&	dragMsg->FindInt32( "Index", 0, &row ) == B_OK
+			&&	dragMsg->FindPointer( "Document", 0, &dragDoc ) == B_OK
+			&&	msgType == DragTrack_ID
+			&&	dragDoc == doc )
+		{
+			if (index == row || index == row + 1) return;
+
+			if (index > row) index--;
+			
+			doc->ChangeTrackOrder( row, index );
+			Select( index );
+		}
+	}
+};
+
+// ---------------------------------------------------------------------------
+// Assembly window
+
+const int ToolArea_Width		= 190;
+
+CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
+	: CTrackWindow( frame, inDocument, (CEventTrack *)inDocument.FindTrack( 1 ) )
+{
+	BView			*leftToolArea;
+	BMenu			*menu,
+					*submenu;
+	float			yPos;
+
+	newEventType = EvtType_Sequence;
+
+		// view rect should be same size as window rect but with left top at (0, 0)
+	menus = new BMenuBar( BRect( 0,0,0,0 ), NULL );
+
+	CreateFileMenu( menus );
+
+		// Create the edit menu
+	menu = new BMenu( "Edit" );
+	menu->AddItem( undoMenu = new BMenuItem( "Undo", new BMessage( MENU_UNDO ), 'Z' ) );
+	menu->AddItem( redoMenu = new BMenuItem( "Redo", new BMessage( MENU_REDO ), 'Z', B_SHIFT_KEY ) );
+	menu->AddSeparatorItem();
+	menu->AddItem( clearMenu = new BMenuItem( "Cut", new BMessage( B_CUT ), 'X' ) );
+	menu->AddItem( clearMenu = new BMenuItem( "Copy", new BMessage( B_COPY ), 'C' ) );
+	menu->AddItem( clearMenu = new BMenuItem( "Paste", new BMessage( B_PASTE ), 'V' ) );
+	menu->AddItem( clearMenu = new CQuickKeyMenuItem( "Clear", new BMessage( MENU_CLEAR ), B_DELETE, "Del" ) );
+	menu->AddItem( new BMenuItem( "Select All", new BMessage( B_SELECT_ALL ), 'A' ) );
+	menu->AddSeparatorItem();
+
+	submenu = new BMenu( "Create" );
+	submenu->AddItem( new BMenuItem( "Metered Track", new BMessage( MENU_CREATE_METERED_TRACK ), 'N' ) );
+	submenu->AddItem( new BMenuItem( "Real Track", new BMessage( MENU_CREATE_REAL_TRACK ) ) );
+
+	menu->AddItem( new BMenuItem( submenu ) );
+	menu->AddItem( new BMenuItem( "Delete Track", new BMessage( MENU_DELETE_TRACK ) ) );
+	menu->AddSeparatorItem();
+	menu->AddItem( new BMenuItem( "View Settings...", new BMessage( MENU_VIEW_SETTINGS ) ) );
+	menu->AddItem( new BMenuItem( "Virtual Channels...", new BMessage( MENU_VIRTUAL_CHANNELS ) ) );
+	menus->AddItem( menu );
+
+
+		// Create the edit menu
+	menu = new BMenu( "Play" );
+	menu->AddItem( pauseMenu = new CQuickKeyMenuItem( "Pause", new BMessage( MENU_PAUSE ), B_SPACE, "Space" ) );
+	menu->AddSeparatorItem();
+	menu->AddItem( playMenu = new CQuickKeyMenuItem( "Start", new BMessage( MENU_PLAY ), B_ENTER, "Enter" ) );
+	menu->AddItem( /* playSelectMenu = */ new CQuickKeyMenuItem( "Play Section", new BMessage( MENU_PLAY_SECTION ), 'p', "p" ) );
+	menu->AddSeparatorItem();
+	menu->AddItem( setSectionMenu = new BMenuItem( "Set Section", new BMessage( MENU_SET_SECTION ), 'S', B_SHIFT_KEY ) );
+	menus->AddItem( menu );
+	
+		// Create the plug-ins menu
+	menus->AddItem( plugInMenu );
+
+		// Create the edit menu
+	windowMenu = new BMenu( "Window" );
+	windowMenu->AddItem( new BMenuItem( "New Window", new BMessage( MENU_NEW_WINDOW ), 'W', B_SHIFT_KEY ) );
+	windowMenu->AddSeparatorItem();
+	windowMenu->AddItem( inspectorMenu = new BMenuItem( "", new BMessage( MENU_INSPECTOR ), 'I' ) );
+	windowMenu->AddItem( gridWindowMenu = new BMenuItem( "", new BMessage( MENU_GRIDWINDOW ), 'G' ) );
+	windowMenu->AddItem( transportMenu = new BMenuItem( "", new BMessage( MENU_TRANSPORT ), 'T' ) );
+	windowMenu->AddSeparatorItem();
+	menus->AddItem( windowMenu );
+
+		// Add the menus
+	AddChild( menus );
+
+		// Adjust UI coords for menu bar size.
+	frame.OffsetTo( B_ORIGIN );
+	Lock();
+	frame.top = menus->Frame().bottom + 1;
+	Unlock();
+
+		// Add the left tool area.
+	leftToolArea = new CBorderView(BRect(0.0, frame.top, ToolArea_Width, frame.bottom + 2 ),
+								   "", B_FOLLOW_TOP_BOTTOM, B_WILL_DRAW,
+								   0, CBorderView::BEVEL_BORDER);
+	AddChild(leftToolArea);
+	leftToolArea->SetViewColor(220, 220, 220, 255);
+	
+		// Add the track list.
+	yPos = frame.bottom - 100.0 - 14.0;
+	trackList = new CTrackListView(
+		&inDocument, BRect( 4.0, 2.0, ToolArea_Width - 5.0, yPos ),
+		NULL, B_SINGLE_SELECTION_LIST, B_FOLLOW_ALL );
+	trackList->SetInvocationMessage( new BMessage( TrackEdit_ID ) );
+	trackList->SetColumnClickMessage( new BMessage( 'tClk' ) );
+	trackList->SetSelectionMessage( new BMessage( 'tSel' ) );
+	trackList->StayFocused( false );
+
+	typeColumn = new CStringColumnField( *trackList, 28,  0, "Type" );
+	nameColumn = new CStringColumnField( *trackList, 10, 1, "Name" );
+	nameColumn->SetAlignment( B_ALIGN_LEFT );
+	nameColumn->SetDraggable( true );
+	new CCheckmarkColumnField		( *trackList, 12, 0, "M" );
+	new CCheckmarkColumnField		( *trackList, 12, 0, "S" );
+	new CCheckmarkColumnField		( *trackList, 12, 0, "R" );		// Record
+	
+	leftToolArea->AddChild( trackList );
+	
+	yPos += 3;
+
+	toolBar = new CToolBar(	BRect( 4.0, yPos, 83, yPos + 24.0 ),
+							new BMessage( ToolBar_ID ),
+							BPoint( 24.0, 24.0 ),
+							false,
+							B_FOLLOW_LEFT | B_FOLLOW_BOTTOM,
+							B_WILL_DRAW );
+	toolBar->SetTarget( (CDocWindow *)this );
+
+	toolBar->AddTool( TOOL_GRID, true, LoadImage( gridToolImage, GridTool_Image ) );
+	toolBar->AddSeperator();
+
+	toolBar->AddTool( TOOL_SELECT, false, LoadImage( arrowToolImage, ArrowTool_Image ) );
+	toolBar->ExcludeTool( TOOL_SELECT, 0 );
+
+	toolBar->AddTool( TOOL_ERASE, false, LoadImage( eraserToolImage, EraserTool_Image ) );
+	toolBar->ExcludeTool( TOOL_ERASE, 0 );
+	toolBar->EnableTool( TOOL_ERASE, false );
+
+	toolBar->Select( TOOL_GRID, true, false );
+	toolBar->Select( TOOL_SELECT, true, false );
+
+	leftToolArea->AddChild( toolBar );
+	toolBar->SetViewColor( B_TRANSPARENT_32_BIT );
+
+	eventPalette = new CDragPalette(	BRect( 	84.0, yPos, ToolArea_Width - 5.0, yPos + 24.0 ),
+								"DraggableEvents",
+								new BMessage( 'evdr' ),
+								B_FOLLOW_LEFT | B_FOLLOW_BOTTOM,
+								B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
+	eventPalette->AddIcon( LoadImage( metroToolImage, MetrolTool_Image ) );
+	eventPalette->AddIcon( LoadImage( programToolImage, ProgramTool_Image ) );
+	eventPalette->AddIcon( LoadImage( timeSigToolImage, TimeSigTool_Image ) );
+	eventPalette->AddIcon( LoadImage( textToolImage, TextTool_Image ) );
+	leftToolArea->AddChild( eventPalette );
+	yPos += 28.0;
+	
+	BStringView *stv;
+
+	stv = new BStringView( BRect( 4.0, yPos, 80, yPos + 16.0 ), "", "Event Count:", B_FOLLOW_LEFT | B_FOLLOW_BOTTOM );
+	stv->SetAlignment( B_ALIGN_RIGHT );
+	leftToolArea->AddChild( stv );
+	eventCount = new CTextDisplay(	BRect( 84.0, yPos, ToolArea_Width - 5.0, yPos + 16.0 ),
+								"Event Count", true, B_FOLLOW_LEFT | B_FOLLOW_BOTTOM );
+	eventCount->SetAlignment( B_ALIGN_LEFT );
+	leftToolArea->AddChild( eventCount );
+
+	yPos += 20;
+	stv = new BStringView( BRect( 4.0, yPos, 80, yPos + 16.0 ), "", "Channels Used:", B_FOLLOW_LEFT | B_FOLLOW_BOTTOM );
+	stv->SetAlignment( B_ALIGN_RIGHT );
+	leftToolArea->AddChild( stv );
+	channelsUsed = new CTextDisplay(	BRect( 84.0, yPos, ToolArea_Width - 5.0, yPos + 16.0 ),
+									"Channels Used", true, B_FOLLOW_LEFT | B_FOLLOW_BOTTOM );
+	channelsUsed->SetAlignment( B_ALIGN_LEFT );
+	leftToolArea->AddChild( channelsUsed );
+	
+	yPos += 20;
+	
+	BBox *bb;
+	bb = new BBox( BRect( -2.0, yPos, ToolArea_Width + 4.0, yPos + 1.0 ), NULL, B_FOLLOW_LEFT | B_FOLLOW_BOTTOM, B_WILL_DRAW );
+	leftToolArea->AddChild( bb );
+	yPos += 3;
+	
+	BMenu		*clockMenu = new BPopUpMenu( "Musical Time" );
+	clockMenu->AddItem( new BMenuItem( "Musical Time",	new BMessage( 'cMet' ) ) );
+	clockMenu->AddItem( new BMenuItem( "Real Time",		new BMessage( 'cRea' ) ) );
+	BMenuField	*clockButton = new BMenuField(	BRect( 10.0, yPos, ToolArea_Width - 5.0, yPos + 14.0 ),
+											"ViewAs", "View time as:",
+											clockMenu,
+											B_FOLLOW_LEFT | B_FOLLOW_BOTTOM, B_WILL_DRAW );
+	leftToolArea->AddChild( clockButton );
+	clockButton->SetDivider( 72.0 );
+
+	BuildTrackList();
+
+	frame.bottom		-= B_H_SCROLL_BAR_HEIGHT;
+	frame.left		+= ToolArea_Width + 1.0;
+
+	CreateFrames( frame, (CTrack *)inDocument.FindTrack( 1 ) );
+
+		// Now, create some strips for test purposes
+	CStripView		*sv;
+	CAssemblyRulerView	*realRuler;
+	CScrollerTarget	*oldRuler = stripFrame->Ruler();
+
+	sv = new CTrackCtlStrip(	*this, *stripFrame, frame, (CEventTrack *)inDocument.FindTrack( 1 ), "Metrical" );
+	stripFrame->AddChildView( sv->TopView(), 50 );
+
+	realRuler = new CAssemblyRulerView(
+		*this,
+		*stripFrame,
+		(CEventTrack *)inDocument.FindTrack( (int32)0 ),
+		BRect(	0.0, 0.0, frame.Width() - 14, Ruler_Height - 1 ),
+		(char *)NULL,
+		B_FOLLOW_LEFT_RIGHT,
+		B_WILL_DRAW );
+	realRuler->ShowMarkers( false );
+	stripFrame->SetRuler( oldRuler );
+
+	CEventEditor *ee;
+	ee = new CTrackCtlStrip(	*this, *stripFrame, frame, (CEventTrack *)inDocument.FindTrack( (int32)0 ), "Real" );
+	ee->SetRuler( realRuler );
+	stripFrame->AddChildView( ee->TopView(), 8 );
+}
+
+CAssemblyWindow::~CAssemblyWindow()
+{
+	DeleteListItems( trackList );
+}
+
+void CAssemblyWindow::BuildTrackList()
+{
+	int32		ct = trackList->CountItems(),
+				i;
+	int32		sel = trackList->CurrentSelection();
+	
+	trackList->DeselectAll();
+	
+	for (i = 0; i < ct; i++)
+	{
+		CTrackListItem	*tli = (CTrackListItem *)trackList->ItemAt( i );
+		
+		delete tli;
+	}
+	trackList->MakeEmpty();
+
+	int32		nTracks = Document().CountTracks();
+	
+	for (i = 0; i < nTracks; i++)
+	{
+		CTrack	*tk = Document().TrackAt( i );
+		
+		if (!tk->Deleted())
+		{
+			trackList->AddItem( new CTrackListItem( tk ) );
+		}
+	}
+	trackList->Select( sel );
+	trackList->Invalidate();
+}
+
+void CAssemblyWindow::MessageReceived( BMessage* theMessage )
+{
+	CMeVDoc			&doc = (CMeVDoc &)Document();
+	CMeVApp			&app = *(CMeVApp *)be_app;
+	CTrackListItem		*tli;
+	int32			sel;
+
+	switch(theMessage->what) {
+	case ToolBar_ID:
+		int32		group;
+		int32		tool;
+		int32		state;
+		
+		theMessage->FindInt32( "tool", &tool );
+		theMessage->FindInt32( "state", &state );
+		if (theMessage->FindInt32( "group", &group ) == B_OK)
+		{
+			if (group >= 0 && group < (sizeof(toolStates)/sizeof(toolStates[0])))
+				toolStates[ group ] = tool;
+		}
+		else if (tool == TOOL_GRID)
+		{
+			Track()->EnableGridSnap( state );
+		}
+		break;
+		
+	case TrackEdit_ID:
+
+		sel = trackList->CurrentSelection();
+		if (sel >= 0)
+		{
+			tli = (CTrackListItem *)trackList->ItemAt( sel );
+			if (tli != NULL)
+			{
+				CLinearWindow *window;
+	
+				window = new CLinearWindow(	UScreenUtils::StackOnScreen( 540, 370 ),
+											doc,
+											(CEventTrack *)tli->RowData() );
+				window->Show();
+			}
+		}
+		break;
+		
+	case 'tSel':
+		ShowTrackInfo();
+		break;
+
+	case 'tClk':
+		int32		col, row;
+		CTrack		*tk;
+		
+		ShowTrackInfo();
+
+		if (theMessage->FindInt32( "cell", 0, &row ) != B_OK) break;
+		if (theMessage->FindInt32( "cell", 1, &col ) != B_OK) break;
+
+		tli = (CTrackListItem *)trackList->ItemAt( row );
+		if (row < 0 || tli == NULL) break;
+
+		tk = (CTrack *)tli->RowData();
+
+		if (col == 1)
+		{
+			BRect			r, r2;
+			BMessage			dragMsg( MeVDragMsg_ID );
+			r = trackList->ItemFrame( row );
+			BPoint			m;
+			uint32			b;
+			const char		*str = tk->Name();
+			
+			dragMsg.AddInt32( "Type", DragTrack_ID );
+			dragMsg.AddInt32( "TrackID", tk->GetID() );
+			dragMsg.AddInt32( "Index", row );
+			dragMsg.AddPointer( "Document", &doc );
+
+			r.left += typeColumn->Width() + 1;
+			r.right = r.left + nameColumn->Width();
+			
+			trackList->GetMouse( &m, &b );
+			
+			r2 = r;
+			r2.OffsetTo( B_ORIGIN );
+
+			BBitmap			*bMap;			// Drag and drop bitmap
+			BView			*view;
+		
+			bMap = new BBitmap( r2, B_COLOR_8_BIT, true, true );
+			view = new BView( r2, NULL, 0, 0 );
+			bMap->AddChild( view );
+			bMap->Lock();
+
+			view->SetHighColor( 128, 128, 255 );
+			view->FillRect( r2 );	
+			view->SetHighColor( 192, 192, 255 );
+			view->FillRect( BRect( r2.left, r2.top, r2.right - 1, r2.top ) );	
+			view->FillRect( BRect( r2.left, r2.top, r2.left, r2.bottom - 1 ) );
+
+			view->SetHighColor( 64, 64, 192 );
+			view->FillRect( BRect( r2.right, r2.top + 1, r2.right, r2.bottom ) );	
+			view->FillRect( BRect( r2.left + 1, r2.bottom, r2.right, r2.bottom ) );
+
+			view->SetHighColor( 0, 0, 0 );
+			view->SetLowColor( 128, 128, 255 );
+// 		int32 y = (r2.top + r2.bottom - list.fh.descent + list.fh.ascent) / 2;
+			view->DrawString( str, BPoint( r2.left + 3, 10 ) );
+
+			bMap->Unlock();
+			bMap->RemoveChild( view );
+			delete view;
+			
+			trackList->DragMessage( &dragMsg, bMap, BPoint( m.x - r.left, m.y - r.top ), NULL );
+		}
+		else if (col == 2)
+		{
+				// Toggle mute option
+			tk->SetMuted( !tk->Muted() );
+		}
+		
+		break;
+		
+	case 'evdr':			// drag a new event
+
+		int32		index;
+		int32		eventType;
+		BBitmap		*bMap;			// Drag and drop bitmap
+		
+		index = eventPalette->Value();
+		
+		switch (index) {
+		case 0:
+			bMap = LoadImage( metroToolImage, MetrolTool_Image );
+			eventType = EvtType_Tempo;
+			break;
+
+		case 1:
+			bMap = LoadImage( programToolImage, ProgramTool_Image );
+			eventType = EvtType_ProgramChange;
+			break;
+
+		case 2:
+			bMap = LoadImage( timeSigToolImage, TimeSigTool_Image );
+			eventType = EvtType_TimeSig;
+			break;
+
+		default:
+			bMap = LoadImage( textToolImage, TextTool_Image );
+			eventType = EvtType_Text;
+			break;
+		}
+
+		if (bMap != NULL)
+		{
+			BRect		br( bMap->Bounds() );
+			BPoint		hSpot( (br.left + br.right) / 2, (br.top + br.bottom) / 2 );
+			BMessage		dragMsg( MeVDragMsg_ID );
+			BBitmap		*bCopy = new BBitmap( br, bMap->ColorSpace(), false, true );
+			
+			bCopy->SetBits( bMap->Bits(), bMap->BitsLength(), 0, bMap->ColorSpace() );
+
+			dragMsg.AddInt32( "Type", DragEvent_ID );
+			dragMsg.AddInt32( "EventType", eventType );
+			dragMsg.AddPointer( "Document", &doc );
+
+			eventPalette->DragMessage( &dragMsg, bCopy, hSpot, NULL );
+		}
+		break;
+
+	case 'cMet':
+		stripFrame->SetFrameClockType( ClockType_Metered );
+		break;
+
+	case 'cRea':
+		stripFrame->SetFrameClockType( ClockType_Real );
+		break;
+		
+	case MENU_UNDO:
+		Track()->Undo();
+		break;
+
+	case MENU_REDO:
+		Track()->Redo();
+		break;
+
+	case B_CUT:
+		if (CurrentFocus()) DispatchMessage( theMessage, CurrentFocus() );
+		else { /* REM: Add CUT code */ };
+		break;
+
+	case B_COPY:
+		if (CurrentFocus()) DispatchMessage( theMessage, CurrentFocus() );
+		else { /* REM: Add CUT code */ };
+		break;
+
+	case B_PASTE:
+		if (CurrentFocus()) DispatchMessage( theMessage, CurrentFocus() );
+		else { /* REM: Add CUT code */ };
+		break;
+
+	case MENU_CLEAR:
+		ActiveTrack()->DeleteSelection();
+		doc.SetModified();
+		break;
+
+	case B_SELECT_ALL:
+		if (CurrentFocus()) DispatchMessage( theMessage, CurrentFocus() );
+		else Track()->SelectAll();
+		break;
+	
+	case MENU_NEW_WINDOW:
+		CAssemblyWindow *window;
+	
+		window = new CAssemblyWindow( UScreenUtils::StackOnScreen( 540, 300 ), doc );
+		window->Show();
+		break;
+
+	case MENU_PROGRAM_SETTINGS:
+		((CMeVApp *)be_app)->ShowPrefs();
+		break;
+
+	case MENU_MIDI_CONFIG:
+		((CMeVApp *)be_app)->ShowMidiConfig();
+		break;
+
+	case MENU_VIEW_SETTINGS:
+		ShowPrefs();
+		break;
+		
+	case MENU_VIRTUAL_CHANNELS:
+		doc.ShowWindow( CMeVDoc::VChannel_Window );
+		break;
+		
+	case MENU_CREATE_METERED_TRACK:
+			// REM: How to undo?
+	
+		doc.NewTrack( TrackType_Event, ClockType_Metered );
+		doc.NotifyUpdate( CMeVDoc::Update_AddTrack, NULL );
+		doc.SetModified();
+		break;
+
+	case MENU_CREATE_REAL_TRACK:
+			// REM: How to undo?
+	
+		doc.NewTrack( TrackType_Event, ClockType_Real );
+		doc.NotifyUpdate( CMeVDoc::Update_AddTrack, NULL );
+		doc.SetModified();
+		break;
+
+	case MENU_DELETE_TRACK:
+		
+		if ((sel = trackList->CurrentSelection()) >= 0)
+		{
+			CTrackListItem	*tli = (CTrackListItem *)trackList->ItemAt( sel );
+			CTrack			*tk = (CTrack *)tli->RowData();
+			CTrackDeleteUndoAction	*undoAction;
+			
+			undoAction = new CTrackDeleteUndoAction( tk );
+			Track()->AddUndoAction( undoAction );
+		}
+		break;
+
+	case MENU_PLAY:
+		if (CPlayerControl::IsPlaying( (CMeVDoc *)&document ))
+		{
+			CPlayerControl::StopSong( (CMeVDoc *)&document );
+			break;
+		}
+
+			// Start playing a song.
+		CPlayerControl::PlaySong(	(CMeVDoc *)&doc,
+								0, 0, LocateTarget_Real, -1,
+								SyncType_SongInternal,
+								(app.GetLoopFlag() ? PB_Loop : 0) );
+		break;
+		
+	case MENU_PLAY_SECTION:
+	
+			// Start playing a song.
+		CPlayerControl::PlaySong(
+			(CMeVDoc *)&document,
+			Track()->GetID(),
+			Track()->SectionStart(), LocateTarget_Metered,
+			Track()->SectionEnd() - Track()->SectionStart(),
+			SyncType_SongInternal,
+			(app.GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
+		break;
+		
+	case MENU_SET_SECTION:
+
+		if (Track()->SelectionType() != CTrack::Select_None)
+		{
+			Track()->SetSection( Track()->MinSelectTime(), Track()->MaxSelectTime() );
+			Track()->NotifyUpdate( CTrack::Update_Section, NULL );
+		}
+		break;
+
+		case Select_ID: {
+			bool		active = false;	
+			theMessage->FindBool( "active", 0, &active );
+			UpdateActiveSelection( active );
+			break;
+		}	
+		default: {
+			inherited::MessageReceived( theMessage );
+			break;
+		}
+	}
+}
+
+	/**	Update inspector info when we get an observer update message.
+		Overridden from the CObserver class.
+	*/
+void CAssemblyWindow::OnUpdate( BMessage *inMsg )
+{
+	int32		trackHint,
+				docHint;
+	int32		trackID;
+	
+	CTrackWindow::OnUpdate( inMsg );
+
+	if (inMsg->FindInt32( "TrackID", 0, &trackID ) != B_OK)		trackID = -1;
+	if (inMsg->FindInt32( "TrackAttrs", 0, &trackHint ) != B_OK)	trackHint = 0;
+	if (inMsg->FindInt32( "DocAttrs", 0, &docHint ) != B_OK)		docHint = 0;
+
+	if (trackHint != 0 || docHint != 0)
+	{
+		if (trackID >= 0)
+		{
+			for (int i = 0; i < trackList->CountItems(); i++)
+			{
+				CTrackListItem	*tli = (CTrackListItem *)trackList->ItemAt( i );
+				
+				if (((CTrack *)tli->RowData())->GetID() == trackID)
+				{
+					if (trackHint & (CTrack::Update_Name | CTrack::Update_Flags))
+						trackList->InvalidateItem( i );
+					
+					if (trackHint & (CTrack::Update_Summary))
+					{
+						if (i == trackList->CurrentSelection()) ShowTrackInfo();
+					}
+				}
+			}
+		}
+		
+//		if (docHint & CMeVDoc::Update_TempoMap)
+//			stripFrame->Invalidate();
+		
+		if (docHint & (CMeVDoc::Update_AddTrack|CMeVDoc::Update_DelTrack|CMeVDoc::Update_TrackOrder))
+		{
+			BuildTrackList();
+		}
+	}
+}
+
+void CAssemblyWindow::ShowTrackInfo()
+{
+	int32			sel = trackList->CurrentSelection();
+	CTrackListItem		*tli;
+	CTrack			*tk;
+	CEventTrack		*eTrk;
+
+	if (sel >= 0)
+	{
+		tli = (CTrackListItem *)trackList->ItemAt( sel );
+		if (tli != NULL)
+		{
+			tk = (CTrack *)tli->RowData();
+			
+			if ((eTrk = dynamic_cast<CEventTrack *>(tk)))
+			{
+				char			text[ 64 ];
+				int			length = 0,
+							run = 0;
+				
+				sprintf( text, "%ld", eTrk->CountItems() );
+				eventCount->SetText( text );
+				
+				strcpy( text, "None" );
+				
+				for (int i = 0; i < Max_VChannels + 1; i++)
+				{
+					if (eTrk->IsChannelUsed( i ) || i >= Max_VChannels)
+					{
+						run++;
+					}
+					else if (run > 0)
+					{
+						if (length > 0)		text[ length++ ] = ',';
+
+						if (run == 1)		length += sprintf( &text[ length ], "%d", i );
+						else if (run == 2)	length += sprintf( &text[ length ], "%d,%d", i - 1, i );
+						else				length += sprintf( &text[ length ], "%d-%d", i - run + 1, i );
+
+						run = 0;
+	
+						if (length > 50)
+						{
+							sprintf( text, "Many..." );
+							break;
+						}
+					}
+				}
+
+				channelsUsed->SetText( text );
+				return;
+			}
+		}
+	}
+	
+	eventCount->SetText( "" );
+	channelsUsed->SetText( "" );
+}
+
+void CAssemblyRulerView::Draw( BRect updateRect )
+{
+	CEventTrack	*track = (CEventTrack *)subject;
+	TClockType	clockType = track->ClockType();
+	long			startTime = frame.ViewCoordsToTime( updateRect.left - 48.0, clockType );
+	if (startTime < 0) startTime = 0;
+
+	CSignatureMap::Iterator		timeIter( track->SigMap(), startTime );
+	long			time;
+	BRect		r = Bounds();
+	bool			major;
+// int32		majorTime = timeIter.MajorUnitTime();
+	int32		majorTime = track->SigMap().entries->sigMajorUnitDur;
+	double		majorXStep = frame.TimeToViewCoords( majorTime, clockType );
+	int32		steps = 1;
+	
+
+	while (majorXStep < 24)
+	{
+		if (steps == 2) steps = 5;
+		else steps *= 2;
+		majorXStep = frame.TimeToViewCoords( majorTime * steps, clockType );
+	}
+	
+	SetHighColor( 255, 255, 220 );
+	FillRect( BRect( updateRect.left, r.top, updateRect.right, r.bottom - 1 ) );
+
+	SetHighColor( 0, 0, 0 );
+	FillRect( BRect( updateRect.left, r.bottom, updateRect.right, r.bottom ) );
+	
+	for (time = timeIter.First( major ); ; time = timeIter.Next( major ) )
+	{
+		double		x;
+		
+		x = frame.TimeToViewCoords( time, clockType );
+		if (x > updateRect.right) break;
+
+		if (major)
+		{
+			if (timeIter.MajorCount() % steps) continue;
+			SetHighColor( 160, 160, 140 );
+		}
+		else if (steps > 1)	continue;
+		else					SetHighColor( 210, 210, 180 );
+		
+		if (x > 0.0)
+		{
+			StrokeLine(	BPoint( x, updateRect.top ),
+						BPoint( x, updateRect.bottom ) );
+		}
+	}
+
+	CSignatureMap::Iterator		timeIter2( track->SigMap(), startTime );
+
+	SetHighColor( 0, 0, 0 );
+
+	for (time = timeIter2.First( major ) ;
+		 ;	
+		 time = timeIter2.Next( major ) )
+	{
+		double		x;
+		
+		x = frame.TimeToViewCoords( time, clockType );
+		if (x > updateRect.right) break;
+
+		if (major && !(timeIter2.MajorCount() % steps))
+		{
+			char		str[ 16 ];
+		
+			if (track->ClockType() == ClockType_Metered)
+				sprintf( str, "%02ld", timeIter2.MajorCount() );
+			else sprintf( str, "%02ld:00", timeIter2.MajorCount() );
+
+			DrawString( str, BPoint( x + 4, 9 ) );
+		}
+	}
+	
+	if (showMarkers)
+	{
+			// Now, draw the track section markers...
+		double	x;
+	
+		SetDrawingMode( B_OP_OVER );
+		x = frame.TimeToViewCoords( track->SectionStart(), clockType );
+		DrawBitmap( sectionMarkerImage, BPoint( x - 4.0, 0.0 ) );
+
+		x = frame.TimeToViewCoords( track->SectionEnd(), clockType );
+		DrawBitmap( sectionMarkerImage, BPoint( x - 4.0, 0.0 ) );
+		SetDrawingMode( B_OP_COPY );
+	}
+}
+
+void CAssemblyRulerView::MouseDown( BPoint point )
+{
+	CEventTrack	*track = (CEventTrack *)subject;
+	ulong		buttons;
+	int32		markers[ 2 ];
+	int32		i,
+				index = -1;
+	double		x;
+	
+	if (!showMarkers) return;
+	
+	markers[ 0 ] = track->SectionStart();
+	markers[ 1 ] = track->SectionEnd();
+
+		// Check if we hit a marker...
+	for (i = 0; i < 2; i++)
+	{
+		x = frame.TimeToViewCoords( markers[ i ], track->ClockType() );
+		if (point.x >= x - 4.0 && point.x <= x + 4.0)
+		{
+			index = i;
+			break;
+		}
+	}
+	
+	if (index >= 0)
+	{
+		do
+		{
+			GetMouse( &point, &buttons, TRUE );
+			
+			int32	time = frame.ViewCoordsToTime( point.x, track->ClockType() );
+			
+			if (track->GridSnapEnabled())
+			{
+				int32	majorUnit,
+						extraTime;
+
+				track->SigMap().DecomposeTime( time, majorUnit, extraTime );
+	
+				time += DataSnapNearest( extraTime, 0, track->TimeGridSize() ) - extraTime;
+			}
+			
+			if (time < 0) time = 0;
+			
+			if (time != markers[ index ])
+			{
+				x = frame.TimeToViewCoords( markers[ index ], track->ClockType() );
+				Invalidate( BRect( x - 4.0, 0.0, x + 5.0, 10 ) );
+
+				markers[ index ] = time;
+				track->SetSection( markers[ 0 ], markers[ 1 ] );
+
+				x = frame.TimeToViewCoords( markers[ index ], track->ClockType() );
+				Invalidate( BRect( x - 4.0, 0.0, x + 5.0, 10 ) );
+			}
+
+				// Implement auto-scrolling (horizontal for frame)
+			BRect	r( Bounds() );
+			if (point.x > r.right)
+			{
+				frame.ScrollBy(	MIN( (point.x - r.right)/4, 10.0 ),
+								B_HORIZONTAL );
+			}
+			else if (point.x < r.left)
+			{
+				frame.ScrollBy(	MAX( (point.x - r.left)/4, -10.0 ),
+								B_HORIZONTAL );
+			}
+			
+			Window()->UpdateIfNeeded();
+			snooze(20 * 1000);
+		}
+		while (buttons) ;
+	}
+	
+	track->NotifyUpdate( CTrack::Update_Section, this );
+}
