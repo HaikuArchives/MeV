@@ -53,7 +53,9 @@
  *		General cleanup in preparation for initial SourceForge checkin
  * ---------------------------------------------------------------------
  * To Do:
- *
+ * -The communication between CPlayerControl and Player is based on the ports setup by
+ * the original midi kit.  This should be replaced with threads or blooper.
+ * -Player should not be a BMidi object.
  * ===================================================================== */
 
 #ifndef __C_Player_H__
@@ -64,7 +66,8 @@
 #include "PlaybackThreadTeam.h"
 #include "PlayerControl.h"
 #include <midi/Midi.h>
-
+#include <MidiEndpoint.h>
+#include <MidiProducer.h>
 // ---------------------------------------------------------------------------
 // Constants
 
@@ -107,7 +110,7 @@ private:
 		ChannelState	channelStates[ 16 ];
 	};
 
-	BMidi		*ports[ Max_MidiPorts ];		// List of open midi ports
+	BMidiLocalProducer	*ports[ Max_MidiPorts ];		// List of virtual midi ports
 	PortInfo		portInfo[ Max_MidiPorts ];
 	
 	BSynth		*synth;
@@ -172,7 +175,7 @@ public:
 	
 		// Send an event directly to a hardware port. You probably shouldn't call
 		// this directly. (no locking, for one thing)
-	void SendEvent(	const Event &inEvent, uint8 inPort, uint8 inActualChannel, uint32 inTime );
+	void SendEvent(	const Event &inEvent, uint8 inPort, uint8 inActualChannel, bigtime_t inTime  );
 
 		// Launch a new track
 // BOOL launch( CTrack *track, long time, int clockType );

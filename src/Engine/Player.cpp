@@ -13,12 +13,14 @@
 #include "Player.h"
 #include "Idents.h"
 #include "MidiDeviceInfo.h"
+#include <stdio.h>
 
 // Gnu C Library
 #include <math.h>
+
 // Midi Kit
-#include <MidiPort.h>
-#include <MidiSynth.h>
+//#include <MidiPort.h>
+//#include <MidiSynth.h>
 
 const int32			maxSleep = 30;
 
@@ -166,7 +168,7 @@ CMIDIPlayer::CMIDIPlayer()
 	for (uint32 i = 0; i < Max_MidiPorts; i++)
 	{
 		ports[ i ] = NULL;
-		strcpy( portInfo[ i ].portName, "<no device>" );
+		strcpy( portInfo[ i ].portName, "" );
 		strcpy( portInfo[ i ].devString, "" );
 	}
 	
@@ -195,13 +197,13 @@ CMIDIPlayer::~CMIDIPlayer()
 	while ((team = (CPlaybackThreadTeam *)teamList.First())) delete team;
 	songTeam = wildTeam = NULL;
 
-		// Delete ports
+		// release ports
 		// REM: Commented out because code crashes...!
 	for (uint32 i = 0; i < Max_MidiPorts; i++)
 	{
-		delete ports[ i ];
+		ports[ i ]->Release();
 	}
-	delete synth;
+	//delete synth;
 }
 
 void CMIDIPlayer::Initialize()
@@ -263,7 +265,8 @@ void CMIDIPlayer::DumpChannelStates()
 
 BMidiSynth *CMIDIPlayer::NewMidiSynth()
 {
-	BMidiSynth		*s;
+printf ("new midi synth called\n");
+/*	BMidiSynth		*s;
 	status_t 		err;
 
 	synthUseCount++;
@@ -295,6 +298,7 @@ BMidiSynth *CMIDIPlayer::NewMidiSynth()
 
 		// For test purposes, let's create a test output port
 	return s;
+	*/
 }
 
 // ---------------------------------------------------------------------------
@@ -302,13 +306,14 @@ BMidiSynth *CMIDIPlayer::NewMidiSynth()
 
 void CMIDIPlayer::DeleteMidiSynth( BMidiSynth *inSynth )
 {
-	delete inSynth;
+printf("delete midi synth");
+	/*delete inSynth;
 	synthUseCount--;
 	if (synthUseCount <= 0 && synth != NULL)
 	{
 		delete synth;
 		synth = NULL;
-	}
+	}*/
 }
 
 // ---------------------------------------------------------------------------
@@ -341,11 +346,11 @@ CPlaybackThreadTeam *CMIDIPlayer::FindTeam( CMeVDoc *doc )
 void CMIDIPlayer::SendEvent(
 	const Event		&ev,
 	uint8			inPort,
-	uint8			inActualChannel,
-	uint32			inTime )
+	uchar			inActualChannel,
+	bigtime_t		inTime )
 {
-	BMidi			*port = ports[ inPort ];
-	ChannelState		*chState = &portInfo[ inPort ].channelStates[ inActualChannel ];
+	BMidiLocalProducer	*port = ports[ inPort ];
+	ChannelState	*chState = &portInfo[ inPort ].channelStates[ inActualChannel ];
 	MIDIDeviceInfo	*mdi;
 	uint8			lsbIndex;
 
@@ -358,35 +363,34 @@ void CMIDIPlayer::SendEvent(
 		// MIDI channel events:
 
 	case EvtType_Note:							// note-on event
-		port->NoteOn(	inActualChannel,
-						ev.note.pitch,
-						ev.note.attackVelocity,
-						inTime );
+		port->SprayNoteOn(inActualChannel,
+						 ev.note.pitch,
+						 ev.note.attackVelocity, (bigtime_t)inTime );
 		break;
 
 	case EvtType_NoteOff:						// note-off event 
-		port->NoteOff(	inActualChannel,
+		port->SprayNoteOff(	inActualChannel,
 						ev.note.pitch,
 						ev.note.releaseVelocity,
-						inTime );
+						(bigtime_t)inTime );
 		break;
 
 	case EvtType_ChannelATouch:					// channel aftertouch
 		if (chState->channelAfterTouch != ev.aTouch.value)
 		{
-			port->ChannelPressure(
+			port->SprayChannelPressure(
 								inActualChannel,
 								ev.aTouch.value,
-								inTime );
+								(bigtime_t)inTime );
 			chState->channelAfterTouch = ev.aTouch.value;
 		}
 		break;
 
 	case EvtType_PolyATouch:						// polyphonic aftertouch
-		port->KeyPressure(	inActualChannel,
+		port->SprayKeyPressure(	inActualChannel,
 							ev.aTouch.pitch,
 							ev.aTouch.value,
-							inTime );
+							(bigtime_t)inTime );
 		break;
 
 	case EvtType_Controller:						// controller change
@@ -399,10 +403,10 @@ void CMIDIPlayer::SendEvent(
 				// It's an 8-bit controller.
 			if (	ev.controlChange.MSB != chState->ctlStates[ ev.controlChange.controller ])
 			{
-				port->ControlChange(	inActualChannel,
+				port->SprayControlChange(	inActualChannel,
 									ev.controlChange.controller,
 									ev.controlChange.MSB,
-									inTime );
+									(bigtime_t)inTime );
 
 				chState->ctlStates[ ev.controlChange.controller ] = ev.controlChange.MSB;
 			}
@@ -413,10 +417,10 @@ void CMIDIPlayer::SendEvent(
 			if (	ev.controlChange.MSB != chState->ctlStates[ ev.controlChange.controller ]
 				&& ev.controlChange.MSB < 128)
 			{
-				port->ControlChange(	inActualChannel,
+				port->SprayControlChange(	inActualChannel,
 									ev.controlChange.controller,
 									ev.controlChange.MSB,
-									inTime );
+									(bigtime_t)inTime );
 
 				chState->ctlStates[ ev.controlChange.controller ] = ev.controlChange.MSB;
 				chState->ctlStates[ lsbIndex ] = 0;
@@ -426,10 +430,10 @@ void CMIDIPlayer::SendEvent(
 			if (	ev.controlChange.LSB != chState->ctlStates[ lsbIndex ]
 				&& ev.controlChange.LSB < 128)
 			{
-				port->ControlChange(	inActualChannel,
+				port->SprayControlChange(	inActualChannel,
 									lsbIndex,
 									ev.controlChange.LSB,
-									inTime );
+									(bigtime_t)inTime );
 
 				chState->ctlStates[ lsbIndex] = ev.controlChange.LSB;
 			}
@@ -455,16 +459,16 @@ void CMIDIPlayer::SendEvent(
 					// Both bank bytes must always be sent...
 			
 					// Send a bank change MSB message
-				port->ControlChange(	inActualChannel,
+				port->SprayControlChange(	inActualChannel,
 									0x00,
 									ev.programChange.bankMSB,
-									inTime );
+									(bigtime_t)inTime );
 
 					// Send a bank change LSB message
-				port->ControlChange(	inActualChannel,
+				port->SprayControlChange(	inActualChannel,
 									0x20,
 									ev.programChange.bankLSB,
-									inTime );
+									(bigtime_t)inTime );
 	
 					// Update the channel state
 				chState->ctlStates[ 0 ] = ev.programChange.bankMSB;
@@ -473,9 +477,9 @@ void CMIDIPlayer::SendEvent(
 		}
 		
 			// Always send a program change, regardless...
-		port->ProgramChange(	inActualChannel,
+		port->SprayProgramChange(	inActualChannel,
 							ev.programChange.program,
-							inTime );
+							(bigtime_t)inTime );
 
 		chState->program = ev.programChange.program;
 		break;
@@ -485,10 +489,10 @@ void CMIDIPlayer::SendEvent(
 			// Don't send un-needed pitch-bends
 		if (chState->pitchBendState != ev.pitchBend.targetBend)
 		{
-			port->PitchBend(		inActualChannel,
+			port->SprayPitchBend(		inActualChannel,
 								ev.pitchBend.targetBend & 0x7f,
 								ev.pitchBend.targetBend >> 7,
-								inTime );
+								(bigtime_t)inTime );
 			chState->pitchBendState = ev.pitchBend.targetBend;
 		}
 		break;
@@ -505,7 +509,7 @@ void CMIDIPlayer::SendEvent(
 		
 		if (data != NULL && size > 0 )
 		{
-			port->SystemExclusive( data, size, inTime );
+			port->SpraySystemExclusive( data, size, inTime );
 		}
 		break;
 
@@ -544,6 +548,7 @@ void CPlayerControl::InitPlayer()
 {
 	thePlayer.Initialize();
 }
+
 
 // ---------------------------------------------------------------------------
 // Audio feedback routine for user interface
@@ -813,6 +818,7 @@ void CPlayerControl::SetTempo( CMeVDoc *document, double newTempo )
 
 char *CPlayerControl::PortName(uint32 inPortIndex )
 {
+	//maybe we should be returning the name of the producer on this index.
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
 	return thePlayer.portInfo[ inPortIndex ].portName;
 }
@@ -822,8 +828,8 @@ char *CPlayerControl::PortName(uint32 inPortIndex )
 
 void CPlayerControl::SetPortName(uint32 inPortIndex, char *inPortName )
 {
+	//maybe we should be setting the name of the producer on this index.
 	CMIDIPlayer::PortInfo		*pi;
-
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return;
 	pi = &thePlayer.portInfo[ inPortIndex ];
 	strncpy( pi->portName, inPortName, sizeof( pi->portName ) );
@@ -831,73 +837,86 @@ void CPlayerControl::SetPortName(uint32 inPortIndex, char *inPortName )
 }
 	
 // ---------------------------------------------------------------------------
-// Get the port device string of the Nth port.
-
-char *CPlayerControl::PortDevice(uint32 inPortIndex )
+int32 CPlayerControl::PortDeviceID(uint32 inPortIndex)
 {
 	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
-	return thePlayer.portInfo[ inPortIndex ].devString;
-}
+	//return a bmidi producer id.
+	return (thePlayer.ports[inPortIndex]->ID());
 	
+}
+// Get the port device string of the Nth port.
+const char *CPlayerControl::PortDevice(uint32 inPortIndex )
+{
+	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
+	if (thePlayer.ports[ inPortIndex ]==NULL) return NULL;
+	return thePlayer.ports[ inPortIndex ]->Name();
+}
+bool CPlayerControl::IsDefined(uint32 inPortIndex)
+{
+	if (thePlayer.ports[inPortIndex]!=NULL) return true;
+	else return false;
+}
+int CPlayerControl::CountDefinedPorts()
+{
+	int index=0;
+	int count=0;
+	while (index<Max_MidiPorts)
+	{
+		if (thePlayer.ports[index]!=NULL)
+		{
+			count++;
+		}
+	index++;
+	}
+	return count;
+}
+bool CPlayerControl::DeleteDevice(int inPortIndex)
+{
+	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
+	if (thePlayer.ports[inPortIndex]==NULL) return 0;
+	thePlayer.ports[inPortIndex]->Release();
+	//delete? distroy...?
+	thePlayer.ports[inPortIndex]==NULL;
+}
 // ---------------------------------------------------------------------------
 // Set the port device string of the Nth port.
-
-bool CPlayerControl::SetPortDevice(uint32 inPortIndex, char *inDeviceString )
+//when called with a name, if undefined, we define.  if defined, we rename
+bool CPlayerControl::SetPortDevice(uint32 inPortIndex, char *inPortName)
 {
-	CMIDIPlayer::PortInfo		*pi;
-	BMidi					*oldPort,
-							*newPort;
-
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return false;
-
-	oldPort = thePlayer.ports[ inPortIndex ];
-
-	if (	inDeviceString == NULL
-		|| strlen( inDeviceString ) == 0
-		|| strcmp( inDeviceString, "none" ) == 0)
+	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
+	if (strcmp(inPortName,"")==0)
 	{
-			// Deleting a port...
-		delete oldPort;
-		thePlayer.ports[ inPortIndex ] = NULL;
-		pi = &thePlayer.portInfo[ inPortIndex ];
-		pi->devString[ 0 ] = '\0';
-		return true;
+		return 0;
 	}
-	else if (strcmp( inDeviceString, "synth" ) == 0)
+	if (thePlayer.ports[inPortIndex]==NULL)
 	{
-		if (dynamic_cast<BMidiSynth *>(oldPort))
-		{
-			return true;			// Nothing to do
-		}
-		
-		newPort = thePlayer.NewMidiSynth();
+		thePlayer.ports[inPortIndex]=new BMidiLocalProducer(inPortName);
+		thePlayer.ports[inPortIndex]->Register();
+		return true;
 	}
 	else
 	{
-		BMidiPort	*p = new BMidiPort;
-	
-		if (p->Open( inDeviceString ) != B_NO_ERROR)
-		{
-			delete p;
-			newPort = NULL;
-		}
-		else
-		{
-			newPort = p;
-		}
-	}
-	
-	if (newPort != NULL)
-	{
-		delete oldPort;
-		thePlayer.ports[ inPortIndex ] = newPort;
-
-		pi = &thePlayer.portInfo[ inPortIndex ];
-		strncpy( pi->devString, inDeviceString, sizeof( pi->devString ) );
-		pi->devString[ sizeof( pi->devString ) - 1 ] = '\0';
+		thePlayer.ports[inPortIndex]->SetName(inPortName);
 		return true;
 	}
-	return false;
+}
+
+bool CPlayerControl::SetPortConnect(uint32 inPortIndex, BMidiConsumer *sink )
+{
+	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
+	if (sink==NULL) return 0;
+	if (thePlayer.ports[inPortIndex]->IsConnected(sink))
+	{
+		thePlayer.ports[inPortIndex]->Disconnect(sink);
+		printf("disconnecting\n");
+		return 1;
+	}
+	else
+	{
+		thePlayer.ports[inPortIndex]->Connect(sink);
+		printf("connecting\n");
+		return 1;
+	}
 }
 	
 // ---------------------------------------------------------------------------
