@@ -19,10 +19,10 @@
 #include "QuickKeyMenuItem.h"
 #include "ResourceUtils.h"
 #include "StdEventOps.h"
+#include "StripFrameView.h"
 #include "StripView.h"
 #include "Tool.h"
 #include "ToolBar.h"
-#include "TrackEditFrame.h"
 
 // Gnu C Library
 #include <stdio.h>

@@ -3,7 +3,7 @@
  * ===================================================================== */
 
 #include "RulerView.h"
-#include "TrackEditFrame.h"
+#include "StripFrameView.h"
 
 // Support Kit
 #include <Debug.h>

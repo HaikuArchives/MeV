@@ -12,8 +12,8 @@
 #include "PlayerControl.h"
 #include "Polygon.h"
 #include "StdEventOps.h"
+#include "StripFrameView.h"
 #include "StripLabelView.h"
-#include "TrackEditFrame.h"
 
 // Support Kit
 #include <Beep.h>
