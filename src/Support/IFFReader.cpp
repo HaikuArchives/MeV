@@ -15,7 +15,8 @@ CIFFReader::CIFFReader( CAbstractReader &inReader )
 
 	Push();						// Push chunk representing overall form
 	
-	Push();						// Push next chunk to be parsed.
+	if (NextChunk() == true)	// Read overall form header
+		Push();					// Push next chunk to be parsed.
 }
 
 CIFFReader::~CIFFReader()

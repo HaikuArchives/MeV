@@ -30,6 +30,8 @@
  *		Original implementation
  *	05/15/2000	malouin
  *		Chunk headers always stored big endian
+ *	06/05/2000	malouin
+ *		Constructor reads top-level FORM chunk properly
  * ---------------------------------------------------------------------
  * To Do:
  *
