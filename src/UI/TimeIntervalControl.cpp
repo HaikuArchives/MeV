@@ -53,71 +53,71 @@ CTimeIntervalControl::CTimeIntervalControl(
 {
 	D_ALLOC(("CTimeIntervalControl::CTimeIntervalControl()\n"));
 
-	BMessage *message = NULL;
+	BMessage *msg = NULL;
 
 	// create note length menu
 	BPopUpMenu *notesMenu = new BPopUpMenu("Notes", false, false);
 	notesMenu->SetFont(be_plain_font);
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", DOUBLE_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("Double Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", DOUBLE_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("Double Note", msg,
 										 ResourceUtils::LoadImage("DoubleNote")));
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", WHOLE_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("Whole Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", WHOLE_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("Whole Note", msg,
 										 ResourceUtils::LoadImage("WholeNote")));
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", HALF_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("Half Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", HALF_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("Half Note", msg,
 										 ResourceUtils::LoadImage("HalfNote")));
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", QUARTER_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("1/4 Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", QUARTER_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("1/4 Note", msg,
 										 ResourceUtils::LoadImage("QuarterNote")));
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", EIGHTH_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("1/8 Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", EIGHTH_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("1/8 Note", msg,
 										 ResourceUtils::LoadImage("EighthNote")));
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", SIXTEENTH_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("1/16 Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", SIXTEENTH_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("1/16 Note", msg,
 										 ResourceUtils::LoadImage("SixteenthNote")));
-	message = new BMessage(BASE_DURATION_CHANGED);
-	message->AddInt32("base", THIRTY_SECOND_NOTE);
-	notesMenu->AddItem(new CIconMenuItem("1/32 Note", message,
+	msg = new BMessage(BASE_DURATION_CHANGED);
+	msg->AddInt32("base", THIRTY_SECOND_NOTE);
+	notesMenu->AddItem(new CIconMenuItem("1/32 Note", msg,
 										 ResourceUtils::LoadImage("ThirtySecondNote")));
 
 	m_toolBar = new CToolBar(Bounds(), "Time Interval");
 	m_toolBar->AddTool(new CMenuTool("Base Duration", ResourceUtils::LoadImage("EighthNote"),
 									 notesMenu, NULL, CTool::TRIGGER_MODE));
 	m_toolBar->AddSeparator();
-	message = new BMessage(MODIFIERS_CHANGED);
-	message->AddBool("tuplet", true);
-	message->AddInt32("modifier", TUPLET_3);
+	msg = new BMessage(MODIFIERS_CHANGED);
+	msg->AddBool("tuplet", true);
+	msg->AddInt32("modifier", TUPLET_3);
 	m_toolBar->AddTool(new CBitmapTool("Tuplet3", ResourceUtils::LoadImage("Tuplet3"),
-									message));
-	message = new BMessage(MODIFIERS_CHANGED);
-	message->AddBool("tuplet", true);
-	message->AddInt32("modifier", TUPLET_5);
+					   msg));
+	msg = new BMessage(MODIFIERS_CHANGED);
+	msg->AddBool("tuplet", true);
+	msg->AddInt32("modifier", TUPLET_5);
 	m_toolBar->AddTool(new CBitmapTool("Tuplet5", ResourceUtils::LoadImage("Tuplet5"),
-									message));
-	message = new BMessage(MODIFIERS_CHANGED);
-	message->AddBool("tuplet", true);
-	message->AddInt32("modifier", TUPLET_7);
+					   msg));
+	msg = new BMessage(MODIFIERS_CHANGED);
+	msg->AddBool("tuplet", true);
+	msg->AddInt32("modifier", TUPLET_7);
 	m_toolBar->AddTool(new CBitmapTool("Tuplet7", ResourceUtils::LoadImage("Tuplet7"),
-									message));
+					   msg));
 	m_toolBar->MakeRadioGroup("Tuplet3", "Tuplet7", false);
 	m_toolBar->AddSeparator();
-	message = new BMessage(MODIFIERS_CHANGED);
-	message->AddBool("dot", true);
-	message->AddInt32("modifier", SINGLE_DOT);
+	msg = new BMessage(MODIFIERS_CHANGED);
+	msg->AddBool("dot", true);
+	msg->AddInt32("modifier", SINGLE_DOT);
 	m_toolBar->AddTool(new CBitmapTool("Dot", ResourceUtils::LoadImage("Dot1"),
-									message));
-	message = new BMessage(MODIFIERS_CHANGED);
-	message->AddBool("dot", true);
-	message->AddInt32("modifier", DOUBLE_DOT);
+					   msg));
+	msg = new BMessage(MODIFIERS_CHANGED);
+	msg->AddBool("dot", true);
+	msg->AddInt32("modifier", DOUBLE_DOT);
 	m_toolBar->AddTool(new CBitmapTool("DoubleDot", ResourceUtils::LoadImage("Dot2"),
-									message));
+					   msg));
 	m_toolBar->MakeRadioGroup("Dot", "DoubleDot", false);
 	AddChild(m_toolBar);
 
@@ -143,7 +143,7 @@ CTimeIntervalControl::CTimeIntervalControl(
 	rect.right = rect.left + 14.0;
 	rect.bottom = m_durationSlider->Frame().bottom;
 	m_numSpinner = new CSpinner(rect, "Numerator", new BMessage(NUMERATOR_CHANGED),
-							  B_FOLLOW_RIGHT | B_FOLLOW_TOP);
+							    B_FOLLOW_RIGHT | B_FOLLOW_TOP);
 	AddChild(m_numSpinner);
 	m_numSpinner->SetRange(1, 64);
 	m_numSpinner->SetValue(1);

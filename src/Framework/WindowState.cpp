@@ -21,11 +21,9 @@ CAppWindow::CAppWindow(
 	const char *title,
 	window_type type,
 	uint32 flags,
-	uint32 workspaces = B_CURRENT_WORKSPACE)
+	uint32 workspaces)
 	:	BWindow(frame, title, type, flags, workspaces),
 		m_state(NULL)
-//		m_cursor(B_CURSOR_SYSTEM_DEFAULT),
-//		m_cursorHidden(false)
 {
 	D_ALLOC(("CAppWindow::CAppWindow()\n"));
 }
@@ -36,11 +34,9 @@ CAppWindow::CAppWindow(
 	const char *title,
 	window_type type,
 	uint32 flags,
-	uint32 workspaces = B_CURRENT_WORKSPACE)
+	uint32 workspaces)
 	:	BWindow(frame, title, type, flags, workspaces),
 		m_state(NULL)
-//		m_cursor(B_CURSOR_SYSTEM_DEFAULT),
-//		m_cursorHidden(false)
 {
 	D_ALLOC(("CAppWindow::CAppWindow()\n"));
 

@@ -95,6 +95,7 @@
 
 // Gnu C Library
 #include <malloc.h>
+#include <string.h>
 // Kernel Kit
 #include <OS.h>
 

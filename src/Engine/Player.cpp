@@ -447,19 +447,14 @@ void CMIDIPlayer::SendEvent(
 	bigtime_t		inTime )
 {
 	BMidiLocalProducer	*port =  inPort ;
-	
 	ChannelState	*chState = &m_portInfo[0].channelStates[ 0];
-//	ChannelState	*chState = &portInfo[0].channelStates[ inActualChannel ];
-//	BMidiLocalProducer	*port = m_ports[ inPort ];
-//	ChannelState	*chState = &m_portInfo[ inPort ].channelStates[ inActualChannel ];
-
-	MIDIDeviceInfo	*mdi;
+	MIDIDeviceInfo	*mdi = NULL;
 	uint8			lsbIndex;
 
-	if (port == NULL) return;
+	if (port == NULL)
+		return;
 
-		// Attempt to send the event.
-
+	// Attempt to send the event.
 	switch (ev.Command()) {
 
 		// MIDI channel events:

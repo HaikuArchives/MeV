@@ -721,9 +721,9 @@ CTrackWindow::CreateFileMenu(
 
 	menu->AddItem(item = new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS)));
 	item->SetTarget(be_app);
-	menu->AddItem(item = new BMenuItem("Help..", NULL));
-	item->SetEnabled(false);
-	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT), 0));
+	menu->AddItem(item = new BMenuItem("Help..", new BMessage(MENU_HELP)));
+	item->SetTarget(be_app);
+	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT)));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));
 	menuBar->AddItem(menu);

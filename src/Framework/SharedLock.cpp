@@ -60,7 +60,6 @@ CSharedLock::Acquire(
 		{
 			IsLocked();
 			m_eOwner = current;
-			ASSERT(false);
 		}
 		if (status != B_NO_ERROR)
 			return false;
@@ -75,7 +74,6 @@ CSharedLock::Acquire(
 		{
 			IsLocked();
 			m_eOwner = current;
-			ASSERT(false);
 		}
 		if (status != B_NO_ERROR)
 			return false;

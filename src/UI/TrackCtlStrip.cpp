@@ -1743,7 +1743,9 @@ CTrackCtlStrip::ConstructEvent(
 		}
 		case EvtType_Tempo:
 		{
-			if (Track()->GetID() < 2)
+			if (Track()->GetID() > 1)
+				// don't support tempo changes anywhere but in the master 
+				// tracks
 				return false;
 			m_newEv.SetVChannel(0);
 			m_newEv.tempo.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));

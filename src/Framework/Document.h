@@ -133,7 +133,7 @@ public:							// Operations
 									CDocWindow *window);
 	CDocWindow *				WindowAt(
 									int32 index) const
-								{ return static_cast<CDocWindow *>(m_windows.ItemAt(index)); }
+								{ return (CDocWindow *)m_windows.ItemAt(index); }
 
 	// Call this to save the document to it's current location
 	void						Save();

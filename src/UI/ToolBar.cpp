@@ -7,6 +7,8 @@
 #include "StdBevels.h"
 #include "Tool.h"
 
+// Gnu C Library
+#include <string.h>
 // Application Kit
 #include <Looper.h>
 // Interface Kit

@@ -365,11 +365,13 @@ CStripFrameView::ReadState(
 		BMessage stripMsg;
 
 		// read type string
+		char buffer[256];
+		BString str;
 		int32 length = 0;
 		reader >> length;
-		char str[length + 1];
-		reader.MustRead(str, length);
-		str[length] = '\0';
+		reader.MustRead(buffer, length);
+		buffer[length] = '\0';
+		str.SetTo(buffer);
 		stripMsg.AddString("type", str);
 
 		// read proportion
@@ -408,8 +410,9 @@ CStripFrameView::WriteState(
 		BString str;
 		stripMsg.FindString("type", &str);
 		writer << str.CountChars();
-		char buffer[str.CountChars() + 1];
-		str.CopyInto(buffer, 0, str.CountChars() + 1);
+		char buffer[256];
+		str.CopyInto(buffer, 0, str.CountChars());
+		buffer[str.CountChars()] = '\0';
 		writer.MustWrite(buffer, str.CountChars());
 
 		// write proportion

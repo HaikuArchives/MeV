@@ -33,8 +33,8 @@ CEventEditor::CEventEditor(
 	CStripFrameView	&frame,
 	BRect rect,
 	const char *name,
-	bool makeScroller = false,
-	bool makeMagButtons = false)
+	bool makeScroller,
+	bool makeMagButtons)
 	:	CStripView(frame, rect, name, makeScroller, makeMagButtons),
 		CObserver(looper, frame.Track()),
 		m_track((CEventTrack *)frame.Track()),
@@ -53,8 +53,8 @@ CEventEditor::CEventEditor(
 	BRect rect,
 	CEventTrack *track,
 	const char *name,
-	bool makeScroller = false,
-	bool makeMagButtons = false)
+	bool makeScroller,
+	bool makeMagButtons)
 	:	CStripView(frame, rect, name, makeScroller, makeMagButtons),
 		CObserver(looper, track),
 		m_track(track),
