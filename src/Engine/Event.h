@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -30,6 +31,10 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *  08/31/2000	malouin
+ *		Rearranged sysEx and text event data so extended data pointer
+ *		is not clobbered by task ID when event is added to event stack.
+ *		Added missing textTypes constants.
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -196,7 +201,7 @@ typedef enum E_EventAttribute {
 	EvAttr_TSigBeatSize,							// Timesig denominator
 	
 		// Attributes for specific controller types
-	EvAttr_BankSelect,								// Bank select controller value
+	EvAttr_BankSelect,								// Bank select controller value	
 	EvAttr_Modulation,								// Modulation value
 	EvAttr_BreathController,							// Breath controller
 	EvAttr_FootController,							// Foot Controller
@@ -230,10 +235,13 @@ typedef enum E_EventAttribute {
 } TEventAttribute;
 
 enum textTypes {
-	TextType_Comment,							// just text
+	TextType_Comment = 1,						// just text
+	TextType_Copyright,							// copyright notice
+	TextType_TrackName,							// sequence/track name
+	TextType_InstrumentName,					// instrument name
 	TextType_Lyric,								// lyric
 	TextType_Marker,								// "First Verse", etc.
-	TextType_Cue,									// Cue point description
+	TextType_Cue									// Cue point description
 												// (can convert to anchor...)
 };
 
@@ -449,30 +457,24 @@ public:
 
 		struct {
 			int32		start;					// program change time
+			uint32		duration;				// not used
 			ExtDataPtr	extData;				// pointer to sysex buffer
 			uint8		command,				// sysex cmd
 						vChannel,				// virtual channel to send to
 						data1,					// 1st data byte (not used)
-						vPos,					// vertical position
-						data3,					// 3rd data byte (not used)
-						data4,					// 4th data byte (not used)
-						data5,					// 5th data byte (not used)
-						data6;					// 6th data byte (not used)
+						vPos;					// vertical position
 						BMidiLocalProducer		*actualPort;	
 		
 		} sysEx;
 
 		struct {
 			int32		start;					// program change time
-			ExtDataPtr	extData;				// pointer to text buffer
+			uint32		duration;				// not used
+			ExtDataPtr	extData;				// pointer to null-terminated text buffer
 			uint8		command,				// sysex cmd
 						vChannel,				// virtual channel to send to
 						textType,				// type of text (lyric, cue, etc)
-						vPos,					// vertical position
-						data3,					// 3rd data byte (not used)
-						data4,					// 4th data byte (not used)
-						data5,					// 5th data byte (not used)
-						data6;					// 6th data byte (not used)
+						vPos;					// vertical position
 						BMidiLocalProducer		*actualPort;	
 		
 		} text;
