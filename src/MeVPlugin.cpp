@@ -367,7 +367,7 @@ MeVTrackRef::MeVTrackRef()
 
 MeVTrackRef::~MeVTrackRef()
 {
-	((CTrack *)data)->Unlock(/*Lock_Exclusive*/);
+	((CTrack *)data)->Unlock( Lock_Exclusive );
 	CRefCountObject::Release( (CTrack *)data );
 }
 

@@ -38,7 +38,7 @@
 #ifndef __C_Observer_H__
 #define __C_Observer_H__
 
-#define USE_SHARED_LOCKS	0
+#define USE_SHARED_LOCKS	1
 
 #include "Undo.h"
 #include "RefCount.h"
