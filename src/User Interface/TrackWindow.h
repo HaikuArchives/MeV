@@ -30,9 +30,11 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *  05/19/2000	dwalton
+ *		Quick fix of annoying seg-fault during MenuBeginning
  * ---------------------------------------------------------------------
  * To Do:
- *
+ * Further investigate menubeginning no-item seg-fault bug. 
  * ===================================================================== */
 
 #ifndef __C_TrackWindow_H__

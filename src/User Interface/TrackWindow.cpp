@@ -94,8 +94,11 @@ CTrackWindow::MenusBeginning()
 		{
 			itemLabel << " " << description;
 		}
-		item->SetLabel(itemLabel.String());
-		item->SetEnabled(true);
+		if (item)
+		{
+			item->SetLabel(itemLabel.String());
+			item->SetEnabled(true);
+		}
 	}
 	else if (item)
 	{
@@ -114,10 +117,13 @@ CTrackWindow::MenusBeginning()
 		{
 			itemLabel << " " << description;
 		}
-		item->SetLabel(itemLabel.String());
-		item->SetEnabled(true);
+		if (item)
+		{
+			item->SetLabel(itemLabel.String());
+			item->SetEnabled(true);
+		}
 	}
-	else
+	else if (item)
 	{
 		item->SetLabel("Redo");
 		item->SetEnabled(false);
@@ -125,16 +131,18 @@ CTrackWindow::MenusBeginning()
 	
 	// Set up Clear menu
 	item = KeyMenuBar()->FindItem("Clear");
-	item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
+	if (item)
+	{
+		item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
 
 	// Set up Window menu
-	item = KeyMenuBar()->FindItem("Show Event Inspector");
-	item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->Inspector());
-	item = KeyMenuBar()->FindItem("Show Grid Window");
-	item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->GridWindow());
-	item = KeyMenuBar()->FindItem("Show Transport Controls");
-	item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->TransportWindow());
-
+		item = KeyMenuBar()->FindItem("Show Event Inspector");
+		item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->Inspector());
+		item = KeyMenuBar()->FindItem("Show Grid Window");
+		item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->GridWindow());
+		item = KeyMenuBar()->FindItem("Show Transport Controls");
+		item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->TransportWindow());
+	}
 //	plugInMenuInstance.CheckMenusChanged();
 
 	CDocWindow::MenusBeginning();
