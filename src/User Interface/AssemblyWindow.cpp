@@ -813,9 +813,9 @@ CAssemblyWindow::AddMenuBar()
 	windowMenu = new BMenu("Window");
 	windowMenu->AddItem(new BMenuItem("New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
 	windowMenu->AddSeparatorItem();
-	windowMenu->AddItem(inspectorMenu = new BMenuItem("", new BMessage(MENU_INSPECTOR), 'I'));
-	windowMenu->AddItem(gridWindowMenu = new BMenuItem("", new BMessage(MENU_GRIDWINDOW), 'G'));
-	windowMenu->AddItem(transportMenu = new BMenuItem("", new BMessage(MENU_TRANSPORT), 'T'));
+	windowMenu->AddItem(new BMenuItem("Show Event Inspector", new BMessage(MENU_INSPECTOR), 'I'));
+	windowMenu->AddItem(new BMenuItem("Show Grid Window", new BMessage(MENU_GRIDWINDOW), 'G'));
+	windowMenu->AddItem(new BMenuItem("Show Transport Controls", new BMessage(MENU_TRANSPORT), 'T'));
 	windowMenu->AddSeparatorItem();
 	menus->AddItem(windowMenu);
 

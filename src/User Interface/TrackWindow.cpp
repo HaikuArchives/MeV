@@ -24,8 +24,15 @@
 #include <MenuBar.h>
 // Support Kit
 #include <Debug.h>
+#include <String.h>
 
-	// CTrackWindow stuff...
+// Debugging Macros
+#define D_ALLOC(x) //PRINT (x)			// Constructor/Destructor
+#define D_MESSAGE(x) //PRINT (x)		// MessageReceived()
+#define D_INTERNAL(x) //PRINT (x)		// Internal Operations
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
 
 CTrackWindow::CTrackWindow(
 	BRect frame,
@@ -33,46 +40,360 @@ CTrackWindow::CTrackWindow(
 	CEventTrack *inTrack)
 	:	CDocWindow(frame, (CDocument &)inDocument),
 		CObserver(*this, &inDocument),
-		prefsWinState(BRect(40, 40, 500, 300))
+		stripFrame(NULL),
+		stripScroll(NULL),
+		trackOp(NULL),
+		newEventType(EvtType_Count),
+		newEventDuration(Ticks_Per_QtrNote * 4),
+		prefsWinState(BRect(40.0, 40.0, 500.0, 300.0))
 {
+	D_ALLOC(("TrackWindow::TrackWindow()\n"));
+
 	track = inTrack;
 	track->Acquire();
-	trackOp = NULL;
-	stripFrame = NULL;
-	stripScroll = NULL;
-	newEventType = EvtType_Count;
-	newEventDuration = Ticks_Per_QtrNote * 4;
 	
-	BMessage		*trackMsg = new BMessage( '0000' );
-	trackMsg->AddInt32( "TrackID", track->GetID() );
-	trackMsg->AddInt32( "DocumentID", (int32)&inDocument );
+	BMessage *trackMsg = new BMessage('0000');
+	trackMsg->AddInt32("TrackID", track->GetID());
+	trackMsg->AddInt32("DocumentID", (int32)&inDocument);
 
-//	plugInMenu = new BMenu( "Filters" );
-//	plugInMenu->AddItem( new BMenuItem( "Event Operators...", new BMessage( 'oper' ) ) );
-//	plugInMenu->AddSeparatorItem();
-//	plugInMenuInstance.SetBaseMenu( plugInMenu );
-//	plugInMenuInstance.SetMessageAttributes( trackMsg );
-
-	SetPulseRate( 100000 );
+/*	plugInMenu = new BMenu( "Filters" );
+	plugInMenu->AddItem( new BMenuItem( "Event Operators...", new BMessage( 'oper' ) ) );
+	plugInMenu->AddSeparatorItem();
+	plugInMenuInstance.SetBaseMenu( plugInMenu );
+	plugInMenuInstance.SetMessageAttributes( trackMsg );
+*/
+	SetPulseRate(100000);
 }
 
 CTrackWindow::~CTrackWindow()
 {
-	CRefCountObject::Release( trackOp );
-	CRefCountObject::Release( track );
+	D_ALLOC(("CTrackWindow::~CTrackWindow()\n"));
+
+	CRefCountObject::Release(trackOp);
+	CRefCountObject::Release(track);
 }
 
-void CTrackWindow::WindowActivated( bool inActive )
+// ---------------------------------------------------------------------------
+// CDocWindow Implementation
+
+void
+CTrackWindow::MenusBeginning()
 {
-	CDocWindow::WindowActivated( inActive );
-	if (inActive)
+	BMenuItem *item = NULL;
+	BString itemLabel;
+	const char *description;
+
+	// Set up Undo menu
+	item = KeyMenuBar()->FindItem("Undo");
+	description = NULL;
+	if (Track()->CanUndo())
 	{
-		SetPulseRate( 70000 );
-		CMeVApp::WatchTrack( Track() );
+		itemLabel = "Undo";
+		description = Track()->UndoDescription();
+		if (description)
+		{
+			itemLabel << " " << description;
+		}
+		item->SetLabel(itemLabel.String());
+		item->SetEnabled(true);
+	}
+	else if (item)
+	{
+		item->SetLabel("Undo");
+		item->SetEnabled(false);
+	}
+
+	// Set up Redo menu
+	item = KeyMenuBar()->FindItem("Redo");
+	description = NULL;
+	if (Track()->CanRedo())
+	{
+		itemLabel = "Redo";
+		description = Track()->RedoDescription();
+		if (description)
+		{
+			itemLabel << " " << description;
+		}
+		item->SetLabel(itemLabel.String());
+		item->SetEnabled(true);
+	}
+	else
+	{
+		item->SetLabel("Redo");
+		item->SetEnabled(false);
+	}
+	
+	// Set up Clear menu
+	item = KeyMenuBar()->FindItem("Clear");
+	item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
+
+	// Set up Window menu
+	item = KeyMenuBar()->FindItem("Show Event Inspector");
+	item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->Inspector());
+	item = KeyMenuBar()->FindItem("Show Grid Window");
+	item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->GridWindow());
+	item = KeyMenuBar()->FindItem("Show Transport Controls");
+	item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->TransportWindow());
+
+//	plugInMenuInstance.CheckMenusChanged();
+
+	CDocWindow::MenusBeginning();
+}
+
+void
+CTrackWindow::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case MENU_QUIT:
+		{
+			be_app->PostMessage( B_QUIT_REQUESTED );
+			break;
+		}
+		case MENU_ABOUT:
+		{
+			be_app->PostMessage( B_ABOUT_REQUESTED );
+			break;
+		}
+		case MENU_NEW:
+		{
+			((CDocApp *)be_app)->NewDocument();
+			break;
+		}
+		case MENU_OPEN:
+		{
+			((CDocApp *)be_app)->OpenDocument();
+			break;
+		}
+		case MENU_SAVE:
+		{
+			document.Save();
+			break;
+		}
+		case MENU_SAVE_AS:
+		{
+			document.SaveAs();
+			break;
+		}
+		case MENU_IMPORT:
+		{
+			((CMeVApp *)be_app)->ImportDocument();
+			break;
+		}
+		case MENU_EXPORT:
+		{
+			Document().Export( message );
+			break;
+		}
+		case MENU_INSPECTOR:
+		{
+			((CMeVApp *)be_app)->ShowInspector( ((CMeVApp *)be_app)->Inspector() == NULL );
+			Activate();				// In case window was deactivated
+			break;
+		}
+		case MENU_GRIDWINDOW:
+		{
+			((CMeVApp *)be_app)->ShowGridWindow( ((CMeVApp *)be_app)->GridWindow() == NULL );
+			Activate();				// In case window was deactivated
+			break;
+		}
+		case MENU_TRANSPORT:
+		{
+			((CMeVApp *)be_app)->ShowTransportWindow( ((CMeVApp *)be_app)->TransportWindow() == NULL );
+			Activate();				// In case window was deactivated
+			break;
+		}
+		case MENU_ABOUT_PLUGINS:
+		{
+			be_app->PostMessage( message );
+			break;
+		}
+		case ZoomOut_ID:
+		{
+			stripFrame->ZoomOut();
+			break;
+		}
+		case ZoomIn_ID:
+		{
+			stripFrame->ZoomIn();
+			break;
+		}
+		case MENU_PAUSE:
+		{
+			// Start playing a song.
+			CPlayerControl::TogglePauseState( (CMeVDoc *)&document );
+			break;
+		}
+		case LoseFocus_ID:
+		{
+			// Remove focus from pesky controls.
+			if (CurrentFocus()) CurrentFocus()->MakeFocus( false );
+			break;
+		}
+		case B_KEY_DOWN:
+		{
+			int32		key;
+			int32		modifiers;
+			CEventTrack	*tk;
+			
+			tk = ActiveTrack();
+	
+			message->FindInt32("raw_char", &key);
+			message->FindInt32("modifiers", &modifiers);
+	
+			if (key == B_LEFT_ARROW || key == B_RIGHT_ARROW)
+			{
+				if (tk->SelectionType() != CTrack::Select_None )
+				{
+					int32		delta;
+					EventOp		*op;
+					
+					delta = tk->GridSnapEnabled() ? tk->TimeGridSize() : 1;
+						
+					if (modifiers & B_SHIFT_KEY)
+					{
+						op = new DurationOffsetOp( key == B_RIGHT_ARROW ? delta : -delta );
+	
+						tk->ModifySelectedEvents(
+							NULL, *op, "Change Duration", EvAttr_Duration );
+					}
+					else
+					{
+						if (key == B_LEFT_ARROW)
+						{
+							if (delta > tk->MinSelectTime()) break;
+							delta = -delta;
+						}
+						op = new TimeOffsetOp( delta );
+	
+						tk->ModifySelectedEvents(
+							NULL, *op, "Move", EvAttr_None );
+					}
+					
+					CRefCountObject::Release( op );
+				}
+			}
+			else if (key == B_UP_ARROW || key == B_DOWN_ARROW)
+			{
+				if (tk->CurrentEvent() != NULL )
+				{
+					enum E_EventAttribute		attr = EvAttr_None;
+					int32					delta;
+					
+					if (	key == B_UP_ARROW) delta = -1;
+					else delta = 1;
+							
+					switch (tk->CurrentEvent()->Command()) {
+					case EvtType_Note:
+						attr = EvAttr_Pitch;
+						delta = -delta;
+						if (modifiers & B_SHIFT_KEY) delta *= 12;
+						break;
+					case EvtType_Repeat:
+					case EvtType_Sequence:
+					case EvtType_TimeSig:
+						attr = EvAttr_VPos;
+						break;
+					}
+					
+					if (attr != EvAttr_None)
+					{
+						EventOp *op = CreateOffsetOp( attr, delta, 0 );
+						if (op)
+						{
+							tk->ModifySelectedEvents(
+								NULL, *op, "Modify Events", attr );
+							CRefCountObject::Release( op );
+		
+							if (gPrefs.FeedbackEnabled( attr, false )
+								&&	tk->SelectionCount() == 1)
+							{
+								CPlayerControl::DoAudioFeedback(
+									&Document(),
+									attr,
+									tk->CurrentEvent()->GetAttribute( attr ),
+									tk->CurrentEvent() );
+							}
+						}
+					}
+				}
+			}
+		
+			if (!(modifiers & B_COMMAND_KEY))
+			{
+					// REM: Make sure delete menu is enabled before
+					// checking menus. We ought to call MenusBeginning, but
+					// I'm not sure that's safe...
+				BMenuItem *item = KeyMenuBar()->FindItem("Clear");
+				item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
+	
+				if (key == B_BACKSPACE) key = B_DELETE;
+				if (CQuickKeyMenuItem::TriggerShortcutMenu( menus, key ))
+					break;
+			}
+			CDocWindow::MessageReceived( message );
+			break;
+		}			
+		case 'echo':
+		{
+			int32 attr, delta, value;
+			bool finalFlag, cancelFlag;
+			EventOp *op = NULL;
+
+			message->FindInt32("attr", &attr);
+			message->FindInt32("delta", &delta);
+			message->FindInt32("value", &value);
+			finalFlag = message->HasBool("final");
+			cancelFlag = message->HasBool("cancel");
+			op = CreateOffsetOp((enum E_EventAttribute)attr, delta, value);
+			if (op)
+			{
+				SetPendingOperation(op);
+				CRefCountObject::Release(op);
+			}
+			if (finalFlag || cancelFlag)
+			{
+				FinishTrackOperation(finalFlag);
+			}
+			break;
+		}
+		case 'oper':
+		{
+			BWindow *w;
+			w = ((CMeVDoc &)Document()).ShowWindow(CMeVDoc::Operator_Window);
+			((COperatorWindow *)w)->SetTrack(track);
+			break;
+		}
+		case Update_ID:
+		case Delete_ID:
+		{
+			CObserver::MessageReceived(message);
+			break;
+		}
+		default:
+		{
+			CDocWindow::MessageReceived(message);
+			break;
+		}
 	}
 }
 
-void CTrackWindow::UpdateActiveSelection( bool inActive)
+void
+CTrackWindow::WindowActivated(
+	bool active)
+{
+	CDocWindow::WindowActivated(active);
+	if (active)
+	{
+		SetPulseRate(70000);
+		CMeVApp::WatchTrack(Track());
+	}
+}
+
+void
+CTrackWindow::UpdateActiveSelection(
+	bool inActive)
 {
 		// Forward messages about changing selection to child views.
 	int		ct = stripFrame->CountStrips();
@@ -94,7 +415,9 @@ void CTrackWindow::UpdateActiveSelection( bool inActive)
 	}
 }
 
-void CTrackWindow::SetPendingOperation( EventOp *inOp )
+void
+CTrackWindow::SetPendingOperation(
+	EventOp *inOp)
 {
 		// Forward messages about changing selection to child views.
 	int		ct = stripFrame->CountStrips();
@@ -125,7 +448,9 @@ void CTrackWindow::SetPendingOperation( EventOp *inOp )
 	trackOp = inOp;
 }
 
-void CTrackWindow::FinishTrackOperation( int32 inCommit )
+void
+CTrackWindow::FinishTrackOperation(
+	int32 inCommit)
 {
 		// Forward messages about changing selection to child views.
 	int		ct = stripFrame->CountStrips();
@@ -159,287 +484,8 @@ void CTrackWindow::FinishTrackOperation( int32 inCommit )
 	trackOp = NULL;
 }
 
-void CTrackWindow::MessageReceived( BMessage* theMessage )
-{
-	switch(theMessage->what) {
-	case MENU_QUIT:
-		be_app->PostMessage( B_QUIT_REQUESTED );
-		break;
-
-	case MENU_ABOUT:
-		be_app->PostMessage( B_ABOUT_REQUESTED );
-		break;
-		
-	case MENU_NEW:
-		((CDocApp *)be_app)->NewDocument();
-		break;
-
-	case MENU_OPEN:
-		((CDocApp *)be_app)->OpenDocument();
-		break;
-
-	case MENU_SAVE:
-		document.Save();
-		break;
-		
-	case MENU_SAVE_AS:
-		document.SaveAs();
-		break;
-		
-	case MENU_IMPORT:
-		((CMeVApp *)be_app)->ImportDocument();
-		break;
-
-	case MENU_EXPORT:
-		Document().Export( theMessage );
-		break;
-
-	case MENU_INSPECTOR:
-		((CMeVApp *)be_app)->ShowInspector( ((CMeVApp *)be_app)->Inspector() == NULL );
-		Activate();				// In case window was deactivated
-		break;
-
-	case MENU_GRIDWINDOW:
-		((CMeVApp *)be_app)->ShowGridWindow( ((CMeVApp *)be_app)->GridWindow() == NULL );
-		Activate();				// In case window was deactivated
-		break;
-
-	case MENU_TRANSPORT:
-		((CMeVApp *)be_app)->ShowTransportWindow( ((CMeVApp *)be_app)->TransportWindow() == NULL );
-		Activate();				// In case window was deactivated
-		break;
-
-	case MENU_ABOUT_PLUGINS:
-		be_app->PostMessage( theMessage );
-		break;
-
-	case ZoomOut_ID:
-		stripFrame->ZoomOut();
-		break;
-
-	case ZoomIn_ID:
-		stripFrame->ZoomIn();
-		break;
-	
-	case MENU_PAUSE:
-
-			// Start playing a song.
-		CPlayerControl::TogglePauseState( (CMeVDoc *)&document );
-		break;
-		
-	case LoseFocus_ID:
-			// Remove focus from pesky controls.
-		if (CurrentFocus()) CurrentFocus()->MakeFocus( false );
-		break;
-		
-	case B_KEY_DOWN:
-		int32		key;
-		int32		modifiers;
-		CEventTrack	*tk;
-		
-		tk = ActiveTrack();
-
-		theMessage->FindInt32( "raw_char", &key );
-		theMessage->FindInt32( "modifiers", &modifiers );
-
-		if (key == B_LEFT_ARROW || key == B_RIGHT_ARROW)
-		{
-			if (tk->SelectionType() != CTrack::Select_None )
-			{
-				int32		delta;
-				EventOp		*op;
-				
-				delta = tk->GridSnapEnabled() ? tk->TimeGridSize() : 1;
-					
-				if (modifiers & B_SHIFT_KEY)
-				{
-					op = new DurationOffsetOp( key == B_RIGHT_ARROW ? delta : -delta );
-
-					tk->ModifySelectedEvents(
-						NULL, *op, "Change Duration", EvAttr_Duration );
-				}
-				else
-				{
-					if (key == B_LEFT_ARROW)
-					{
-						if (delta > tk->MinSelectTime()) break;
-						delta = -delta;
-					}
-					op = new TimeOffsetOp( delta );
-
-					tk->ModifySelectedEvents(
-						NULL, *op, "Move", EvAttr_None );
-				}
-				
-				CRefCountObject::Release( op );
-			}
-		}
-		else if (key == B_UP_ARROW || key == B_DOWN_ARROW)
-		{
-			if (tk->CurrentEvent() != NULL )
-			{
-				enum E_EventAttribute		attr = EvAttr_None;
-				int32					delta;
-				
-				if (	key == B_UP_ARROW) delta = -1;
-				else delta = 1;
-						
-				switch (tk->CurrentEvent()->Command()) {
-				case EvtType_Note:
-					attr = EvAttr_Pitch;
-					delta = -delta;
-					if (modifiers & B_SHIFT_KEY) delta *= 12;
-					break;
-				case EvtType_Repeat:
-				case EvtType_Sequence:
-				case EvtType_TimeSig:
-					attr = EvAttr_VPos;
-					break;
-				}
-				
-				if (attr != EvAttr_None)
-				{
-					EventOp *op = CreateOffsetOp( attr, delta, 0 );
-					if (op)
-					{
-						tk->ModifySelectedEvents(
-							NULL, *op, "Modify Events", attr );
-						CRefCountObject::Release( op );
-	
-						if (gPrefs.FeedbackEnabled( attr, false )
-							&&	tk->SelectionCount() == 1)
-						{
-							CPlayerControl::DoAudioFeedback(
-								&Document(),
-								attr,
-								tk->CurrentEvent()->GetAttribute( attr ),
-								tk->CurrentEvent() );
-						}
-					}
-				}
-			}
-		}
-	
-		if (!(modifiers & B_COMMAND_KEY))
-		{
-				// REM: Make sure delete menu is enabled before
-				// checking menus. We ought to call MenusBeginning, but
-				// I'm not sure that's safe...
-			clearMenu->SetEnabled( ActiveTrack()->SelectionType() != CTrack::Select_None );
-
-			if (key == B_BACKSPACE) key = B_DELETE;
-			if (CQuickKeyMenuItem::TriggerShortcutMenu( menus, key ))
-				break;
-		}
-		CDocWindow::MessageReceived( theMessage );
-		break;
-		
-		case 'echo': {
-			int32		attr,
-						delta,
-						value;
-			bool			finalFlag,
-						cancelFlag;
-			EventOp		*op = NULL;
-	
-			theMessage->FindInt32( "attr", &attr );
-			theMessage->FindInt32( "delta", &delta );
-			theMessage->FindInt32( "value", &value );
-	
-			finalFlag	= theMessage->HasBool( "final" );
-			cancelFlag	= theMessage->HasBool( "cancel" );
-	
-			op = CreateOffsetOp( (enum E_EventAttribute)attr, delta, value );
-	
-			if (op)
-			{
-				SetPendingOperation( op );
-				CRefCountObject::Release( op );
-			}
-			
-			if (finalFlag || cancelFlag)
-			{
-				FinishTrackOperation( finalFlag );
-			}
-			
-			break;
-		}
-		case 'oper': {
-			BWindow		*w;
-			w = ((CMeVDoc &)Document()).ShowWindow( CMeVDoc::Operator_Window );
-			
-			((COperatorWindow *)w)->SetTrack( track );
-			break;
-		}
-		case Update_ID:
-		case Delete_ID: {
-			CObserver::MessageReceived( theMessage );
-			break;
-		}
-		default: {
-			CDocWindow::MessageReceived( theMessage );
-			break;
-		}
-	}
-}
-
-	// REM: All of this could be moved into the track window if we were clever.
-void CTrackWindow::MenusBeginning()
-{
-/*	char			text[ 64 ];
-	const char	*desc;
-
-		// Set up Undo menu
-	desc = NULL;
-	if (Track()->CanUndo())
-	{
-		desc = Track()->UndoDescription();
-		undoMenu->SetEnabled( true );
-	}
-	else
-	{
-		undoMenu->SetEnabled( false );
-	}
-	sprintf( text, desc ? "Undo %s" : "Undo", desc );
-	undoMenu->SetLabel( text );
-
-		// Set up Redo menu
-	strcpy( text, "Redo" );
-	desc = NULL;
-	if (Track()->CanRedo())
-	{
-		desc = Track()->RedoDescription();
-		redoMenu->SetEnabled( true );
-	}
-	else
-	{
-		redoMenu->SetEnabled( false );
-	}
-	sprintf( text, desc ? "Redo %s" : "Redo", desc );
-	redoMenu->SetLabel( text );
-	
-		// Set up Clear menu
-	clearMenu->SetEnabled( ActiveTrack()->SelectionType() != CTrack::Select_None );
-	inspectorMenu->SetLabel(
-		((CMeVApp *)be_app)->Inspector() == NULL
-		? "Show Event Inspector" : "Hide Event Inspector" );
-
-	gridWindowMenu->SetLabel(
-		((CMeVApp *)be_app)->GridWindow() == NULL
-		? "Show Grid Window" : "Hide Grid Window" );
-
-	ASSERT( transportMenu );
-	ASSERT( be_app );
-	transportMenu->SetLabel(
-		((CMeVApp *)be_app)->TransportWindow() == NULL
-		? "Show Transport Controls" : "Hide Transport Controls" );
-
-//	plugInMenuInstance.CheckMenusChanged();
-
-	CDocWindow::MenusBeginning();*/
-}
-
-void CTrackWindow::ShowPrefs()
+void
+CTrackWindow::ShowPrefs()
 {
 	prefsWinState.Lock();
 	if (!prefsWinState.Activate())
@@ -452,7 +498,9 @@ void CTrackWindow::ShowPrefs()
 	prefsWinState.Unlock();
 }
 
-void CTrackWindow::CreateFileMenu( BMenuBar *menus )
+void
+CTrackWindow::CreateFileMenu(
+	BMenuBar *menus)
 {
 	BMenu			*menu,
 					*submenu;
@@ -483,7 +531,10 @@ void CTrackWindow::CreateFileMenu( BMenuBar *menus )
 	menus->AddItem( menu );
 }
 	
-void CTrackWindow::CreateFrames( BRect frame, CTrack *inTrack )
+void
+CTrackWindow::CreateFrames(
+	BRect frame,
+	CTrack *inTrack)
 {
 	CScrollerTarget	*ruler;
 	BView			*pad;
@@ -568,40 +619,39 @@ void CTrackWindow::CreateFrames( BRect frame, CTrack *inTrack )
 	AddChild( stripFrame );
 }
 
-	/*	If the app wants us to stop looking at the document, then oblige it.
-		Overridden from the CObserver class.
-	*/
-void CTrackWindow::OnDeleteRequested( BMessage *inMsg )
+void
+CTrackWindow::OnDeleteRequested(
+	BMessage *message)
 {
-	PostMessage( B_QUIT_REQUESTED );
+	PostMessage(B_QUIT_REQUESTED);
 }
 
-	/**	Update inspector info when we get an observer update message.
-		Overridden from the CObserver class.
-	*/
-void CTrackWindow::OnUpdate( BMessage *inMsg )
+void
+CTrackWindow::OnUpdate(
+	BMessage *message)
 {
 	int32		trackHint;
 	int32		docHint;
 	int32		trackID;
 
-	if (inMsg->FindInt32( "TrackID",    0, &trackID ) != B_OK)		trackID = -1;
-	if (inMsg->FindInt32( "TrackAttrs", 0, &trackHint ) != B_OK)	trackHint = 0;
-	if (inMsg->FindInt32( "DocAttrs",   0, &docHint ) != B_OK)		docHint = 0;
+	if (message->FindInt32( "TrackID",    0, &trackID ) != B_OK)		trackID = -1;
+	if (message->FindInt32( "TrackAttrs", 0, &trackHint ) != B_OK)	trackHint = 0;
+	if (message->FindInt32( "DocAttrs",   0, &docHint ) != B_OK)		docHint = 0;
 	
 	if (trackHint & CTrack::Update_Name)
 	{
-// 	trackList->Invalidate();
+//		trackList->Invalidate();
 	}
 	else if (docHint & CMeVDoc::Update_Name)
 	{
 	}
 }
 
-filter_result DefocusTextFilterFunc(
-	BMessage			*msg,
-	BHandler			**target,
-	BMessageFilter	*messageFilter )
+filter_result
+DefocusTextFilterFunc(
+	BMessage *msg,
+	BHandler **target,
+	BMessageFilter *messageFilter)
 {
 	int32		key;
 	int32		modifiers;
@@ -618,3 +668,5 @@ filter_result DefocusTextFilterFunc(
 	}
 	return B_DISPATCH_MESSAGE;
 }
+
+// END - TrackWindow.cpp

@@ -200,7 +200,8 @@ void
 CLinearWindow::MenusBeginning()
 {
 	CTrackWindow::MenusBeginning();
-	setSectionMenu->SetEnabled( Track()->SelectionType() != CTrack::Select_None );
+	BMenuItem *item = KeyMenuBar()->FindItem("Set Section");
+	item->SetEnabled(Track()->SelectionType() != CTrack::Select_None);
 }
 
 void
@@ -455,49 +456,44 @@ CLinearWindow::AddMenuBar()
 	CreateFileMenu(menus);
 
 	// Create the 'Edit' menu
-	menu = new BMenu( "Edit" );
-	menu->AddItem(undoMenu = new BMenuItem("Undo", new BMessage(MENU_UNDO),
-										   'Z'));
-	menu->AddItem(redoMenu = new BMenuItem("Redo", new BMessage(MENU_REDO),
-										   'Z', B_SHIFT_KEY));
+	menu = new BMenu("Edit");
+	menu->AddItem(new BMenuItem("Undo", new BMessage(MENU_UNDO), 'Z'));
+	menu->AddItem(new BMenuItem("Redo", new BMessage(MENU_REDO), 'Z', B_SHIFT_KEY));
 	menu->AddSeparatorItem();
-	menu->AddItem(clearMenu = new BMenuItem("Cut", new BMessage(B_CUT),
-											'X'));
-	menu->AddItem(clearMenu = new BMenuItem("Copy", new BMessage(B_COPY),
-											'C'));
-	menu->AddItem(clearMenu = new BMenuItem("Paste", new BMessage(B_PASTE),
-											'V'));
-	menu->AddItem(clearMenu = new CQuickKeyMenuItem("Clear", new BMessage(MENU_CLEAR),
-													B_DELETE, "Del"));
-	menu->AddItem(new BMenuItem( "Select All", new BMessage( B_SELECT_ALL ), 'A' ) );
+	menu->AddItem(new BMenuItem("Cut", new BMessage(B_CUT), 'X'));
+	menu->AddItem(new BMenuItem("Copy", new BMessage(B_COPY), 'C'));
+	menu->AddItem(new BMenuItem("Paste", new BMessage(B_PASTE), 'V'));
+	menu->AddItem(new CQuickKeyMenuItem("Clear", new BMessage(MENU_CLEAR), 
+										B_DELETE, "Del"));
+	menu->AddItem(new BMenuItem("Select All", new BMessage(B_SELECT_ALL), 'A'));
 	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem( "View Settings...", new BMessage( MENU_VIEW_SETTINGS ) ) );
-	menu->AddItem(new BMenuItem( "Virtual Channels...", new BMessage( MENU_VIRTUAL_CHANNELS ) ) );
+	menu->AddItem(new BMenuItem("View Settings...", new BMessage(MENU_VIEW_SETTINGS)));
+	menu->AddItem(new BMenuItem("Virtual Channels...", new BMessage(MENU_VIRTUAL_CHANNELS)));
 	menus->AddItem(menu);
 
 	// Create the 'Play' menu
-	menu = new BMenu( "Play" );
-	menu->AddItem( pauseMenu = new CQuickKeyMenuItem( "Pause", new BMessage( MENU_PAUSE ), B_SPACE, "Space" ) );
+	menu = new BMenu("Play");
+	menu->AddItem(new CQuickKeyMenuItem("Pause", new BMessage(MENU_PAUSE), B_SPACE, "Space"));
 	menu->AddSeparatorItem();
-	menu->AddItem( playMenu = new CQuickKeyMenuItem( "Start", new BMessage( MENU_PLAY ), B_ENTER, "Enter" ) );
+	menu->AddItem(new CQuickKeyMenuItem("Start", new BMessage(MENU_PLAY), B_ENTER, "Enter"));
 // menu->AddItem( playSelectMenu = new CQuickKeyMenuItem( "Play Selection", new BMessage( MENU_PLAY_SELECT ), B_ENTER, B_SHIFT_KEY ) );
-	menu->AddItem(new CQuickKeyMenuItem( "Play Section", new BMessage( MENU_PLAY_SECTION ), 'p', "p" ) );
+	menu->AddItem(new CQuickKeyMenuItem("Play Section", new BMessage(MENU_PLAY_SECTION), 'p', "p"));
 	menu->AddSeparatorItem();
-	menu->AddItem( setSectionMenu = new BMenuItem( "Set Section", new BMessage( MENU_SET_SECTION ), 'S', B_SHIFT_KEY ) );
-	menus->AddItem( menu );
+	menu->AddItem(new BMenuItem("Set Section", new BMessage(MENU_SET_SECTION), 'S', B_SHIFT_KEY));
+	menus->AddItem(menu);
 	
 	// Create the plug-ins menu
 //	menus->AddItem(plugInMenu);
 
 	// Create the 'Window' menu
-	windowMenu = new BMenu( "Window" );
-	windowMenu->AddItem( new BMenuItem( "New Window", new BMessage( MENU_NEW_WINDOW ), 'W', B_SHIFT_KEY ) );
+	windowMenu = new BMenu("Window");
+	windowMenu->AddItem(new BMenuItem( "New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
 	windowMenu->AddSeparatorItem();
-	windowMenu->AddItem( inspectorMenu = new BMenuItem( "", new BMessage( MENU_INSPECTOR ), 'I' ) );
-	windowMenu->AddItem( gridWindowMenu = new BMenuItem( "", new BMessage( MENU_GRIDWINDOW ), 'G' ) );
-	windowMenu->AddItem( transportMenu = new BMenuItem( "", new BMessage( MENU_TRANSPORT ), 'T' ) );
+	windowMenu->AddItem(new BMenuItem("Show Event Inspector", new BMessage(MENU_INSPECTOR), 'I'));
+	windowMenu->AddItem(new BMenuItem("Show Grid Window", new BMessage(MENU_GRIDWINDOW), 'G'));
+	windowMenu->AddItem(new BMenuItem("Show Transport Controls", new BMessage(MENU_TRANSPORT), 'T'));
 	windowMenu->AddSeparatorItem();
-	menus->AddItem( windowMenu );
+	menus->AddItem(windowMenu);
 
 	// Add the menus
 	AddChild(menus);

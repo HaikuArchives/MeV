@@ -155,16 +155,17 @@ public:							// CDocWindow Implementation
 									return (CMeVDoc &)document;
 								}
 	
+	virtual void				MenusBeginning();
+
 	virtual void				MessageReceived(
 									BMessage* message);
-
-	virtual void				MenusBeginning();
 
 	virtual void				WindowActivated(
 									bool active);
 
 public:							// CObserver Implementation
 
+	// If the app wants us to stop looking at the document, then oblige it.
 	virtual void				OnDeleteRequested(
 									BMessage *message);
 
@@ -200,29 +201,7 @@ protected:						// Instance Data
 
 	int32						newEventDuration;
 
-	// Addresses of menus (for disabling)
-	BMenuItem			*undoMenu,
-						*redoMenu,
-						*clearMenu,
-						*playMenu,
-						*setSectionMenu,
-						*pauseMenu,
-						*inspectorMenu,
-						*gridWindowMenu,
-						*transportMenu;
-	
-//	BMenu *						plugInMenu;
-
 	CWindowState				prefsWinState;
 };
-
-	/**	Add this filter function to any control which would normally
-		accept the focus. This will cause it to lose focus on any
-		TAB or RETURN function.
-	*/
-//filter_result DefocusTextFilterFunc(
-//	BMessage			*msg,
-//	BHandler			**target,
-//	BMessageFilter	*messageFilter );
 
 #endif /* __C_TrackWindow_H__ */
