@@ -73,6 +73,7 @@ SRCS= \
 	UI/LinearWindow.cpp \
 	UI/LoopButton.cpp \
 	UI/MenuTool.cpp \
+	UI/MixWindow.cpp \
 	UI/MultiColumnListView.cpp \
 	UI/OperatorWindow.cpp \
 	UI/PitchBendEditor.cpp \
