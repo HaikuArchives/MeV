@@ -66,7 +66,7 @@ int CVCTableManager::NewVC(char *name)
     		m_tablerep[c]->flags		= VChannelEntry::transposable;   
     		m_tablerep[c]->velocityContour=0;
     		m_tablerep[c]->VUMeter=0;
-    		m_tablerep[c]->fillColor=m_defaultColorTable[c % 16];
+    		SetColorFor(c, m_defaultColorTable[c % 16]);
     		return c;
     	}
     }
@@ -129,23 +129,26 @@ VChannelEntry * CVCTableManager::CurrentVC()
 {
 	if (m_tablerep[pos]==NULL)
 	{
-		    VChannelEntry *vc=new VChannelEntry;
-    		vc->name.SetTo("blah");
-    		vc->m_producer=NULL;
-    		vc->channel	= 1;
-    		vc->flags		= VChannelEntry::transposable;   
-    		vc->velocityContour=0;
-    		vc->VUMeter=0;
-    		vc->fillColor.red=100;
-    		vc->fillColor.green=100;
-    		vc->fillColor.blue=100;
-			return (vc);
+	    VChannelEntry *vc=new VChannelEntry;
+   		vc->name.SetTo("blah");
+   		vc->m_producer=NULL;
+   		vc->channel	= 1;
+   		vc->flags = VChannelEntry::transposable;   
+   		vc->velocityContour=0;
+   		vc->VUMeter=0;
+		rgb_color color = {128, 128, 128, 255};
+   		SetColorFor(pos, color);
+		return (vc);
 	}
-	if (pos<Max_VChannels)
+
+	if (pos < Max_VChannels)
 	{
 		return m_tablerep[pos];
 	}
+
+	return NULL;
 }
+
 void CVCTableManager::Next()
 {
 	pos++;
@@ -158,3 +161,21 @@ void CVCTableManager::Next()
 		}
 	}
 }
+
+void
+CVCTableManager::SetColorFor(
+	int id,
+	rgb_color color)
+{
+	VChannelEntry *vce = m_tablerep[id];
+	if (vce)
+	{
+		vce->fillColor = color;
+		if ((color.red + color.green + color.blue) < 384)
+			vce->highlightColor = tint_color(color, B_LIGHTEN_2_TINT);
+		else
+			vce->highlightColor = tint_color(color, B_DARKEN_2_TINT);
+	}
+}
+
+// END - VCTableManager.cpp

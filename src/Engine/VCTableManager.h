@@ -57,6 +57,7 @@ public:
 	VChannelEntry * CurrentVC();
 	int CurrentID();
 	VChannelEntry * m_tablerep[Max_VChannels];
+	void SetColorFor(int id, rgb_color color);
 	int count;
 private:
 	BMessenger *m_notifier;

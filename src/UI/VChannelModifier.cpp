@@ -134,9 +134,8 @@ CVChannelModifier::MessageReceived(BMessage *msg)
 	{
 	case MOD_ID:
 	{
-		m_vc->fillColor=m_colors->ValueAsColor();
+		m_tm->SetColorFor(m_id, m_colors->ValueAsColor());
 		((CChannelManagerView *) m_parent)->track->RefreshChannel(m_id);
-		
 	}
 	break;
 	case CHANNEL_SELECT:
