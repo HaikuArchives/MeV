@@ -35,17 +35,22 @@
  * ===================================================================== */
 #ifndef __C_VChannelManager_H__
 #define __C_VChannelManager_H__
+#include "MeV.h"
 #include "VChannel.h"
+#include "Observer.h"
+#include <String.h>
 //enum ID {
 //	VCTM_NOTIFY='ntfy'
 //	};
-class CVCTableManager {
+class CMeVDoc;
+class CVCTableManager :
+	public CObservableSubject {
 public:
-	CVCTableManager();
+	CVCTableManager(CMeVDoc *inDoc);
 	void _notifyClients();
 	void NotifyClients();
 	void AddClient(BHandler *nhandler);
-	int NewVC(char *name);
+	int NewVC();
 	void RemoveVC(int id);
 	VChannelEntry * operator[](int i);
 	VChannelEntry * get(int i);
@@ -56,12 +61,19 @@ public:
 	//VChannelEntry * GetVC(int id);
 	VChannelEntry * CurrentVC();
 	int CurrentID();
-	VChannelEntry * m_tablerep[Max_VChannels];
+	
 	void SetColorFor(int id, rgb_color color);
+	void SetNameFor(int id,BString name);
+	void SetChannelFor(int id,int channel);
+	void SetPortFor (int id,BMidiLocalProducer *producer);
+	void SetMuteFor (int id, bool mute);
 	int count;
 private:
+	
 	BMessenger *m_notifier;
 	static const rgb_color m_defaultColorTable[ 16 ] ;
 	int pos;
+	VChannelEntry * m_tablerep[Max_VChannels];
+	CMeVDoc *m_doc;
 };
 #endif /* __C_VChannelManager_H__ */

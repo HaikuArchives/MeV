@@ -46,8 +46,6 @@
 #include <MidiRoster.h>
 #include <MidiProducer.h>
 #include <MidiConsumer.h>
-
-#include "VCTableManager.h"
 //debug
 #define TRACKLIST_NAME		"Track List"
 #define INSPECTOR_NAME		"Inspector"
@@ -189,8 +187,8 @@ CMeVApp::CMeVApp()
 	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
 
-	CVCTableManager *vcm;
-	vcm = new CVCTableManager();
+	//CVCTableManager *vcm;
+	//vcm = new CVCTableManager();
 
 	// Load in add-ons
 	if (addOnDir.InitCheck() == B_NO_ERROR)
@@ -322,6 +320,8 @@ CMeVApp::CMeVApp()
 
 CMeVApp::~CMeVApp()
 {
+	CMidiManager *mm = CMidiManager::Instance(); 
+	mm->Die();
 	delete filter;
 	delete importFilter;
 
@@ -381,6 +381,7 @@ CMeVApp::~CMeVApp()
 	CancelEditDeviceAttrs();
 	CancelEditPortAttrs();
 	CancelEditPatchAttrs();
+
 }
 
 CDocument *CMeVApp::NewDocument( bool inShowWindow, entry_ref *inRef )
@@ -451,7 +452,7 @@ void CMeVApp::ShowInspector( bool inShow )
 			BWindow		*w;
 		
 			w = new CInspectorWindow( inspectorState.Rect().LeftTop(), inspectorState );
-			w->Show();
+			w->Show();//zzzzzz
 		}
 	}
 	else

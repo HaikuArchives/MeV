@@ -8,6 +8,7 @@
 #include "MidiDeviceInfo.h"
 #include "IconMenuItem.h"
 #include <Message.h>
+#include <Looper.h>
 //Interface kit
 #include <Rect.h>
 #include <MenuField.h>
@@ -30,9 +31,10 @@ enum EInspectorControlIDs {
 CChannelManagerView::CChannelManagerView(
 	BRect 		inFrame,
 	CTextDisplay	*inNameView,
+	BLooper		*thelooper,
 	uint32		inResizingMode,
 	uint32		inFlags )
-	: BView( inFrame, "ChannelManager", inResizingMode, inFlags )
+	: BView( inFrame, "ChannelManager", inResizingMode, inFlags ),CObserver (*thelooper,NULL)
 {
 	//initialize
 	channel = 0;
@@ -88,12 +90,19 @@ CChannelManagerView::CChannelManagerView(
 
 void CChannelManagerView::AttachedToWindow()
 {
-	m_editButton->SetTarget(this);
-	m_deleteButton->SetTarget(this);
-	m_vcMenu->SetTargetForItems(this);
+	m_editButton->SetTarget((BView *)this);
+	m_deleteButton->SetTarget((BView *)this);
+	m_vcMenu->SetTargetForItems((BView *)this);
 	BMenuItem *select=m_vcMenu->ItemAt(0);
-	select->SetMarked(true);
+	select->SetMarked((BView *)true);
 	
+}
+void CChannelManagerView::OnUpdate(BMessage *message)
+{
+//read port,channel,color,name changes and what not.//mute refresh track.
+	Update();
+	SetChannel(m_selected_id);
+	//we can really improve the efficency here.
 }
 void CChannelManagerView::Update()
 {
@@ -108,7 +117,7 @@ void CChannelManagerView::Update()
 	if (track)
 	{
 		m_vcTableM=track->Document().GetVCTableManager ();
-		m_vcTableM->AddClient(this);
+		SetSubject(m_vcTableM);
 		VChannelEntry *VCptr;
 		int id;
 		BRect icon_r;
@@ -133,13 +142,14 @@ void CChannelManagerView::Update()
 				
 			icon->SetBits((void *)bits,255,0,B_RGB32);
 			vc_item=new CIconMenuItem(VCptr->name.String(),vc_message,icon);
-			vc_item->SetTarget(this);
+			vc_item->SetTarget((BView *)this);
 			m_vcMenu->AddItem(vc_item);
 		}
 	}
 }
 void CChannelManagerView::SetTrack( CEventTrack *inTrack )
 {
+
 	if (track != inTrack)
 	{
 		CRefCountObject::Release( track );
@@ -185,7 +195,7 @@ void CChannelManagerView::SetChannel( uint8 inChannel )
 	}
 
 }
-			
+
 void CChannelManagerView::MessageReceived(BMessage *msg)
 {
 	switch (msg->what)
@@ -213,7 +223,7 @@ void CChannelManagerView::MessageReceived(BMessage *msg)
 					{
 						BRect r;
 						r.Set(40,40,300,200);
-						m_modifierMap[m_selected_id]=new CVChannelModifier(r,m_selected_id,m_vcTableM,this);
+						m_modifierMap[m_selected_id]=new CVChannelModifier(r,m_selected_id,m_vcTableM,(BView *)this);
 						m_modifierMap[m_selected_id]->Show();
 					}
 				}
@@ -249,19 +259,24 @@ void CChannelManagerView::MessageReceived(BMessage *msg)
 			{
 				BRect r;
 				r.Set(40,40,300,200);
-				int n=m_vcTableM->NewVC("Untitled");
+				int n=m_vcTableM->NewVC();
 				Update();
-				m_modifierMap[n]=new CVChannelModifier(r,n,m_vcTableM,this);
+				m_modifierMap[n]=new CVChannelModifier(r,n,m_vcTableM,(BView *)this);
 				m_modifierMap[n]->Show();
 				SetChannel(n);			
 			}
 			break;
-			case VCTM_NOTIFY:
+			case Update_ID:
+			case Delete_ID:
 			{
-				Update();
-				SetChannel(m_selected_id);
+				CObserver::MessageReceived(msg);
 			}
 			break;
+			//case VCTM_NOTIFY:
+			//{
+			//	Update();
+			//	SetChannel(m_selected_id);
+			//}
 			default:
 				BView::MessageReceived(msg);
 				break;

@@ -11,7 +11,6 @@
 #include "PlayerControl.h"
 #include "MidiDeviceInfo.h"
 #include "MathUtils.h"
-//#include "ChannelManagerView.h"
 #include "Junk.h"
 
 // Gnu C Library
@@ -167,7 +166,7 @@ CInspectorWindow::CInspectorWindow(
 //												       m_channelNameView);
 	BRect r;
 	r.Set(410,3,410 + channelBoxWidth * 16 + 2,3 + channelBoxHeight * 4 + 2);
-	m_channelControl = new CChannelManagerView(r,m_channelNameView);
+	m_channelControl = new CChannelManagerView(r,m_channelNameView,this);
 	bgView->AddChild(m_channelControl);
 	
 	

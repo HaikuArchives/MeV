@@ -89,7 +89,7 @@ public:
 
     //virtual void	AllNotesOff(bool justChannel = true, int32 time );
 
-    virtual 	~CInternalSynth();
+    ~CInternalSynth();
 private:
     //i think think we are going to need an icon
     /*void GetIcons(BBitmap* largeIcon, BBitmap* miniIcon);

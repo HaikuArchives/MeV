@@ -31,7 +31,7 @@
  * ---------------------------------------------------------------------
  * History:
  *	6/21/2000		dwalton
- *		Original implementation, not yet usuable
+ *		Original implementation
  *		added to the repository...
  * ---------------------------------------------------------------------
  * To Do:
@@ -70,10 +70,11 @@ class CMidiManager : public BLooper{
 		virtual void MessageReceived(BMessage *msg);
 		void AddInternalSynth();
 		BMidiLocalProducer * InternalSynth();
-		
+		void Die();
 	protected:
 		CMidiManager();
 	private:
+		//~CMidiManager();
 		static CMidiManager *m_instance;
 		BList m_midiProducers;
 		int32 m_pos;

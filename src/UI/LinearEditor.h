@@ -58,6 +58,7 @@ public:							// Constants
 	static const rgb_color		NORMAL_GRID_LINE_COLOR;
 	static const rgb_color		OCTAVE_GRID_LINE_COLOR;
 	static const rgb_color		BACKGROUND_COLOR;
+	
 
 public:							// Constructor/Destructor
 
@@ -192,7 +193,7 @@ public:							// Constants
 	static const rgb_color		SELECTED_BORDER_COLOR;
 	static const rgb_color		DISABLED_BORDER_COLOR;
 	static const rgb_color		DISABLED_FILL_COLOR;
-
+	static const pattern		C_MIXED_COLORS;
 public:							// CAbstractEventHandler Implementation
 
 	// Invalidate the event

@@ -112,7 +112,7 @@ void CMeVDoc::Init()
 	//This should be taken care of by the vctable manager...
 	//in fact...the default should be the latest saved...or something
 
-	//m_VCTM=new CVCTableManager ();
+	m_VCTM=new CVCTableManager (this);
 		
 	//maybe add *** new
 	// kludge code
@@ -706,7 +706,7 @@ void CMeVDoc::ReadVCTable( CIFFReader &reader )
 
 	while (reader.BytesAvailable() > 0 )
 	{
-		VChannelEntry	*vc = m_VCTM[ i ];
+		VChannelEntry	*vc = (*m_VCTM)[ i ];
 //		ReadStr255( reader, vc.name, sizeof vc.name );
 		//dan 7/17/00 reader >> vc.port >> vc.channel >> vc.flags >> vc.velocityContour >> vc.initialTranspose;
 		reader >> vc->channel >> vc->flags >> vc->velocityContour >> vc->initialTranspose;
@@ -721,7 +721,7 @@ void CMeVDoc::WriteVCTable( CIFFWriter &writer )
 	writer.Push( VCTable_ID );
 	for (int i = 0; i < Max_VChannels; i++)
 	{
-		VChannelEntry	*vc = m_VCTM[ i ];
+		VChannelEntry	*vc = (*m_VCTM)[ i ];
 	
 //		WriteStr255( writer, vc.name, strlen( vc.name ) );
 		//dan 7/17/00writer << vc.port << vc.channel << vc.flags << vc.velocityContour << vc.initialTranspose;

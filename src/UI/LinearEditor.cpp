@@ -37,6 +37,8 @@ CLinearEditor::OCTAVE_GRID_LINE_COLOR = {180, 180, 180, 255};
 
 const rgb_color
 CLinearEditor::BACKGROUND_COLOR = {255, 255, 255, 255};
+const pattern
+CLinearNoteEventHandler::C_MIXED_COLORS = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x0f};
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -532,10 +534,17 @@ DrawNoteShape(
 	rgb_color outline,
 	rgb_color fill,
 	rgb_color highlight,
-	bool drawHighlight)
+	bool drawHighlight,
+	pattern apattern=B_SOLID_HIGH)
 {
+	rgb_color grey;
+	grey.red=(fill.red+128) % 255;
+	grey.green=(fill.green+128) % 255;
+	grey.blue=(fill.blue+128) % 255;
+	
 	view->SetHighColor(fill);
-	view->FillRect(inRect.InsetByCopy(1.0, 1.0), B_SOLID_HIGH);
+	view->SetLowColor(grey);
+	view->FillRect(inRect.InsetByCopy(1.0, 1.0), apattern);
 	view->SetHighColor(outline);
 	view->StrokeRoundRect(inRect, 3.0, 3.0, B_SOLID_HIGH);
 	if (drawHighlight && ((inRect.Width() >= 4.0) && (inRect.Height() >= 4.0))) {
@@ -570,8 +579,12 @@ CLinearNoteEventHandler::Draw(
 
 	VChannelEntry *vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 
-
-	if (shadowed)
+	if (vce->flags & VChannelEntry::mute)
+	{
+		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
+					  vce->fillColor, vce->highlightColor, true,C_MIXED_COLORS);
+	}
+	else if (shadowed)
 	{
 		lEditor.SetDrawingMode(B_OP_BLEND);
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR, 
@@ -583,11 +596,12 @@ CLinearNoteEventHandler::Draw(
 		DrawNoteShape(&lEditor, r, SELECTED_BORDER_COLOR,
 					  vce->fillColor, vce->highlightColor, true);
 	}
-	else
+	else 
 	{
 		DrawNoteShape(&lEditor, r, DEFAULT_BORDER_COLOR,
 					  vce->fillColor, vce->highlightColor, true);
 	}
+
 }
 
 BRect

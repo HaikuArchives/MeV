@@ -30,6 +30,9 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *  07/28/2000  dwalton
+ *      Changed from struct to class.
+ *		Added producer pointer.
  * ---------------------------------------------------------------------
  * To Do:
  *

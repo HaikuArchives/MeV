@@ -39,15 +39,18 @@
 #include "View.h"
 #include "IconMenuItem.h"
 #include "VCTableManager.h"
+#include "Observer.h"
 #include <PopUpMenu.h>
 #include <Button.h>
 #include <CheckBox.h>
 #include <StringView.h>
+#include <Looper.h>
+
 //stl
 #include <map.h>
 #include "VChannelModifier.h"
 class CChannelManagerView : 
-	public BView {
+	public BView ,public CObserver{
 
 private:
 	uint8			m_selected_id;
@@ -75,11 +78,13 @@ private:
 //		[x] Mute				[x] Lock	
 	virtual void AttachedToWindow();
 	//update the info on selected channel;
+	
 public:
 	CEventTrack		*track;
 		/**	Constructor */
 	CChannelManagerView(BRect 		inFrame,
 						CTextDisplay	*inNameView,
+						BLooper			*thelooper,
 						uint32		inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT,
 						uint32		inFlags = B_WILL_DRAW );
 							
@@ -91,6 +96,7 @@ public:
 	virtual void MessageReceived(BMessage *msg);
 		/**	Set which channel is selected. */
 	void SetChannel( uint8 inChannel );
+	virtual void OnUpdate (BMessage *message);
 };
 #endif /* __C_ChannelSelectorView_H__ */
 

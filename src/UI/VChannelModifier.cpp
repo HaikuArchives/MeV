@@ -12,12 +12,13 @@ enum EVChannelModifierControlID {
 	NOTIFY='ntfy',
 	ADD_ID='add',
 	MOD_ID='mod',
-	VCQUIT='vcqt'
+	VCQUIT='vcqt',
+	MUTE_ID='cmut'
 	};
 	
-CVChannelModifier::CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BHandler *parent) 
-	: BWindow(frame,"Destination Modifier",B_TITLED_WINDOW,B_NOT_ZOOMABLE | B_NOT_RESIZABLE)
-
+CVChannelModifier::CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BHandler *parent) : 
+	BWindow(frame,"Destination Modifier",B_TITLED_WINDOW,B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
+	CObserver(*this,tm)
 {
 	m_tm=tm;
 	m_midiManager=CMidiManager::Instance();
@@ -75,16 +76,20 @@ CVChannelModifier::_buildUI()
 	channel=new BMenuField(r,"channel","Channel:",m_channels);
 	channel->SetDivider(56);
 	m_background->AddChild(channel);
-	r.Set(10,140,200,160);
+	r.Set(10,140,100,160);
+	
+	m_mute=new BCheckBox(r,"mutebox","Mute",new BMessage (MUTE_ID));
+	m_background->AddChild(m_mute);
 }
 void CVChannelModifier::AttachedToWindow()
 {
 	
-	m_done->SetTarget(this);
-	m_name->SetTarget(this);
-	m_channels->SetTargetForItems(this);
-	m_midiPorts->SetTargetForItems(this);	
-	m_colors->SetTarget(this);
+	m_done->SetTarget((BView *)this);
+	m_name->SetTarget((BView *)this);
+	m_channels->SetTargetForItems((BView *)this);
+	m_midiPorts->SetTargetForItems((BView *)this);	
+	m_colors->SetTarget((BView *)this);
+	m_mute->SetTarget((BView *)this);
 }
 
 void
@@ -95,13 +100,13 @@ CVChannelModifier::Update()
 	{
 		delete (m_midiPorts->RemoveItem(c--));
 	}
-for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManager->NextProducer())
+	for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManager->NextProducer())
 	{
 		BMessage *msg=new BMessage (PORT_SELECT);
 		msg->AddInt32("pid",m_midiManager->CurrentProducerID());
 		BMenuItem *item=new BMenuItem(m_midiManager->CurrentProducerName()->String(),
 									msg);
-		item->SetTarget(this);
+		item->SetTarget((BView *)this);
 		m_midiPorts->AddItem(item);
 		if (m_vc->m_producer)
 		{
@@ -111,6 +116,10 @@ for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManag
 			}
 		}	
 	}
+}
+void CVChannelModifier::OnUpdate(BMessage *msg)
+{
+//i don't really know why this would happen.
 }
 void
 CVChannelModifier::MenusBeginning()
@@ -135,29 +144,42 @@ CVChannelModifier::MessageReceived(BMessage *msg)
 	case MOD_ID:
 	{
 		m_tm->SetColorFor(m_id, m_colors->ValueAsColor());
-		((CChannelManagerView *) m_parent)->track->RefreshChannel(m_id);
+		
+		//((CChannelManagerView *) m_parent)->track->RefreshChannel(m_id);
 	}
 	break;
 	case CHANNEL_SELECT:
 	{
-		m_vc->channel=msg->FindInt8("value");
-		m_tm->NotifyClients();
+		m_tm->SetChannelFor(m_id,msg->FindInt8("value"));	
 	}
 	break;
 	case PORT_SELECT:
 	{
-		m_vc->m_producer=m_midiManager->GetProducer(msg->FindInt32("pid"));
-		m_tm->NotifyClients();
+		m_tm->SetPortFor(m_id,m_midiManager->GetProducer(msg->FindInt32("pid")));
 	}
 	break;
 	case NAME_ID:
 	{
-		m_vc->name.SetTo(m_name->Text());
-		m_tm->NotifyClients();
+		//m_vc->name.SetTo(m_name->Text());
+		BString name;
+		name << m_name->Text();
+		m_tm->SetNameFor(m_id,name);
 		BString title;
 		title << "Destination: ";
-		title << m_vc->name.String();
+		title << name;
 		SetTitle(title.String());
+	}
+	break;
+	case MUTE_ID:
+	{
+		if (m_mute->Value()==B_CONTROL_ON)
+		{
+			m_tm->SetMuteFor (m_id, true);
+		}
+		else
+		{
+			m_tm->SetMuteFor (m_id,false);
+		}
 	}
 	break;
 	default:

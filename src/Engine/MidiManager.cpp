@@ -33,7 +33,6 @@ CMidiManager::CMidiManager() : BLooper("MidiHandler")
 	m_portNameMap=new CPortNameMap();
 	m_isynth_source=NULL;
 	m_isynth_sink=NULL;
-	
 }
 void CMidiManager::Notify(BMessenger *msgr)
 {
@@ -238,7 +237,6 @@ void CMidiManager::_addConsumer(int32 id)
 	BMidiLocalProducer *aproducer=new BMidiLocalProducer(theConsumer->Name());//theConsumer->Name());
 	aproducer->Connect(theConsumer);
 	m_midiProducers.AddItem(aproducer);
-	theConsumer->Release();
 }
 void CMidiManager::_removeConsumer(int32 id)
 {
@@ -271,6 +269,21 @@ void CMidiManager::_addProducer(int32 id)
 void CMidiManager::_removeProducer(int32 id)
 {
 }
+void CMidiManager::Die()
+{
+m_isynth_sink->Release();
+
+/*	int c=m_midiProducers.CountItems();
+	int i;
+	BMidiLocalProducer *producer;
+	for (i=0; i<c ;i++)
+	{
+		producer=((BMidiLocalProducer *)m_midiProducers.ItemAt(i));
+		//printf("releasing %s\n",producer->Name());
+		//producer->Release();
+	}*/
+}
+
 
 		
 		

@@ -293,7 +293,6 @@ public:
 
 		/** Lock or unlock a channel */
 	void LockChannel( int32 inChannel, bool inLocked = true );
-	void RefreshChannel(int32 inChannel);
 	
 		/** TRUE if this event is "locked" (but only if the event even has a channel.) */
 	bool IsChannelLocked( const Event &ev );
