@@ -21,7 +21,9 @@
 #include <Debug.h>
 
 // Debugging Macros
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)		// CStripView Implementation
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -42,10 +44,24 @@ CEventEditor::CEventEditor(
 		m_dragOp(NULL),
 		m_dragging(false)
 {
+	D_ALLOC(("CEventEditor::CEventEditor(%s)\n",
+			 name));
+
 	m_renderers[EvtType_End] = new CEndEventRenderer(this);
 	m_nullEventRenderer = new CNullEventRenderer(this);
 	for (event_type i = 1; i < EvtType_Count; i++)
 		m_renderers[i] = m_nullEventRenderer;
+
+	// start observing every destination in use by this part
+	CDestination *dest = NULL;
+	int32 index = 0;
+	CReadLock lock(Track());
+	while ((dest = Track()->GetNextUsedDestination(&index)) != NULL)
+	{
+		D_ALLOC((" -> start observing used destination '%s'\n",
+				 dest->Name()));
+		dest->AddObserver(this);
+	}
 }
 					
 CEventEditor::CEventEditor(
@@ -65,12 +81,26 @@ CEventEditor::CEventEditor(
 		m_dragOp(NULL),
 		m_dragging(false)
 {
+	D_ALLOC(("CEventEditor::CEventEditor(%s, %s)\n",
+			 name, track->Name()));
+
 	m_renderers[EvtType_End] = new CEndEventRenderer(this);
 	m_nullEventRenderer = new CNullEventRenderer(this);
 	for (event_type i = 1; i < EvtType_Count; i++)
 		m_renderers[i] = m_nullEventRenderer;
+
+	// start observing every destination in use by this part
+	CDestination *dest = NULL;
+	int32 index = 0;
+	CReadLock lock(Track());
+	while ((dest = Track()->GetNextUsedDestination(&index)) != NULL)
+	{
+		D_ALLOC((" -> start observing used destination '%s'\n",
+				 dest->Name()));
+		dest->AddObserver(this);
+	}
 }
-	
+
 CEventEditor::~CEventEditor()
 {
 	delete m_lasso;
@@ -599,9 +629,26 @@ CEventEditor::SubjectUpdated(
 			return;
 	}
 
+	int32 destAttrs = 0;
+	if (message->FindInt32("DestAttrs", &destAttrs) == B_OK)
+	{
+		_destinationUpdated(message);
+		return;
+	}
+
 	int32 trackHint = 0;
 	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 	{
+		if (trackHint & CTrack::Update_AddDest)
+		{
+			_destinationAdded(message);
+			return;
+		}
+		if (trackHint & CTrack::Update_DelDest)
+		{
+			_destinationRemoved(message);
+			return;
+		}
 		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
 						   CTrack::Update_TempoMap | CTrack::Update_Section)))
 			return;
@@ -1266,6 +1313,85 @@ CEventEditor::Released(
 	}
 
 	return released;
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CEventEditor::_destinationAdded(
+	BMessage *message)
+{
+	D_INTERNAL(("CEventEditor::_destinationAdded()\n"));
+
+	// part has started to use this destination
+	int32 destID;
+	if (message->FindInt32("DestID", &destID) != B_OK)
+		return;
+	CDestination *dest = TrackWindow()->Document()->FindDestination(destID);
+	if (dest)
+	{
+		D_INTERNAL((" -> start observing destination %s\n",
+					dest->Name()));
+		dest->AddObserver(this);
+	}
+}
+
+void
+CEventEditor::_destinationRemoved(
+	BMessage *message)
+{
+	D_INTERNAL(("CEventEditor::_destinationAdded()\n"));
+
+	// part has started to use this destination
+	int32 destID;
+	if (message->FindInt32("DestID", &destID) != B_OK)
+		return;
+	CDestination *dest = TrackWindow()->Document()->FindDestination(destID);
+	if (dest)
+	{
+		D_INTERNAL((" -> stop observing destination %s\n",
+					dest->Name()));
+		dest->RemoveObserver(this);
+	}
+}
+
+void
+CEventEditor::_destinationUpdated(
+	BMessage *message)
+{
+	int32 destAttrs = 0;
+	if (message->FindInt32("DestAttrs", &destAttrs) == B_OK)
+	{
+		// something changed about a destination in use by the part
+		if (destAttrs & (CDestination::Update_Color |
+						 CDestination::Update_Flags))
+		{
+			int32 destID = -1;
+			if (message->FindInt32("DestID", &destID) != B_OK)
+				return;
+
+			// calculate time range of the current visible rect
+			int32 minTime = ViewCoordsToTime(Bounds().left);
+			int32 maxTime = ViewCoordsToTime(Bounds().right);
+
+			// destination look has changed -> invalidate every event using 
+			// that destination
+			CReadLock lock(Track());
+			EventMarker	marker(Track()->Events());
+			for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+				 ev;
+				 ev = marker.NextItemInRange(minTime, maxTime))
+			{
+				if ((ev->HasProperty(Event::Prop_Channel))
+				 && (ev->GetVChannel() == destID))
+				{
+					RendererFor(*ev)->Invalidate(*ev);
+				}
+			}
+		}
+		return;
+	}
 }
 
 // ---------------------------------------------------------------------------

@@ -317,6 +317,20 @@ public:							// CObserver Implementation
 									BMessage *message)
 								{ Window()->PostMessage(message, this); }
 
+private:						// Internal Operations
+
+	void						_destinationAdded(
+									BMessage *message);
+
+	void						_destinationRemoved(
+									BMessage *message);
+
+	void						_destinationUpdated(
+									BMessage *message);									
+
+	void						_trackUpdated(
+									BMessage *message);
+
 protected:						// Instance Data
 
 	// Which track we're editing
