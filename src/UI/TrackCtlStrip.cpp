@@ -674,16 +674,17 @@ protected:						// Accessors
 
 private:						// Internal Operations
 
-	/** Tries to acquire the patch name of the given program change 
-		event. Returns true on success and stuffs the name in 
-		outName. */
-	bool						GetPatchName(
+	/** Acquires the patch name of the given program change 
+		event and stuffs the name into outName. */
+	void						GetProgramName(
 									const Event &ev,
-									BString *outName) const;
+									char *outName) const;
 
 private:						// Instance Data
 
 	BBitmap *					m_icon;
+
+	float						m_maxWidth;
 };
 
 CProgramChangeEventHandler::CProgramChangeEventHandler(
@@ -692,6 +693,11 @@ CProgramChangeEventHandler::CProgramChangeEventHandler(
 		m_icon(NULL)
 {
 	m_icon = ResourceUtils::LoadImage("ProgramTool");
+	char maxProgramName[PROGRAM_NAME_LENGTH];
+	for (int i = 0; i < PROGRAM_NAME_LENGTH; i++)
+		maxProgramName[i] = 'M';
+	m_maxWidth = m_icon->Bounds().Width() + 4.0;
+	m_maxWidth += be_plain_font->StringWidth(maxProgramName);
 }
 
 CProgramChangeEventHandler::~CProgramChangeEventHandler()
@@ -707,7 +713,20 @@ void
 CProgramChangeEventHandler::Invalidate(
 	const Event &ev) const
 {
-	Editor()->Invalidate(Extent(ev));
+	BRect r;
+	r.left = Editor()->TimeToViewCoords(ev.Start());
+	r.top = Editor()->VPosToViewCoords(ev.repeat.vPos);
+	r.right = r.left + m_maxWidth;
+
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
+	if ((fh.ascent + fh.descent) > Editor()->BarHeight())
+		r.bottom = r.top + fh.ascent + fh.descent;
+	if (m_icon->Bounds().Height() > r.Height())
+		r.bottom = r.top + m_icon->Bounds().Height();
+	r.InsetBy(-1.0, -2.0);
+
+	Editor()->Invalidate(r);
 }
 
 void
@@ -725,8 +744,8 @@ CProgramChangeEventHandler::Draw(
 				   extent.LeftTop() + m_icon->Bounds().RightBottom());
 
 	// acquire patch name
-	BString patchName;
-	GetPatchName(ev, &patchName);
+	char programName[PROGRAM_NAME_LENGTH];
+	GetProgramName(ev, programName);
 
 	font_height fh;
 	be_plain_font->GetHeight(&fh);
@@ -735,7 +754,7 @@ CProgramChangeEventHandler::Draw(
 	textRect.bottom = (extent.top + extent.bottom - fh.descent + fh.ascent)
 					  / 2.0;
 	textRect.right = textRect.left
-					 + be_plain_font->StringWidth(patchName.String());
+					 + be_plain_font->StringWidth(programName);
 	textRect.top = textRect.bottom - fh.ascent;
 
 	BRect frameRect(textRect.InsetByCopy(-1.0, -2.0));
@@ -779,16 +798,16 @@ CProgramChangeEventHandler::Draw(
 
 	Editor()->SetDrawingMode(B_OP_OVER);
 	Editor()->SetHighColor(textColor);
-	Editor()->DrawString(patchName.String(), textRect.LeftBottom());
+	Editor()->DrawString(programName, textRect.LeftBottom());
 }
 
 BRect
 CProgramChangeEventHandler::Extent(
 	const Event &ev) const
 {
-	BString patchName;
-	GetPatchName(ev, &patchName);
-	float textWidth = be_plain_font->StringWidth(patchName.String());
+	char programName[PROGRAM_NAME_LENGTH];
+	GetProgramName(ev, programName);
+	float textWidth = be_plain_font->StringWidth(programName);
 
 	BRect r;
 	r.left = Editor()->TimeToViewCoords(ev.Start());
@@ -850,38 +869,15 @@ CProgramChangeEventHandler::CreateDragOp(
 	return new VPosOffsetOp(valueDelta);
 }
 
-bool
-CProgramChangeEventHandler::GetPatchName(
+void
+CProgramChangeEventHandler::GetProgramName(
 	const Event &ev,
-	BString *outName) const
+	char *outName) const
 {
-	CMeVDoc *doc = &Editor()->Track()->Document();
-
-	CDestination *dest = doc->FindDestination(ev.GetVChannel());
-	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,dest->Channel());
-	info=NULL;
-	if (info == NULL)
-	{
-		*outName = "Program ";
-		*outName << ev.programChange.program;
-
-		return false;
-	}
-	
-	uint16 programBank = (ev.programChange.bankMSB << 7) | ev.programChange.bankLSB;
-	PatchInfo *patch = info->GetPatch(programBank, ev.programChange.program);
-
-	if (patch == NULL || patch->Name() == NULL)
-	{
-		*outName = "Pgm: ";
-		*outName << programBank << ev.programChange.program;
-		return true;
-	}
-	else
-	{
-		*outName = patch->Name();
-		return true;
-	}
+	CDestination *dest = Document()->FindDestination(ev.GetVChannel());
+	uint16 bank = (ev.programChange.bankMSB << 7) | ev.programChange.bankLSB;
+	if (!dest->GetProgramName(bank, ev.programChange.program, outName))
+		sprintf(outName, "Program %d", ev.programChange.program);
 }
 
 // ---------------------------------------------------------------------------

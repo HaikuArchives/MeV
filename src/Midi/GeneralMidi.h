@@ -43,8 +43,8 @@
 namespace GeneralMidi
 {
 
-	const char *				GetPatchNameFor(
-									int8 patchNum);
+	const char *				GetProgramNameFor(
+									uint8 program);
 };
 
 #endif /* __GeneralMidi_H__ */

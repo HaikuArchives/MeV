@@ -5,7 +5,7 @@
 #include "GeneralMidi.h"
 
 const char *
-GM_PATCH_NAMES[128] =
+GM_PROGRAM_NAMES[128] =
 {
 	"Acoustic Grand",
 	"Bright Grand",
@@ -32,7 +32,7 @@ GM_PATCH_NAMES[128] =
 	"Harmonica",
 	"Tango Accordian",
 
-	/* Guitars */
+	// Guitars
 	"Acoustic Guitar Nylon",
  	"Acoustic Guitar Steel",
  	"Electric Guitar Jazz",
@@ -42,7 +42,7 @@ GM_PATCH_NAMES[128] =
  	"Distortion Guitar",
  	"Guitar Harmonics",
 
-	/* Basses */
+	// Basses
  	"Acoustic Bass",
  	"Electric Bass Finger",
  	"Electric Bass Pick",
@@ -52,27 +52,27 @@ GM_PATCH_NAMES[128] =
  	"Synth Bass 1",
  	"Synth Bass 2",
 
-	/* Strings */
+	// Strings
  	"Violin",
  	"Viola",
  	"Cello",
  	"Contrabass",
- 	"Tremolo StringS",
- 	"Pissicato StringS",
- 	"Orchestral StringS",
+ 	"Tremolo Strings",
+ 	"Pissicato Strings",
+ 	"Orchestral Strings",
  	"Timpani",
 
-	/* Ensemble strings and voices */
+	// Ensemble strings and voices
  	"String Ensemble 1",
  	"String Ensemble 2",
- 	"Synth StringS 1",
- 	"Synth StringS 2",
+ 	"Synth Strings 1",
+ 	"Synth Strings 2",
  	"Voice Aah",
  	"Voice Ooh",
  	"Synth Voice",
  	"Orchestra Hit",
 
-	/* Brass */
+	// Brass
  	"Trumpet",
  	"Trombone",
  	"Tuba",
@@ -82,7 +82,7 @@ GM_PATCH_NAMES[128] =
  	"Synth Brass 1",
  	"Synth Brass 2",
 
-	/* Reeds */
+	// Reeds
  	"Soprano Sax",
  	"Alto Sax",
  	"Tenor Sax",
@@ -92,7 +92,7 @@ GM_PATCH_NAMES[128] =
  	"Bassoon",
  	"Clarinet",
 
-	/* Pipes */
+	// Pipes
  	"Piccolo",
  	"Flute",
  	"Recorder",
@@ -102,37 +102,37 @@ GM_PATCH_NAMES[128] =
  	"Whistle",
  	"Ocarina",
 
-	/* Synth Leads*/
- 	"Square Wave",
- 	"Sawtooth Wave",
- 	"Calliope",
- 	"Chiff",
- 	"Charang",
- 	"Voice",
- 	"Fifths",
+	// Synth Leads
+ 	"Square Lead",
+ 	"Sawtooth Lead",
+ 	"Calliope Lead",
+ 	"Chiff Lead",
+ 	"Charang Lead",
+ 	"Voice Lead",
+ 	"Fifths Lead",
  	"Bass Lead",
 
-	/* Synth Pads */
- 	"New Age",
- 	"Warm",
- 	"Polysynth",
- 	"Choir",
- 	"Bowed",
- 	"Metallic",
- 	"Halo",
- 	"Sweep",
+	// Synth Pads
+ 	"New Age Pad",
+ 	"Warm Pad",
+ 	"Polysynth Pad",
+ 	"Choir Pad",
+ 	"Bowed Pad",
+ 	"Metallic Pad",
+ 	"Halo Pad",
+ 	"Sweep Pad",
 
-	/* Effects */
- 	"FX 1",
- 	"FX 2",
- 	"FX 3",
- 	"FX 4",
- 	"FX 5",
- 	"FX 6",
- 	"FX 7",
- 	"FX 8",
+	// Effects
+ 	"Rain FX",
+ 	"Soundtrack FX",
+ 	"Crystal FX",
+ 	"Atmosphere FX",
+ 	"Brightness FX",
+ 	"Goblins FX",
+ 	"Echoes FX",
+ 	"Sci-Fi FX",
 
-	/* Ethnic */
+	// Ethnic
  	"Sitar",
  	"Banjo",
  	"Shamisen",
@@ -142,7 +142,7 @@ GM_PATCH_NAMES[128] =
  	"Fiddle",
  	"Shanai",
 
-	/* Percussion */
+	// Percussion
  	"Tinkle Bell",
  	"Agogo",
  	"Steel Drums",
@@ -152,7 +152,7 @@ GM_PATCH_NAMES[128] =
  	"Synth Drum",
  	"Reverse Cymbal",
 
-	/* Sound Effects */
+	// Sound Effects
  	"Fret Noise",
  	"Breath Noise",
  	"Seashore",
@@ -164,10 +164,10 @@ GM_PATCH_NAMES[128] =
 };
 
 const char *
-GeneralMidi::GetPatchNameFor(
-	int8 patchNum)
+GeneralMidi::GetProgramNameFor(
+	uint8 program)
 {
-	return GM_PATCH_NAMES[patchNum];
+	return GM_PROGRAM_NAMES[program];
 }
 
 // END - GeneralMidi.cpp

@@ -60,6 +60,8 @@
 
 class CMeVDoc;
 
+#define PROGRAM_NAME_LENGTH 128
+
 /**	Destinations, allow routing and remapping of MIDI data
 	upon playback.
 	@author		Talin, Dan Walton, Christopher Lenz
@@ -174,8 +176,31 @@ public:							// Accessors
 	CMeVDoc *					Document() const
 								{ return m_doc; } 
 	
+public:							// Operations
+
+	void						Delete();
+	void						Undelete(
+									int32 originalIndex);
+	bool						Deleted() const
+								{ return m_flags & deleted; }
+
+public:							//Hook Functions
+
+	virtual int32				Bytes()
+								{ return sizeof(*this); }
+
 public:							// Midi specific functionality
 								// +++ move to Midi::CMidiDestination
+
+	/**	Copies the program name at the given bank and program numbers
+	 *	into outName. outName should point to a string buffer of at least
+	 *	PROGRAM_NAME_LENGTH bytes.
+	 *	@return		true if the program could be identified.
+	 */
+	bool						GetProgramName(
+									uint16 bank,
+									uint8 program,
+									char *outName);
 
 	void						SetConnect(
 									BMidiConsumer *sink,
@@ -189,19 +214,6 @@ public:							// Midi specific functionality
 									uint8 channel);
 	uint8						Channel() const
 								{ return m_channel; }
-
-public:							// Operations
-
-	void						Delete();
-	void						Undelete(
-									int32 originalIndex);
-	bool						Deleted() const
-								{ return m_flags & deleted; }
-
-public:							//Hook Functions
-
-	virtual int32				Bytes()
-								{ return sizeof(*this); }
 
 private:   						// Internal Operations
 
@@ -244,6 +256,8 @@ private:						// Instance Data
 	int32						m_consumerID;
 
 	Midi::CReconnectingMidiProducer *	m_producer;					
+
+	bool						m_generalMidi;
 
 private:						// Class Data
 

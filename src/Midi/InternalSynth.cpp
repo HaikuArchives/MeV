@@ -24,7 +24,8 @@ CInternalSynth::CInternalSynth()
 {
 	BMessage props;
 	GetProperties(&props);
-	props.AddBool("mev:internal_synth",true);
+	props.AddBool("mev:internal_synth", true);
+	props.AddBool("mev:general_midi", true);
 
 	BBitmap *largeIcon = GetIcon(B_LARGE_ICON);
 	if (largeIcon)

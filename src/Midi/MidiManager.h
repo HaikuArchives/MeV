@@ -44,7 +44,6 @@
 #ifndef __C_MidiManager_H__
 #define __C_MidiManager_H__
 
-#include "GeneralMidi.h"
 #include "InternalSynth.h"
 #include "Observer.h"
 
