@@ -46,28 +46,27 @@ class CIFFWriter;
 class CStandardMidiFile :
 	public MeVPlugIn
 {
-public:
-	CStandardMidiFile();
-	~CStandardMidiFile();
 
-	virtual char *AboutText();
+private:						// Types
 
-	virtual void OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetectedType );
-	virtual void OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref );
-	virtual int32 DetectFileType(	const entry_ref	*ref,
-						BNode			*node,
-						struct stat		*st,
-						const char		*filetype );
-
-	void ShowError( const char *msg, ... );
-
-private:
 	struct smf_time_base
 	{
-		enum { METERED = 0, TIME_CODE = 0x8000 };
-		enum { SMPTE_30 = -30, SMPTE_30_DROP = -29, SMPTE_25 = -25, SMPTE_24 = -24 };
+		enum
+		{
+			METERED = 0,
+			TIME_CODE = 0x8000
+		};
 		
+		enum
+		{
+			SMPTE_30 = -30,
+			SMPTE_30_DROP = -29,
+			SMPTE_25 = -25,
+			SMPTE_24 = -24
+		};
+
 		int format;
+
 		union
 		{
 			struct
@@ -82,6 +81,73 @@ private:
 			} timeCode;
 		} base;
 	};
+
+public:							// Constructor/Destructor
+
+								CStandardMidiFile();
+
+								~CStandardMidiFile();
+
+public:							// MeVPlugIn Implementation
+
+	virtual char *				AboutText();
+
+	virtual int32				DetectFileType(
+									const entry_ref	*ref,
+									BNode *node,
+									struct stat *st,
+									const char *filetype );
+
+	virtual void				OnImport(
+									BMessage *inMsg,
+									entry_ref *ref,
+									int32 inDetectedType );
+
+	virtual void				OnExport(
+									BMessage *inMsg,
+									int32 inDocID,
+									entry_ref *ref);
+
+	void						ShowError(
+									const char *msg,
+									...);
+
+private:						// Operations
+
+	// functions for import	
+	void						CreateDestinations(
+									MeVDocHandle doc,
+									const char* filename);
+	bool						ReadTrack(
+									MeVDocHandle doc,
+									uint8 *trackBuffer,
+									long length,
+					                const smf_time_base& timeBase);
+
+	void						SetInitialTempo(
+									MeVDocHandle doc);
+
+	// functions for export
+	status_t					CountTracks(
+									MeVDocHandle doc,
+									uint16& out_numTracks,
+									TClockType& out_clockType);
+
+	status_t					WriteHeaderChunk(
+									CIFFWriter& writer,
+									uint16 numTracks,
+									TClockType clockType);
+
+	status_t					WriteTrack(
+									CIFFWriter& writer,
+									MeVDocHandle doc,
+									MeVTrackHandle track);
+
+private:						// Instance Data
+
+	int							m_destinationID[16];
+
+private:
 
 	// reads events from file track and converts to MeV events
 	class SMFTrackReader
@@ -175,20 +241,6 @@ private:
 		MeVDocHandle										m_doc;
 		int32												m_lastEventTicks;
 	};
-	
-	// functions for import	
-	void CreateDestinations(MeVDocHandle doc, const char* filename);
-	bool ReadTrack( MeVDocHandle doc, uint8 *trackBuffer, long length,
-	                const smf_time_base& timeBase );
-	void SetInitialTempo(MeVDocHandle doc);
-
-	// functions for export
-	status_t CountTracks(MeVDocHandle doc, uint16& out_numTracks, TClockType& out_clockType);
-	status_t WriteHeaderChunk(CIFFWriter& writer, uint16 numTracks, TClockType clockType);
-	status_t WriteTrack(CIFFWriter& writer, MeVDocHandle doc, MeVTrackHandle track);
-	
-	int					m_destinationID[16];
-
 };
 
 inline uint32 CStandardMidiFile::SMFTrackReader::Position() const

@@ -2,27 +2,30 @@
 
 #include "StandardMidiFile.h"
 
+#include "BeFileWriter.h"
+#include "BeFileReader.h"
+#include "IFFWriter.h"
+#include "Error.h"
+#include "MidiManager.h"
+
+// Application Kit
+#include <Message.h>
+// Interface Kit
+#include <Alert.h>
+// Storage Kit
+#include <Directory.h>
+#include <Entry.h>
+#include <NodeInfo.h>
+#include <Path.h>
+// Support Kit
+#include <Debug.h>
+// C & Standard Template Library
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
 #include <memory>
 #include <vector>
-
-#include <app/Message.h>
-#include <interface/Alert.h>
-#include <storage/Directory.h>
-#include <storage/Entry.h>
-#include <storage/NodeInfo.h>
-#include <storage/Path.h>
-#include <support/Debug.h>
-
-#include "BeFileWriter.h"
-#include "BeFileReader.h"
-#include "IFFWriter.h"
-#include "Error.h"
-#include "DestinationList.h"
-#include "MidiManager.h"
 
 enum {
 	Import_ID		= 3,
