@@ -737,6 +737,7 @@ CMeVApp::AboutRequested()
 	aboutText << "Dan Walton, ";
 	aboutText << "Eric Moon, ";
 	aboutText << "Jamie Krutz, ";
+	aboutText << "Mr eel, ";
 	aboutText << "Talin\n ";
 
 	// add copyright & legal stuff
