@@ -115,19 +115,15 @@ void CObservableSubject::RemoveObserver( CObserver &inObserver )
 
 void CObservableSubject::PostUpdate( CUpdateHint *inHint, CObserver *inExcludeObserver )
 {
-	int32		count = observers.CountItems();
-	StSubjectLock	myLock( *this, Lock_Shared );
+	int32 count = observers.CountItems();
+	StSubjectLock myLock(*this, Lock_Shared);
 
-		//	For each observer, send them a copy of the message.
+	//	For each observer, send them a copy of the message.
 	for (int i = 0; i < count; i++)
 	{
-		CObserver		*ob = (CObserver *)observers.ItemAt( i );
-
-		ASSERT( ob );
-		ASSERT( ob->Looper() );
-
-		if (ob && ob != inExcludeObserver)
-			ob->Looper()->PostMessage( inHint, ob );
+		CObserver *ob = (CObserver *)observers.ItemAt(i);
+		if (ob != inExcludeObserver)
+			BMessenger(ob).SendMessage(inHint);
 	}
 }
 
