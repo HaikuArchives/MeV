@@ -132,6 +132,7 @@ void
 CDocWindow::MenusBeginning()
 {
 	UpdateWindowMenu();
+
 	CAppWindow::MenusBeginning();
 }
 
@@ -166,6 +167,16 @@ CDocWindow::MessageReceived(
 			}
 			if (IsMinimized())
 				Minimize(false);
+			break;
+		}
+		case MOVE_TO_WORKSPACE:
+		{
+			int32 workspace = current_workspace();
+			message->FindInt32("workspace_id", &workspace);
+			for (int32 i = 0; i < Document()->CountWindows(); i++)
+				Document()->WindowAt(i)->SetWorkspaces(1 << workspace);
+			SetWorkspaces(1 << workspace);
+			activate_workspace(workspace);
 			break;
 		}
 		case B_CANCEL:
@@ -385,6 +396,20 @@ CDocWindow::UpdateWindowMenu()
 												  new BMessage(SHOW_ALL)));
 			item->SetEnabled(hidden);
 			item->SetTarget(doc->MasterWindow());
+
+			BMenu *wsMenu = new BMenu("Move All To");
+			for (int32 i = 0; i < count_workspaces(); i++)
+			{
+				BMessage *wsMsg = new BMessage(MOVE_TO_WORKSPACE);
+				wsMsg->AddInt32("workspace_id", i);
+				BString str = "Workspace ";
+				str << i + 1;
+				wsMenu->AddItem(new BMenuItem(str.String(), wsMsg));
+			}
+			wsMenu->SetTargetForItems(doc->MasterWindow());
+			subMenu->AddItem(wsMenu);
+
+			subMenu->AddSeparatorItem();
 			subMenu->AddItem(item = new BMenuItem("Close All",
 												  new BMessage(B_QUIT_REQUESTED)));
 			item->SetTarget(doc->MasterWindow());

@@ -65,6 +65,11 @@ public:							// Constants
 								//	Show all windows for this document.
 								SHOW_ALL,
 
+								/** Show all windows for this document.
+								 *	@param workspace_id	Which workspace.
+								 */
+								MOVE_TO_WORKSPACE,
+
 								//	We lost selection.
 								SELECTED,
 
