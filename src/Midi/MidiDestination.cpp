@@ -5,6 +5,7 @@
 #include "MidiDestination.h"
 
 #include "DestinationConfigView.h"
+#include "DestinationMonitorView.h"
 #include "Event.h"
 #include "EventTask.h"
 #include "GeneralMidi.h"
@@ -28,6 +29,8 @@
 #define D_ACCESS(x) //PRINT(x)		// Accessors
 #define D_OPERATION(x) //PRINT(x)	// Operations
 #define D_SERIALIZE(x) //PRINT(x)	// Serialization
+#define D_MONITOR(x) //PRINT(x)		// Monitor Management
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
 
 using namespace Midi;
 
@@ -89,9 +92,27 @@ CMidiDestination::~CMidiDestination()
 // Accessors
 
 bool
+CMidiDestination::GetControllerName(
+	unsigned char controller,
+	char *outName) const
+{
+	if (m_generalMidi)
+	{
+		const char *name = GeneralMidi::GetControllerNameFor(controller);
+		if (name)
+		{
+			strncpy(outName, name, CONTROLLER_NAME_LENGTH);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool
 CMidiDestination::GetNoteName(
 	unsigned char note,
-	char *outName)
+	char *outName) const
 {
 	if (m_generalMidi && (m_channel == GeneralMidi::DRUM_KIT_CHANNEL))
 	{
@@ -115,7 +136,7 @@ bool
 CMidiDestination::GetProgramName(
 	unsigned short bank,
 	unsigned char program,
-	char *outName)
+	char *outName) const
 {
 	if (m_generalMidi)
 	{
@@ -128,6 +149,14 @@ CMidiDestination::GetProgramName(
 	}
 
 	return false;
+}
+
+BMidiConsumer *
+CMidiDestination::ConnectedTo() const
+{
+	D_ACCESS(("CMidiDestination::ConnectedTo()\n"));
+
+	return (BMidiConsumer *)m_producer->Connections()->ItemAt(0);
 }
 
 bool
@@ -263,12 +292,30 @@ CMidiDestination::Execute(
 		{
 			m_producer->SprayNoteOn(m_channel, event.note.pitch,
 									event.note.attackVelocity, time);
+			if (!m_monitors.empty())
+			{
+				BMessage message(CDestinationMonitorView::NOTE_ON);
+				message.AddInt8("mev:note", event.note.pitch);
+				message.AddInt8("mev:velocity", event.note.attackVelocity);
+				list<BMessenger>::iterator i;
+				for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+					i->SendMessage(&message);
+			}
 			break;
 		}
 		case EvtType_NoteOff:
 		{
 			m_producer->SprayNoteOff(m_channel, event.note.pitch,
 									 event.note.releaseVelocity, time);
+			if (!m_monitors.empty())
+			{
+				BMessage message(CDestinationMonitorView::NOTE_OFF);
+				message.AddInt8("mev:note", event.note.pitch);
+				message.AddInt8("mev:velocity", event.note.releaseVelocity);
+				list<BMessenger>::iterator i;
+				for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+					i->SendMessage(&message);
+			}
 			break;
 		}
 		case EvtType_ChannelATouch:
@@ -293,6 +340,15 @@ CMidiDestination::Execute(
 				// It's an 8-bit controller.
 				m_producer->SprayControlChange(m_channel, event.controlChange.controller,
 											   event.controlChange.MSB, time);
+				if (!m_monitors.empty())
+				{
+					BMessage message(CDestinationMonitorView::CONTROL_CHANGE);
+					message.AddInt8("mev:control", event.controlChange.controller);
+					message.AddInt8("mev:value", event.controlChange.MSB);
+					list<BMessenger>::iterator i;
+					for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+						i->SendMessage(&message);
+				}
 			}
 			else
 			{
@@ -306,6 +362,16 @@ CMidiDestination::Execute(
 				if (event.controlChange.LSB < 128)
 					m_producer->SprayControlChange(m_channel, lsbIndex,
 												   event.controlChange.LSB, time);
+				if (!m_monitors.empty())
+				{
+					BMessage message(CDestinationMonitorView::CONTROL_CHANGE);
+					message.AddInt8("mev:control", event.controlChange.controller);
+					message.AddInt16("mev:value", event.controlChange.MSB * 128
+												  + event.controlChange.LSB);
+					list<BMessenger>::iterator i;
+					for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+						i->SendMessage(&message);
+				}
 			}
 			break;
 		}
@@ -314,6 +380,16 @@ CMidiDestination::Execute(
 			m_producer->SprayProgramChange(m_channel,
 										   event.programChange.program,
 										   time);
+			if (!m_monitors.empty())
+			{
+				BMessage message(CDestinationMonitorView::PROGRAM_CHANGE);
+				message.AddInt16("mev:bank", event.programChange.bankMSB * 128 +
+											 event.programChange.bankLSB);
+				message.AddInt8("mev:program", event.programChange.program);
+				list<BMessenger>::iterator i;
+				for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+					i->SendMessage(&message);
+			}
 			break;
 		}	
 		case EvtType_StartInterpolate:
@@ -326,16 +402,31 @@ CMidiDestination::Execute(
 										   m_currentPitch & 0x7f,
 										   m_currentPitch >> 7,
 										   time);
+				if (!m_monitors.empty())
+				{
+					BMessage message(CDestinationMonitorView::PITCH_BEND);
+					message.AddInt16("mev:pitch", m_currentPitch - 8192);
+					list<BMessenger>::iterator i;
+					for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+						i->SendMessage(&message);
+				}
 			}
 			break;
 		}
 		case EvtType_PitchBend:
 		{
-			// Don't send un-needed pitch-bends
 			m_producer->SprayPitchBend(m_channel,
 									   event.pitchBend.targetBend & 0x7f,
 									   event.pitchBend.targetBend >> 7,
 									   time);
+			if (!m_monitors.empty())
+			{
+				BMessage message(CDestinationMonitorView::PITCH_BEND);
+				message.AddInt16("mev:pitch", event.pitchBend.targetBend - 8192);
+				list<BMessenger>::iterator i;
+				for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+					i->SendMessage(&message);
+			}
 			break;
 		}
 		case EvtType_SysEx:
@@ -440,7 +531,7 @@ CConsoleView *
 CMidiDestination::MakeMonitorView(
 	BRect rect)
 {
-	return NULL;
+	return new CDestinationMonitorView(rect, this);
 }
 
 void
@@ -676,6 +767,31 @@ void
 CMidiDestination::Undeleted()
 {
 	// +++ reconnect
+}
+
+// ---------------------------------------------------------------------------
+// Monitor Management
+
+void
+CMidiDestination::MonitorOpened(
+	const BMessenger &messenger)
+{
+	m_monitors.push_back(messenger);
+}
+
+void
+CMidiDestination::MonitorClosed(
+	const BMessenger &messenger)
+{
+	list<BMessenger>::iterator i;
+	for (i = m_monitors.begin(); i != m_monitors.end(); ++i)
+	{
+		if (*i == messenger)
+		{
+			m_monitors.erase(i);
+			return;
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------

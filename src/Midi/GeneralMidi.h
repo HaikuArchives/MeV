@@ -47,6 +47,9 @@ namespace GeneralMidi
 	const char *				GetProgramNameFor(
 									uint8 program);
 
+	const char *				GetControllerNameFor(
+									uint8 controllerNumber);
+
 	const char *				GetDrumSoundNameFor(
 									uint8 note);
 };

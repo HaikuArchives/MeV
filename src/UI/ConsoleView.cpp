@@ -166,10 +166,6 @@ CConsoleView::MouseDown(
 				Container()->DeselectAll();
 			SetSelected(true);
 		}
-		else
-		{
-			SetSelected(false);
-		}
 	}
 }
 

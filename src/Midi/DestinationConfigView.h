@@ -35,10 +35,9 @@
 
 #include "ConsoleView.h"
 
-// STL
-#include <map>
-
+class BMenuField;
 class BPopUpMenu;
+class BStringView;
 class BTextControl;
 
 namespace Midi
@@ -75,6 +74,12 @@ public:						// CConsoleView Implementation
 
 	virtual void			AttachedToWindow();
 
+	virtual void			Draw(
+								BRect updateRect);
+
+	virtual void			Expanded(
+								bool expanded);
+
 	virtual void			GetPreferredSize(
 								float *width,
 								float *height);
@@ -92,8 +97,14 @@ private:					// Instance Data
 
 	CMidiDestination *		m_destination;
 
-	BPopUpMenu *			m_channelMenu;
+	BStringView *			m_portMenuLabel;
+	BMenuField *			m_portMenuField;
 	CMidiPortsMenu *		m_portMenu;
+
+	BMenuField *			m_channelMenuField;
+	BPopUpMenu *			m_channelMenu;
+
+	BBitmap *				m_consumerIcon;
 };
 
 };

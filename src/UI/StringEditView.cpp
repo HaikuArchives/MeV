@@ -55,7 +55,7 @@ CStringEditView::CStringEditView(
 CStringEditView::CStringEditView(
 	BRect frame,
 	BString text,
-	BFont *font,
+	const BFont *font,
 	rgb_color textColor,
 	rgb_color bgColor,
 	BMessage *message,

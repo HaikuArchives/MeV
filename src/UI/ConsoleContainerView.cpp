@@ -119,8 +119,9 @@ CConsoleContainerView::Pack()
 	{
 		CConsoleView *view = SlotAt(i);
 		view->ResizeToPreferred();
-		view->MoveTo(horizontalOffset, 0.0);
-		horizontalOffset = view->Frame().right + 1.0;
+		view->MoveTo(horizontalOffset - Bounds().left,
+					 0.0 - Bounds().top);
+		horizontalOffset += view->Frame().Width() + 1.0;
 	}
 }
 

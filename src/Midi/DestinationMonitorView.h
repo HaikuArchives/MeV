@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * DestinationView.h (MeV/UI)
+ * DestinationMonitorView.h (MeV/Midi)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -19,42 +19,35 @@
  *  Technical Arts. All Rights Reserved.
  *
  *  Contributor(s): 
- *		Dan Walton (dwalton)
  *		Christopher Lenz (cell)
+ *		Dan Walton (dwalton)
  *
- *	History:
- *	6/21/2000		dwalton
- *	Original implementation.
- *	8/01/2000		dwalton
- *	Name change, many improvements.
+ * ---------------------------------------------------------------------
+ * History:
+ *	12/25/2000	cell
+ *		Original implementation
  * ---------------------------------------------------------------------
  * To Do:
- * 
+ *
  * ===================================================================== */
 
-#ifndef __C_DestinationView_H__
-#define __C_DestinationView_H__
+#ifndef __C_DestinationMonitorView_H__
+#define __C_DestinationMonitorView_H__
 
 #include "ConsoleView.h"
 
-// Support Kit
-#include <String.h>
+class BMessageRunner;
 
-/**
- *		A class that manages the m_destinations.  
- *		@author	Christoper Lenz, Dan Walton.  
- */
- 
-class CColorWell;
-class CDestination;
+namespace Midi
+{
 
-class BBitmap;
-class BCheckBox;
-class BPopUpMenu;
-class BStringView;
-class BTextControl;
+class CMidiDestination;
+class CNoteMonitorView;
+class CPitchBendMonitorView;
+class CProgramChangeMonitorView;
+class CControlChangeMonitorView;
 
-class CDestinationView
+class CDestinationMonitorView
 	:	public CConsoleView
 {
 
@@ -62,43 +55,57 @@ public:							// Constants
 
 	enum messages
 	{
-								NAME_CHANGED = 'dmoA',
+								TICK = 'dmvA',
 
-								RENAME,
+								/** Note On event
+								 *	int8	"mev:note"		note number
+								 *	int8	"mev:velocity"	attack velocity
+								 */
+								NOTE_ON,
 
-								MUTED,
+								/** Note Off event
+								 *	int8	"mev:note"		note number
+								 *	int8	"mev:velocity"	release velocity
+								 */
+								NOTE_OFF,
 
-								SOLO,
+								/** Program Change event
+								 *	int16	"mev:bank"		program bank
+								 *	int8	"mev:program"	program number
+								 */
+								PROGRAM_CHANGE,
 
-								LATENCY_CHANGED,
+								/** MIDI Pitch Bend event
+								 *	int16	"mev:pitch"		pitch bend value
+								 */
+								PITCH_BEND,
 
-								CHANGE_COLOR,
-
-								COLOR_CHANGED,
-
-								EXPAND,
-
-								COLLAPSE
+								/** Control Change event
+								 *	int8	"mev:control"	control number
+								 *	int8	"mev:value"		control value (single-byte)
+								 *	int16	"mev:value"		control value (two-byte)
+								 */
+								CONTROL_CHANGE
 	};
 
 public:							// Constructor/Destructor
-								
-								/**	Constructor.	*/
-								CDestinationView(
+
+								CDestinationMonitorView(
 									BRect frame,
-									CDestination *destination);
-								
-								/**	Destructor.	*/
-	virtual 					~CDestinationView();
+									CMidiDestination *destination);
+
+	virtual						~CDestinationMonitorView();
 
 public:							// Accessors
 
-	CDestination *				Destination() const
+	CMidiDestination *			Destination() const
 								{ return m_destination; }
 
 public:							// CConsoleView Implementation
 
 	virtual void				AttachedToWindow();
+
+	virtual void				DetachedFromWindow();
 
 	virtual void				Draw(
 									BRect updateRect);
@@ -113,52 +120,27 @@ public:							// CConsoleView Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				MouseDown(
-									BPoint point);
-
 	virtual bool				SubjectReleased(
 									CObservable *subject);
 
 	virtual void				SubjectUpdated(
 									BMessage *message);
 
-private:						// Internal Operations
-
-	void						_showContextMenu(
-									BPoint point);
-
-	void						_updateIcon();
-
-	void						_updateLatency();
-
-	void						_updateName();
-
 private:						// Instance Data
 
-	CDestination *				m_destination;
+	CMidiDestination *			m_destination;
 
-	BString						m_truncatedName;
+	BMessageRunner *			m_messageRunner;
 
-	BRect						m_nameFrame;
+	CNoteMonitorView *			m_noteMeter;
+								
+	CProgramChangeMonitorView *	m_programMeter;
 
-	bool						m_editingName;
+	CPitchBendMonitorView *		m_pitchBendMeter;
 
-	BBitmap *					m_icon;
-
-	BRect						m_iconFrame;
-
-	CColorWell *				m_colorWell;
-
-	BCheckBox *					m_mutedCheckBox;
-
-	BCheckBox *					m_soloCheckBox;
-
-	BTextControl *				m_latencyControl;
-	BStringView *				m_msLabel;
-
-	CConsoleView *				m_configView;
-
-	CConsoleView *				m_monitorView;
+	CControlChangeMonitorView *	m_controllerMeter;
 };
 
-#endif /* __C_DestinationView_H__ */
+};
+
+#endif /* __C_DestinationMonitorView_H__ */

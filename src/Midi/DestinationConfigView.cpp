@@ -35,60 +35,22 @@ CDestinationConfigView::CDestinationConfigView(
 	BRect frame,
 	CMidiDestination *destination)
 	:	CConsoleView(frame, "Configuration"),
-		m_destination(destination)
+		m_destination(destination),
+		m_portMenuLabel(NULL),
+		m_portMenuField(NULL),
+		m_portMenu(NULL),
+		m_channelMenuField(NULL),
+		m_channelMenu(NULL),
+		m_consumerIcon(NULL)
 {
 	D_ALLOC(("CDestinationConfigView::CDestinationConfigView()\n"));
 
-	MakeExpandable(false);
+	MakeExpandable(true);
 	MakeSelectable(false);
 
 	Destination()->AddObserver(this);
 
-	BFont font;
-	GetFont(&font);
-	font_height fh;
-	font.GetHeight(&fh);
-	BRect labelRect, fieldRect;
-	BMenuField *menuField;
-	BStringView *stringView;
-
-	// add "Ports" menu
-	labelRect = Bounds();
-	labelRect.InsetBy(2.0, 2.0);
-	labelRect.bottom = labelRect.top + fh.ascent + fh.descent;
-	stringView = new BStringView(labelRect, "", "Port:");
-	stringView->SetHighColor(tint_color(HighColor(), B_LIGHTEN_1_TINT));
-	AddChild(stringView);
-	m_portMenu = new CMidiPortsMenu(Destination());
-	fieldRect = Bounds();
-	fieldRect.InsetBy(2.0, 2.0);
-	fieldRect.top = labelRect.bottom + 2.0;
-	fieldRect.bottom = fieldRect.top + 2 * (fh.ascent + fh.descent);
-	menuField = new BMenuField(fieldRect, "MIDI Port", "", m_portMenu);
-	menuField->SetDivider(0.0);
-	AddChild(menuField);
-
-	// add "Channels" menu
-	m_channelMenu = new BPopUpMenu("Channel");
-	m_channelMenu->SetLabelFromMarked(true);
-	for (int32 c = 0; c <= 15; c++)
-	{
-		BMessage *message = new BMessage(CHANNEL_SELECTED);
-		message->AddInt8("value", c);
-		BString channelName;
-		channelName << (c + 1);
-		BMenuItem *item;
-		m_channelMenu->AddItem(item = new BMenuItem(channelName.String(),
-													 message));
-		if (c == m_destination->Channel())
-			item->SetMarked(true);
-	}
-	fieldRect.OffsetTo(fieldRect.left, fieldRect.bottom + 2.0);
-	menuField = new BMenuField(fieldRect, "Channel", "Channel: ",
-							   m_channelMenu);
-	menuField->SetHighColor(tint_color(HighColor(), B_LIGHTEN_1_TINT));
-	menuField->SetDivider(font.StringWidth("Channel:  "));
-	AddChild(menuField);
+	Expanded(true);
 }
 
 CDestinationConfigView::~CDestinationConfigView()
@@ -112,9 +74,123 @@ CDestinationConfigView::AttachedToWindow()
 
 	CConsoleView::AttachedToWindow();
 
-	BMessenger messenger(this);
-	m_channelMenu->SetTargetForItems(messenger);
-	m_portMenu->SetTarget(messenger);
+	if (IsExpanded())
+	{
+		BMessenger messenger(this);
+		m_channelMenu->SetTargetForItems(messenger);
+		m_portMenu->SetTarget(messenger);
+	}
+}
+
+void
+CDestinationConfigView::Draw(
+	BRect updateRect)
+{
+	CConsoleView::Draw(updateRect);
+
+	if (!IsExpanded())
+	{
+		SetDrawingMode(B_OP_OVER);
+		BPoint offset(Bounds().LeftTop());
+		offset.x = Bounds().Width() / 2.0 - B_MINI_ICON / 2.0;
+		offset.y += 5.0;
+		if (m_consumerIcon != NULL)
+			DrawBitmapAsync(m_consumerIcon, offset);
+		offset.y += B_MINI_ICON + 5.0;
+
+		BFont font;
+		GetFont(&font);
+		font_height fh;
+		font.GetHeight(&fh);
+		offset.y += fh.ascent;
+
+		BString channelStr;
+		channelStr << Destination()->Channel() + 1;
+		offset.x = Bounds().Width() / 2.0
+				   - font.StringWidth(channelStr.String()) / 2.0;
+		SetHighColor(tint_color(HighColor(), B_LIGHTEN_1_TINT));
+		DrawString(channelStr.String(), offset);
+	}
+}
+
+void
+CDestinationConfigView::Expanded(
+	bool expanded)
+{
+	if (expanded)
+	{
+		BFont font;
+		GetFont(&font);
+		font_height fh;
+		font.GetHeight(&fh);
+		BRect labelRect, fieldRect;
+
+		if (m_portMenu == NULL)
+		{
+			// add "Ports" menu
+			labelRect = Bounds();
+			labelRect.InsetBy(2.0, 2.0);
+			labelRect.bottom = labelRect.top + fh.ascent + fh.descent;
+			m_portMenuLabel = new BStringView(labelRect, "", "Port:");
+			m_portMenuLabel->SetHighColor(tint_color(HighColor(),
+													 B_LIGHTEN_1_TINT));
+			m_portMenu = new CMidiPortsMenu(Destination());
+			fieldRect = Bounds();
+			fieldRect.InsetBy(2.0, 2.0);
+			fieldRect.top = labelRect.bottom + 2.0;
+			fieldRect.bottom = fieldRect.top + 2 * (fh.ascent + fh.descent);
+			m_portMenuField = new BMenuField(fieldRect, "MIDI Port", "",
+											 m_portMenu);
+			m_portMenuField->SetDivider(0.0);
+		}
+		AddChild(m_portMenuLabel);
+		AddChild(m_portMenuField);
+
+		if (m_channelMenu == NULL)
+		{
+			// add "Channels" menu
+			m_channelMenu = new BPopUpMenu("Channel");
+			m_channelMenu->SetLabelFromMarked(true);
+			for (int32 c = 0; c <= 15; c++)
+			{
+				BMessage *message = new BMessage(CHANNEL_SELECTED);
+				message->AddInt8("value", c);
+				BString channelName;
+				channelName << (c + 1);
+				BMenuItem *item;
+				m_channelMenu->AddItem(item = new BMenuItem(channelName.String(),
+															 message));
+				if (c == Destination()->Channel())
+					item->SetMarked(true);
+			}
+			fieldRect.OffsetTo(fieldRect.left, fieldRect.bottom + 2.0);
+			m_channelMenuField = new BMenuField(fieldRect, "Channel", "Channel: ",
+									   m_channelMenu);
+			m_channelMenuField->SetHighColor(tint_color(HighColor(),
+														B_LIGHTEN_1_TINT));
+			m_channelMenuField->SetDivider(font.StringWidth("Channel:  "));
+		}
+		AddChild(m_channelMenuField);
+	}
+	else
+	{
+		RemoveChild(m_portMenuLabel);
+		RemoveChild(m_portMenuField);
+		RemoveChild(m_channelMenuField);
+
+		if (m_consumerIcon != NULL)
+			delete m_consumerIcon;
+
+		m_consumerIcon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
+										   B_MINI_ICON - 1.0), B_CMAP8);
+		if (CMidiModule::Instance()->GetIconFor(Destination()->ConnectedTo(),
+												B_MINI_ICON,
+												m_consumerIcon) != B_OK)
+		{
+			delete m_consumerIcon;
+			m_consumerIcon = NULL;
+		}
+	}
 }
 
 void
@@ -124,8 +200,21 @@ CDestinationConfigView::GetPreferredSize(
 {
 	D_HOOK(("CDestinationConfigView::GetPreferredSize()\n"));
 
-	*width = Bounds().Width();
-	*height = FindView("Channel")->Frame().bottom + 7.0;
+	if (IsExpanded())
+	{
+		*width = Bounds().Width();
+		*height = FindView("Channel")->Frame().bottom + 7.0;
+	}
+	else
+	{
+		BFont font;
+		GetFont(&font);
+		font_height fh;
+		font.GetHeight(&fh);
+
+		*width = 10.0 + B_MINI_ICON + 10.0;
+		*height = 5.0 + B_MINI_ICON + 5.0 + fh.ascent + fh.descent + 5.0;
+	}
 }
 
 void

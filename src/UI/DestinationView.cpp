@@ -41,12 +41,11 @@ CDestinationView::CDestinationView(
 		m_destination(destination),
 		m_editingName(false),
 		m_icon(NULL),
-		m_iconOffset(2.0, 2.0),
+		m_iconFrame(2.0, 2.0, B_MINI_ICON + 1.0, B_MINI_ICON + 1.0),
 		m_mutedCheckBox(NULL),
 		m_soloCheckBox(NULL),
 		m_configView(NULL),
-		m_monitorView(NULL),
-		m_contextMenu(NULL)
+		m_monitorView(NULL)
 {
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	SetFont(be_plain_font);
@@ -54,11 +53,9 @@ CDestinationView::CDestinationView(
 	CWriteLock lock(Destination());
 	Destination()->AddObserver(this);
 
-	BFont font;
-	GetFont(&font);
 	font_height fh;
-	font.GetHeight(&fh);
-	float controlOffset = font.StringWidth("Latency:   ");
+	be_plain_font->GetHeight(&fh);
+	float controlOffset = be_plain_font->StringWidth("Latency:   ");
 
 	_updateIcon();
 	_updateName();
@@ -88,7 +85,7 @@ CDestinationView::CDestinationView(
 	BRect wellRect(rect);
 	wellRect.left = 5.0;
 	wellRect.right = controlOffset - 5.0;
-	wellRect.top = m_nameFrame.bottom + 8.0;
+	wellRect.top = m_nameFrame.bottom + 5.0;
 	wellRect.bottom = wellRect.top + wellRect.Width();
 	wellRect.InsetBy(5.0, 5.0);
 	m_colorWell = new CColorWell(wellRect, new BMessage(COLOR_CHANGED));
@@ -98,7 +95,7 @@ CDestinationView::CDestinationView(
 	// add "Latency" text field
 	rect.OffsetBy(0.0, rect.Height() + 10.0);
 	rect.left = Bounds().left + 2.0;
-	rect.right -= font.StringWidth("  ms  ");
+	rect.right -= be_plain_font->StringWidth("  ms  ");
 	m_latencyControl = new BTextControl(rect, "Latency", "Latency:", "",
 										new BMessage(LATENCY_CHANGED));
 	m_latencyControl->SetDivider(controlOffset - 2.0);
@@ -113,7 +110,7 @@ CDestinationView::CDestinationView(
 	m_msLabel->SetHighColor(tint_color(ViewColor(), B_DARKEN_2_TINT));
 
 	// add configuration view
-	rect.top = rect.bottom + 12.0;
+	rect.top = rect.bottom + 8.0;
 	rect.left = Bounds().left + 4.0;
 	rect.right = Bounds().right - 4.0;
 	rect.bottom = Bounds().bottom - 4.0;
@@ -121,6 +118,14 @@ CDestinationView::CDestinationView(
 	AddChild(m_configView);
 	m_configView->ResizeToPreferred();
 	rect = m_configView->Frame();
+
+	// add monitor view
+	rect.OffsetBy(0.0, m_configView->Frame().Height() + 5.0);
+	rect.bottom += 20.0;
+	m_monitorView = Destination()->MakeMonitorView(rect);
+	AddChild(m_monitorView);
+	m_monitorView->ResizeToPreferred();
+	rect = m_monitorView->Frame();
 
 	_updateLatency();
 }
@@ -156,7 +161,7 @@ CDestinationView::Draw(
 	if (m_icon != NULL)
 	{
 		SetDrawingMode(B_OP_OVER);
-		DrawBitmapAsync(m_icon, m_iconOffset);
+		DrawBitmapAsync(m_icon, m_iconFrame.LeftTop());
 	}
 
 	if (!m_editingName)
@@ -164,8 +169,84 @@ CDestinationView::Draw(
 		SetDrawingMode(B_OP_OVER);
 		font_height fh;
 		GetFontHeight(&fh);
-		DrawString(m_truncatedName.String(),
-				   m_nameFrame.LeftBottom() - BPoint(0.0, fh.descent));
+		if (IsExpanded())
+		{
+			DrawString(m_truncatedName.String(),
+					   m_nameFrame.LeftBottom() - BPoint(0.0, fh.descent));
+		}
+		else
+		{
+			DrawString(m_truncatedName.String(),
+					   m_nameFrame.LeftTop() - BPoint(fh.descent, 0.0));
+		}
+	}
+}
+
+void
+CDestinationView::Expanded(
+	bool expanded)
+{
+	if (expanded)
+	{
+		AddChild(m_colorWell);
+		AddChild(m_mutedCheckBox);
+		AddChild(m_soloCheckBox);
+		AddChild(m_latencyControl);
+		AddChild(m_msLabel);
+
+		m_configView->SetExpanded(true);
+		m_configView->ResizeToPreferred();
+		m_monitorView->SetExpanded(true);
+		m_monitorView->ResizeToPreferred();
+	}
+	else
+	{
+		RemoveChild(m_colorWell);
+		RemoveChild(m_mutedCheckBox);
+		RemoveChild(m_soloCheckBox);
+		RemoveChild(m_latencyControl);
+		RemoveChild(m_msLabel);
+
+		m_configView->SetExpanded(false);
+		m_configView->ResizeToPreferred();
+		m_monitorView->SetExpanded(false);
+		m_monitorView->ResizeToPreferred();
+	}
+
+	Container()->Pack();
+
+	// pack all consoles towards the bottom
+	float horizontalOffset;
+	float diff;
+	float maxWidth = 0.0;
+	horizontalOffset = Bounds().bottom - 5.0;
+	diff = horizontalOffset - m_monitorView->Frame().bottom;
+	if (diff != 0.0)
+		m_monitorView->MoveBy(0.0, diff);
+	if (m_monitorView->Frame().Width() > maxWidth)
+		maxWidth = m_monitorView->Frame().Width();
+	horizontalOffset = m_monitorView->Frame().top - 5.0;
+	diff = horizontalOffset - m_configView->Frame().bottom;
+	if (diff != 0.0)
+		m_configView->MoveBy(0.0, diff);
+	if (m_configView->Frame().Width() > maxWidth)
+		maxWidth = m_configView->Frame().Width();
+
+	// resize consoles to have the same width
+	m_monitorView->ResizeBy(maxWidth - m_monitorView->Frame().Width(), 0.0);
+	m_configView->ResizeBy(maxWidth - m_configView->Frame().Width(), 0.0);
+
+	// now update parameters for icon and name display
+	if (expanded)
+	{
+		m_iconFrame.OffsetTo(2.0, 2.0);
+		_updateName();
+	}
+	else
+	{
+		m_iconFrame.OffsetTo(floor(Bounds().Width() / 2 - B_MINI_ICON / 2),
+							2.0);
+		_updateName();
 	}
 }
 
@@ -176,8 +257,8 @@ CDestinationView::GetPreferredSize(
 {
 	D_HOOK(("CDestinationView::GetPreferredSize()\n"));
 
-	*width = m_configView->Frame().right + 5.0;
-	*height = m_configView->Frame().bottom + 5.0;
+	*width = m_monitorView->Frame().right + 5.0;
+	*height = m_monitorView->Frame().bottom + 5.0;
 }
 
 void
@@ -203,7 +284,10 @@ CDestinationView::MessageReceived(
 
 			BMessage *message = new BMessage(NAME_CHANGED);
 			BMessenger messenger(this, Window());
-			CStringEditView *view = new CStringEditView(m_nameFrame, m_destination->Name(),
+			rgb_color black = {0, 0, 0, 255};
+			rgb_color white = {255, 255, 255, 255};
+			CStringEditView *view = new CStringEditView(m_nameFrame,
+														m_destination->Name(),
 														message, messenger);
 			AddChild(view);
 		
@@ -227,7 +311,8 @@ CDestinationView::MessageReceived(
 			D_MESSAGE((" -> MUTED\n"));
 
 			CWriteLock lock(Destination());
-			Destination()->SetMuted(m_mutedCheckBox->Value());
+			bool muted = !Destination()->IsMuted();
+			Destination()->SetMuted(muted);
 			break;
 		}
 		case SOLO:
@@ -235,7 +320,8 @@ CDestinationView::MessageReceived(
 			D_MESSAGE((" -> SOLO\n"));
 
 			CWriteLock lock(Destination());
-			Destination()->SetSolo(m_soloCheckBox->Value());
+			bool solo = !Destination()->IsSolo();
+			Destination()->SetSolo(solo);
 			break;
 		}
 		case LATENCY_CHANGED:
@@ -281,6 +367,16 @@ CDestinationView::MessageReceived(
 			window->Show();
 			break;
 		}
+		case COLLAPSE:
+		{
+			SetExpanded(false);
+			break;
+		}
+		case EXPAND:
+		{
+			SetExpanded(true);
+			break;
+		}
 		default:
 		{
 			CConsoleView::MessageReceived(message);
@@ -297,10 +393,15 @@ CDestinationView::MouseDown(
 	int32 buttons = B_PRIMARY_MOUSE_BUTTON;
 	Window()->CurrentMessage()->FindInt32("buttons", &buttons);
 
-	if ((buttons == B_PRIMARY_MOUSE_BUTTON)
-	 && m_nameFrame.Contains(point)
-	 && IsSelected())
-		Window()->PostMessage(RENAME, this);
+	if (buttons == B_PRIMARY_MOUSE_BUTTON)
+	{
+		if (m_nameFrame.Contains(point) && IsSelected() && IsExpanded())
+			Window()->PostMessage(RENAME, this);
+		else if (m_iconFrame.Contains(point))
+			Window()->PostMessage(IsExpanded() ? COLLAPSE : EXPAND, this);
+		else
+			CConsoleView::MouseDown(point);
+	}
 	else if (buttons == B_SECONDARY_MOUSE_BUTTON)
 	{
 		if (!(modifiers() & B_SHIFT_KEY))
@@ -353,35 +454,37 @@ void
 CDestinationView::_showContextMenu(
 	BPoint point)
 {
-	if (m_contextMenu == NULL)
-	{
-		m_contextMenu = new BPopUpMenu("", false, false);
-		m_contextMenu->SetFont(be_plain_font);
+	BPopUpMenu *menu = new BPopUpMenu("", false, false);
+	menu->SetFont(be_plain_font);
 
-		BMenuItem *item;
+	BMenuItem *item;
 
-		item = new BMenuItem("Collapse", NULL);
+	item = new BMenuItem("Collapse", new BMessage(COLLAPSE), '-');
+	if (!IsExpanded())
 		item->SetEnabled(false);
-		m_contextMenu->AddItem(item);
-		item = new BMenuItem("Expand", NULL);
+	menu->AddItem(item);
+	item = new BMenuItem("Expand", new BMessage(EXPAND), '+');
+	if (IsExpanded())
 		item->SetEnabled(false);
-		m_contextMenu->AddItem(item);
-		m_contextMenu->AddSeparatorItem();
+	menu->AddItem(item);
+	menu->AddSeparatorItem();
 
-		item = new BMenuItem("Remove", new BMessage(MENU_CLEAR));
-		m_contextMenu->AddItem(item);
-		m_contextMenu->AddSeparatorItem();
+	item = new BMenuItem("Remove", new BMessage(MENU_CLEAR));
+	menu->AddItem(item);
+	menu->AddSeparatorItem();
 
-		item = new BMenuItem("Rename", new BMessage(RENAME));
-		m_contextMenu->AddItem(item);
-		item = new BMenuItem("Change Color", new BMessage(CHANGE_COLOR));
-		m_contextMenu->AddItem(item);
-	}
+	item = new BMenuItem("Rename", new BMessage(RENAME));
+	if (!IsExpanded())
+		item->SetEnabled(false);
+	menu->AddItem(item);
+	item = new BMenuItem("Change Color", new BMessage(CHANGE_COLOR));
+	menu->AddItem(item);
 
-	m_contextMenu->SetTargetForItems(this);
+	menu->SetTargetForItems(this);
+	menu->SetAsyncAutoDestruct(true);
 	ConvertToScreen(&point);
 	point -= BPoint(1.0, 1.0);
-	m_contextMenu->Go(point, true, true, true);
+	menu->Go(point, true, true, true);
 }
 
 void
@@ -389,12 +492,10 @@ CDestinationView::_updateIcon()
 {
 	CReadLock lock(Destination());
 
-	BRect rect(0.0, 0.0, B_MINI_ICON - 1.0, B_MINI_ICON - 1.0);
 	if (m_icon == NULL)
-		m_icon = new BBitmap(rect, B_CMAP8);
+		m_icon = new BBitmap(m_iconFrame.OffsetToCopy(B_ORIGIN), B_CMAP8);
 	Destination()->GetIcon(B_MINI_ICON, m_icon);
-	rect.OffsetTo(m_iconOffset);
-	Invalidate(rect);
+	Invalidate(m_iconFrame);
 }
 
 void
@@ -414,21 +515,46 @@ CDestinationView::_updateName()
 {
 	CReadLock lock(Destination());
 
-	BFont font;
-	GetFont(&font);
-	font_height fh;
-	font.GetHeight(&fh);
-
 	// calculate name rect and truncate name if necessary
-	m_nameFrame.left = m_iconOffset.x + B_MINI_ICON + 5.0;
-	m_nameFrame.right = Bounds().right - 2.0;
-	m_nameFrame.top = m_iconOffset.y + B_MINI_ICON / 2.0
-					  - (fh.ascent + fh.descent) / 2.0;
-	m_nameFrame.bottom = m_nameFrame.top + fh.ascent + fh.descent;
-	m_truncatedName = Destination()->Name();
-	font.TruncateString(&m_truncatedName, B_TRUNCATE_MIDDLE, m_nameFrame.Width());
-	m_nameFrame.right = m_nameFrame.left
-						+ font.StringWidth(m_truncatedName.String());
+	if (IsExpanded())
+	{
+		BFont font(be_plain_font);
+		SetFont(&font);
+		font_height fh;
+		font.GetHeight(&fh);
+		SetFont(&font);
+
+		m_nameFrame.left = m_iconFrame.right + 5.0;
+		m_nameFrame.right = Bounds().right - 2.0;
+		m_nameFrame.top = m_iconFrame.top + m_iconFrame.Height() / 2.0
+						  - (fh.ascent + fh.descent) / 2.0;
+		m_nameFrame.bottom = m_nameFrame.top + fh.ascent + fh.descent;
+		m_truncatedName = Destination()->Name();
+		be_plain_font->TruncateString(&m_truncatedName, B_TRUNCATE_MIDDLE,
+									  m_nameFrame.Width());
+		m_nameFrame.right = m_nameFrame.left
+							+ font.StringWidth(m_truncatedName.String());
+	}
+	else
+	{
+		BFont font(be_plain_font);
+		font.SetRotation(-90.0);
+		font_height fh;
+		font.GetHeight(&fh);
+		SetFont(&font);
+
+		m_nameFrame.left = floor(2.0 + Bounds().Width() / 2
+									 - (fh.descent + fh.ascent) / 2);
+		m_nameFrame.top = 2.0 + B_MINI_ICON + 5.0;
+		m_nameFrame.right = Bounds().right - 2.0;
+		m_nameFrame.bottom = m_configView->Frame().top - 5.0;
+
+		m_truncatedName = Destination()->Name();
+		be_plain_font->TruncateString(&m_truncatedName, B_TRUNCATE_MIDDLE,
+									  m_nameFrame.Height());
+		m_nameFrame.bottom = m_nameFrame.top
+							 + font.StringWidth(m_truncatedName.String());
+	}
 }
 
 // END - DestinationView.cpp

@@ -22,12 +22,12 @@
  *              Dan Walton (dwalton) 
  *				Christopher Lenz (cell)
  * 
- * History: 
- * 6/21/00 Original Implementation: Dan Walton 
- * 
- * --------------------------------------------------------------------- 
- * To Do: 
- * 
+ * History:
+ *	6/21/00		dwalton
+ *		Original implementation
+ *	12/27/2000	cell
+ *		Removed methods to create, modify and delete destinations from
+ *		here. That functionality is now served by the Mix window.
  * ===================================================================== */ 
 
 #ifndef __C_DestinationListView_H__ 
@@ -37,17 +37,14 @@
 
 // Interface Kit
 #include <View.h>
-// Standard Template Library
-#include <map.h> 
 
 class CDestinationModifier;
 class CMeVDoc;
 class CEventTrack;
 
 /**
- *		@author	Christoper Lenz, Dan Walton.  
+ *	@author	Christoper Lenz, Dan Walton.  
  */ 
- 
 class CDestinationListView
 	:	public BView,
 		public CObserver
@@ -58,12 +55,6 @@ public:							// Constants
 	enum
 	{
 								DESTINATION_SELECTED = 'dliA',
-
-								CREATE_DESTINATION,
-
-								EDIT_DESTINATION,
-
-								DELETE_DESTINATION
 	};
 
 public:							// Constructor/Destructor
@@ -129,13 +120,7 @@ private:						// Instance Data
 
 	BPopUpMenu *				m_destMenu; 
 
-	BButton *					m_editButton; 
-
-	BButton *					m_deleteButton; 
-
 	BMenuField *				m_destField;
-
-	map<int, CDestinationModifier *> m_modifierMap;  
 }; 
 
 #endif /* __C_DestinationListView_H__ */

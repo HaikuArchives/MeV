@@ -51,7 +51,11 @@ public:							// Constants
 
 	enum messages
 	{
-								NEW_DESTINATION = 'mixA'
+								NEW_DESTINATION = 'mixA',
+
+								COLLAPSE_ALL,
+
+								EXPAND_ALL
 	};
 
 public:							// Constructor/Destructor

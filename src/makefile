@@ -34,8 +34,11 @@ SRCS= \
 	Engine/PlayerControl.cpp \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
+	Engine/Time.cpp \
+	Engine/TimeSpan.cpp \
 	Engine/Track.cpp \
 	Midi/DestinationConfigView.cpp \
+	Midi/DestinationMonitorView.cpp \
 	Midi/GeneralMidi.cpp \
 	Midi/InternalSynth.cpp \
 	Midi/MidiDestination.cpp \
@@ -64,7 +67,6 @@ SRCS= \
 	UI/ContinuousValueEditor.cpp \
 	UI/CursorCache.cpp \
 	UI/DestinationListView.cpp \
-	UI/DestinationModifier.cpp \
 	UI/DestinationView.cpp \
 	UI/EventEditor.cpp \
 	UI/EventRenderer.cpp \

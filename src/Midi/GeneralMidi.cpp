@@ -231,6 +231,31 @@ GeneralMidi::GetProgramNameFor(
 }
 
 const char *
+GeneralMidi::GetControllerNameFor(
+	uint8 controllerNumber)
+{
+	switch (controllerNumber)
+	{
+		case 1:
+			return "Modulation";
+		case 7:
+			return "Main Volume";
+		case 10:
+			return "Pan";
+		case 11:
+			return "Expression";
+		case 64:
+			return "Sustain";
+		case 121:
+			return "Reset All Controllers";
+		case 123:
+			return "All Notes Off";
+		default:
+			return NULL;
+	}
+}
+
+const char *
 GeneralMidi::GetDrumSoundNameFor(
 	uint8 note)
 {

@@ -42,10 +42,14 @@
 #include "Event.h"
 
 // Standard Template Library
+#include <list>
 #include <map>
+// Application Kit
+#include <Messenger.h>
 // Support Kit
 #include <String.h>
 
+#define CONTROLLER_NAME_LENGTH 128
 #define NOTE_NAME_LENGTH 128
 #define PROGRAM_NAME_LENGTH 128
 
@@ -63,6 +67,10 @@ namespace Midi {
 class CMidiDestination
 	:	public CDestination
 {
+	/** Enable Monitor views to register/unregister with the destination,
+	 *	thus making multiple monitors possible.
+	 */
+	friend class CDestinationMonitorView;
 
 public:							// Constants
 
@@ -87,6 +95,15 @@ public:							//Constructor/Destructor
 
 public:							// Accessors
 
+	/**	Copies a string identifying a controller into outName.
+	 *	outName should point to a string buffer of at least
+	 *	CONTROLLER_NAME_LENGTH bytes.
+	 *	@return		true if a name for the controller exists.
+	 */
+	bool						GetControllerName(
+									unsigned char controller,
+									char *outName) const;
+
 	/**	Copies a string identifying a note number into outName.
 	 *	outName should point to a string buffer of at least
 	 *	NOTE_NAME_LENGTH bytes.
@@ -94,7 +111,7 @@ public:							// Accessors
 	 */
 	bool						GetNoteName(
 									unsigned char note,
-									char *outName);
+									char *outName) const;
 
 	/**	Copies the program name at the given bank and program numbers
 	 *	into outName. outName should point to a string buffer of at least
@@ -104,7 +121,7 @@ public:							// Accessors
 	bool						GetProgramName(
 									unsigned short bank,
 									unsigned char program,
-									char *outName);
+									char *outName) const;
 
 	bool						IsConnectedTo(
 									BMidiConsumer *consumer) const;
@@ -184,6 +201,14 @@ protected:
 
 	virtual void				Undeleted();
 
+protected:						// Monitor Management
+
+	void						MonitorOpened(
+									const BMessenger &messenger);
+
+	void						MonitorClosed(
+									const BMessenger &messenger);
+
 private:   						// Internal Operations
 
 	void 						_addIcons(
@@ -214,6 +239,8 @@ private:						// Instance Data
 
 	uint16						m_currentPitch;
 	uint16						m_targetPitch;
+
+	list<BMessenger>			m_monitors;
 };
 
 };

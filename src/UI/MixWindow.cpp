@@ -259,6 +259,24 @@ CMixWindow::MessageReceived(
 			// select all slots
 			m_containerView->SelectAll();
 		}
+		case COLLAPSE_ALL:
+		{
+			for (int32 i = 0; i < m_containerView->CountSlots(); i++)
+			{
+				if (m_containerView->SlotAt(i)->IsExpanded())
+					m_containerView->SlotAt(i)->SetExpanded(false);
+			}
+			break;
+		}
+		case EXPAND_ALL:
+		{
+			for (int32 i = 0; i < m_containerView->CountSlots(); i++)
+			{
+				if (!m_containerView->SlotAt(i)->IsExpanded())
+					m_containerView->SlotAt(i)->SetExpanded(true);
+			}
+			break;
+		}
 		default:
 		{
 			CDocWindow::MessageReceived(message);
@@ -354,6 +372,14 @@ CMixWindow::_addMenuBar()
 	menu->AddItem(new CQuickKeyMenuItem("Start", new BMessage(MENU_PLAY), B_ENTER, "Enter"));
 	menuBar->AddItem(menu);
 	
+	// Create the 'View' menu
+	menu = new BMenu("View");
+	menu->AddItem(new BMenuItem("Expand All", new BMessage(EXPAND_ALL),
+								'+', B_SHIFT_KEY));
+	menu->AddItem(new BMenuItem("Collapse All", new BMessage(COLLAPSE_ALL),
+								'-', B_SHIFT_KEY));
+	menuBar->AddItem(menu);
+
 	// Create the 'Window' menu
 	menu = new BMenu("Window");
 	menu->AddItem(new BMenuItem("Parts",

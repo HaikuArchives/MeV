@@ -4,7 +4,6 @@
 
 #include "DestinationListView.h"
 
-#include "DestinationModifier.h"
 #include "EventTrack.h"
 #include "IconMenuItem.h"
 #include "MathUtils.h"
@@ -20,7 +19,6 @@
 // Interface kit
 #include <Bitmap.h>
 #include <Box.h>
-#include <Button.h>
 #include <MenuField.h>
 #include <PopUpMenu.h>
 // Storage Kit
@@ -54,39 +52,12 @@ CDestinationListView::CDestinationListView(
 	// add CDestination menu-field
 	rect.InsetBy(5.0, 5.0);
 	m_destMenu = new BPopUpMenu("(None)");
-	BMenuItem *item = new BMenuItem("New" B_UTF8_ELLIPSIS,
-									  new BMessage(CREATE_DESTINATION));
-	m_destMenu->AddItem(item);
-	m_destMenu->AddSeparatorItem();
 	m_destMenu->SetLabelFromMarked(true);
 	m_destField = new BMenuField(rect, "Destination", "Destination: ", 
 								 m_destMenu);
 	m_destField->SetDivider(be_plain_font->StringWidth("Destination:  "));
 	m_destField->SetEnabled(false);
 	box->AddChild(m_destField);
-
-	font_height fh;
-	be_plain_font->GetHeight(&fh);
-
-	BRect buttonsRect(m_destField->Frame());
-	buttonsRect.left += m_destField->Divider();
-	buttonsRect.top += 2 * (fh.ascent + fh.descent);
-	buttonsRect.bottom = box->Bounds().bottom - 5.0;
-
-	// add "Delete" button
-	rect = buttonsRect;
-	rect.right = (rect.left + rect.right) / 2.0 - 3.0;
-	m_deleteButton = new BButton(rect, "Delete", "Delete", 
-								 new BMessage(DELETE_DESTINATION));
-	m_deleteButton->SetEnabled(false);
-	box->AddChild(m_deleteButton);
-
-	// add "Edit" button
-	rect.OffsetBy(rect.Width() + 5.0, 0.0);
-	m_editButton = new BButton(rect, "Edit", "Edit",
-							   new BMessage(EDIT_DESTINATION));
-	m_editButton->SetEnabled(false);
-	box->AddChild(m_editButton);
 
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 }
@@ -164,8 +135,6 @@ CDestinationListView::SetTrack(
 			if (LockLooper())
 			{
 				m_destField->SetEnabled(true);
-				m_editButton->SetEnabled(true);
-				m_deleteButton->SetEnabled(true);
 				UnlockLooper();
 			}
 
@@ -177,8 +146,6 @@ CDestinationListView::SetTrack(
 			if (LockLooper())
 			{
 				m_destField->SetEnabled(false);
-				m_editButton->SetEnabled(false);
-				m_deleteButton->SetEnabled(false);
 				UnlockLooper();
 			}
 
@@ -258,8 +225,6 @@ CDestinationListView::SubjectUpdated(
 void
 CDestinationListView::AttachedToWindow()
 {
-	m_editButton->SetTarget(this);
-	m_deleteButton->SetTarget(this);
 	m_destMenu->SetTargetForItems(this);
 }
 
@@ -302,68 +267,6 @@ CDestinationListView::MessageReceived(
 														m_track->CurrentEvent());
 					}
 				}
-			}
-			break;
-		}
-		case CREATE_DESTINATION:
-		{
-			StSubjectLock lock(*m_doc, Lock_Exclusive);
-
-			CDestination *dest = Document()->NewDestination();
-			int32 id = dest->ID();
-			Document()->SetDefaultAttribute(EvAttr_Channel, id);
-			BRect r(120, 120, 260, 300);
-			m_modifierMap[id] = new CDestinationModifier(r, id, m_doc, this);
-			m_modifierMap[id]->Show();
-
-			break;
-		}
-		case EDIT_DESTINATION:
-		{
-			StSubjectLock lock(*m_doc, Lock_Shared);
-
-			int32 id = m_doc->GetDefaultAttribute(EvAttr_Channel);
-			if (m_modifierMap[id] != NULL)
-			{
-				m_modifierMap[id]->Lock();
-				m_modifierMap[id]->Activate();
-				m_modifierMap[id]->Unlock();
-			}
-			else 
-			{
-				BRect r;
-				r.Set(120, 120, 260, 300);
-				m_modifierMap[id] = new CDestinationModifier(r, id, m_doc,
-															 this);
-				m_modifierMap[id]->Show();
-			}
-			break;
-		}
-		case DELETE_DESTINATION:
-		{	
-			int32 id = m_doc->GetDefaultAttribute(EvAttr_Channel);
-			CDestination *dest = Document()->FindDestination(id);
-
-			CDestinationDeleteUndoAction *undoAction;
-			undoAction = new CDestinationDeleteUndoAction(dest);
-			Document()->AddUndoAction(undoAction);
-
-			if (m_modifierMap[id]!=NULL)
-			{
-				m_modifierMap[id]->Lock();	
-				m_modifierMap[id]->Quit();
-				m_modifierMap[id] = NULL;
-			}
-			break;
-		}
-		case CDestinationModifier::WINDOW_CLOSED:
-		{
-			int32 destinationID = msg->FindInt32("destination_id");
-			if (m_modifierMap[destinationID] != NULL)
-			{
-				m_modifierMap[destinationID]->Lock();
-				m_modifierMap[destinationID]->Quit();
-				m_modifierMap[destinationID] = NULL;
 			}
 			break;
 		}
@@ -448,7 +351,7 @@ CDestinationListView::_destinationAdded(
 												message, icon);
 		dest->ReadUnlock();
 		item->SetTarget(this);
-		m_destMenu->AddItem(item, index + 2);
+		m_destMenu->AddItem(item, index);
 		if (id == current)
 			item->SetMarked(true);
 	}
@@ -462,7 +365,7 @@ CDestinationListView::_destinationChanged(
 	if (dest)
 	{
 		m_doc->ReadLock();
-		int32 index = m_doc->IndexOf(dest) + 2;
+		int32 index = m_doc->IndexOf(dest);
 		m_doc->ReadUnlock();
 
 		CIconMenuItem *item = (CIconMenuItem *)m_destMenu->RemoveItem(index);
@@ -493,7 +396,7 @@ void
 CDestinationListView::_destinationRemoved(
 	int32 originalIndex)
 {
-	BMenuItem *item = m_destMenu->RemoveItem(originalIndex + 2);
+	BMenuItem *item = m_destMenu->RemoveItem(originalIndex);
 	if (item)
 		delete item;
 
@@ -503,7 +406,7 @@ CDestinationListView::_destinationRemoved(
 	if (dest && !dest->IsDeleted())
 	{
 		int32 index = m_doc->IndexOf(dest);
-		item = m_destMenu->ItemAt(index + 2);
+		item = m_destMenu->ItemAt(index);
 		if (item)
 			item->SetMarked(true);
 	}
