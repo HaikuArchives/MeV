@@ -50,60 +50,67 @@ static rgb_color BLUE_PALETTE [] =
 	{0x66, 0x66, 0xff}
 };
 
-// ---------------------------------------------------------------------------
-// Event handler class for repeats
+class CTrackEventHandler
+	:	public CAbstractEventHandler
+{
 
-class CTrackEventHandler : public CAbstractEventHandler {
+public:							// CAbstractEventHandler Implementation
 
-		// No constructor
+	/** Invalidate the event. */
+	virtual void				Invalidate(
+									CEventEditor &editor,
+									const Event &ev) const ;
 
-		// Invalidate the event
-	void Invalidate(	CEventEditor	&editor,
-					const Event		&ev ) const ;
+	/** Invalidate the event. */
+	virtual BRect				Extent(
+									CEventEditor &editor,
+									const Event &ev) const;
 
-		// Invalidate the event
-	BRect Extent(		CEventEditor	&editor,
-					const Event		&ev ) const;
+	/** Pick a single event and returns the distance. */
+	virtual long				Pick(
+									CEventEditor &editor,
+									const Event &ev,
+									BPoint pickPt,
+									short &partCode) const;
 
-		// Pick a single event and returns the distance.
-	long Pick(		CEventEditor	&editor,
-					const Event		&ev,
-					BPoint			pickPt,
-					short			&partCode ) const;
+	/** For a part code returned earlier, return a cursor
+		image. */
+	virtual const uint8 *		CursorImage(
+									short partCode) const;
 
-		// For a part code returned earlier, return a cursor
-		// image...
-	const uint8 *CursorImage( short partCode ) const;
+	/** Quantize the vertical position of the mouse based
+		on the event type and return a value delta. */
+	virtual long				QuantizeDragValue(
+									CEventEditor &editor,
+									const Event &inClickEvent,
+									short partCode,
+									BPoint inClickPos,
+									BPoint inDragPos) const;
 
-		// Quantize the vertical position of the mouse based
-		// on the event type and return a value delta.
-	long QuantizeDragValue(
-		CEventEditor	&editor,
-		const Event	&inClickEvent,
-		short		partCode,			// Part of event clicked
-		BPoint		inClickPos,
-		BPoint		inDragPos ) const;
+	/** Make a drag op for dragging notes...
+		@param timeDelta The horizontal drag delta */
+	virtual EventOp *			CreateDragOp(
+									CEventEditor &editor,
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
 
-		// Make a drag op for dragging notes...
-	EventOp *CreateDragOp(
-		CEventEditor	&editor,
-		const Event	&ev,
-		short		partCode,
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
-
-	EventOp *CreateTimeOp(
-		CEventEditor	&editor,			// The editor
-		const Event	&ev,				// The clicked event
-		short		partCode,			// Part of event clicked
-		long			timeDelta,			// The horizontal drag delta
-		long			valueDelta ) const;
+	/**
+	 @param timeDelta The horizontal drag delta
+	*/
+	virtual EventOp *			CreateTimeOp(
+									CEventEditor &editor,
+									const Event &ev,
+									short partCode,
+									long timeDelta,
+									long valueDelta) const;
 };
 
-	// Invalidate the event
-void CTrackEventHandler::Invalidate(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+void
+CTrackEventHandler::Invalidate(
+	CEventEditor &editor,
+	const Event &ev) const
 {
 	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
@@ -116,10 +123,10 @@ void CTrackEventHandler::Invalidate(
 	rEditor.Invalidate( r );
 }
 
-	// Compute the extent of the event.
-BRect CTrackEventHandler::Extent(
-	CEventEditor		&editor,
-	const Event		&ev ) const
+BRect
+CTrackEventHandler::Extent(
+	CEventEditor &editor,
+	const Event &ev) const
 {
 	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
@@ -132,13 +139,12 @@ BRect CTrackEventHandler::Extent(
 	return r;
 }
 
-	// Pick a single event and return the part code
-	// (or -1 if event not picked)
-long CTrackEventHandler::Pick(
-	CEventEditor	&editor,
-	const Event		&ev,
-	BPoint			pickPt,
-	short			&partCode ) const
+long
+CTrackEventHandler::Pick(
+	CEventEditor &editor,
+	const Event &ev,
+	BPoint pickPt,
+	short &partCode) const
 {
 	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
@@ -149,7 +155,9 @@ long CTrackEventHandler::Pick(
 	return editor.PickDurationEvent( ev, r.top, r.bottom, pickPt, partCode );
 }
 
-const uint8 *CTrackEventHandler::CursorImage( short partCode ) const
+const uint8 *
+CTrackEventHandler::CursorImage(
+	short partCode) const
 {
 	switch (partCode) {
 	case 0:
@@ -166,18 +174,17 @@ const uint8 *CTrackEventHandler::CursorImage( short partCode ) const
 	return NULL;
 }
 
-	// Quantize the vertical position of the mouse based
-	// on the event type and return a value delta.
-long CTrackEventHandler::QuantizeDragValue(
-	CEventEditor	&editor,
-	const Event		&inClickEvent,
-	short			partCode,			// Part of event clicked
-	BPoint			inClickPos,
-	BPoint			inDragPos ) const
+long
+CTrackEventHandler::QuantizeDragValue(
+	CEventEditor &editor,
+	const Event &inClickEvent,
+	short partCode,
+	BPoint inClickPos,
+	BPoint inDragPos) const
 {
 	CTrackCtlStrip	&tEditor = (CTrackCtlStrip &)editor;
 
-		// Get the y position of the old note.
+	// Get the y position of the old note.
 	long			oldPos	= inClickEvent.repeat.vPos;
 	float		oldYPos	= tEditor.VPosToViewCoords( oldPos );
 	long			newPos;
@@ -188,24 +195,26 @@ long CTrackEventHandler::QuantizeDragValue(
 	return newPos - oldPos;
 }
 
-EventOp *CTrackEventHandler::CreateDragOp(
-	CEventEditor	&editor,
-	const Event		&ev,
-	short			partCode,
-	long				timeDelta,			// The horizontal drag delta
-	long				valueDelta ) const
+EventOp *
+CTrackEventHandler::CreateDragOp(
+	CEventEditor &editor,
+	const Event &ev,
+	short partCode,
+	long timeDelta,
+	long valueDelta) const
 {
 	if (partCode == 0)
 		return new VPosOffsetOp( valueDelta );
 	else return NULL;
 }
 
-EventOp *CTrackEventHandler::CreateTimeOp(
-	CEventEditor	&editor,
-	const Event		&ev,
-	short			partCode,
-	long			timeDelta,			// The horizontal drag delta
-	long			valueDelta ) const
+EventOp *
+CTrackEventHandler::CreateTimeOp(
+	CEventEditor &editor,
+	const Event &ev,
+	short partCode,
+	long timeDelta,
+	long valueDelta) const
 {
 	if (partCode == 1)
 		return new DurationOffsetOp( timeDelta );
@@ -381,6 +390,25 @@ CSequenceEventHandler::Draw(
 	editor.SetHighColor(color[shadowed ? 3 : 2 ]);
 	editor.FillRect(r);
 	
+	CTrack *track = editor.Track()->Document().FindTrack(ev.sequence.sequence);
+	if (track != NULL) 
+	{
+		int32 length = track->LogicalLength();
+		for (int32 t = ev.Start() + length; t < ev.Stop(); t += length)
+		{
+			float x = editor.TimeToViewCoords(t);
+			if (x <= r.left + 4.0)
+				break;
+			editor.SetHighColor(color[4]);
+			editor.StrokeLine(BPoint(x, r.top), BPoint(x, r.bottom),
+							  B_SOLID_HIGH);
+			editor.SetHighColor(color[0]); 
+			x += 1.0;
+			editor.StrokeLine(BPoint(x, r.top), BPoint(x, r.bottom),
+							  B_SOLID_HIGH);
+		} 
+	} 
+
 	if (r.Width() >= 6.0)
 	{
 		CTrack *track = editor.Track()->Document().FindTrack(ev.sequence.sequence);
@@ -644,10 +672,15 @@ public:							// CAbstractEventHandler Implementation
 									long timeDelta,
 									long valueDelta) const;
 
-	const char *				GetPatchName(
+private:						// Internal Operations
+
+	/** Tries to acquire the patch name of the given program change 
+		event. Returns true on success and stuffs the name in 
+		outName. */
+	bool						GetPatchName(
 									CEventEditor &editor,
 									const Event &ev,
-									char *outName) const;
+									BString *outName) const;
 
 private:						// Instance Data
 
@@ -685,65 +718,88 @@ CProgramChangeEventHandler::Draw(
 	bool shadowed) const
 {
 	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry *vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
-	bool locked = editor.Track()->IsChannelLocked(ev.GetVChannel());
+
+	BRect extent;
+	extent.left = editor.TimeToViewCoords(ev.Start());
+	extent.right = editor.TimeToViewCoords(ev.Stop()) - 1.0;
+	extent.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	extent.bottom = extent.top + m_icon->Bounds().Height();
+
+	BRect iconRect(extent.LeftTop(),
+				   extent.LeftTop() + m_icon->Bounds().RightBottom());
 
 	// acquire patch name
-	char patchNameBuf[64];
-	const char *patchName;
-	patchName = GetPatchName(editor, ev, patchNameBuf);
+	BString patchName;
+	GetPatchName(editor, ev, &patchName);
 
-	BRect iconRect = m_icon->Bounds();
-	BRect r;
-	r.left = editor.TimeToViewCoords(ev.Start());
-	r.right	= r.left + rEditor.StringWidth(patchName) + 9.0 + iconRect.Width();
-	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
-	r.bottom = r.top + rEditor.BarHeight() - 2.0;
-	
-	// Reduce size of rectangle a bit.
 	font_height fh;
 	be_plain_font->GetHeight(&fh);
-	if (r.Height() > fh.ascent + fh.descent + 2.0)
-		r.InsetBy(0.0, 1.0);
+	BRect textRect;
+	textRect.left = iconRect.right + 4.0;
+	textRect.bottom = (extent.top + extent.bottom - fh.descent + fh.ascent)
+					  / 2.0;
+	textRect.right = textRect.left
+					 + be_plain_font->StringWidth(patchName.String());
+	textRect.top = textRect.bottom - fh.ascent;
 
-	if (shadowed && rEditor.m_dragOp != NULL)
-		rEditor.SetDrawingMode(B_OP_BLEND);
-	else
-		rEditor.SetDrawingMode(B_OP_OVER);
-	
-	// A test -- don't show the existing event if we're adjusting via slider.
-	if (!shadowed && rEditor.PendingOperation() != NULL)
-		return;
-
-	BPoint offset(r.left, (r.top + r.bottom - iconRect.Height()) / 2);
-	editor.DrawBitmap(m_icon, offset);
-	r.left += iconRect.Width() + 3.0;
-
-	offset.x = r.left + 3.0;
-	offset.y = (r.top + r.bottom - fh.descent + fh.ascent + 1.0) / 2;
-	
-	if (locked)
+	VChannelEntry *vce = editor.Track()->Document().GetVChannel(ev.GetVChannel());
+	rgb_color lightColor, darkColor;
+	if (editor.Track()->IsChannelLocked(ev.GetVChannel()))
 	{
-		editor.SetHighColor(128, 128, 128, 255);
-		editor.StrokeRect(r);
-		r.InsetBy(1.0, 1.0);
-		rEditor.SetHighColor(192, 192, 192, 255);
-		rEditor.FillRect(r);
+		lightColor = GREY_PALETTE[0];
+		darkColor = GREY_PALETTE[4];
 	}
 	else
 	{
-		if (ev.IsSelected() && editor.IsSelectionVisible())
-		{
-			editor.SetHighColor(0, 0, 255, 255);
-			editor.StrokeRect(r);
-			r.InsetBy(1.0, 1.0);
-		}
-		editor.SetHighColor(vce->fillColor);
-		editor.FillRect(r);
+		lightColor = vce->highlightColor;
+		darkColor = vce->fillColor;
 	}
 
-	editor.SetHighColor(0, 0, 0, 255);
-	editor.DrawString(patchName, offset);
+	BRect frameRect(textRect.InsetByCopy(-1.0, -2.0));
+	frameRect.top += 1.0;
+	frameRect.right -= 1.0;
+
+	if (shadowed)
+	{
+		editor.SetDrawingMode(B_OP_ALPHA);
+		editor.SetHighColor(0, 0, 0, 128);
+		editor.SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+
+		lightColor.alpha = darkColor.alpha = 128;
+		editor.SetHighColor(lightColor);
+		editor.SetLowColor(darkColor);
+		editor.SetDrawingMode(B_OP_COPY);
+		editor.FillRect(frameRect, B_SOLID_LOW);
+		editor.SetDrawingMode(B_OP_OVER);
+	}
+	else if (ev.IsSelected() && editor.IsSelectionVisible())
+	{
+		editor.SetDrawingMode(B_OP_INVERT);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+		editor.SetDrawingMode(B_OP_ALPHA);
+		editor.SetHighColor(0, 0, 0, 180);
+		editor.SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+
+		editor.SetHighColor(lightColor);
+		editor.SetLowColor(darkColor);
+		editor.SetDrawingMode(B_OP_COPY);
+		editor.FillRect(frameRect, B_SOLID_LOW);
+		editor.SetDrawingMode(B_OP_OVER);
+	}
+	else
+	{
+		editor.SetDrawingMode(B_OP_OVER);
+		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+
+		editor.SetHighColor(darkColor);
+		editor.SetLowColor(lightColor);
+		editor.SetDrawingMode(B_OP_COPY);
+		editor.FillRect(frameRect, B_SOLID_LOW);
+		editor.SetDrawingMode(B_OP_OVER);
+	}
+	editor.DrawString(patchName.String(), textRect.LeftBottom());
 }
 
 BRect
@@ -751,42 +807,30 @@ CProgramChangeEventHandler::Extent(
 	CEventEditor &editor,
 	const Event &ev) const
 {
-	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
-	BRect			r;
-	char			patchNameBuf[ 64 ];
-	const char		*patchName;
-	BBitmap			*horn;
-	BRect			hornRect;
-	
-	horn = ResourceUtils::LoadImage("ProgramTool");
-	hornRect = horn->Bounds();
-	
-	patchName = GetPatchName( editor, ev, patchNameBuf );
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
 
-	float			pWidth;
-	static float	maxPWidth = 0.0;
+	BString patchName;
+	GetPatchName(editor, ev, &patchName);
+	float textWidth = be_plain_font->StringWidth(patchName.String());
 
-	pWidth = rEditor.StringWidth(patchName);
-	if (pWidth > maxPWidth)
-		maxPWidth = pWidth;
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos);
+	r.right = r.left + m_icon->Bounds().Width() + 4.0 + textWidth;
 
-	r.left		= editor.TimeToViewCoords( ev.Start() );
-	r.right	= r.left + maxPWidth + 9.0 + hornRect.Width();
-	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.BarHeight() - 2;
-	
-	if (r.Height() < hornRect.Height())
-	{
-		r.top -= (hornRect.Height() - r.Height()) / 2;
-		r.bottom = r.top + hornRect.Height();
-	}
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
+	if ((fh.ascent + fh.descent) > rEditor.BarHeight())
+		r.bottom = r.top + fh.ascent + fh.descent;
+	if (m_icon->Bounds().Height() > r.Height())
+		r.bottom = r.top + m_icon->Bounds().Height();
+	r.InsetBy(-1.0, -2.0);
 
 	return r;
 }
 
-	// Pick a single event and return the part code
-	// (or -1 if event not picked)
-long CProgramChangeEventHandler::Pick(
+long
+CProgramChangeEventHandler::Pick(
 	CEventEditor	&editor,
 	const Event		&ev,
 	BPoint			pickPt,
@@ -840,27 +884,37 @@ EventOp *CProgramChangeEventHandler::CreateDragOp(
 	return new VPosOffsetOp( valueDelta );
 }
 
-const char *CProgramChangeEventHandler::GetPatchName(
-	CEventEditor &editor, const Event &ev, char *tempBuf ) const
+bool
+CProgramChangeEventHandler::GetPatchName(
+	CEventEditor &editor,
+	const Event &ev,
+	BString *outName) const
 {
-	uint16			programBank;
-	CMeVDoc			&doc = editor.Track()->Document();
-	VChannelEntry		*vc = doc.GetVChannel( ev.GetVChannel() );
-	MIDIDeviceInfo	*instrument;
-	PatchInfo			*patch;
+	CMeVDoc *doc = &editor.Track()->Document();
 
-	instrument = ((CMeVApp *)be_app)->LookupInstrument( 1, vc->channel - 1 );
-	if (instrument == NULL) return "[Invalid Device]";
+	VChannelEntry *vc = doc->GetVChannel(ev.GetVChannel());
+	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,
+																vc->channel - 1);
+	if (info == NULL)
+	{
+		*outName = "(Unknown)";
+		return false;
+	}
 	
-	programBank = (ev.programChange.bankMSB << 7) | ev.programChange.bankLSB;
-	patch = instrument->GetPatch( programBank, ev.programChange.program );
+	uint16 programBank = (ev.programChange.bankMSB << 7) | ev.programChange.bankLSB;
+	PatchInfo *patch = info->GetPatch(programBank, ev.programChange.program);
 
 	if (patch == NULL || patch->Name() == NULL)
 	{
-		sprintf( tempBuf, "Pgm: %d:%d", programBank, ev.programChange.program );
-		return tempBuf;
+		*outName = "Pgm: ";
+		*outName << programBank << ev.programChange.program;
+		return true;
 	}
-	else return patch->Name();
+	else
+	{
+		*outName = patch->Name();
+		return true;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -929,7 +983,7 @@ public:							// CAbstractEventHandler Implementation
 	/**
 	 @param timeDelta The horizontal drag delta
 	*/
-	virtual EventOp *			CTempoEventHandler::CreateTimeOp(
+	virtual EventOp *			CreateTimeOp(
 									CEventEditor &editor,
 									const Event &ev,
 									short partCode,
@@ -973,42 +1027,52 @@ CTempoEventHandler::Draw(
 {
 	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
 
-	font_height fh;
-	be_plain_font->GetHeight(&fh);
-	
+	BRect extent;
+	extent.left = editor.TimeToViewCoords(ev.Start());
+	extent.right = editor.TimeToViewCoords(ev.Stop()) - 1.0;
+	extent.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	extent.bottom = extent.top + m_icon->Bounds().Height();
+
+	BRect iconRect(extent.LeftTop(),
+				   extent.LeftTop() + m_icon->Bounds().RightBottom());
+
 	BString tempoText;
 	tempoText << static_cast<float>(ev.tempo.newTempo / 1000.0) << " bpm";
 
-	BRect r;
-	r.left = editor.TimeToViewCoords(ev.Start());
-	r.right = editor.TimeToViewCoords(ev.Stop()) - 1.0;
-	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
-	r.bottom = r.top + rEditor.BarHeight() - 2.0;
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
+	BRect textRect;
+	textRect.left = iconRect.right + 4.0;
+	textRect.bottom = (extent.top + extent.bottom - fh.descent + fh.ascent)
+					  / 2.0;
+	textRect.right = textRect.left
+					 + be_plain_font->StringWidth(tempoText.String());
+	textRect.top = textRect.bottom - fh.ascent;
 
-	// A test -- don't show the existing event if we're adjusting via slider.
-//	if (!shadowed && rEditor.PendingOperation() != NULL)
-//		return;
-
-	BRect iconRect(r.LeftTop(), r.LeftTop() + m_icon->Bounds().RightBottom());
 	if (shadowed)
 	{
 		editor.SetDrawingMode(B_OP_ALPHA);
-		editor.SetHighColor(0.0, 0.0, 0.0, 150.0);
+		editor.SetHighColor(0.0, 0.0, 0.0, 128);
 		editor.SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
 		editor.DrawBitmap(m_icon, iconRect.LeftTop());
-		editor.SetDrawingMode(B_OP_OVER);
-		editor.SetHighColor(128, 128, 255, 255);
+		editor.SetHighColor(128, 128, 128, 255);
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
 		editor.SetDrawingMode(B_OP_INVERT);
 		editor.DrawBitmap(m_icon, iconRect.LeftTop());
 		editor.SetDrawingMode(B_OP_ALPHA);
-		editor.SetHighColor(0.0, 0.0, 0.0, 180.0);
+		editor.SetHighColor(0, 0, 0, 180);
 		editor.SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_COMPOSITE);
 		editor.DrawBitmap(m_icon, iconRect.LeftTop());
+		editor.SetHighColor(255, 255, 255, 255);
+		editor.SetLowColor(0, 0, 0, 255);
+		editor.SetDrawingMode(B_OP_COPY);
+		BRect frameRect(textRect.InsetByCopy(-1.0, -2.0));
+		frameRect.top += 1.0;
+		frameRect.right -= 1.0;
+		editor.FillRect(frameRect, B_SOLID_LOW);
 		editor.SetDrawingMode(B_OP_OVER);
-		editor.SetHighColor(0, 0, 255, 255);
 	}
 	else
 	{
@@ -1016,12 +1080,7 @@ CTempoEventHandler::Draw(
 		editor.DrawBitmap(m_icon, iconRect.LeftTop());
 		editor.SetHighColor(0, 0, 0, 255);
 	}
-
-	BPoint offset;
-	offset.x = iconRect.right + 4.0;
-	offset.y = (r.top + r.bottom - fh.descent + fh.ascent) / 2.0;
-	
-	editor.DrawString(tempoText.String(), offset);
+	editor.DrawString(tempoText.String(), textRect.LeftBottom());
 }
 
 BRect
@@ -1030,33 +1089,27 @@ CTempoEventHandler::Extent(
 	const Event &ev) const
 {
 	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
-	BRect r;
-	BBitmap *metro;
-	BRect metroRect;
-	
-	metro = ResourceUtils::LoadImage("MetroTool");
-	metroRect = metro->Bounds();
-	
-	r.left		= editor.TimeToViewCoords( ev.Start() );
-	r.right	= editor.TimeToViewCoords( ev.Stop()  ) + 1.0;
-	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.BarHeight() - 2;
-	
-		// REM: This constant, 80.0, is based on string width and should be precomputed
-	float	tr = r.left + 80.0;
-	if (r.right < tr) r.right = tr;
 
-	if (r.Height() < metroRect.Height())
-	{
-		r.top -= (metroRect.Height() - r.Height()) / 2;
-		r.bottom = r.top + metroRect.Height();
-	}
+	BString tempoText;
+	tempoText << static_cast<float>(ev.tempo.newTempo / 1000.0) << " bpm";
+	float textWidth = be_plain_font->StringWidth(tempoText.String());
+
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos);
+	r.right = r.left + m_icon->Bounds().Width() + 4.0 + textWidth;
+
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
+	if ((fh.ascent + fh.descent) > rEditor.BarHeight())
+		r.bottom = r.top + fh.ascent + fh.descent;
+	if (m_icon->Bounds().Height() > r.Height())
+		r.bottom = r.top + m_icon->Bounds().Height();
+	r.InsetBy(-1.0, -2.0);
 
 	return r;
 }
 
-	// Pick a single event and return the part code
-	// (or -1 if event not picked)
 long CTempoEventHandler::Pick(
 	CEventEditor	&editor,
 	const Event		&ev,
@@ -1284,9 +1337,6 @@ void
 CTrackCtlStrip::OnUpdate(
 	BMessage *message)
 {
-	PRINT(("CTrackCtlStrip::OnUpdate()\n"));
-	message->PrintToStream();
-
 	BRect r(Bounds());
 	bounds = r;
 
