@@ -30,6 +30,8 @@
  *		Original implementation
  *	05/15/2000	malouin
  *		Chunk headers always stored big endian
+ *	09/11/2000	malouin
+ *		Optionally allow odd-length chunks, to support Standard MIDI Files
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -58,6 +60,7 @@ class CIFFWriter : public CAbstractWriter {
 	CAbstractWriter	&writer;
 	int32			limit;		// File position beyond which no writing occurs.
 	int32			pos;
+	bool			m_allowOddLengthChunks;	// IFF standard does not allow odd-length
 
 	void CalcLimit();
 
@@ -99,6 +102,13 @@ public:
 	
 		/** Position does same as chunk pos( 0 ) */
 	uint32 Position() { return ChunkPos(); }
+	
+		/**	Do not pad odd-length chunks to make them even length.
+		 *	IFF standard requires that odd-length chunks be padded
+		 *	to an even length.  Standard MIDI Files may have odd-
+		 *	length chunks.
+		 */
+	void AllowOddLengthChunks(bool allow = true);
 };
 
 #endif /* IFF_WRITER_H */

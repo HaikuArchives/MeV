@@ -8,12 +8,8 @@
 #include "IFFWriter.h"
 
 CIFFWriter::CIFFWriter( CAbstractWriter &inWriter )
-	: writer( inWriter )
+	: writer(inWriter), stack(0), limit(0), pos(0), m_allowOddLengthChunks(false)
 {
-		// Initialize stack and position counter to 0.
-	stack = NULL;
-	pos = 0;
-	limit = 0;
 }
 
 CIFFWriter::~CIFFWriter()
@@ -77,7 +73,7 @@ bool CIFFWriter::Pop()
 		writer.Seek( pos );
 
 			// Write pad byte at end of chunk
-		if (currentLength & 1)
+		if ((currentLength & 1) && !m_allowOddLengthChunks)
 		{
 			writer.MustWrite( (void *)"\0",  1 );
 			pos ++;
@@ -153,11 +149,16 @@ bool CIFFWriter::WriteChunk( int32 chunkID, void *buffer, int32 length )
 	chunkHeader[ 1 ] = htonl( length );
 	writer.MustWrite( chunkHeader, 8 );
 	writer.MustWrite( buffer, length );
-	if (length & 1)
+	if ((length & 1) && !m_allowOddLengthChunks)
 	{
 		length++;
 		writer.MustWrite( (void *)"\0", 1 );
 	}
 	pos += length + 8;
 	return true;
+}
+
+void CIFFWriter::AllowOddLengthChunks(bool allow)
+{
+	m_allowOddLengthChunks = allow;
 }
