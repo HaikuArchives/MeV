@@ -40,79 +40,118 @@
 
 #include <OS.h>
 
-typedef enum {
-	Lock_Shared,				// A shared lock that waits if there is an exclusive lock waiting
-	Lock_Exclusive,			// An exclusive lock
+typedef enum
+{
+	// A shared lock that waits if there is an exclusive lock waiting
+	Lock_Shared,
+
+	// An exclusive lock
+	Lock_Exclusive,
 } TLockType;
 
-const int32			Max_Shared_Locks = 10000;
+class CSharedLock
+{
 
-	/** 	A class which (I believe) implements shared and exclusive locking. */
-class CSharedLock {
-	sem_id			sem;
-	int				eOwner,			// Exclusive owner, or -1
-					eCount,			// Exclusion lock recursion count
-					sCount;			// Number of shared locks for exclusive lock owner
-public:
+public:							// Constructor/Destructor
 
-		/** Constructor. */
-	CSharedLock( char *inName = NULL )
-	{
-		sem = create_sem( Max_Shared_Locks, inName );
-		eOwner = -1;
-		eCount = sCount = 0;
-	}
+								CSharedLock(
+									char *name = NULL);
 
-		/** Destructor */
-	~CSharedLock()
-	{
-		delete_sem( sem );
-	}
+								~CSharedLock();
 
-		/** Acquire the lock. */
-	bool Acquire( TLockType inLockType );
+public:							// Operations
 
-		/** Acquire the lock with a timeout. */
-	bool Acquire( TLockType inLockType, bigtime_t inTimeout );
+	/** Acquire the lock. */
+	bool						Acquire(
+									TLockType inLockType);
 
-		/** Release the lock. */
-	bool Release( TLockType inLockType );
+	/** Acquire the lock with a timeout. */
+	bool						Acquire(
+									TLockType inLockType,
+									bigtime_t inTimeout);
 
-		/** Returns true if the lock is exclusively locked. */
-	bool IsExclusiveLocked() { return eCount > 0; }
+	/** Release the lock. */
+	bool						Release(
+									TLockType inLockType);
 
-		/** Returns true if the lock is read-locked. */
-	bool IsLocked();
+	/** Returns true if the lock is exclusively locked. */
+	bool						IsExclusiveLocked() const
+								{ return m_eCount > 0; }
+
+	/** Returns true if the lock is read-locked. */
+	bool						IsLocked() const;
+
+private:						// Instance Data
+
+	sem_id						m_sem;
+
+	// Exclusive owner, or -1
+	int							m_eOwner;
+
+	// Exclusion lock recursion count
+	int							m_eCount;
+
+	// Number of shared locks for exclusive lock owner
+	int							m_sCount;
 };
 
-	/** Stack based class to acquire a shared lock. */
-class StLocker {
+/** Stack based class to acquire a shared lock. */
+class StLocker
+{
 
-	CSharedLock		&lock;
-	TLockType		type;
-	bool				locked;
+private:						// Instance Data
 
-public:
+	CSharedLock &				m_lock;
 
-	StLocker( CSharedLock &inLock, TLockType inType ) : lock( inLock ), type( inType )
-	{
-		locked = lock.Acquire( type );
-	}
+	TLockType					m_type;
 
-	~StLocker()
-	{
-		if (locked) { lock.Release( type ); locked = false; }
-	}
+	bool						m_locked;
 
-	void Acquire()
-	{
-		if (!locked) locked = lock.Acquire( type );
-	}
+public:							// Constructor/Destructor
 
-	void Release()
-	{
-		if (locked) { lock.Release( type ); locked = false; }
-	}
+								StLocker(
+									CSharedLock &lock,
+									TLockType type)
+									:	m_lock(lock),
+										m_type(type)
+								{ m_locked = m_lock.Acquire(m_type); }
+
+								~StLocker();
+
+public:							// Operations
+
+	void						Acquire();
+
+	void						Release();
 };
+
+inline
+StLocker::~StLocker()
+{
+	if (m_locked)
+	{
+		m_lock.Release(m_type);
+		m_locked = false;
+	}
+}
+
+inline void
+StLocker::Acquire()
+{
+	if (!m_locked)
+	{
+		m_locked = m_lock.Acquire(m_type);
+	}
+}
+
+inline void
+StLocker::Release()
+{
+	if (m_locked)
+	{
+		m_lock.Release(m_type);
+		m_locked = false;
+	}
+}
 
 #endif /* __C_SharedLock_H__ */
