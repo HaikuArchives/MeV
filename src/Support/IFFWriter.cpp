@@ -102,6 +102,8 @@ bool CIFFWriter::Pop()
 		// Now that the stack has been popped, calculate the limit beyond
 		// which we cannot write without exceeding constraints
 	CalcLimit();
+
+	return true;
 }
 
 int32 CIFFWriter::ChunkLength()

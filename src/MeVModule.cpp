@@ -60,6 +60,8 @@ CMeVModule::SubjectReleased(
 	CObservable *subject)
 {
 	D_HOOK(("CMeVModule::SubjectReleased()\n"));
+
+	return false;
 }
 
 void
