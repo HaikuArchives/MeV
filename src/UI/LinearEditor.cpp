@@ -419,26 +419,13 @@ void
 CLinearEditor::DisplayPitchInfo(
 	BPoint point)
 {
-	int32 pitch = ViewCoordsToPitch(point.y, false);
-	int32 octave = pitch / 12;
-	int32 note = pitch % 12;
-	BString text;
-	switch (note)
-	{
-		case 0:		text = "C";		break;
-		case 1:		text = "C#";	break;
-		case 2:		text = "D";		break;
-		case 3:		text = "D#";	break;
-		case 4:		text = "E";		break;
-		case 5:		text = "F";		break;
-		case 6:		text = "F#";	break;
-		case 7:		text = "G";		break;
-		case 8:		text = "G#";	break;
-		case 9:		text = "A";		break;
-		case 10:	text = "A#";	break;
-		case 11:	text = "B";		break;
-	}
-	text << octave - 2 << "(" << pitch << ")";
+	unsigned char note = ViewCoordsToPitch(point.y, false);
+	char text[NOTE_NAME_LENGTH];
+
+	int32 destID = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
+	CDestination *dest = TrackWindow()->Document()->FindDestination(destID);
+	if ((dest == NULL) || (!dest->GetNoteName(note, text)))
+		snprintf(text, NOTE_NAME_LENGTH, "%d", note);
 
 	TrackWindow()->SetVerticalPositionInfo(text);
 }

@@ -15,6 +15,7 @@
 #include "MeVFileID.h"
 #include "OperatorWindow.h"
 #include "PlayerControl.h"
+#include "PositionInfoBar.h"
 #include "QuickKeyMenuItem.h"
 #include "RecentDocumentsMenu.h"
 #include "ResourceUtils.h"
@@ -95,35 +96,15 @@ CTrackWindow::AddFrameView(
 	CTrack *track)
 {
 	BRect scrollRect(stripScroll->Frame());
-	stripScroll->ResizeTo(scrollRect.Width() - 120.0, scrollRect.Height());
-	stripScroll->MoveTo(scrollRect.left + 120.0, scrollRect.top);
+	stripScroll->ResizeTo(scrollRect.Width() - 240.0, scrollRect.Height());
+	stripScroll->MoveTo(scrollRect.left + 240.0, scrollRect.top);
 
 	BRect infoRect(scrollRect);
 	infoRect.top = infoRect.bottom - B_H_SCROLL_BAR_HEIGHT;
-	infoRect.right = 119.0;
-	BView *view = new CBorderView(infoRect, "", B_FOLLOW_LEFT | B_FOLLOW_BOTTOM,
-								  B_WILL_DRAW);
-
-	// Add the vertical position info view
-	infoRect = view->Bounds();
-	infoRect.right = 59.0;
-	m_vPosInfoView = new BStringView(infoRect.InsetByCopy(1.0, 1.0),
-									 "", "");
-	m_vPosInfoView->SetAlignment(B_ALIGN_RIGHT);
-	m_vPosInfoView->SetFont(be_fixed_font);
-	m_vPosInfoView->SetFontSize(10.0);
-	view->AddChild(m_vPosInfoView);
-
-	// Add the horizontal position info view
-	infoRect.OffsetBy(infoRect.Width(), 0.0);
-	m_hPosInfoView = new BStringView(infoRect.InsetByCopy(1.0, 1.0),
-									 "", "");
-	m_hPosInfoView->SetAlignment(B_ALIGN_RIGHT);
-	m_hPosInfoView->SetFont(be_fixed_font);
-	m_hPosInfoView->SetFontSize(10.0);
-	view->AddChild(m_hPosInfoView);
-
-	AddChild(view);
+	infoRect.right = 238.0;
+	m_posInfoBar = new CPositionInfoBar(infoRect, stripScroll);
+	m_posInfoBar->SetMinimumWidth(140.0);
+	AddChild(m_posInfoBar);
 }
 
 // ---------------------------------------------------------------------------
@@ -209,8 +190,7 @@ void
 CTrackWindow::SetHorizontalPositionInfo(
 	BString text)
 {
-	m_hPosInfoView->SetText(text.String());
-	m_hPosInfoView->Invalidate();
+	m_posInfoBar->SetText(B_HORIZONTAL, text);
 }
 
 void
@@ -245,8 +225,7 @@ void
 CTrackWindow::SetVerticalPositionInfo(
 	BString text)
 {
-	m_vPosInfoView->SetText(text.String());
-	m_vPosInfoView->Invalidate();
+	m_posInfoBar->SetText(B_VERTICAL, text);
 }
 
 // ---------------------------------------------------------------------------

@@ -48,6 +48,7 @@
 #include "Observer.h"
 #include "MeVDoc.h"
 
+class CPositionInfoBar;
 class CScroller;
 class CStripFrameView;
 class CTrackOperation;
@@ -222,6 +223,8 @@ private:
 	/** The vertical position info display in the lower left 
 		corner of the window */
 	BStringView *				m_vPosInfoView;
+
+	CPositionInfoBar *			m_posInfoBar;
 };
 
 #endif /* __C_TrackWindow_H__ */
