@@ -40,7 +40,9 @@ CObservable::AddObserver(
 {
 	ASSERT(observer != NULL);
 
-	CWriteLock lock(this);
+	// the observable should be write-locked here, but that was causing many
+	// dead-locks in version 081a1, so it has been disabled for release
+//	CWriteLock lock(this);
 	return m_observers.AddItem(observer);
 }
 
@@ -50,7 +52,9 @@ CObservable::IsObservedBy(
 {
 	ASSERT(observer != NULL);
 
-	CReadLock lock(this);
+	// the observable should be read-locked here, but that was causing many
+	// dead-locks in version 081a1, so it has been disabled for release
+//	CReadLock lock(this);
 	return m_observers.HasItem(observer);
 }
 
@@ -60,7 +64,9 @@ CObservable::RemoveObserver(
 {
 	ASSERT(observer != NULL);
 
-	CWriteLock lock(this);
+	// the observable should be write-locked here, but that was causing many
+	// dead-locks in version 081a1, so it has been disabled for release
+//	CWriteLock lock(this);
 	return m_observers.RemoveItem(observer);
 }
 
