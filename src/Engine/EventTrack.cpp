@@ -59,7 +59,7 @@ CEventTrack::CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *in
 
 void CEventTrack::SummarizeSelection()
 {
-//	StSubjectLock		lock( *this, Lock_Exclusive );
+	StSubjectLock		lock( *this, Lock_Exclusive );
 	int32			sigChangeCount = 1,		// Number of timesigs encountered
 					tempoChangeCount = 0;		// Number of tempo changes encountered
 	int32			minorUnitDur,				// Major unit of time signature
@@ -92,11 +92,6 @@ void CEventTrack::SummarizeSelection()
 	prevSigStart = 0;
 	prevMinorUnitDur = Ticks_Per_QtrNote;
 	prevMajorUnitDur = Ticks_Per_QtrNote * 4;
-
-#if 1
-		// Make sure track data is valid
-	Validate();
-#endif
 
 		// Reset the bit-arrays of channels used and channels selected
 	usedChannels.Clear();
@@ -328,35 +323,6 @@ void CEventTrack::SummarizeSelection()
 void CEventTrack::InvalidateTempoMap()
 {
 	if (GetID() == 0 || GetID() == 1) Document().InvalidateTempoMap();
-}
-
-// ---------------------------------------------------------------------------
-// Debugging code. Iterates through all events in the track and insures
-// that event timestamps are sorted, otherwise it tosses and exception.
-
-void CEventTrack::Validate()
-{
-#if 0
-	StSubjectLock	lock( *this, Lock_Shared );
-#if 1
-	EventMarker		marker( events );
-	long				prevTime = 0;
-
-		// Start by determining if the events are in order
-
-		// For each event that overlaps the current view, draw it.
-	for (	const Event *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
-	{
-		long		time = ev->Start();
-
-		VERIFY( time >= prevTime );
-		prevTime = time;
-	}
-#endif	
-#if DEBUG
-	events.Validate();
-#endif
-#endif
 }
 
 // ---------------------------------------------------------------------------

@@ -214,14 +214,6 @@ public:
 
 	const Event *CurrentEvent() { return currentEvent.Peek( 0 ); }
 
-#if 0
-		// Set a particular attribute of all selected events to a given value
-	long SetEventAttribute( uint16 attrType, long newValue, long orgVal );
-#endif
-
-		// Error-checking functions
-	void Validate();
-
 		// Gain access to the event list. (Throws exception if not locked).
 	EventList		&Events() { return events; }
 	
