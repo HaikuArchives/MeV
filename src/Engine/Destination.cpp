@@ -35,7 +35,7 @@
 // Constants Initialization
 
 const rgb_color
-CDestination::m_defaultColorTable[]=
+CDestination::s_defaultColorTable[] = 
 {
 	{ 255,  64,  64 },
 	{  64, 128,  64 },
@@ -55,36 +55,27 @@ CDestination::m_defaultColorTable[]=
 	{ 128, 128,   0 }
 };
 
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
 CDestination::CDestination(
 	int32 id,
-	CMeVDoc &inDoc,
-	char *name,
-	bool notify)
-	:	m_latency(0)		
+	CMeVDoc *document,
+	const char *name)
+	:	m_doc(document),
+		m_id(id),
+		m_name(name),
+		m_latency(0),
+		m_flags(0)
 {
-	m_doc=&inDoc;
-	m_flags=0;
-	m_channel=0;
-	m_id=id;
+	m_channel = 0;
 	m_name.SetTo(name);
-	m_name << " " << m_id+1;
-	m_producer=new CReconnectingMidiProducer (m_name.String());
+	m_name << " " << m_id + 1;
+	m_producer = new CReconnectingMidiProducer(m_name.String());
 	m_producer->Register();
-	m_fillColor = m_defaultColorTable[(id) % 15];
+	m_fillColor = s_defaultColorTable[id % 15];
 	
-	BRect sr,lr;
-	sr.Set(0,0,15,15);
-	lr.Set(0,0,31,31);
-
-	BMessage msg;
-	m_producer->GetProperties(&msg);
-	_addIcons(&msg,CreateIcon(lr),CreateIcon(sr));
-	m_producer->SetProperties(&msg);
-	//send notification message
-	if (notify)
-	{				
-			inDoc.NotifyUpdate(CMeVDoc::Update_AddDest,NULL);
-	}
+	_updateIcons();
 }
 
 CDestination::~CDestination()
@@ -92,7 +83,8 @@ CDestination::~CDestination()
 	m_producer->Release();
 }
 
-// serialization
+// ---------------------------------------------------------------------------
+// Serialization
 
 //this in the writer
 void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength );
@@ -102,7 +94,6 @@ void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength )
 	outWriter << (uint8)inLength;
 	outWriter.MustWrite( inBuffer, inLength );
 }
-
 
 void
 CDestination::WriteDestination (CIFFWriter &writer)
@@ -138,162 +129,137 @@ CDestination::WriteDestination (CIFFWriter &writer)
 	}
 }
 
+// ---------------------------------------------------------------------------
 // Accessors
 
 bool
-CDestination::IsValid () const
+CDestination::IsValid() const
 {
 	return ((m_flags & CDestination::disabled) || (m_flags & CDestination::deleted));
 }
-BBitmap *
-CDestination::CreateIcon (BRect r)
-{
-	BBitmap	*icon = new BBitmap( r, B_CMAP8,true );
-	BView *icon_view = new BView (r,"icon writer",B_FOLLOW_RIGHT,B_FRAME_EVENTS);
-	icon->Lock();
-	icon->AddChild(icon_view);
-	icon_view->SetHighColor(B_TRANSPARENT_COLOR);
-	icon_view->FillRect(r, B_SOLID_HIGH);
-	icon_view->SetHighColor(m_fillColor);
-	if ((m_flags & CDestination::disabled) || (m_flags & CDestination::muted))
-	{
-		rgb_color contrast;
-		contrast.red=(m_fillColor.red+128) % 255;
-		contrast.green=(m_fillColor.green+128) % 255;
-		contrast.blue=(m_fillColor.blue+128) % 255;
-		icon_view->SetLowColor(contrast);
-		pattern mixed_colors = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x0f};
-		icon_view->FillEllipse(r,mixed_colors);
-	}
-	else
-	{
-			
-		icon_view->FillEllipse(r);
-	}
-	icon_view->SetPenSize(1);
-	rgb_color blk;
-	blk.red=0;
-	blk.green=0;
-	blk.blue=0;
-	icon_view->SetHighColor(blk);	
-	icon_view->Sync();
-	icon_view->RemoveSelf();
-	icon->Unlock();
-	delete (icon_view);
-	return icon;
-}
-
-void CDestination::_addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const
-{
-	if (! msg->HasData("be:large_icon", 'ICON')) {
-		msg->AddData("be:large_icon", 'ICON', largeIcon->Bits(),
-			largeIcon->BitsLength());
-	} else {
-		msg->ReplaceData("be:large_icon", 'ICON', largeIcon->Bits(),
-			largeIcon->BitsLength());
-	}
-	if (! msg->HasData("be:mini_icon", 'MICN')) {
-		msg->AddData("be:mini_icon", 'MICN', miniIcon->Bits(),
-			miniIcon->BitsLength());
-	} else {
-		msg->ReplaceData("be:mini_icon", 'MICN', miniIcon->Bits(),
-			miniIcon->BitsLength());
-	}
-}
-
 
 void
-CDestination::SetMuted (bool muted) 
+CDestination::SetMuted(
+	bool muted)
 {
+	bool changed = false;
 	if (muted)
-	{
-		_addFlag (CDestination::muted);
-	}
+		changed = _addFlag(CDestination::muted);
 	else
+		changed = _removeFlag(CDestination::muted);
+
+	if (changed)
 	{
-		_removeFlag (CDestination::muted);
+		_updateIcons();
+		Document().SetModified();
+
+		CUpdateHint hint;
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestAttrs", Update_Flags);
+		PostUpdate(&hint);
 	}
-	BRect sr,lr;
-	sr.Set(0,0,15,15);
-	lr.Set(0,0,31,31);
-	
-	BMessage msg;
-	m_producer->GetProperties(&msg);
-	BBitmap *lg=CreateIcon(lr);
-	BBitmap *sm=CreateIcon(sr);
-	_addIcons(&msg,lg,sm);
-	delete lg;
-	delete sm;
-	m_producer->SetProperties(&msg);
-	CUpdateHint hint;
-	hint.AddInt8("channel",GetID());
-	hint.AddInt32("DestAttrs",Update_Flags);
-	hint.AddInt32("DestID",GetID());
-	Document().PostUpdateAllTracks(&hint);
-	Document().PostUpdate(&hint);
 }
 
 void
-CDestination::SetSolo (bool solo)
+CDestination::SetSolo(
+	bool solo)
 {
-}
-
-void
-CDestination::SetName (const char *name)
-{
-	m_name.SetTo(name);
-	m_producer->SetName(name);
-	CUpdateHint hint;
-	hint.AddInt32 ("DestID",GetID());
-	hint.AddInt32 ("DestAttrs",Update_Name);
-	Document().PostUpdate(&hint,NULL);
-}
-
-void 
-CDestination::SetLatency (int32 microseconds)
-{
-	m_latency=microseconds/1000;
-	CUpdateHint hint;
-	hint.AddInt32 ("DestID",GetID());
-	hint.AddInt32 ("DestAttrs",Update_Latency);
-	Document().SetDestinationLatency(GetID(),m_latency);
-}
-
-void
-CDestination::SetColor (rgb_color color)
-{
-	m_fillColor=color;
-	
-	if ((color.red + color.green + color.blue) < 384)
-		m_highlightColor = tint_color(color, B_LIGHTEN_2_TINT);
+	bool changed = false;
+	if (muted)
+		changed = _addFlag(CDestination::solo);
 	else
-		m_highlightColor = tint_color(color, B_DARKEN_2_TINT);
-	
-	BRect sr,lr;
-	sr.Set(0,0,15,15);
-	lr.Set(0,0,31,31);
+		changed = _removeFlag(CDestination::solo);
 
-	BMessage msg;
-	m_producer->GetProperties(&msg);
-	_addIcons(&msg,CreateIcon(lr),CreateIcon(sr));
-	m_producer->SetProperties(&msg);
-	
-	CUpdateHint hint;
-	hint.AddInt32("channel",GetID());
-	hint.AddInt32("DestAttrs",Update_Color);
-	Document().PostUpdateAllTracks(&hint);
-	Document().PostUpdate(&hint);
+	if (changed)
+	{
+		_updateIcons();
+		Document().SetModified();
+
+		CUpdateHint hint;
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestAttrs", Update_Flags);
+		PostUpdate(&hint);
+	}
 }
 
 void
-CDestination::SetChannel (uint8 channel)
+CDestination::SetName(
+	const char *name)
 {
-	m_channel=channel;
-	//updates anyone?
+	if (BString(name) != m_name)
+	{
+		m_name.SetTo(name);
+		m_producer->SetName(name);
+		Document().SetModified();
+		
+		CUpdateHint hint;
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestAttrs", Update_Name);
+		PostUpdate(&hint);
+	}
 }
 
 void
-CDestination::SetConnect (BMidiConsumer *sink,bool connect)
+CDestination::SetLatency(
+	bigtime_t latency)
+{
+	if (latency != m_latency)
+	{
+		m_latency = latency;
+		Document().SetModified();
+	
+		CUpdateHint hint;
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestAttrs", Update_Latency);
+		PostUpdate(&hint);
+	}
+}
+
+void
+CDestination::SetColor(
+	rgb_color color)
+{
+	if ((color.red != m_fillColor.red)
+	 || (color.green != m_fillColor.green)
+	 || (color.blue != m_fillColor.blue))
+	{
+		m_fillColor = color;
+		
+		if ((color.red + color.green + color.blue) < 384)
+			m_highlightColor = tint_color(color, B_LIGHTEN_2_TINT);
+		else
+			m_highlightColor = tint_color(color, B_DARKEN_2_TINT);
+	
+		_updateIcons();
+		Document().SetModified();
+	
+		CUpdateHint hint;
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestAttrs", Update_Color);
+		PostUpdate(&hint);
+	}
+}
+
+void
+CDestination::SetChannel(
+	uint8 channel)
+{
+	if (channel != m_channel)
+	{	
+		m_channel = channel;
+		Document().SetModified();
+
+		CUpdateHint hint;
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestAttrs", Update_Channel);
+		PostUpdate(&hint);
+	}
+}
+
+void
+CDestination::SetConnect(
+	BMidiConsumer *sink,
+	bool connect)
 {
 	if (sink)
 	{
@@ -318,72 +284,157 @@ CDestination::SetConnect (BMidiConsumer *sink,bool connect)
 		{
 			m_producer->Disconnect(sink);
 		}
-		//updates ?
 	}
 }
 
 bool
-CDestination::IsConnected (BMidiConsumer *sink) const
+CDestination::IsConnected(
+	BMidiConsumer *sink) const
 {
-	if ((sink->ID()==m_consumer_id) && (m_producer->IsConnected(sink)))
-	{
+	if ((sink->ID() == m_consumer_id)
+	 && (m_producer->IsConnected(sink)))
 		return true;
-	}
+
 	return false;
 }
 
 void
-CDestination::SetDisable (bool disable)
+CDestination::SetDisabled(
+	bool disabled)
 {
-	bool modify;
-	if (disable)
-	{
-		modify=_addFlag (CDestination::disabled);
-	}
+	bool changed = false;
+	if (disabled)
+		changed = _addFlag(CDestination::disabled);
 	else
-	{
-		modify=_removeFlag (CDestination::disabled);
-	}
-	if (modify)
+		changed = _removeFlag(CDestination::disabled);
+
+	if (changed)
 	{
 		CUpdateHint hint;
 		hint.AddInt32("DestID",GetID());
 		hint.AddInt32("DestAttrs",Update_Flags);
-		Document().PostUpdateAllTracks(&hint);
-		//Document().PostUpdate(&hint,NULL);
+		PostUpdate(&hint);
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Operations
+
 void
 CDestination::Delete ()
 {
-//	if (m_doc->m_destinations.ReplaceItem(GetID(),NULL))
+	StSubjectLock lock(Document(), Lock_Shared);
+	int32 originalIndex = Document().IndexOf(this);
+	if (_addFlag(CDestination::deleted))
 	{
-		_addFlag(CDestination::deleted);
+		int32 index = 0;
+		CDestination *next = Document().GetNextDestination(&index);
+		if (next)
+			Document().SetDefaultAttribute(EvAttr_Channel, next->GetID());
+
 		Document().SetModified();
 		
 		CUpdateHint hint;
-		hint.AddInt32 ("DestID", GetID());
-		hint.AddInt32 ("DestAttrs", Update_Flags);
-		m_doc->PostUpdateAllTracks(&hint);
-		m_doc->NotifyUpdate(CMeVDoc::Update_DelDest,NULL);
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DocAttrs", CMeVDoc::Update_DelDest);
+		hint.AddInt32("original_index", originalIndex);
+		Document().PostUpdate(&hint);
 	}
 }
+
 void 
 CDestination::Undelete(
 	int32 originalIndex)
 {
-	//if (Document().m_destinations.AddItem(this,originalIndex))
+	if (_removeFlag(CDestination::deleted))
 	{
-		_removeFlag(CDestination::deleted);
 		Document().SetModified();
 		
 		CUpdateHint hint;
-		hint.AddInt32 ("DestID", GetID());
-		hint.AddInt32 ("DestAttrs", Update_Flags);
-		Document().PostUpdateAllTracks(&hint);
-		Document().NotifyUpdate(CMeVDoc::Update_AddDest,NULL);
-	
+		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DocAttrs", CMeVDoc::Update_AddDest);
+		Document().PostUpdate(&hint);
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CDestination::_addIcons(
+	BMessage* msg,
+	BBitmap* largeIcon,
+	BBitmap* miniIcon) const
+{
+	if (! msg->HasData("be:large_icon", 'ICON')) {
+		msg->AddData("be:large_icon", 'ICON', largeIcon->Bits(),
+			largeIcon->BitsLength());
+	} else {
+		msg->ReplaceData("be:large_icon", 'ICON', largeIcon->Bits(),
+			largeIcon->BitsLength());
+	}
+	if (! msg->HasData("be:mini_icon", 'MICN')) {
+		msg->AddData("be:mini_icon", 'MICN', miniIcon->Bits(),
+			miniIcon->BitsLength());
+	} else {
+		msg->ReplaceData("be:mini_icon", 'MICN', miniIcon->Bits(),
+			miniIcon->BitsLength());
+	}
+}
+
+BBitmap *
+CDestination::_createIcon(
+	BRect r)
+{
+	BBitmap	*icon = new BBitmap(r, B_CMAP8,true);
+	BView *icon_view = new BView (r, "icon writer", B_FOLLOW_RIGHT,
+								  B_FRAME_EVENTS);
+	icon->Lock();
+	icon->AddChild(icon_view);
+	icon_view->SetHighColor(B_TRANSPARENT_COLOR);
+	icon_view->FillRect(r, B_SOLID_HIGH);
+	icon_view->SetHighColor(m_fillColor);
+	if ((m_flags & CDestination::disabled) || (m_flags & CDestination::muted))
+	{
+		rgb_color contrast;
+		contrast.red=(m_fillColor.red+128) % 255;
+		contrast.green=(m_fillColor.green+128) % 255;
+		contrast.blue=(m_fillColor.blue+128) % 255;
+		icon_view->SetLowColor(contrast);
+		pattern mixed_colors = {0xf0,0xf0,0xf0,0xf0,0x0f,0x0f,0x0f,0x0f};
+		icon_view->FillEllipse(r,mixed_colors);
+	}
+	else
+	{
+		icon_view->FillEllipse(r);
+	}
+	icon_view->SetPenSize(1);
+	rgb_color blk;
+	blk.red=0;
+	blk.green=0;
+	blk.blue=0;
+	icon_view->SetHighColor(blk);	
+	icon_view->Sync();
+	icon_view->RemoveSelf();
+	icon->Unlock();
+	delete (icon_view);
+	return icon;
+}
+
+void
+CDestination::_updateIcons()
+{
+	BRect sr,lr;
+	sr.Set(0,0,15,15);
+	lr.Set(0,0,31,31);
+	BMessage msg;
+	m_producer->GetProperties(&msg);
+	BBitmap *lg = _createIcon(lr);
+	BBitmap *sm = _createIcon(sr);
+	_addIcons(&msg,lg,sm);
+	delete lg;
+	delete sm;
+	m_producer->SetProperties(&msg);
 }
 
 bool 
@@ -409,27 +460,33 @@ CDestination::_removeFlag (int32 flag)
 	return false;
 }
 
+#if DEBUG
 void
-CDestination::PrintSelf()
+CDestination::PrintToStream()
 {
-	printf ("\n");
-	printf ("Name=%s\n",Name());
-	printf ("ID=%ld\n",m_id);
-	printf ("IndexOf=%ld\n",Document().m_destinations.IndexOf(this));
-	printf ("Muted=%d\n",Muted());
-	printf ("Solod=%d\n",Solo());
-	printf ("Deleted=%d\n",Deleted());
-	printf ("Disabled=%d\n",Disabled());
-	printf ("Valid=%d\n",IsValid());
-	printf ("Producer=%s\n",m_producer->Name());	
+	printf("\n");
+	printf("Name=%s\n", Name());
+	printf("ID=%ld\n", m_id);
+	printf("IndexOf=%ld\n", Document().m_destinations.IndexOf(this));
+	printf("Muted=%d\n", Muted());
+	printf("Solod=%d\n", Solo());
+	printf("Deleted=%d\n", Deleted());
+	printf("Disabled=%d\n", Disabled());
+	printf("Valid=%d\n", IsValid());
+	printf("Producer=%s\n", m_producer->Name());	
 }
+#endif
+
+// ---------------------------------------------------------------------------
+// CDestinationDeleteUndoAction: Constructor/Destructor
+
 CDestinationDeleteUndoAction::CDestinationDeleteUndoAction(
 	CDestination *dest)
 	:	m_dest(dest),
 		m_index(-1)
 {
 	D_ALLOC("CDestinationDeleteUndoAction::CDestinationDeleteUndoAction()");	
-	dest->Delete();
+	m_dest->Delete();
 }
 
 CDestinationDeleteUndoAction::~CDestinationDeleteUndoAction()
@@ -437,6 +494,8 @@ CDestinationDeleteUndoAction::~CDestinationDeleteUndoAction()
 	D_ALLOC("CDestinationDeleteUndoAction::~CDestinationDeleteUndoAction()");	
 }
 
+// ---------------------------------------------------------------------------
+// CDestinationDeleteUndoAction: CUndoAction Implementation
 
 void
 CDestinationDeleteUndoAction::Redo()
@@ -444,6 +503,7 @@ CDestinationDeleteUndoAction::Redo()
 	D_HOOK(("CDestinationDeleteUndoAction::Redo()\n"));
 	m_dest->Delete();
 }
+
 void
 CDestinationDeleteUndoAction::Undo()
 {

@@ -1,12 +1,15 @@
 /* ===================================================================== *
- * GridWindow.cpp (MeV/User Interface)
+ * GridWindow.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "GridWindow.h"
+
 #include "BorderView.h"
 #include "EventTrack.h"
 #include "TimeIntervalControl.h"
-//#include "TimeIntervalEditor.h"
+
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // Constants Initialization
@@ -29,7 +32,6 @@ CGridWindow::CGridWindow(
 				   B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
 				   | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 				   B_CURRENT_WORKSPACE),
-		CObserver(*this, NULL),
 		m_intervalControl(NULL),
 		m_track(NULL)
 {
@@ -53,6 +55,15 @@ CGridWindow::CGridWindow(
 	m_intervalControl->SetTarget(dynamic_cast<BWindow *>(this));
 }
 
+CGridWindow::~CGridWindow()
+{
+	if (m_track != NULL)
+	{
+		m_track->RemoveObserver(this);
+		m_track = NULL;
+	}
+}
+
 // ---------------------------------------------------------------------------
 // CObserver Implementation
 
@@ -71,12 +82,6 @@ CGridWindow::MessageReceived(
 			}
 			break;
 		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
 		default:
 		{
 			BWindow::MessageReceived(message);
@@ -85,20 +90,21 @@ CGridWindow::MessageReceived(
 }
 
 void
-CGridWindow::OnDeleteRequested(
-	BMessage *message)
+CGridWindow::SubjectReleased(
+	CObservable *subject)
 {
-	WatchTrack(NULL);
+	D_OBSERVE(("CGridWindow<%p>::SubjectReleased()\n", this));
+
+	if (subject == m_track)
+		WatchTrack(NULL);
 }
 
 void
-CGridWindow::OnUpdate(
+CGridWindow::SubjectUpdated(
 	BMessage *message)
 {
-	if(m_track)
-	{
+	if (m_track)
 		m_intervalControl->SetValue(m_track->TimeGridSize());
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -108,15 +114,18 @@ void
 CGridWindow::WatchTrack(
 	CEventTrack *track)
 {
-	if(track != m_track)
+	if (track != m_track)
 	{
+		if (m_track != NULL)
+			m_track->RemoveObserver(this);
+
 		m_track = track;
-		if(m_track && Lock())
+		m_track->AddObserver(this);
+		if (m_track && Lock())
 		{
 			m_intervalControl->SetValue(m_track->TimeGridSize());
 			Unlock();
 		}
-		SetSubject(m_track);
 	}
 }
 

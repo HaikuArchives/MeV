@@ -86,7 +86,6 @@ public:							// Constants
 		Update_TempoMap	= (1<<6),			// list of operators changed
 		Update_AddDest = (1<<7),
 		Update_DelDest = (1<<8)
-
 	};
 
 	static const double			DEFAULT_TEMPO;
@@ -100,7 +99,7 @@ public:							// Constructor/Destructor
 									CMeVApp &app,
 									entry_ref &ref);
 
-								~CMeVDoc();
+	virtual						~CMeVDoc();
 	
 public:							// Accessors
 
@@ -190,29 +189,45 @@ public:							// Track Management
 
 								
 public :						//Destination Management
+
 	CDestination *				NewDestination();
 	
-	int32						GetUniqueDestinationID() const;
+	CDestination *				FindDestination(
+									int32 id) const;
 	
-	CDestination *				FindDestination(int32 inID) const;
-	
-	CDestination *				FindNextHigherDestinationID(
-									int32 inID) const ;
-	
-	int32						CountDestinations() const;
-	
+	int32						CountDestinations() const
+								{ return m_destinations.CountItems(); }
+
+	/**	Retrieves the next destination, starting at index.
+	 *	You should start with a value of 0, it will be incremented 
+	 *	inside this function to the next valid destination.
+	 *	If there are no more destinations, this function returns NULL.
+	 */
+	CDestination *				GetNextDestination(
+									int32 *index) const;
+
+	/**	Returns the index of the destination in a non-fragmented list,
+	 *	which can be different from the destination's ID. In case the
+	 *	destination is not found, a negative number is returned.
+	 */
+	int32						IndexOf(
+									const CDestination *destination) const;
+
 	int32						SelectedDestination() const
 								{ return m_selectedDest; }
 	void						SetSelectedDestination(int32 id)
-								{m_selectedDest=id;}						
+								{ m_selectedDest=id; }
 
-	bool 						IsDefinedDest (int32 inID) const;
+	bool 						IsDefinedDest(
+									int32 id) const;
 	
-	int32						MaxDestinationLatency (uint8 clockType);
-	
-	void						SetDestinationLatency(int32 id,int32 microseconds);
-	
+	int32						MaxDestinationLatency(
+									uint8 clockType);
 
+	void						SetDestinationLatency(
+									int32 id,
+									int32 microseconds);
+	
 public:							// Window Management
 
 	/**	Show or hide the window of a particular type */
@@ -325,10 +340,10 @@ private:						// Instance Data
 	int32						m_newTrackID;
 	
 	BList						m_destinations;
-	//CDestination * m_destTable[Max_Destinations];
 	int32						m_newDestID;
 	int32						m_selectedDest;
 	int32 						m_maxDestLatency;
+
 	// Opers associated with doc
 	BList						operators;
 

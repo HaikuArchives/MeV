@@ -48,45 +48,64 @@ class CUpdateHint;
 class UndoHistory;
 
 /**
- *	CObservableSubject is a base class for observable objects
+ *	CObservable is a base class for observable objects
  *	@author		Talin, Christopher Lenz
  *	@package	Framework
 */
-class CObservableSubject
+class CObservable
 	:	public CRefCountObject
 {
 	friend class		CObserver;
 	friend class		StSubjectLock;
 
+public:							// Constants
+
+	enum
+	{
+								UPDATED = 'obsA',
+
+								RELEASED
+	};
+
 public:							// Constructor/Destructor
 
 	/**	Constructor. */
-								CObservableSubject();
+								CObservable();
 
 	/**	Destructor. */
-	virtual						~CObservableSubject();
+	virtual						~CObservable();
 
-protected:
+public:							// Operations
 
-	/** Observer-list management. */
-	void						AddObserver	(
-									CObserver &observer);
-	void						RemoveObserver(
-									CObserver &observer);
+	/** Add an observer to this subject. */
+	bool						AddObserver	(
+									CObserver *observer);
+
+	/**	Return the number of observers. */
+	long						CountObservers() const
+								{ return m_observers.CountItems(); }
+
+	/** Remove an observer from this subject. */
+	bool						RemoveObserver(
+									CObserver *observer);
+
+	/**	Request to delete. This means asking all observers to
+		release the subject, so that the subject's reference count
+		will go to zero and the subject will be deleted.
+		
+		This is virtual so that any observables which contain
+		subcomponents which are also observable, we can recursively
+		call RequestDelete on the subcomponents.
+	*/
+	virtual void				RequestDelete();
 
 	/** Send an update hint to all observers except the excluded one.
 		Deletes the hint object when completed.
 	 */
 	void						PostUpdate(
 									CUpdateHint *hint,
-									CObserver *excludeObserver);
+									CObserver *excludeObserver = NULL);
 
-public:							// Operations
-
-	/**	Return the number of observers. */
-	long						CountObservers()
-								{ return m_observers.CountItems(); }
-	
 	/**	Lock this observable subject in order to make changes to it */
 	bool						Lock(
 									TLockType lockType)
@@ -104,7 +123,7 @@ public:							// Operations
 								{ m_lock.Release(lockType); }
 
 	/**	Returns true if the onservable is currently locked. */
-	bool						IsLocked()
+	bool						IsLocked() const
 								{ return m_lock.IsLocked(); }
 
 	/**	Return true if there is an undoable action. */
@@ -154,21 +173,6 @@ public:							// Operations
 									int32 maxUndo)
 								{ m_undoHistory.SetMaxUndoSize(maxUndo); }
 
-	/**	Request to delete. This means asking all observers to
-		release the subject, so that the subject's reference count
-		will go to zero and the subject will be deleted.
-		
-		This is virtual so that any observables which contain
-		subcomponents which are also observable, we can recursively
-		call RequestDelete on the subcomponents.
-	*/
-	virtual void				RequestDelete();
-
-	/**	Post a general update from a non-observer. */
-	void						PostUpdate(
-									CUpdateHint *hint)
-								{ PostUpdate(hint, NULL); }
-
 private:						// Instance Data
 
 	BList						m_observers;
@@ -190,7 +194,7 @@ class StSubjectLock
 public:							// Constructor/Destructor
 
 								StSubjectLock(
-									CObservableSubject &subject,
+									CObservable &subject,
 									TLockType lockType = Lock_Exclusive)
 									:	m_lock(subject.m_lock),
 										m_type(lockType)
@@ -205,9 +209,7 @@ public:							// Operations
 								{ if (!m_locked) m_locked = m_lock.Acquire(m_type); }
 
 	void						Release()
-								{
-									if (m_locked) m_locked = !m_lock.Release(m_type);
-								}
+								{ if (m_locked) m_locked = !m_lock.Release(m_type); }
 
 	bool						LockValid()
 								{ return m_locked; }
@@ -220,9 +222,6 @@ private:						// Instance Data
 
 	bool						m_locked;
 };
-
-const long			Update_ID = '#UPD',		//	Data has changed
-					Delete_ID = '#DEL';		//	Observerable going away
 
 /** 
  *	CUpdateHint is an abstract base class for observer notification hints
@@ -237,12 +236,12 @@ public:							// Constructor/Destructor
 
 	/**	Subclasses will have member functions to add additional constraints. */
 								CUpdateHint()
-									:	BMessage(Update_ID)
+									:	BMessage(CObservable::UPDATED)
 								{ }
 
 								CUpdateHint(
-									long id)
-									:	BMessage(id)
+									int32 what)
+									:	BMessage(what)
 								{ }
 };
 

@@ -34,74 +34,47 @@
 #ifndef __C_Observer_H__
 #define __C_Observer_H__
 
-#include "Undo.h"
-#include "RefCount.h"
-#include "SharedLock.h"
-
-// Application Kit
-#include <Message.h>
-#include <Handler.h>
 // Support Kit
-#include <List.h>
-#include <Locker.h>
+#include <SupportDefs.h>
 
-class CObservableSubject;
+class CObservable;
 class CUpdateHint;
 
+#define D_OBSERVE(x) //PRINT(x)	// Observer messages from many classes
+
 /** --------------------------------------------------------------------
- *	CObserver is a class which "watches" a subject for changes. Other 
+ *	CObserver is a class which "watches" subjects for changes. Other 
  *	observers can post updates indicating that changes have occured.
  *  Implements the observer pattern
  *	@author		Talin, Christopher Lenz
  *	@package	Framework
 */
 class CObserver
-	:	public BHandler
 {
 
 public:							// Constructor/Destructor
 
+	/**	Constructor. If a subject is given, we start observing it
+	 *	immediately.
+	*/
 								CObserver(
-									BLooper &looper,
-									CObservableSubject *subject);
+									CObservable *subject = NULL);
 
 	virtual						~CObserver();
 
 public:							// Hook Functions
 
-	/**	Update message from another observer */
-	virtual void				OnUpdate(
-									BMessage *message) = 0;
-
 	/**	We want to delete the subject, please stop observing...
-		Note that observers are free to ignore this message, in which
-		case the object will not be deleted.
+		You absolutely must have stopped observing the subject
+		when this call returns !!
+		@see CObservable::RemoveObserver()
 	*/
-	virtual void				OnDeleteRequested(
-									BMessage *message)
-								{ }
-	
-public:							// Operations
+	virtual void				Released(
+									CObservable *subject) = 0;
 
-	/** Send an update hint to all other observers. Deletes the hint
-		object when completed.
-	 */
-	void						PostUpdate(
-									CUpdateHint *hint,
-									bool excludeOriginal = true);
-	
-	/**	Change the observable that this observer is looking at. */
-	void						SetSubject(
-									CObservableSubject *subject);
-
-public:							// BHandler Implementation
-
-	virtual void				MessageReceived(
-									BMessage *message);
-	
-private:						// Instance Data
-
-	CObservableSubject *		m_subject;
+	/**	A subject has been updated. */
+	virtual void				Updated(
+									BMessage *message) = 0;
 };
 
 #endif /* __C_Observer_H__ */

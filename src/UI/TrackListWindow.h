@@ -38,15 +38,13 @@
 #ifndef __C_TrackListWindow_H__
 #define __C_TrackListWindow_H__
 
-#include "WindowState.h"
-#include "Observer.h"
+#include "AppWindow.h"
 
 class CMeVDoc;
 class CTrackListView;
 
 class CTrackListWindow :
-	public CAppWindow,
-	public CObserver
+	public CAppWindow
 {
 
 public:							// Constants
@@ -77,22 +75,14 @@ public:							// CAppWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
+	virtual void				SubjectReleased(
+									CObservable *subject)
+								{ }
+
 	virtual void				Zoom(
 									BPoint origin,
 									float width,
 									float height);
-
-public:							// CObserver Implementation
-
-	// If the app wants us to stop looking at the track, then oblige it.
-	// Overridden from the CObserver class.
-	virtual void				OnDeleteRequested(
-									BMessage *message);
-
-	// Update inspector info when we get an observer update message.
-	// Overridden from the CObserver class.
-	virtual void				OnUpdate(
-									BMessage *message);
 
 protected:						// Internal Operations
 

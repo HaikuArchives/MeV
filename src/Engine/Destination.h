@@ -41,63 +41,77 @@
 
 #ifndef __C_Destination_H__
 #define __C_Destination_H__
+
+#include "BitSet.h"
 #include "MeV.h"
 #include "Observable.h"
-#include "BitSet.h"
-#include <MidiProducer.h>
-#include "ReconnectingMidiProducer.h"
-//Support Kit.
-#include <String.h>
-// Interface Kit
-#include <InterfaceDefs.h>
 #include "IFFWriter.h"
 #include "IFFReader.h"
-#include "Observer.h"
-#include <Rect.h>
+#include "ReconnectingMidiProducer.h"
+
+// Midi Kit
+#include <MidiProducer.h>
+// Interface Kit
 #include <Bitmap.h>
+#include <InterfaceDefs.h>
+#include <Rect.h>
+//Support Kit.
+#include <String.h>
+
 class CMeVDoc;
-/* ============================================================================ *
-                                Destination
 
-	Destinations, allow routing and remapping of MIDI data
-	upon playback. There are up to 128 channels supported.
- * ============================================================================ */
-
+/**	Destinations, allow routing and remapping of MIDI data
+	upon playback.
+	@author		Talin, Dan Walton, Christopher Lenz
+	@package	Engine
+ */
 class CDestination
+	:	public CObservable
 {
+	friend class CMeVDoc;
+	friend class CDestinationDeleteUndoAction;
 
-		friend class CMeVDoc; //only for saving
-		friend class CDestinationDeleteUndoAction;
-public :
+public:							// Constants
 
-				//Constants
-		enum EDestUpdateHintBits {
-		Update_Name = (1<<0),
-		Update_Color = (1<<1),
-		Update_Channel = (1<<2),
-		Update_Connections = (1<<3),
-		Update_Flags= (1<<4),   //mute solo ect.
-		Update_Latency = (1<<5)
-		};
+	enum EDestUpdateHintBits
+	{
+								Update_Name = (1<<0),
 
-		enum destinationFlags {		
-		muted			= (1<<0),				// channel is muted
-		mutedFromSolo	= (1<<1),				// channel muted because of solo
-		solo			= (1<<2),				// channel is solo'd
-		disabled		= (1<<3),				// channel disabled because
-												// of vanished midi port.
-		deleted			= (1<<4)				// only one channel should be in this catagory.
+								Update_Color = (1<<1),
+
+								Update_Channel = (1<<2),
+
+								Update_Connections = (1<<3),
+
+								Update_Flags= (1<<4),
+
+								Update_Latency = (1<<5)
+	};
+
+	enum destinationFlags
+	{		
+								// channel is muted
+								muted			= (1<<0),
+
+								// channel muted because of solo
+								mutedFromSolo	= (1<<1),
+
+								// channel is solo'd
+								solo			= (1<<2),
+
+								// channel disabled because of vanished midi port.
+								disabled		= (1<<3),
+
+								// only one channel should be in this catagory.
+								deleted			= (1<<4)
 	};
 
 public:							//Constructor/Destructor
 
 								CDestination(
 									int32 id,
-									CMeVDoc &inDoc,
-									char *name,
-									bool notify);
-									//the notify is a tempary soloution
-									//to a Segfault in the initial observer on load
+									CMeVDoc *document,
+									const char *name);
 
 	virtual						~CDestination();
 
@@ -110,6 +124,9 @@ public:							// Accessors
 	
 	/** Returns true if not disabled or deleted. */
 	bool 						IsValid () const;
+
+	int32 						GetID() const
+								{ return m_id; }
 
 	void 						SetMuted(
 									bool muted);
@@ -129,13 +146,10 @@ public:							// Accessors
 								{ return m_name.String(); }
 
 	void						SetLatency(
-									int32 microseconds);
-	int32						Latency(
+									bigtime_t microseconds);
+	bigtime_t					Latency(
 									uint8 clockType)
 								{ return 0; } // nyi
-
-	int32 						GetID() const
-								{ return m_id; }
 
 	void						SetColor(
 									rgb_color color);
@@ -148,6 +162,16 @@ public:							// Accessors
 	uint8						Channel() const
 								{ return m_channel; }
 
+	void						SetDisabled(
+									bool disabled);
+	bool			 			Disabled()const
+								{ return m_flags & disabled; }
+
+	CMeVDoc &					Document()
+								{ return *m_doc; } 
+	
+public:							// Operations
+
 	void						SetConnect(
 									BMidiConsumer *sink,
 									bool connect);
@@ -156,20 +180,12 @@ public:							// Accessors
 	CReconnectingMidiProducer *	GetProducer() const
 								{ return m_producer; }
 
-	void						SetDisable(
-									bool disable);
-	bool			 			Disabled()const
-								{ return m_flags & disabled; }
-
 	void						Delete();
 	void						Undelete(
 									int32 originalIndex);
 	bool						Deleted() const
 								{ return m_flags & deleted; }
 
-	CMeVDoc &					Document()
-								{ return *m_doc; } 
-	
 public:							//Hook Functions
 
 	virtual int32				Bytes()
@@ -177,37 +193,55 @@ public:							//Hook Functions
 
 public:							//debug function
 
-	void 						PrintSelf();
+#if DEBUG
+	void 						PrintToStream();
+#endif
 
-private:
+private:   						// Internal Operations
 
 	bool						_addFlag (int32 flag);
 
 	bool						_removeFlag(int32 flag);	
 	
-private:   	
-	void 					_addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
-	BBitmap * 				CreateIcon (BRect r);
-	static const rgb_color m_defaultColorTable[ 16 ] ;
-	
-	
-	int32				m_id;
-	uint8				m_channel,				// real midi channel
-						m_flags;					// various flags
-	bigtime_t			m_latency;
-	int32				m_consumer_id;			//this is the id that that this dest
-												//is connected to.
+	void 						_addIcons(
+									BMessage* msg,
+									BBitmap* largeIcon,
+									BBitmap* miniIcon) const;
 
-	CMeVDoc 			*m_doc;
-	BString 			m_name;					// in the future we may not need this.
-	CReconnectingMidiProducer *m_producer;					
-	int8				m_transpose,				// transposition for channel
-						m_initialTranspose;		// initial transposition value
+	BBitmap * 					_createIcon(
+									BRect r);
 
-	rgb_color			m_fillColor,				// fill color
-						m_highlightColor;			// hightlight color
+	void						_updateIcons();
+
+private:						// Instance Data
+
+	CMeVDoc *					m_doc;
+
+	int32						m_id;
+
+	BString 					m_name;
+
+	bigtime_t					m_latency;
+
+	// various flags
+	uint8						m_flags;
+
+	// real midi channel
+	uint8						m_channel;
+
+	//this is the id that that this dest is connected to.
+	int32						m_consumer_id;
+
+	CReconnectingMidiProducer *	m_producer;					
+
+	rgb_color					m_fillColor;
+
+	rgb_color					m_highlightColor;
+
+private:						// Class Data
+
+	static const rgb_color		s_defaultColorTable[16];
 };
-
 
 class CDestinationDeleteUndoAction
 	:	public UndoAction

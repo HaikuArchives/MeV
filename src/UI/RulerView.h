@@ -72,6 +72,8 @@ public:							// Constructor/Destructor
 									ulong resizingModeMask,
 									ulong flags);
 
+	virtual						~CRulerView();
+
 public:							// Operations
 
 	void						ShowMarkers(
@@ -81,6 +83,9 @@ public:							// BScrollerTarget Implementation
 
 	virtual void				Draw(
 									BRect updateRect);
+
+	virtual void				MessageReceived(
+									BMessage *message);
 
 	virtual void				MouseDown(
 									BPoint point);
@@ -93,13 +98,16 @@ public:							// BScrollerTarget Implementation
 	virtual void				MouseUp(
 									BPoint point);
 
-	void						SetScrollValue(
+	virtual void				SetScrollValue(
 									float scrollValue,
 									orientation which);
 
 public:							// CObserver Implementation
 
-	virtual void				OnUpdate(
+	virtual void				Released(
+									CObservable *subject);
+
+	virtual void				Updated(
 									BMessage *message);
 
 protected:						// Instance Data

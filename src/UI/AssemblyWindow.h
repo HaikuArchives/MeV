@@ -69,7 +69,10 @@ public:							// CTrackWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				OnUpdate(
+	virtual void				SubjectReleased(
+									CObservable *subject);
+
+	virtual void				SubjectUpdated(
 									BMessage *message);
 
 protected:

@@ -49,6 +49,7 @@
 #ifndef __C_MeVApp_H__
 #define __C_MeVApp_H__
 
+#include "AppWindow.h"
 #include "DocApp.h"
 #include "WindowState.h"
 #include "DynamicMenu.h"
@@ -314,6 +315,10 @@ public:							// CAppWindow Implementation
 
 	virtual void				MessageReceived(
 									BMessage *message);
+
+	virtual void				SubjectReleased(
+									CObservable *subject)
+								{ }
 
 private:						// Instance Data
 

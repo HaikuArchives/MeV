@@ -118,11 +118,9 @@ public:							// CStripLabelView Implementation
 // Constructor/Destructor
 
 CVelocityEditor::CVelocityEditor(
-	BLooper &looper,
 	CStripFrameView &frameView,
 	BRect rect)
-	:	CEventEditor(looper, frameView, rect,
-					 "Velocity", false, false),
+	:	CEventEditor(frameView, rect, "Velocity", false, false),
 		m_coupleAttackRelease(true)
 {
 	SetHandlerFor(EvtType_Note, new CVelocityNoteEventHandler(this));
@@ -175,82 +173,6 @@ CVelocityEditor::Draw(
 }
 
 void
-CVelocityEditor::OnUpdate(
-	BMessage *message)
-{
-	BRect r(Bounds());
-
-	bool selChange = false;
-	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
-	{
-		if (!IsSelectionVisible())
-			return;
-	}
-
-	int32 trackHint = 0;
-	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
-	{
-		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
-						   CTrack::Update_TempoMap)))
-			return;
-	}
-
-	int32 minTime;
-	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
-		minTime = ViewCoordsToTime(Bounds().left);
-	r.left = TimeToViewCoords(minTime) - 1.0;
-
-	int32 maxTime;
-	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
-		maxTime = ViewCoordsToTime(Bounds().right);
-	r.right = TimeToViewCoords(maxTime) + 1.0;
-
-	if (trackHint & CTrack::Update_Duration)
-		RecalcScrollRangeH();
-
-	uint8 channel;
-	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
-	{
-		// Invalidate everything if signature map changed
-		Invalidate();
-	}
-	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
-	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
-		EventMarker	marker(Track()->Events());
-
-		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
-			 ev;
-			 ev = marker.NextItemInRange(minTime, maxTime))
-		{
-			if ((ev->HasProperty(Event::Prop_Channel))
-			 && (ev->GetVChannel() == channel))
-			{
-				HandlerFor(*ev)->Invalidate(*ev);
-			}
-		}
-	}
-	else if (selChange)
-	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
-		EventMarker marker(Track()->Events());
-
-		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
-			 ev;
-			 ev = marker.NextItemInRange(minTime, maxTime))
-		{
-			HandlerFor(*ev)->Invalidate(*ev);
-		}
-	}
-	else
-	{
-		Invalidate(r);
-	}
-}
-
-void
 CVelocityEditor::MessageReceived(
 	BMessage *message)
 {
@@ -261,15 +183,9 @@ CVelocityEditor::MessageReceived(
 			m_coupleAttackRelease = !m_coupleAttackRelease;
 			break;
 		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
 		default:
 		{
-			CStripView::MessageReceived(message);
+			CEventEditor::MessageReceived(message);
 		}
 	}
 }
@@ -345,7 +261,7 @@ CVelocityEditor::DoDrag(
 					CUpdateHint hint;
 					hint.AddInt32("MinTime", m_smallestTime);
 					hint.AddInt32("MaxTime", m_largestTime);
-					PostUpdate(&hint, true);
+					Track()->PostUpdate(&hint, this);
 				}
 				m_smallestTime = LONG_MAX;
 				m_largestTime = LONG_MIN;
@@ -509,7 +425,7 @@ CVelocityEditor::FinishDrag(
 		CUpdateHint hint;
 		hint.AddInt32("MinTime", m_smallestTime);
 		hint.AddInt32("MaxTime", m_largestTime);
-		PostUpdate(&hint, true);
+		Track()->PostUpdate(&hint, this);
 	}
 
 	TrackWindow()->SetHorizontalPositionInfo(NULL, 0);

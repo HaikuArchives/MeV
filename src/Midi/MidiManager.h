@@ -69,7 +69,7 @@
 #include "InternalSynth.h"
 #include "Observable.h"
 
-class CMidiManager : public BLooper,public CObservableSubject{
+class CMidiManager : public BLooper,public CObservable{
 	public:
 		static CMidiManager * Instance();
 		BMidiProducer * NextProducer(int32 *id);

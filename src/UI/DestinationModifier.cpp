@@ -24,29 +24,30 @@ CDestinationModifier::CDestinationModifier(
 	int32 id,
 	CMeVDoc *doc,
 	BHandler *parent)
-	:	BWindow(frame, "CDestination Modifier", B_TITLED_WINDOW,
+	:	CAppWindow(frame, "CDestination Modifier", B_TITLED_WINDOW,
 				B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
-		CObserver(*this, doc),
 		m_dest(doc->FindDestination(id)),
 		m_id(id),
 		m_midiManager(CMidiManager::Instance()),
 		m_parent(parent)
 {
+	m_dest->AddObserver(this);
+
+	StSubjectLock lock(*m_dest, Lock_Shared);
 	BString title;
 	title << "Destination: ";
 	title << m_dest->Name();
 	SetTitle(title.String());
 
 	_buildUI();
+
+	m_name->MakeFocus(true);
 }
 
-// ---------------------------------------------------------------------------
-// Operations
-
-void
-CDestinationModifier::Update()
+CDestinationModifier::~CDestinationModifier()
 {
-
+	if (m_dest)
+		m_dest->RemoveObserver(this);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +88,8 @@ CDestinationModifier::MessageReceived(
 	{
 		case NAME_CHANGED:
 		{
+			StSubjectLock lock(*m_dest, Lock_Exclusive);
+
 			BString name;
 			name << m_name->Text();
 			m_dest->SetName(name.String());
@@ -98,11 +101,15 @@ CDestinationModifier::MessageReceived(
 		}
 		case CHANNEL_SELECTED:
 		{
+			StSubjectLock lock(*m_dest, Lock_Exclusive);
+
 			m_dest->SetChannel(message->FindInt8("value"));	
 			break;
 		}
 		case PORT_SELECTED:
 		{
+			StSubjectLock lock(*m_dest, Lock_Exclusive);
+
 			int32 portID;
 			if (message->FindInt32("port_id", &portID) != B_OK)
 				return;
@@ -111,18 +118,16 @@ CDestinationModifier::MessageReceived(
 		}
 		case MUTED:
 		{
+			StSubjectLock lock(*m_dest, Lock_Exclusive);
+
 			m_dest->SetMuted(m_muted->Value());
 			break;
 		}
 		case COLOR_CHANGED:
 		{
+			StSubjectLock lock(*m_dest, Lock_Exclusive);
+
 			m_dest->SetColor(m_colors->ValueAsColor());
-			break;
-		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
 			break;
 		}
 		default:
@@ -147,9 +152,23 @@ CDestinationModifier::QuitRequested()
 // CObserver Implementation
 
 void
-CDestinationModifier::OnUpdate(BMessage *msg)
+CDestinationModifier::SubjectReleased(
+	CObservable *subject)
 {
-	//i don't really know why this would happen.
+	if (subject == m_dest)
+	{
+		m_dest->RemoveObserver(this);
+		m_dest = NULL;
+		PostMessage(B_QUIT_REQUESTED, this);
+	}
+}
+
+void
+CDestinationModifier::SubjectUpdated(
+	BMessage *message)
+{
+	// i don't really know why this would happen.
+	// -> if there were other means to edit the destination
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +177,8 @@ CDestinationModifier::OnUpdate(BMessage *msg)
 void
 CDestinationModifier::_buildUI()
 {
+	StSubjectLock lock(*m_dest, Lock_Shared);
+
 	BMenuField *menuField;
 	float maxLabelWidth = be_plain_font->StringWidth("Channel:  ");
 
@@ -259,6 +280,8 @@ CDestinationModifier::_populatePortsMenu()
 			BBitmap *icon = m_midiManager->ConsumerIcon(id, B_MINI_ICON);
 			CIconMenuItem *item = new CIconMenuItem(con->Name(), msg, icon);
 			m_midiPorts->AddItem(item);
+
+			StSubjectLock lock(*m_dest, Lock_Shared);
 			if (m_dest->IsConnected(con))
 			{
 				item->SetMarked(true);
@@ -274,15 +297,10 @@ CDestinationModifier::_populatePortsMenu()
 											m_midiManager->ConsumerIcon(internalSynth->ID(),
 											B_MINI_ICON));
 	m_midiPorts->AddItem(item);
-	if (m_dest->GetProducer()->IsConnected(internalSynth))
-	{
-		item->SetMarked(true);
-	}
-}
 
-void
-CDestinationModifier::_updateStatus()
-{
+	StSubjectLock lock(*m_dest, Lock_Shared);
+	if (m_dest->GetProducer()->IsConnected(internalSynth))
+		item->SetMarked(true);
 }
 
 // END - DestinationModifier.cpp

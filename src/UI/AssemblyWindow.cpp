@@ -52,6 +52,8 @@ CAssemblyWindow::CAssemblyWindow(
 	D_ALLOC(("CAssemblyWindow::CAssemblyWindow(%s)\n",
 			 hasSettings ? "hasSettings == true" : "hasSettings == false"));
 
+	document->FindTrack((int32)0)->AddObserver(this);
+
 	AddMenuBar();
 	AddToolBar();
 
@@ -79,6 +81,8 @@ CAssemblyWindow::CAssemblyWindow(
 
 CAssemblyWindow::~CAssemblyWindow()
 {
+//	Document()->FindTrack((int32)0)->RemoveObserver(this);
+
 	D_ALLOC(("CAssemblyWindow::CAssemblyWindow()\n"));
 }
 
@@ -226,10 +230,25 @@ CAssemblyWindow::MessageReceived(
 }
 
 void
-CAssemblyWindow::OnUpdate(
+CAssemblyWindow::SubjectReleased(
+	CObservable *subject)
+{
+	D_OBSERVE(("CAssemblyWindow<%p>::SubjectReleased()\n", this));
+
+	CTrack *realMaster = Document()->FindTrack((int32)0);
+	if (subject == realMaster)
+		realMaster->RemoveObserver(this);
+	else
+		CTrackWindow::SubjectReleased(subject);
+}
+
+void
+CAssemblyWindow::SubjectUpdated(
 	BMessage *message)
 {
-	CTrackWindow::OnUpdate(message);
+	D_OBSERVE(("CAssemblyWindow<%p>::SubjectUpdated()\n", this));
+
+	CTrackWindow::SubjectUpdated(message);
 }
 
 bool
@@ -246,7 +265,7 @@ CAssemblyWindow::AddStrip(
 
 	if (type == "Metered")
 	{
-		strip = new CTrackCtlStrip(*this, *stripFrame, rect,
+		strip = new CTrackCtlStrip(*stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack(1),
 								   "Metered");
 		ruler = new CRulerView(BRect(0.0, -1.0, rect.Width(),
@@ -258,7 +277,7 @@ CAssemblyWindow::AddStrip(
 	}
 	else if (type == "Real")
 	{
-		strip = new CTrackCtlStrip(*this, *stripFrame, rect,
+		strip = new CTrackCtlStrip(*stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack((int32)0),
 								   "Real");
 		ruler = new CRulerView(BRect(0.0, -1.0, rect.Width(), 

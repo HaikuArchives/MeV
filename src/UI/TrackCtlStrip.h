@@ -58,7 +58,6 @@ class CTrackCtlStrip
 public:							// Constructor/Destructor
 
 								CTrackCtlStrip(
-									BLooper &looper,
 									CStripFrameView &frame,
 									BRect rect,
 									CEventTrack *track,
@@ -111,11 +110,10 @@ public:							// CEventEditor Implementation
 	virtual void				OnLoseSelection()
 								{ InvalidateSelection(); }
 
-	/** Update message from another observer */
-	virtual void				OnUpdate(
-									BMessage *message);
-
 	virtual void				Pulse();
+
+	virtual void				SubjectUpdated(
+									BMessage *message);
 
 	virtual bool				SupportsShadowing()
 								{ return true; }

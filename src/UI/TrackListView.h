@@ -42,13 +42,15 @@
 
 // Interface Kit
 #include <ListView.h>
+#include <Window.h>
 
 class CMeVDoc;
 
 class BPopUpMenu;
 
 class CTrackListView
-	:	public BListView
+	:	public BListView,
+		public CObserver
 {
 	friend class CTrackListWindow;
 
@@ -93,6 +95,15 @@ public:							// BListView Implementation
 
 	virtual void				MouseUp(
 									BPoint point);
+
+public:							// CObserver Implementation
+
+	virtual void				Updated(
+									BMessage *message)
+								{ Window()->PostMessage(message, this); }
+
+	virtual void				Released(
+									CObservable *subject);
 
 protected:						// Operations
 

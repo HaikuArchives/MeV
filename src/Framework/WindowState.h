@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * WindowState.h (MeV)
+ * WindowState.h (MeV/Framework)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -26,6 +26,8 @@
  *		Original implementation
  *  04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	09/30/2000	cell
+ *		Moved CAppWindow into AppWindow.h/cpp
  * ---------------------------------------------------------------------
  *  To Do:
  *
@@ -34,50 +36,13 @@
 #ifndef __C_WindowState_H__
 #define __C_WindowState_H__
 
-//#include "AppHelp.h"
-
 // Interface Kit
-#include <Window.h>
+#include <Rect.h>
 // Support Kit
 #include <Locker.h>
 
 class BCursor;
 class CWindowState;
-
-class CAppWindow :
-	public BWindow
-{
-
-protected:
-	bool QuitRequested();
-
-public:							// Constructor/Destructor
-
-								CAppWindow(
-									BRect frame,
-									const char *title,
-									window_type type,
-									uint32 flags,
-									uint32 workspace = B_CURRENT_WORKSPACE);
-								CAppWindow(
-									CWindowState &state,
-									BRect frame,
-									const char *title, 
-									window_type type,
-									uint32 flags,
-									uint32 workspace = B_CURRENT_WORKSPACE);
-	
-	virtual						~CAppWindow();
-
-public:							// Operations
-
-	void						RememberState(
-									CWindowState &state);
-
-private:							// Instance Data
-
-	CWindowState *					m_state;
-};
 
 /**
  *	A window class that keeps track of it's state (position, open-ness)
@@ -86,61 +51,69 @@ private:							// Instance Data
  *	@author		Talin, Christopher Lenz
  *	@package	Framework
  */
-class CWindowState {
+class CWindowState
+{
 	friend class CAppWindow;
 
-	BLocker		lock;
-	CAppWindow	*w;
-	BRect		wRect;
+public:							// Constructor/Destructor
 
-	void OnWindowOpen( CAppWindow *inWindow );
-	void OnWindowClosing();
+								CWindowState(
+									BRect frame)
+									:	m_window(NULL),
+										m_frame(frame)
+								{ }
 
-public:
+public:							// Operations
 
-	CWindowState( BRect inRect ) { wRect = inRect; w = NULL; }
+	/**	Call this to activate the window. Returns false if not open. */
+	bool						Activate();
 
-		/**	Call this to activate the window. Returns false if not open.	*/
-	bool Activate();
-	bool IsOpen()
-	{
-		bool		result;
-		
-		lock.Lock();
-		result = (w != NULL);
-		lock.Unlock();
-		
-		return result;
-	}
-	
-		/**	Call this to request that the window be closed.	*/
-	void Close();
-	
-		/**	Call this to get the rectangle of the window when it was last open.	*/
-	BRect Rect();
-	BPoint Pos();
+	bool						IsOpen();
+
+	/**	Call this to request that the window be closed.	*/
+	void						Close();
+
+	/**	Call this to get the rectangle of the window when it was last open.	*/
+	BRect						Rect();
+
+	BPoint						Pos();
 
 	/**	Returns a pointer to the window. You should lock before calling this.	*/
 	CAppWindow *				Window() const
-								{ return w; }
-	
-		/**	Lock the window state.	*/
-	void Lock() { lock.Lock(); }
-	
-		/**	Unlock the window state. */
-	void Unlock() { lock.Unlock(); }
-	
-		/**	Set position of window.	*/
-	void SetPos( const BPoint &inPos )
-	{
-		wRect.OffsetTo( inPos );
-	}
+								{ return m_window; }
 
-		/**	Set the position of window.	*/
-	void SetPos( const BRect &inPos )
-	{
-		wRect = inPos;
-	}
+	/**	Lock the window state.	*/
+	bool						Lock()
+								{ return m_lock.Lock(); }
+
+	/**	Unlock the window state. */
+	void						Unlock()
+								{ m_lock.Unlock(); }
+
+	/**	Set position of window.	*/
+	void						SetPos(
+									const BPoint &pos)
+								{ m_frame.OffsetTo(pos); }
+
+	/**	Set the position of window.	*/
+	void						SetPos(
+									const BRect &rect)
+								{ m_frame = rect; }
+
+private:						// Internal Operations
+
+	void						WindowOpened(
+									CAppWindow *window);
+
+	void						WindowClosed();
+
+private:						// Instance Data
+
+	BLocker						m_lock;
+
+	CAppWindow *				m_window;
+
+	BRect						m_frame;
 };
 
 #endif /* __C_WindowState_H__ */

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * GridWindow.h (MeV/User Interface)
+ * GridWindow.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -41,7 +41,7 @@
 #define __C_GridWindow_H__
 
 #include "Observer.h"
-#include "WindowState.h"
+#include "AppWindow.h"
 
 class CEventTrack;
 class CTimeIntervalControl;
@@ -50,8 +50,7 @@ class CTimeIntervalControl;
 	// 	Grid size with track...
 
 class CGridWindow :
-	public CAppWindow,
-	public CObserver
+	public CAppWindow
 {
 
 public:						// Constants
@@ -69,25 +68,26 @@ public:						// Constructor/Destructor
 								BPoint position,
 								CWindowState &state );
 
-public:						// CObserver Implementation
+	virtual					~CGridWindow();
+
+public:						// Operations
+
+	/** Inspect the current event of the track. */
+	void					WatchTrack(
+								CEventTrack *track);
+
+public:						// CAppWindow Implementation
 
 	virtual void			MessageReceived(
 								BMessage *message);
 
-	// If the app wants us to stop looking at the track, then oblige it.
-	virtual void			OnDeleteRequested(
+	/** If the app wants us to stop looking at the track, then oblige it. */
+	virtual void			SubjectReleased(
+								CObservable *subject);
+
+	/** Update inspector info when we get an observer update message. */
+	virtual void			SubjectUpdated(
 								BMessage *message);
-
-	// Update inspector info when we get an observer update message.
-	virtual void			OnUpdate(
-								BMessage *message);
-
-public:						// Operations
-
-	// Inspect the current event of the track
-	void					WatchTrack(
-								CEventTrack *track);
-
 
 private:					// Instance Data
 

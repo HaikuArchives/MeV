@@ -43,7 +43,7 @@
 
 class CAbstractReader;
 class CAbstractWriter;
-class CObservableSubject;
+class CObservable;
 class EventListUndoAction;
 
 /* ============================================================================ *
@@ -225,14 +225,14 @@ public:
 
 class EventListUndoAction : public ItemListUndoAction<Event> {
 	const char			*description;
-	CObservableSubject	&subject;
+	CObservable	&subject;
 	
 	const char *Description() const { return description; }
 	void Undo();
 	void Redo();
 
 public:
-	EventListUndoAction( EventList &inList, CObservableSubject &inSubject, const char *inDescription )
+	EventListUndoAction( EventList &inList, CObservable &inSubject, const char *inDescription )
 		: ItemListUndoAction<Event>( inList ),
 		  subject( inSubject )
 	{

@@ -68,8 +68,7 @@ public:
 COperatorWindow::COperatorWindow(
 	CWindowState &inState,
 	CMeVDoc &inDocument )
-	: CDocWindow( inState, &inDocument, false, "Event Operators", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
-	  CObserver( *this, &inDocument )
+	: CDocWindow( inState, &inDocument, false, "Event Operators", B_TITLED_WINDOW, B_NOT_H_RESIZABLE )
 {
 	BRect			r( inState.Rect() );
 	int32			x, y;
@@ -249,11 +248,31 @@ void COperatorWindow::MessageReceived( BMessage *msg )
 		}
 		break;
 
-	case Update_ID:
-	case Delete_ID:
-		CObserver::MessageReceived( msg );
+	case CObservable::UPDATED:
+	{
+		int32		docHint;
+		CMeVDoc		*doc = (CMeVDoc *)Document();
+	
+		if (msg->FindInt32("DocAttrs", 0, &docHint) != B_OK)
+			docHint = 0;
+		
+		if (docHint & CMeVDoc::Update_OperList)
+		{
+			operList->Hide();
+			DeleteListItems( operList );
+			for (int i = 0; i < doc->CountOperators(); i++)
+			{
+					// Add item sorted by some field...
+				operList->AddItem( new COperatorListItem( doc->OperatorAt( i ) ) );
+			}
+			operList->Show();
+		}
+		else if (docHint & CMeVDoc::Update_Operator)
+		{
+			operList->Invalidate();
+		}
 		break;
-
+	}
 	default:
 		CDocWindow::MessageReceived( msg );
 		break;
@@ -299,26 +318,4 @@ void COperatorWindow::SetTrack( CEventTrack *inViewTrack )
 	}
 }
 
-void COperatorWindow::OnUpdate( BMessage *inMsg )
-{
-	int32		docHint;
-	CMeVDoc		*doc = (CMeVDoc *)Document();
-
-	if (inMsg->FindInt32( "DocAttrs",   0, &docHint ) != B_OK)		docHint = 0;
-	
-	if (docHint & CMeVDoc::Update_OperList)
-	{
-		operList->Hide();
-		DeleteListItems( operList );
-		for (int i = 0; i < doc->CountOperators(); i++)
-		{
-				// Add item sorted by some field...
-			operList->AddItem( new COperatorListItem( doc->OperatorAt( i ) ) );
-		}
-		operList->Show();
-	}
-	else if (docHint & CMeVDoc::Update_Operator)
-	{
-		operList->Invalidate();
-	}
-}
+// END - OperatorWindow.cpp

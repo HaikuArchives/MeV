@@ -39,9 +39,10 @@
 #ifndef __C_VChannelModifier_H__
 #define __C_VChannelModifier_H__
 
+#include "WindowState.h"
 #include "MidiManager.h"
-#include "Observer.h"
 #include "MeVDoc.h"
+
 // Application Kit
 #include <Message.h>
 // Interface Kit
@@ -57,8 +58,7 @@ class CDestination;
 class CDestinationList;
 
 class CDestinationModifier
-	:	public BWindow,
-		public CObserver
+	:	public CAppWindow
 {
 
 public:							// Constants
@@ -92,23 +92,23 @@ public:							// Constructor/Destructor
 									CMeVDoc *doc,
 									BHandler *parent);
 
-public:							// Operations
+	virtual 					~CDestinationModifier();
 
-	void						Update();
-
-public:							// BWindow Implementation
+public:							// CAppWindow Implementation
 
 	virtual void				MenusBeginning();
 
 	virtual void				MenusEnded();
 
-	virtual void				MessageReceived(BMessage *msg);
+	virtual void				MessageReceived(
+									BMessage *message);
 
 	virtual bool				QuitRequested();
 
-public:							// CObserver Implementation
+	virtual void				SubjectReleased(
+									CObservable *subject);
 
-	virtual void				OnUpdate(
+	virtual void				SubjectUpdated(
 									BMessage *message);
 
 private:						// Internal Operations
@@ -116,8 +116,6 @@ private:						// Internal Operations
 	void						_buildUI();
 
 	void						_populatePortsMenu();
-
-	void						_updateStatus();
 
 private:						// Instance Data
 

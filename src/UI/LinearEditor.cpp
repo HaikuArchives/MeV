@@ -125,10 +125,9 @@ CLinearEditor::BACKGROUND_COLOR = {255, 255, 255, 255};
 // Constructor/Destructor
 
 CLinearEditor::CLinearEditor(
-	BLooper &looper,
 	CStripFrameView	&frame,
 	BRect rect)
-	:	CEventEditor(looper, frame, rect, "Piano Roll", true, true),
+	:	CEventEditor(frame, rect, "Piano Roll", true, true),
 		m_whiteKeyStep(8)
 {
 	SetHandlerFor(EvtType_Note, new CLinearNoteEventHandler(this));
@@ -161,8 +160,7 @@ CLinearEditor::ConstructEvent(
 	BPoint point)
 {
 	// check if destination is set
-	//int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
-	int32 destination=TrackWindow()->Document()->SelectedDestination();
+	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
 	if (!TrackWindow()->Document()->IsDefinedDest(destination))
 	{
 		printf("not defined\n");
@@ -332,26 +330,6 @@ CLinearEditor::KillEventFeedback()
 }
 
 void
-CLinearEditor::MessageReceived(
-	BMessage *message)
-{
-	switch (message->what)
-	{
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
-		default:
-		{
-			CStripView::MessageReceived(message);
-			break;
-		}
-	}
-}
-
-void
 CLinearEditor::MouseMoved(
 	BPoint point,
 	uint32 transit,
@@ -365,102 +343,6 @@ CLinearEditor::MouseMoved(
 			TrackWindow()->SetVerticalPositionInfo("");
 		else
 			DisplayPitchInfo(point);
-	}
-}
-
-void
-CLinearEditor::OnUpdate(
-	BMessage *message)
-{
-	int32 minTime = 0;
-	int32 maxTime = LONG_MAX;
-	int32 trackHint;
-	bool flag;
-	bool selChange = false;
-	int8 channel = -1;
-	BRect r(Bounds());
-
-	bounds = r;
-
-	if (message->FindBool("SelChange", 0, &flag) == B_OK)
-	{
-		if (!IsSelectionVisible())
-			return;
-		selChange = flag;
-	}
-
-	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
-	{
-		// REM: what do we do if track changes name?
-		if (!(trackHint &
-			(CTrack::Update_Duration | CTrack::Update_SigMap | CTrack::Update_TempoMap)))
-				return;
-	}
-	else
-		trackHint = 0;
-
-	if (message->FindInt32("MinTime", 0, &minTime) == B_OK)
-	{
-		if (minTime == LONG_MIN)
-			r.left = Bounds().left;
-		else
-			r.left = TimeToViewCoords(minTime) - 1.0;
-	}
-	else
-		minTime = 0;
-
-	if (message->FindInt32("MaxTime", 0, &maxTime) == B_OK)
-	{
-		if (maxTime == LONG_MAX)
-			r.right = Bounds().right;
-		else
-			r.right = TimeToViewCoords(maxTime) + 1.0;
-	}
-	else
-		maxTime = LONG_MAX;
-	
-	if (message->FindInt8("channel", 0, &channel) != B_OK)
-		channel = -1;
-
-	if (trackHint & CTrack::Update_Duration)
-		RecalcScrollRangeH();
-
-	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
-	{
-		RecalcScrollRangeH();
-		// Invalidate everything if signature map changed
-		Invalidate();
-	}
-	else if (channel >= 0)
-	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
-		EventMarker marker(Track()->Events());
-
-		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
-			 ev;
-			 ev = marker.NextItemInRange(minTime, maxTime))
-		{
-			if (ev->HasProperty(Event::Prop_Channel) && ev->GetVChannel() == channel)
-				HandlerFor(*ev)->Invalidate(*ev);
-		}
-	}
-	else if (selChange)
-	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
-		EventMarker marker(Track()->Events());
-
-		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
-			 ev;
-			 ev = marker.NextItemInRange(minTime, maxTime))
-		{
-			HandlerFor(*ev)->Invalidate(*ev);
-		}
-	}
-	else
-	{
-		Invalidate(r);
 	}
 }
 

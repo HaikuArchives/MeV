@@ -1187,12 +1187,11 @@ CTempoEventHandler::CreateTimeOp(
 // Constructor/Destructor
 
 CTrackCtlStrip::CTrackCtlStrip(
-	BLooper	&looper,
 	CStripFrameView	&frame,
 	BRect rect,
 	CEventTrack *track,
 	char *name)
-	:	CEventEditor(looper, frame, rect, track, name, true, true),
+	:	CEventEditor(frame, rect, track, name, true, true),
 		m_barHeight(16)
 {
 	SetHandlerFor(EvtType_ProgramChange, new CProgramChangeEventHandler(this));
@@ -1304,7 +1303,167 @@ void CTrackCtlStrip::Pulse()
 }
 
 void
-CTrackCtlStrip::OnUpdate(
+CTrackCtlStrip::CalcZoom()
+{
+	m_stripLogicalHeight = static_cast<int32>(BarHeight()) * 64 - 1;
+}
+
+void
+CTrackCtlStrip::AttachedToWindow()
+{
+	SetViewColor(B_TRANSPARENT_32_BIT);
+	SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight, 0.0);
+
+	SetFont(be_plain_font);
+}
+
+void
+CTrackCtlStrip::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case MeVDragMsg_ID:
+		{
+			if (m_dragType == DragType_DropTarget)
+			{
+				// Initialize an event marker for this track.
+				StSubjectLock trackLock(*Track(), Lock_Exclusive);
+				long prevTrackDuration = Track()->LastEventTime();
+					
+				// Creating a new event
+				Track()->DeselectAll(this);
+				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				Track()->CreateEvent(this, m_newEv, "Create Event");
+	
+				if (prevTrackDuration != Track()->LastEventTime())
+					RecalcScrollRangeH();
+			}
+			else
+			{
+				BPoint point;
+				ulong buttons;
+				int32 evtType;
+
+				if (message->FindInt32("EventType", 0, &evtType) != B_OK)
+					break;
+				GetMouse(&point, &buttons, true);
+
+				if (ConstructEvent(point, evtType) == false)
+					return;
+				
+				// Initialize an event marker for this track.
+				StSubjectLock trackLock(*Track(), Lock_Exclusive);
+
+				// Invalidate the new event and insert it into the track.
+				Track()->DeselectAll(this);
+				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				Track()->CreateEvent(this, m_newEv, "Create Event");
+			}
+
+			m_dragType = DragType_None;
+			Window()->Activate();
+			break;
+		}	
+		default:
+		{
+			CEventEditor::MessageReceived(message);
+		}
+	}
+}
+
+void
+CTrackCtlStrip::MouseMoved(
+	BPoint point,
+	uint32 transit,
+	const BMessage *message)
+{
+	CEventEditor::MouseMoved(point, transit, message);
+
+	if (Window()->IsActive())
+	{
+		if ((transit == B_EXITED_VIEW) || (transit == B_OUTSIDE_VIEW))
+		{
+			if (m_dragType == DragType_DropTarget)
+			{
+				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				m_dragType = DragType_None;
+			}
+		
+			TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
+			return;
+		}
+		else
+		{
+			TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));	
+		}
+	}
+
+	// If there's a drag message, and we're not already doing another kind of
+	// dragging...
+	if ((message != NULL)
+	 &&	(m_dragType == DragType_None || m_dragType == DragType_DropTarget))
+	{
+		// Check the message type to see if the message is acceptable.
+		int32 msgType;
+		if ((message->what == MeVDragMsg_ID)
+		 &&	(message->FindInt32("Type", 0, &msgType) == B_OK))
+		{
+			switch (msgType)
+			{
+				case DragTrack_ID:
+				{
+					int32 trackID;
+					void *dragDoc;
+					if ((message->FindInt32("TrackID", 0, &trackID) == B_OK)
+					 && (message->FindPointer("Document", 0, &dragDoc) == B_OK)
+					 &&	(dragDoc == TrackWindow()->Document()))
+					{
+						CTrack *track = TrackWindow()->Document()->FindTrack(trackID);
+						if ((track == NULL)
+						 || (track->GetID() == Track()->GetID()))
+							return;
+
+						// Initialize a new event.
+						Event dragEv;
+						dragEv.SetCommand(EvtType_Sequence);
+						int32 time = HandlerFor(dragEv)->QuantizeDragTime(dragEv,
+																		  0, BPoint(16.0, 0.0),
+																		  point, true);
+						if (time < 0)
+							time = 0;
+						dragEv.SetStart(time);
+						dragEv.SetVChannel(0);
+						dragEv.sequence.vPos = static_cast<uint8>(point.y / BarHeight());
+						dragEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
+						dragEv.sequence.sequence = trackID;
+						// Rem: Change this to the logical length of the track we are ADDING. */
+						dragEv.SetDuration(track->LogicalLength());
+					
+						if ((m_dragType != DragType_DropTarget)
+						 || (memcmp(&dragEv, &m_newEv, sizeof(m_newEv)) != 0))
+						{
+							if (m_dragType == DragType_DropTarget)
+								HandlerFor(m_newEv)->Invalidate(m_newEv);
+							m_newEv = dragEv;
+							HandlerFor(m_newEv)->Invalidate(m_newEv);
+
+							if (Window()->IsActive())
+								TrackWindow()->SetHorizontalPositionInfo(Track(),
+																		 time);
+							m_dragType = DragType_DropTarget;
+						}
+						return;
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+void
+CTrackCtlStrip::SubjectUpdated(
 	BMessage *message)
 {
 	BRect r(Bounds());
@@ -1416,172 +1575,6 @@ CTrackCtlStrip::OnUpdate(
 			HandlerFor(*ev)->Invalidate(*ev);
 		}
 		Invalidate(r);
-	}
-}
-
-void
-CTrackCtlStrip::CalcZoom()
-{
-	m_stripLogicalHeight = static_cast<int32>(BarHeight()) * 64 - 1;
-}
-
-void
-CTrackCtlStrip::AttachedToWindow()
-{
-	SetViewColor(B_TRANSPARENT_32_BIT);
-	SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight, 0.0);
-
-	SetFont(be_plain_font);
-}
-
-void
-CTrackCtlStrip::MessageReceived(
-	BMessage *message)
-{
-	switch (message->what)
-	{
-		case MeVDragMsg_ID:
-		{
-			if (m_dragType == DragType_DropTarget)
-			{
-				// Initialize an event marker for this track.
-				StSubjectLock trackLock(*Track(), Lock_Exclusive);
-				long prevTrackDuration = Track()->LastEventTime();
-					
-				// Creating a new event
-				Track()->DeselectAll(this);
-				HandlerFor(m_newEv)->Invalidate(m_newEv);
-				Track()->CreateEvent(this, m_newEv, "Create Event");
-	
-				if (prevTrackDuration != Track()->LastEventTime())
-					RecalcScrollRangeH();
-			}
-			else
-			{
-				BPoint point;
-				ulong buttons;
-				int32 evtType;
-
-				if (message->FindInt32("EventType", 0, &evtType) != B_OK)
-					break;
-				GetMouse(&point, &buttons, true);
-
-				if (ConstructEvent(point, evtType) == false)
-					return;
-				
-				// Initialize an event marker for this track.
-				StSubjectLock trackLock(*Track(), Lock_Exclusive);
-
-				// Invalidate the new event and insert it into the track.
-				Track()->DeselectAll(this);
-				HandlerFor(m_newEv)->Invalidate(m_newEv);
-				Track()->CreateEvent(this, m_newEv, "Create Event");
-			}
-
-			m_dragType = DragType_None;
-			Window()->Activate();
-			break;
-		}	
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
-		default:
-		{
-			CStripView::MessageReceived(message);
-		}
-	}
-}
-
-void
-CTrackCtlStrip::MouseMoved(
-	BPoint point,
-	uint32 transit,
-	const BMessage *message)
-{
-	CEventEditor::MouseMoved(point, transit, message);
-
-	if (Window()->IsActive())
-	{
-		if ((transit == B_EXITED_VIEW) || (transit == B_OUTSIDE_VIEW))
-		{
-			if (m_dragType == DragType_DropTarget)
-			{
-				HandlerFor(m_newEv)->Invalidate(m_newEv);
-				m_dragType = DragType_None;
-			}
-		
-			TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
-			return;
-		}
-		else
-		{
-			TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));	
-		}
-	}
-
-	// If there's a drag message, and we're not already doing another kind of
-	// dragging...
-	if ((message != NULL)
-	 &&	(m_dragType == DragType_None || m_dragType == DragType_DropTarget))
-	{
-		// Check the message type to see if the message is acceptable.
-		int32 msgType;
-		if ((message->what == MeVDragMsg_ID)
-		 &&	(message->FindInt32("Type", 0, &msgType) == B_OK))
-		{
-			switch (msgType)
-			{
-				case DragTrack_ID:
-				{
-					int32 trackID;
-					void *dragDoc;
-					if ((message->FindInt32("TrackID", 0, &trackID) == B_OK)
-					 && (message->FindPointer("Document", 0, &dragDoc) == B_OK)
-					 &&	(dragDoc == TrackWindow()->Document()))
-					{
-						CTrack *track = TrackWindow()->Document()->FindTrack(trackID);
-						if ((track == NULL)
-						 || (track->GetID() == Track()->GetID()))
-							return;
-
-						// Initialize a new event.
-						Event dragEv;
-						dragEv.SetCommand(EvtType_Sequence);
-						int32 time = HandlerFor(dragEv)->QuantizeDragTime(dragEv,
-																		  0, BPoint(16.0, 0.0),
-																		  point, true);
-						if (time < 0)
-							time = 0;
-						dragEv.SetStart(time);
-						dragEv.SetVChannel(0);
-						dragEv.sequence.vPos = static_cast<uint8>(point.y / BarHeight());
-						dragEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
-						dragEv.sequence.sequence = trackID;
-						// Rem: Change this to the logical length of the track we are ADDING. */
-						dragEv.SetDuration(track->LogicalLength());
-					
-						if ((m_dragType != DragType_DropTarget)
-						 || (memcmp(&dragEv, &m_newEv, sizeof(m_newEv)) != 0))
-						{
-							if (m_dragType == DragType_DropTarget)
-								HandlerFor(m_newEv)->Invalidate(m_newEv);
-							m_newEv = dragEv;
-							HandlerFor(m_newEv)->Invalidate(m_newEv);
-
-							if (Window()->IsActive())
-								TrackWindow()->SetHorizontalPositionInfo(Track(),
-																		 time);
-							m_dragType = DragType_DropTarget;
-						}
-						return;
-					}
-					break;
-				}
-			}
-		}
 	}
 }
 

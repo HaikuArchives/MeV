@@ -47,7 +47,7 @@ class CDocWindow;
  *		@package	Framework
  */
 class CDocument
-	:	public CObservableSubject
+	:	public CObservable
 {
 	friend class CDocApp;
 								
@@ -139,6 +139,7 @@ public:							// Operations
 
 	/**	Call this to save the document to it's current location.	*/
 	void						Save();
+
 	/**	Call this to save the document to a new location.	*/
 	void						SaveAs();
 

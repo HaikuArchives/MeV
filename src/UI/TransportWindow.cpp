@@ -20,6 +20,8 @@
 #include <stdio.h>
 // Interface Kit
 #include <StringView.h>
+// Support Kit
+#include <Debug.h>
 
 enum {
 	Btn_Height	= 17,
@@ -39,7 +41,6 @@ CTransportWindow::CTransportWindow(
 					B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
 					| B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 					B_CURRENT_WORKSPACE),
-	CObserver(*this, NULL),
 	m_document(NULL),
 	m_track(NULL)
 {
@@ -265,12 +266,6 @@ CTransportWindow::MessageReceived(
 			m_tempoCtl->SetTempo(CPlayerControl::Tempo(m_document));
 			break;
 		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
 		default:
 		{
 			CAppWindow::MessageReceived(message);
@@ -282,30 +277,42 @@ void
 CTransportWindow::WatchTrack(
 	CEventTrack *track)
 {
-	if (track != m_track)
+	if (Lock())
 	{
-		CMeVDoc *oldDoc = m_document;
-		m_track = track;
-		Lock();
+		if (track != m_track)
+		{
+			if (m_track)
+				m_track->RemoveObserver(this);
 
-		m_document = track ? &track->Document() : NULL;
-		if (m_document != oldDoc)
-			SetButtons();
+			CMeVDoc *oldDoc = m_document;
+			m_track = track;
 
+			m_document = track ? &track->Document() : NULL;
+			if (m_document != oldDoc)
+			{
+				if (oldDoc != NULL)
+					oldDoc->RemoveObserver(this);
+				SetButtons();
+			}
+
+			m_track->AddObserver(this);
+		}
 		Unlock();
-		SetSubject(m_track);
 	}
 }
 
 void
-CTransportWindow::OnDeleteRequested(
-	BMessage *message)
+CTransportWindow::SubjectReleased(
+	CObservable *subject)
 {
-	WatchTrack(NULL);
+	D_OBSERVE(("CTransportWindow<%p>::SubjectReleased()\n", this));
+
+	if (subject == m_track)
+		WatchTrack(NULL);
 }
 
 void
-CTransportWindow::OnUpdate(
+CTransportWindow::SubjectUpdated(
 	BMessage *message)
 {
 	SetButtons();

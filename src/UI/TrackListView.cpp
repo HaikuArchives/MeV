@@ -3,12 +3,14 @@
  * ===================================================================== */
 
 #include "TrackListView.h"
-#include "TrackListItem.h"
-#include "LinearWindow.h"
+
 #include "EventTrack.h"
-#include "MeVDoc.h"
 #include "Idents.h"
+#include "LinearWindow.h"
+#include "MeVDoc.h"
 #include "ScreenUtils.h"
+#include "TrackListItem.h"
+#include "TrackListWindow.h"
 
 // Interface Kit
 #include <MenuItem.h>
@@ -158,6 +160,46 @@ CTrackListView::MessageReceived(
 
 	switch(message->what)
 	{
+		case CObservable::UPDATED:
+		{
+			int32 trackHint, docHint;
+			int32 trackID;
+		
+			if (message->FindInt32("TrackID", &trackID) != B_OK)
+				trackID = -1;
+			if (message->FindInt32("TrackAttrs", &trackHint) != B_OK)
+				trackHint = 0;
+			if (message->FindInt32("DocAttrs", &docHint ) != B_OK)
+				docHint = 0;
+		
+			if (trackHint != 0 || docHint != 0)
+			{
+				if (trackID >= 0)
+				{
+					for (int i = 0; i < CountItems(); i++)
+					{
+						CTrackListItem *item = dynamic_cast<CTrackListItem *>
+											   (ItemAt(i));
+						if (item && (item->GetTrackID() == trackID))
+						{
+							if (trackHint & (CTrack::Update_Name | CTrack::Update_Flags))
+							{
+								item->Update(this, be_plain_font);
+								InvalidateItem(i);
+							}
+						}
+					}
+				}
+				
+				if ((docHint & CMeVDoc::Update_AddTrack)
+				 || (docHint & CMeVDoc::Update_DelTrack)
+				 || (docHint & CMeVDoc::Update_TrackOrder))
+				{
+					BuildTrackList();
+				}
+			}
+			break;
+		}
 		case CTrackListItem::EDIT_TRACK:
 		{
 			D_MESSAGE((" -> CTrackListItem::EDIT_TRACK\n"));
@@ -426,6 +468,21 @@ CTrackListView::MouseUp(
 }
 
 // ---------------------------------------------------------------------------
+// CObserver Implementation
+
+void
+CTrackListView::Released(
+	CObservable *subject)
+{
+	if (subject == m_doc)
+	{
+		CTrackListWindow *window = dynamic_cast<CTrackListWindow *>(Window());
+		if (window)
+			window->WatchDocument(NULL);
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Operations
 
 void
@@ -473,7 +530,13 @@ CTrackListView::SetDocument(
 
 	if (doc != m_doc)
 	{	
+		if (m_doc != NULL)
+			m_doc->RemoveObserver(this);
+
 		m_doc = doc;
+		if (m_doc != NULL)
+			m_doc->AddObserver(this);
+
 		BuildTrackList();
 	}
 }

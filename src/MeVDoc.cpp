@@ -37,8 +37,10 @@
 #include <Debug.h>
 #include <String.h>
 
-	// REM: Move these elsewhere, eventually
+// Debugging Macros
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
 
+// REM: Move these elsewhere, eventually
 inline CAbstractWriter &operator<<( CAbstractWriter& writer, rgb_color &inColor )
 {
 	writer << inColor.red << inColor.green << inColor.blue << inColor.alpha;
@@ -175,39 +177,39 @@ CMeVDoc::CMeVDoc(
 
 CMeVDoc::~CMeVDoc()
 {
-		// Delete the master track
+	D_ALLOC(("CMeVDoc::~CMeVDoc()\n"));
+
+	// Delete the master track
 	m_masterRealTrack->RequestDelete();
+	CRefCountObject::Release(m_masterRealTrack);
+
 	m_masterMeterTrack->RequestDelete();
-	CRefCountObject::Release( m_masterRealTrack );
-	CRefCountObject::Release( m_masterMeterTrack );
+	CRefCountObject::Release(m_masterMeterTrack);
 	
-		// Delete all tracks
+	// Delete all tracks
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
-// 	delete tracks.ItemAt( i );
-		CTrack		*track = (CTrack *)tracks.ItemAt( i );
-			
+		CTrack *track = (CTrack *)tracks.ItemAt(i);
 		track->RequestDelete();
-		CRefCountObject::Release( track );
+		CRefCountObject::Release(track);
 	}
 
 	for (int i = 0; i < operators.CountItems(); i++)
 	{
-		EventOp		*op = (EventOp *)operators.ItemAt( i );
-
-		CRefCountObject::Release( op );
+		EventOp *op = (EventOp *)operators.ItemAt(i);
+		CRefCountObject::Release(op);
 	}
 
 	for (int i = 0; i < activeOperators.CountItems(); i++)
 	{
-		EventOp		*op = (EventOp *)activeOperators.ItemAt( i );
-
-		CRefCountObject::Release( op );
+		EventOp *op = (EventOp *)activeOperators.ItemAt(i);
+		CRefCountObject::Release(op);
 	}
+
 	for (int i = 0; i < m_destinations.CountItems(); i ++)
 	{
-		CDestination *dest = (CDestination *)m_destinations.ItemAt( i );
-		delete(dest);
+		CDestination *dest = (CDestination *)m_destinations.ItemAt(i);
+		CRefCountObject::Release(dest);
 	}
 }
 
@@ -475,65 +477,75 @@ void CMeVDoc::PostUpdateAllTracks( CUpdateHint *inHint )
 		track->PostUpdate( inHint );
 	}
 }
-		//Destination Operations
-CDestination *
-CMeVDoc::NewDestination()
-{
-	CDestination *dest=new CDestination(m_destinations.CountItems(),*this,"Untitled Destination",1);
-	m_destinations.AddItem(dest);	
-	return (dest);
-}
 
-int32
-CMeVDoc::GetUniqueDestinationID() const
+// ---------------------------------------------------------------------------
+// Destination Management
+
+CDestination *
+CMeVDoc::FindDestination(
+	int32 id) const
 {
-return (m_destinations.CountItems());
+	return (CDestination *)m_destinations.ItemAt(id);
 }
 
 CDestination *
-CMeVDoc::FindDestination(int32 inID) const
+CMeVDoc::GetNextDestination(
+	int32 *index) const
 {
-	return (CDestination* )m_destinations.ItemAt(inID);
-}
+	ASSERT(IsLocked());
 
-CDestination *
-CMeVDoc::FindNextHigherDestinationID (int32 inID) const
-{
-	CDestination		*bestDest = NULL;
-	int32		bestID = 64;
-	
-	for (int i = 0; i < m_destinations.CountItems(); i++)
+	CDestination *dest = FindDestination(*index);
+	if (dest != NULL)
 	{
-		CDestination *dest = (CDestination *)m_destinations.ItemAt( i );
-		
-		if (dest->Deleted()) {continue;}
-		if (		dest->GetID() < bestID
-			&&	dest->GetID() > inID)
+		int32 count = m_destinations.CountItems();
+		do
 		{
-			bestDest = dest;
-			bestID = dest->GetID();
-		}
+			(*index)++;
+			CDestination *next = FindDestination(*index);
+			if (next && !next->Deleted())
+				break;
+		} while (*index < count);
 	}
-	return bestDest;
+
+	return dest;
 }
-//even counts deleted or disabled destinations.
+
 int32
-CMeVDoc::CountDestinations() const
+CMeVDoc::IndexOf(
+	const CDestination *destination) const
 {
-	return (m_destinations.CountItems());
+	ASSERT(IsLocked());
+
+	int32 index = -1;
+	int32 destID = 0;
+	CDestination *dest = NULL;
+	do {	
+		index++;
+	} while ((dest = GetNextDestination(&destID)) != destination);
+
+	return index;
 }
 
 bool
-CMeVDoc::IsDefinedDest (int32 inID) const
+CMeVDoc::IsDefinedDest(
+	int32 id) const
 {
-	if (m_destinations.ItemAt(inID)==NULL) 
-		return false;
-/*	else if (((CDestination *)m_destinations.ItemAt(inID))->Deleted())
-		return false;
-	else if (((CDestination *)m_destinations.ItemAt(inID))->Disabled())
-		return false;*/
-	else 
-		return true;
+	return (m_destinations.ItemAt(id) != NULL);
+}
+
+CDestination *
+CMeVDoc::NewDestination()
+{
+	CDestination *dest = new CDestination(m_destinations.CountItems(),
+										  this, "Untitled Destination");
+	m_destinations.AddItem(dest);
+
+	CUpdateHint hint;
+	hint.AddInt32("DocAttrs", Update_AddDest);
+	hint.AddInt32("DestID", dest->GetID());
+	PostUpdate(&hint);
+
+	return dest;
 }
 
 int32 
@@ -552,14 +564,16 @@ CMeVDoc::SetDestinationLatency(
 	int32 id,
 	int32 microseconds)
 {
+	StSubjectLock lock(*this, Lock_Shared);	
+
+	// go though entire destination list and find the one with the 
+	// highest latency.
 	CDestination *dest;
-	int did = -1;
-	//go though entire destination list and find the one with the highest latency.
-	while ((dest = FindNextHigherDestinationID(did)) != NULL)
+	int32 index = 0;
+	while ((dest = GetNextDestination(&index)) != NULL)
 	{
-		if (m_maxDestLatency<dest->Latency(ClockType_Real))
-			m_maxDestLatency=dest->Latency(ClockType_Real);
-		did++;
+		if (m_maxDestLatency < dest->Latency(ClockType_Real))
+			m_maxDestLatency = dest->Latency(ClockType_Real);
 	}
 }
 
@@ -853,25 +867,26 @@ int32 ReadStr255( CAbstractReader &inReader, char *outBuffer, int32 inMaxLength 
 	return actual;
 }
 void
-CMeVDoc::ReadDestination (CIFFReader &reader )
+CMeVDoc::ReadDestination(
+	CIFFReader &reader)
 {
-	CMidiManager *manager=CMidiManager::Instance();
-	int32 destid=0;
-	BString midiport;
+	CMidiManager *manager = CMidiManager::Instance();
+	int32 destID = 0;
+//	BString midiPort;
 	char buff[255];
 	while (reader.BytesAvailable() > 0 )
 	{
 		CDestination *dest;
-		reader >> destid;
-		dest=new CDestination (destid,*this,"Untitled Destination",0);
-		dest->m_producer=new CReconnectingMidiProducer("");
+		reader >> destID;
+		dest = new CDestination(destID, this, "Untitled Destination");
+		dest->m_producer = new CReconnectingMidiProducer("");
 		reader >> dest->m_channel >> dest->m_flags;
 		rgb_color color;
 		reader >> color.red;
 		reader >> color.green;
 		reader >> color.blue;
-		
-		dest->m_fillColor =color;
+
+		dest->SetColor(color);
 		ReadStr255(reader,buff, 255);
 		dest->m_name.SetTo(buff);
 		//set producer name
@@ -879,14 +894,14 @@ CMeVDoc::ReadDestination (CIFFReader &reader )
 		BString prod;
 		prod.SetTo(buff);
 		dest->GetProducer()->SetName(prod.String());
-		
+
 		//load and connect all connections 
 		BString pname;
 		ReadStr255( reader,buff, 255 );
 		pname.SetTo(buff);
 		//connect with name
 		dest->SetConnect(manager->FindConsumer(pname.String()),1);
-		m_destinations.AddItem(dest,destid);
+		m_destinations.AddItem(dest, destID);
 	}
 }
 
@@ -967,7 +982,6 @@ CMeVDoc::Init()
 
     m_newDestID=0; //hemm remember me.
     m_maxDestLatency=0;
-     
 }
 
 // END - MeVDoc.cpp

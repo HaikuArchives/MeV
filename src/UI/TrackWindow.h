@@ -58,8 +58,7 @@ class BStringView;
 // A window which displays and edits strips
 
 class CTrackWindow :
-	public CDocWindow,
-	public CObserver
+	public CDocWindow
 {
 	friend class CStripFrameView;
 
@@ -184,17 +183,11 @@ public:							// CDocWindow Implementation
 
 	virtual bool				QuitRequested();
 
+	virtual void				SubjectReleased(
+									CObservable *subject);
+
 	virtual void				WindowActivated(
 									bool active);
-
-public:							// CObserver Implementation
-
-	// If the app wants us to stop looking at the document, then oblige it.
-	virtual void				OnDeleteRequested(
-									BMessage *message);
-
-	virtual void				OnUpdate(
-									BMessage *message);
 
 protected:						// Internal Operations
 

@@ -15,6 +15,9 @@
 // Support Kit
 #include <Debug.h>
 
+// Debugging Macros
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
+
 // ---------------------------------------------------------------------------
 //	Class Data Initialization
 
@@ -33,6 +36,8 @@ CDocument::CDocument(
 		m_savePanel(NULL),
 		m_saving(false)
 {
+	D_ALLOC(("CDocument::CDocument()\n"));
+
 	char name[32];
 
 	app.AddDocument(this);
@@ -59,11 +64,15 @@ CDocument::CDocument(
 		m_savePanel(NULL),
 		m_saving(false)
 {
+	D_ALLOC(("CDocument::CDocument()\n"));
+
 	app.AddDocument(this);
 }
 
 CDocument::~CDocument()
 {
+	D_ALLOC(("CDocument::~CDocument()\n"));
+
 	if (m_savePanel)
 		delete m_savePanel;
 	app.RemoveDocument(this);
@@ -159,6 +168,7 @@ CDocument::AddWindow(
 {
 	StSubjectLock(*this, Lock_Exclusive);
 
+	AddObserver(window);
 	if (window->IsMasterWindow())
 		m_masterWindow = window;
 	else
@@ -189,6 +199,7 @@ CDocument::RemoveWindow(
 	{
 		m_windows.RemoveItem(window);
 	}
+	RemoveObserver(window);
 }
 
 void

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * TransportWindow.h (MeV/User Interface)
+ * TransportWindow.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -38,7 +38,7 @@
 #ifndef __C_TransportWindow_H__
 #define __C_TransportWindow_H__
 
-#include "WindowState.h"
+#include "AppWindow.h"
 #include "Observer.h"
 
 class CTempoEditControl;
@@ -48,8 +48,7 @@ class CEventTrack;
 class CMeVDoc;
 
 class CTransportWindow
-	:	public CAppWindow,
-		public CObserver
+	:	public CAppWindow
 {
 
 public:							// Constructor/Destructor
@@ -65,18 +64,16 @@ public:							// CAppWindow Implementation
 
 	void						SetButtons();
 
-public:							// CObserver Implementation
-
 	/**	If the app wants us to stop looking at the track, then oblige it.
 		Overridden from the CObserver class.
 	*/
-	virtual void				OnDeleteRequested(
-									BMessage *message);
+	virtual void				SubjectReleased(
+									CObservable *subject);
 
 	/**	Update inspector info when we get an observer update message.
 		Overridden from the CObserver class.
 	*/
-	virtual void				OnUpdate(
+	virtual void				SubjectUpdated(
 									BMessage *message);
 
 public:

@@ -9,40 +9,31 @@
 #include "MathUtils.h"
 #include "MeVDoc.h"
 #include "MidiDeviceInfo.h"
+#include "PlayerControl.h"
+#include "StdEventOps.h"
 #include "TextDisplay.h"
 
 // Application Kit
 #include <Looper.h>
 #include <Message.h>
-//Interface kit
+// Interface kit
 #include <Bitmap.h>
 #include <Box.h>
 #include <MenuField.h>
-//debug
-#include <stdio.h>
+// Support Kit
 #include <Debug.h>
 
-enum EInspectorControlIDs {
-	CHANNEL_CONTROL_ID	= 'chan',
-	Slider1_ID			= 'sld1',
-	Slider2_ID			= 'sld2',
-	Slider3_ID			= 'sld3',
-	EDIT_ID			= 'butt',
-	NEW_ID				= 'nwid',
-	DELETE_ID			= 'dtid',
-	VCTM_NOTIFY			= 'ntfy',
-};
+// ---------------------------------------------------------------------------
+//	Constructor/Destructor
 
 CDestinationListView::CDestinationListView(
 	BRect frame,
-	BLooper *looper,
 	uint32 resizingMode,
-	uint32 flags )
+	uint32 flags)
 	:	BView(frame, "DestinationListView", resizingMode, flags),
-		CObserver(*looper,NULL),
-		track(NULL),
-		channel(0)
-	
+		CObserver(),
+		m_doc(NULL),
+		m_track(NULL)
 {
 	BRect rect(Bounds());
 	BBox *box = new BBox(rect);
@@ -50,21 +41,23 @@ CDestinationListView::CDestinationListView(
 
 	// add CDestination menu-field
 	rect.InsetBy(5.0, 5.0);
-	m_destMenu = new BPopUpMenu("");
+	m_destMenu = new BPopUpMenu("(None)");
 	BMenuItem *item = new BMenuItem("New" B_UTF8_ELLIPSIS,
-									  new BMessage(NEW_ID));
+									  new BMessage(CREATE_DESTINATION));
 	m_destMenu->AddItem(item);
 	m_destMenu->AddSeparatorItem();
-	m_destfield = new BMenuField(rect, "Destination", "Destination: ", m_destMenu);
-	m_destfield->SetDivider(be_plain_font->StringWidth("Destination:  "));
-	m_destfield->SetEnabled(false);
-	box->AddChild(m_destfield);
+	m_destMenu->SetLabelFromMarked(true);
+	m_destField = new BMenuField(rect, "Destination", "Destination: ", 
+								 m_destMenu);
+	m_destField->SetDivider(be_plain_font->StringWidth("Destination:  "));
+	m_destField->SetEnabled(false);
+	box->AddChild(m_destField);
 
 	font_height fh;
 	be_plain_font->GetHeight(&fh);
 
-	BRect buttonsRect(m_destfield->Frame());
-	buttonsRect.left += m_destfield->Divider();
+	BRect buttonsRect(m_destField->Frame());
+	buttonsRect.left += m_destField->Divider();
 	buttonsRect.top += 2 * (fh.ascent + fh.descent);
 	buttonsRect.bottom = box->Bounds().bottom - 5.0;
 
@@ -72,206 +65,278 @@ CDestinationListView::CDestinationListView(
 	rect = buttonsRect;
 	rect.right = (rect.left + rect.right) / 2.0 - 3.0;
 	m_deleteButton = new BButton(rect, "Delete", "Delete", 
-								 new BMessage(DELETE_ID));
+								 new BMessage(DELETE_DESTINATION));
+	m_deleteButton->SetEnabled(false);
 	box->AddChild(m_deleteButton);
 
 	// add "Edit" button
 	rect.OffsetBy(rect.Width() + 5.0, 0.0);
-	m_editButton = new BButton(rect, "Edit", "Edit", new BMessage(EDIT_ID));
+	m_editButton = new BButton(rect, "Edit", "Edit",
+							   new BMessage(EDIT_DESTINATION));
+	m_editButton->SetEnabled(false);
 	box->AddChild(m_editButton);
 
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 }
 
+CDestinationListView::~CDestinationListView()
+{
+	if (m_doc)
+	{
+		m_doc->RemoveObserver(this);
+		m_doc = NULL;
+	}
+}
+
+// ---------------------------------------------------------------------------
+//	Accessors
+
+void
+CDestinationListView::SetDocument(
+	CMeVDoc *document)
+{
+	if (document != m_doc)
+	{
+		if (m_doc != NULL)
+		{
+			m_doc->RemoveObserver(this);
+
+			StSubjectLock lock(*m_doc, Lock_Shared);
+
+			CDestination *dest = NULL;
+			int32 i = 0;
+			int32 index = 0;
+			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
+				DestinationRemoved(i++);
+		}
+
+		m_doc = document;
+		if (m_doc != NULL)
+		{
+			m_doc->AddObserver(this);
+
+			StSubjectLock lock(*m_doc, Lock_Shared);	
+
+			CDestination *dest = NULL;
+			int32 index = 0;
+			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
+				DestinationAdded(dest->GetID());
+		}
+	}
+}
+
+void 
+CDestinationListView::SetTrack(
+	CEventTrack *track)
+{
+	if (m_track != track)
+	{
+		if (m_track != NULL)
+		{
+			m_track->RemoveObserver(this);
+			CRefCountObject::Release(m_track);
+		}
+
+		m_track = track;
+		if (m_track)
+		{
+			m_track->Acquire();
+			m_track->AddObserver(this);
+			if (LockLooper())
+			{
+				m_destField->SetEnabled(true);
+				m_editButton->SetEnabled(true);
+				m_deleteButton->SetEnabled(true);
+				UnlockLooper();
+			}
+
+			if (m_doc != &m_track->Document())
+				SetDocument(&m_track->Document());
+		}
+		else
+		{
+			if (LockLooper())
+			{
+				m_destField->SetEnabled(false);
+				m_editButton->SetEnabled(false);
+				m_deleteButton->SetEnabled(false);
+				UnlockLooper();
+			}
+
+			SetDocument(NULL);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+//	Operations
+
+void
+CDestinationListView::SubjectUpdated(
+	BMessage *message)
+{
+	// destination added or removed ?
+	int32 docAttrs = 0;
+	if (message->FindInt32("DocAttrs", &docAttrs) == B_OK)
+	{
+		if (docAttrs & CMeVDoc::Update_AddDest)
+		{
+			int32 destID;
+			if (message->FindInt32("DestID", &destID) == B_OK)
+				DestinationAdded(destID);
+		}
+		if (docAttrs & CMeVDoc::Update_DelDest)
+		{
+			int32 originalIndex;
+			if (message->FindInt32("original_index", &originalIndex) == B_OK)
+				DestinationRemoved(originalIndex);
+		}
+		return;
+	}
+
+	// destination properties changed ?
+	int32 destAttrs = 0;
+	if (message->FindInt32("DestAttrs", &destAttrs) == B_OK)
+	{
+		int32 destID = -1;
+		if (message->FindInt32("DestID", &destID) != B_OK)
+			return;
+
+		if ((destAttrs & CDestination::Update_Name)
+		 || (destAttrs & CDestination::Update_Flags)
+		 || (destAttrs & CDestination::Update_Color))
+		{
+			DestinationChanged(destID);
+		}
+		return;
+	}
+
+	// part selection changed ?
+	StSubjectLock lock(*m_track, Lock_Shared);
+	if (m_track && (m_track->SelectionType() != CTrack::Select_None))
+	{
+		const Event *event = m_track->CurrentEvent();
+		if (event->HasProperty(Event::Prop_Channel))
+		{
+			int32 destID = event->GetVChannel();
+
+			StSubjectLock lock(*m_doc, Lock_Exclusive);
+			m_doc->SetDefaultAttribute(EvAttr_Channel, destID);
+			int32 index = m_doc->IndexOf(m_doc->FindDestination(destID));
+
+			BMenuItem *item = m_destMenu->ItemAt(index + 2);
+			if (item)
+				item->SetMarked(true);
+			m_destMenu->Invalidate();
+			return;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+//	BView Implementation
+
 void
 CDestinationListView::AttachedToWindow()
 {
-	m_editButton->SetTarget((BView *)this);
-	m_deleteButton->SetTarget((BView *)this);
-	m_destMenu->SetTargetForItems((BView *)this);
-	BMenuItem *select=m_destMenu->ItemAt(0);
-	select->SetMarked((BView *)true);
-	
+	m_editButton->SetTarget(this);
+	m_deleteButton->SetTarget(this);
+	m_destMenu->SetTargetForItems(this);
 }
 
 void
-CDestinationListView::OnUpdate(BMessage *message)
-{
-	//read port,channel,color,name changes and what not.//mute refresh track.
-	//message->PrintToStream();
-	if (message->FindInt32("DestAttrs")==B_OK)
-	{
-		switch (message->FindInt32 ("DocAttrs"))
-		{
-			case CMeVDoc::Update_AddDest:
-			case CMeVDoc::Update_DelDest:
-			{
-			Update();
-			SetChannel(Document()->SelectedDestination());
-			}
-		}
-	}
-	if (message->FindInt32 ("DestAttrs"))
-	{
-		Update();
-		SetChannel(Document()->SelectedDestination());
-	}
-		
-	switch (message->what)
-	{
-		case CHANNEL_CONTROL_ID:
-		{
-			SetChannel(Document()->SelectedDestination());
-			break;
-		}
-	}
-	
-	//we can really improve the efficency here.
-}
-
-void
-CDestinationListView::Update()
-{
-	int n=m_destMenu->CountItems()-1;
-	while (n>=2)
-	{
-		delete m_destMenu->RemoveItem(n);
-		n--;
-	}
-	
-	if (track)
-	{
-		//test
-		CDestination *dest;
-		//SetSubject(m_destList);
-		int id=-1;
-		BRect icon_r;
-		icon_r.Set(0,0,15,15); 
-		//this isn't working zzz--
-		while ((dest = Document()->FindNextHigherDestinationID(id)) != NULL)
-		{
-			if (dest)
-			{
-			id=dest->GetID();
-			CIconMenuItem *vc_item;
-			BMessage *vc_message;
-			vc_message=new BMessage(CHANNEL_CONTROL_ID);
-			vc_message->AddInt8("channel",id);
-			
-			BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
-						
-			vc_item=new CIconMenuItem(dest->Name(),vc_message,icon);
-			vc_item->SetTarget((BView *)this);
-			m_destMenu->AddItem(vc_item);
-			}
-		}
-	}
-}
-void CDestinationListView::SetTrack( CEventTrack *inTrack )
-{
-	BView::LockLooper();
-	m_destfield->SetEnabled(true);
-	BView::UnlockLooper();
-	if (track != inTrack)
-	{
-		CRefCountObject::Release( track );
-		track = inTrack;
-		if (track)
-			track->Acquire();
-		
-		if (m_doc!=&track->Document())
-		{
-			SetDocument (&track->Document());
-			SetSubject (&track->Document());
-			Update();
-		}
-		SetChannel(Document()->SelectedDestination());
-		//zzz
-	}
-}
-
-		/**	Set which channel is selected. */
-void CDestinationListView::SetChannel( int inChannel )
-{
-	Document()->SetSelectedDestination(inChannel);
-	if (Document()->SelectedDestination()==-1)
-	{
-		BMenuItem *selected=m_destMenu->ItemAt(0);
-		selected->SetMarked(true);
-		return;
-	}
-	int c=0;
-	int id=-1;
-	CDestination *dest;
-	while ((dest = Document()->FindNextHigherDestinationID(id)) != NULL)
-	{	
-		id=dest->GetID();
-		if (Document()->SelectedDestination()==dest->GetID())
-		{
-			BMenuItem *selected=m_destMenu->ItemAt(c+2);
-			if (selected)
-			{
-				selected->SetMarked(true);
-			}
-			return;
-
-		}
-		c++;
-	}
-}
-
-void CDestinationListView::MessageReceived(BMessage *msg)
+CDestinationListView::MessageReceived(
+	BMessage *msg)
 {
 	switch (msg->what)
 	{
-		case CHANNEL_CONTROL_ID:
+		case DESTINATION_SELECTED:
 		{
-			int8 vc_id;
-		  	msg->FindInt8("channel",&vc_id);
-		  	SetChannel(vc_id);
-		  	Document()->SetSelectedDestination(vc_id);
-			Window()->PostMessage( msg );
-		}
-		break;
-		case EDIT_ID:
-		{
-			if (!m_destMenu->ItemAt(0)->IsMarked())
+			int32 destID;
+			if (msg->FindInt32("destination_id", &destID) != B_OK)
+				return;
+
+			BMenuItem *item = NULL;
+			if (msg->FindPointer("source", (void **)&item) != B_OK)
+				return;
+			item->SetMarked(true);
+
+			if (m_track && (destID <= Max_Destinations))
 			{
-				if (m_modifierMap[Document()->SelectedDestination()]!=NULL)
+				uint8 channel = static_cast<uint8>(destID);
+				StSubjectLock lock(*m_doc, Lock_Exclusive);
+				// Set attribute for newly created events
+				m_doc->SetDefaultAttribute(EvAttr_Channel, channel);
+				if (m_track->SelectionType() != CEventTrack::Select_None)
 				{
-					m_modifierMap[Document()->SelectedDestination()]->Lock();
-					m_modifierMap[Document()->SelectedDestination()]->Activate();
-					m_modifierMap[Document()->SelectedDestination()]->Unlock();
-				}
-				else 
-				{
-					BRect r;
-					r.Set(40,40,300,220);
-					m_modifierMap[Document()->SelectedDestination()]=new CDestinationModifier(r,Document()->SelectedDestination(),m_doc,(BView *)this);
-					m_modifierMap[Document()->SelectedDestination()]->Show();
+					// Modify any selected events
+					EventOp *op = new ChannelOp(channel);
+					m_track->ModifySelectedEvents(NULL, *op,
+												  "Change Destination");
+					CRefCountObject::Release(op);
+
+					// Do audio feedback, if enabled
+					if (gPrefs.feedbackAdjustMask & CGlobalPrefs::FB_Channel)
+					{
+						CPlayerControl::DoAudioFeedback(m_doc, EvAttr_Channel,
+														channel,
+														m_track->CurrentEvent());
+					}
 				}
 			}
-			
+			break;
 		}
-		break;
-		case DELETE_ID:
+		case CREATE_DESTINATION:
+		{
+			StSubjectLock lock(*m_doc, Lock_Exclusive);
+
+			CDestination *dest = Document()->NewDestination();
+			int32 id = dest->GetID();
+			Document()->SetDefaultAttribute(EvAttr_Channel, id);
+			BRect r(40, 40, 300, 220);
+			m_modifierMap[id] = new CDestinationModifier(r, id, m_doc, this);
+			m_modifierMap[id]->Show();
+
+			break;
+		}
+		case EDIT_DESTINATION:
+		{
+			StSubjectLock lock(*m_doc, Lock_Shared);
+
+			int32 id = m_doc->GetDefaultAttribute(EvAttr_Channel);
+			if (m_modifierMap[id] != NULL)
+			{
+				m_modifierMap[id]->Lock();
+				m_modifierMap[id]->Activate();
+				m_modifierMap[id]->Unlock();
+			}
+			else 
+			{
+				BRect r;
+				r.Set(40, 40, 300, 220);
+				m_modifierMap[id] = new CDestinationModifier(r, id, m_doc,
+															 this);
+				m_modifierMap[id]->Show();
+			}
+			break;
+		}
+		case DELETE_DESTINATION:
 		{	
-			if (!m_destMenu->ItemAt(0)->IsMarked())
+			int32 id = m_doc->GetDefaultAttribute(EvAttr_Channel);
+			CDestination *dest = Document()->FindDestination(id);
+
+			CDestinationDeleteUndoAction *undoAction;
+			undoAction = new CDestinationDeleteUndoAction(dest);
+			Document()->AddUndoAction(undoAction);
+
+			if (m_modifierMap[id]!=NULL)
 			{
-				CDestination *dest=Document()->FindDestination(Document()->SelectedDestination());
-				CDestinationDeleteUndoAction *undoAction;
-				undoAction=new CDestinationDeleteUndoAction(dest);
-				Document()->AddUndoAction(undoAction);
-				if (m_modifierMap[Document()->SelectedDestination()]!=NULL)
-				{
-					m_modifierMap[Document()->SelectedDestination()]->Lock();	
-					m_modifierMap[Document()->SelectedDestination()]->Quit();
-					m_modifierMap[Document()->SelectedDestination()]=NULL;
-				}
-				Document()->SetSelectedDestination(-1);
+				m_modifierMap[id]->Lock();	
+				m_modifierMap[id]->Quit();
+				m_modifierMap[id] = NULL;
 			}
+			break;
 		}
-		break;
 		case CDestinationModifier::WINDOW_CLOSED:
 		{
 			int32 destinationID = msg->FindInt32("destination_id");
@@ -283,29 +348,11 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 			}
 			break;
 		}
-		case NEW_ID:
+		case CObservable::UPDATED:
 		{
-			int n;
-			BRect r;
-			r.Set(40,40,300,220);
-			CDestination *dest=Document()->NewDestination();
-			n=dest->GetID();
-			Document()->SetSelectedDestination(n);
-			BMessage *msg=new BMessage(CHANNEL_CONTROL_ID);
-			msg->AddInt8("channel",n);
-			Window()->PostMessage( msg );
-			
-			m_modifierMap[n]=new CDestinationModifier(r,n,m_doc,(BView *)this);
-			m_modifierMap[n]->Show();	
-			
+			SubjectUpdated(msg);
+			break;
 		}
-		break;
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(msg);
-		}
-		break;
 		default:
 		{
 			BView::MessageReceived(msg);
@@ -313,3 +360,116 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+//	CObserver Implementation
+
+void
+CDestinationListView::Released(
+	CObservable *subject)
+{
+	D_OBSERVE(("CDestinationListView<%p>::Released()\n", this));
+
+	if (LockLooper())
+	{
+		if (subject == m_doc)
+			SetDocument(NULL);
+		else if (subject == m_track)
+			SetTrack(NULL);
+		UnlockLooper();
+	}
+}
+
+void
+CDestinationListView::Updated(
+	BMessage *message)
+{
+	if (Window())
+		Window()->PostMessage(message, this);
+}
+
+// ---------------------------------------------------------------------------
+//	Internal Operations
+
+void
+CDestinationListView::DestinationAdded(
+	int32 id)
+{
+	CDestination *dest = Document()->FindDestination(id);
+	if (dest)
+	{
+		dest->AddObserver(this);
+
+		m_doc->Lock(Lock_Shared);
+		int32 index = m_doc->IndexOf(dest);
+		int32 current = m_doc->GetDefaultAttribute(EvAttr_Channel);
+		m_doc->Unlock(Lock_Shared);
+
+		BMessage *message = new BMessage(DESTINATION_SELECTED);
+		dest->Lock(Lock_Shared);
+		message->AddInt32("destination_id", dest->GetID());
+		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
+		CIconMenuItem *item = new CIconMenuItem(dest->Name(),
+												message, icon);
+		dest->Unlock(Lock_Shared);
+		item->SetTarget(this);
+		m_destMenu->AddItem(item, index + 2);
+		if (index == current)
+			item->SetMarked(true);
+	}
+}
+
+void
+CDestinationListView::DestinationChanged(
+	int32 id)
+{
+	CDestination *dest = Document()->FindDestination(id);
+	if (dest)
+	{
+		m_doc->Lock(Lock_Shared);
+		int32 index = m_doc->IndexOf(dest) + 2;
+		m_doc->Unlock(Lock_Shared);
+
+		CIconMenuItem *item = (CIconMenuItem *)m_destMenu->RemoveItem(index);
+		bool marked = item->IsMarked();
+		if (item)
+			delete item;
+
+		BMessage *message = new BMessage(DESTINATION_SELECTED);
+		dest->Lock(Lock_Shared);
+		message->AddInt32("destination_id", dest->GetID());
+		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
+		item = new CIconMenuItem(dest->Name(), message, icon);
+		dest->Unlock(Lock_Shared);
+		item->SetTarget(this);
+		m_destMenu->AddItem(item, index);
+		if (marked)
+			item->SetMarked(true);
+	}
+}
+
+void
+CDestinationListView::DestinationRemoved(
+	int32 originalIndex)
+{
+	BMenuItem *item = m_destMenu->RemoveItem(originalIndex + 2);
+	if (item)
+		delete item;
+
+	StSubjectLock lock(*m_doc, Lock_Shared);
+	int32 current = m_doc->GetDefaultAttribute(EvAttr_Channel);
+	CDestination *dest = m_doc->FindDestination(current);
+	if (dest && !dest->Deleted())
+	{
+		int32 index = m_doc->IndexOf(dest);
+		item = m_destMenu->ItemAt(index + 2);
+		if (item)
+			item->SetMarked(true);
+	}
+	else
+	{
+		m_destField->Invalidate();
+	}
+}
+
+// END - DestinationListView.cpp

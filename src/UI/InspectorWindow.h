@@ -39,9 +39,11 @@
 
 #ifndef __C_InspectorWindow_H__
 #define __C_InspectorWindow_H__
+
+#include "AppWindow.h"
 #include "BorderView.h"
 #include "Event.h"
-#include "WindowState.h"
+#include "Observable.h"
 #include "Observer.h"
 
 class CDestinationListView;
@@ -51,8 +53,7 @@ class CTextDisplay;
 class CTextSlider;
 
 class CInspectorWindow :
-	public CAppWindow,
-	public CObserver
+	public CAppWindow
 {
 
 public:						// Constants
@@ -65,21 +66,6 @@ public:						// Constructor/Destructor
 								BPoint position,
 								CWindowState &state);
 
-public:						// CObserver Implementation
-
-	virtual void            MenusBeginning();
-
-	virtual void			MessageReceived(
-								BMessage *message);
-
-	// If the app wants us to stop looking at the track, then oblige it.
-	virtual void			OnDeleteRequested(
-								BMessage *message);
-
-	// Update inspector info when we get an observer update message.
-	virtual void			OnUpdate(
-								BMessage *message);
-
 public:						// Operations
 
 	// Inspect the current event of the track
@@ -88,9 +74,24 @@ public:						// Operations
 
 	void					Clear();
 	
+public:						// CAppWindow Implementation
+
+	virtual void            MenusBeginning();
+
+	virtual void			MessageReceived(
+								BMessage *message);
+
+	// If the app wants us to stop looking at the track, then oblige it.
+	virtual void			SubjectReleased(
+								CObservable *subject);
+
+	// Update inspector info when we get an observer update message.
+	virtual void			SubjectUpdated(
+								BMessage *message);
+
 private:					// Instance Data
 	
-	CBorderView *m_bgView;
+	CBorderView *			m_bgView;
 	CMeVDoc *				m_doc;
 	CEventTrack *			m_track;
 

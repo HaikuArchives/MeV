@@ -54,7 +54,6 @@ protected:
 public:							// Constructor/Destructor
 
 								CPitchBendEditor(
-									BLooper &looper,
 									CStripFrameView &frame,
 									BRect rect);
 
@@ -80,16 +79,10 @@ public:							// CContinuousValueEditor Implementation
 	virtual void				DrawHorizontalGrid(
 									BRect updateRect);
 
-	virtual void				MessageReceived(
-									BMessage *message);
-
 	virtual void				MouseMoved(
 									BPoint point,
 									uint32 transit,
 									const BMessage *message);
-
-	virtual void				OnUpdate(
-									BMessage *message);
 
 	virtual void				ZoomChanged(
 									int32 diff);

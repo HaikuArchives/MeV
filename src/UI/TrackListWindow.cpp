@@ -3,6 +3,7 @@
  * ===================================================================== */
 
 #include "TrackListWindow.h"
+
 #include "TrackListItem.h"
 #include "TrackListView.h"
 #include "QuickKeyMenuItem.h"
@@ -46,7 +47,6 @@ CTrackListWindow::CTrackListWindow(
 				   "Parts", B_FLOATING_WINDOW,
 				   B_WILL_ACCEPT_FIRST_CLICK | B_ASYNCHRONOUS_CONTROLS,
 				   B_CURRENT_WORKSPACE),
-		CObserver(*this, NULL),
 		m_doc(NULL),
 		m_zoomed(false),
 		m_zooming(false)
@@ -242,12 +242,6 @@ CTrackListWindow::MessageReceived(
 			m_doc->SetModified();
 			break;
 		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
 		default:
 		{
 			CAppWindow::MessageReceived(message);
@@ -290,62 +284,6 @@ CTrackListWindow::Zoom(
 		m_zoomed = false;
 	}
 	
-}
-
-// ---------------------------------------------------------------------------
-// CObserver Implementation
-
-void
-CTrackListWindow::OnDeleteRequested(
-	BMessage *message)
-{
-	D_HOOK(("CTrackListWindow::OnDeleteRequested()\n"));
-
-	WatchDocument(NULL);
-}
-
-void
-CTrackListWindow::OnUpdate(
-	BMessage *message)
-{
-	D_HOOK(("CTrackListWindow::OnUpdate()\n"));
-
-	int32 trackHint, docHint;
-	int32 trackID;
-
-	if (message->FindInt32("TrackID", &trackID) != B_OK)
-		trackID = -1;
-	if (message->FindInt32("TrackAttrs", &trackHint) != B_OK)
-		trackHint = 0;
-	if (message->FindInt32("DocAttrs", &docHint ) != B_OK)
-		docHint = 0;
-
-	if (trackHint != 0 || docHint != 0)
-	{
-		if (trackID >= 0)
-		{
-			for (int i = 0; i < m_listView->CountItems(); i++)
-			{
-				CTrackListItem	*item = dynamic_cast<CTrackListItem *>
-										(m_listView->ItemAt(i));
-				if (item && (item->GetTrackID() == trackID))
-				{
-					if (trackHint & (CTrack::Update_Name | CTrack::Update_Flags))
-					{
-						item->Update(m_listView, be_plain_font);
-						m_listView->InvalidateItem(i);
-					}
-				}
-			}
-		}
-		
-		if ((docHint & CMeVDoc::Update_AddTrack)
-		 || (docHint & CMeVDoc::Update_DelTrack)
-		 || (docHint & CMeVDoc::Update_TrackOrder))
-		{
-			m_listView->BuildTrackList();
-		}
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -422,7 +360,6 @@ CTrackListWindow::WatchDocument(
 	{
 		m_doc = doc;
 		m_listView->SetDocument(m_doc);
-		SetSubject(m_doc);
 		Unlock();
 	}
 }

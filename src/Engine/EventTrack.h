@@ -280,7 +280,7 @@ public:
 		sectionEnd	= start > end ? start : end;
 	}
 
-		/**	Overrides AddUndoAction from CObservableSubject to deal with
+		/**	Overrides AddUndoAction from CObservable to deal with
 			master track issues. */
 	void AddUndoAction( UndoAction *inAction );
 

@@ -15,60 +15,93 @@
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
-CObservableSubject::CObservableSubject()
+CObservable::CObservable()
 {
 }
 
-CObservableSubject::~CObservableSubject()
+CObservable::~CObservable()
 {
+	D_OBSERVE(("CObservable::~CObservable()\n"));
+
+#if DEBUG
+	if (m_observers.CountItems() > 0)
+	{
+		D_OBSERVE((" -> %ld observers still listening!\n",
+			   m_observers.CountItems()));
+	}
+#endif
 }
 
 // ---------------------------------------------------------------------------
-//	CObservableSubject: Observer list management
+//	Observer list management
 
-void
-CObservableSubject::AddObserver(
-	CObserver &observer)
+bool
+CObservable::AddObserver(
+	CObserver *observer)
 {
 	StSubjectLock myLock(*this, Lock_Exclusive);
 	Acquire();
-	CheckSuccess(m_observers.AddItem(&observer));
+	return m_observers.AddItem(observer);
 }
 
-void
-CObservableSubject::RemoveObserver(
-	CObserver &observer)
+bool
+CObservable::RemoveObserver(
+	CObserver *observer)
 {
 	StSubjectLock myLock(*this, Lock_Exclusive);
-	CheckSuccess(m_observers.RemoveItem(&observer));
+	return m_observers.RemoveItem(observer);
 }
 
 // ---------------------------------------------------------------------------
-//	CObservableSubject: Update messaging
+//	CObservable: Update messaging
 
 void
-CObservableSubject::PostUpdate(
+CObservable::PostUpdate(
 	CUpdateHint *hint,
 	CObserver *excludeObserver)
 {
-	int32 count = m_observers.CountItems();
+	D_OBSERVE(("CObservable::PostUpdate()\n"));
+
 	StSubjectLock myLock(*this, Lock_Shared);
 
 	//	For each observer, send them a copy of the message.
+	int32 count = m_observers.CountItems();
+	D_OBSERVE((" -> notify %ld observers\n", count));
 	for (int i = 0; i < count; i++)
 	{
 		CObserver *ob = (CObserver *)m_observers.ItemAt(i);
 		if (ob != excludeObserver)
-			BMessenger(ob).SendMessage(hint);
+			ob->Updated(hint);
 	}
 }
 
 void
-CObservableSubject::RequestDelete()
+CObservable::RequestDelete()
 {
-	CUpdateHint msg(Delete_ID);
-	
-	PostUpdate(&msg, NULL);
+	D_OBSERVE(("CObservable<%p>::RequestDelete()\n", this));
+
+	int32 count = 0;
+	if (Lock(Lock_Shared))
+	{
+		count = m_observers.CountItems();
+		Unlock(Lock_Shared);
+	}
+
+	while (count > 0)
+	{
+		D_OBSERVE((" -> %ld observers hanging on\n", count));
+
+		Lock(Lock_Shared);
+		CObserver *ob = (CObserver *)m_observers.ItemAt(count - 1);
+		Unlock(Lock_Shared);
+
+		D_OBSERVE((" -> releasing observer at %p\n", ob));
+		ob->Released(this);
+
+		Lock(Lock_Shared);
+		count = m_observers.CountItems();
+		Unlock(Lock_Shared);
+	}
 }
 
-// END - Observable 
+// END - Observable.cpp

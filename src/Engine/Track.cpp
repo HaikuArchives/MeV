@@ -179,7 +179,7 @@ CTrack::NotifyUpdate(
 	hint.AddInt32("TrackAttrs", hintBits);
 	
 	PostUpdate(&hint, source);
-	Document().PostUpdate(&hint, source);
+//	Document().PostUpdate(&hint, source);
 }
 
 void

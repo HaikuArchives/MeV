@@ -59,22 +59,22 @@ CTrackWindow::CTrackWindow(
 	BRect frame,
 	CMeVDoc *document,
 	bool isMaster,
-	CEventTrack *inTrack,
+	CEventTrack *track,
 	bool hasSettings)
 	:	CDocWindow(frame, document, isMaster,
-				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL,
+				   (track && track->GetID() > 1) ? track->Name() : NULL,
 				   B_DOCUMENT_WINDOW,
 				   B_ASYNCHRONOUS_CONTROLS),
-		CObserver(*this, document),
 		stripFrame(NULL),
+		track(track),
 		stripScroll(NULL),
 		trackOp(NULL),
 		m_newEventType(EvtType_Count)
 {
 	D_ALLOC(("TrackWindow::TrackWindow(new)\n"));
 
-	track = inTrack;
 	track->Acquire();
+	track->AddObserver(this);
 	
 	SetPulseRate(100000);
 }
@@ -84,6 +84,8 @@ CTrackWindow::~CTrackWindow()
 	D_ALLOC(("CTrackWindow::~CTrackWindow()\n"));
 
 	CRefCountObject::Release(trackOp);
+
+	track->RemoveObserver(this);
 	CRefCountObject::Release(track);
 }
 
@@ -110,7 +112,6 @@ CTrackWindow::AddFrameView(
 	infoRect.right = 59.0;
 	m_vPosInfoView = new BStringView(infoRect.InsetByCopy(1.0, 1.0),
 									 "", "");
-//	m_vPosInfoView->SetViewColor(B_TRANSPARENT_COLOR);
 	m_vPosInfoView->SetAlignment(B_ALIGN_RIGHT);
 	m_vPosInfoView->SetFont(be_fixed_font);
 	m_vPosInfoView->SetFontSize(10.0);
@@ -640,12 +641,6 @@ CTrackWindow::MessageReceived(
 			((COperatorWindow *)w)->SetTrack(track);
 			break;
 		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
 		default:
 		{
 			CDocWindow::MessageReceived(message);
@@ -668,6 +663,23 @@ CTrackWindow::QuitRequested()
 }
 
 void
+CTrackWindow::SubjectReleased(
+	CObservable *subject)
+{
+	D_OBSERVE(("CTrackWindow<%p>::SubjectReleased()\n", this));
+
+	if (subject == track)
+	{
+		track->RemoveObserver(this);
+		CRefCountObject::Release(track);
+		track = NULL;
+		return;
+	}
+
+	CDocWindow::SubjectReleased(subject);
+}
+
+void
 CTrackWindow::WindowActivated(
 	bool active)
 {
@@ -679,22 +691,6 @@ CTrackWindow::WindowActivated(
 		CMeVApp::WatchTrack(Track());
 	}
 	UpdateActiveSelection(active);
-}
-
-// ---------------------------------------------------------------------------
-// CObserver Implementation
-
-void
-CTrackWindow::OnDeleteRequested(
-	BMessage *message)
-{
-	PostMessage(B_QUIT_REQUESTED);
-}
-
-void
-CTrackWindow::OnUpdate(
-	BMessage *message)
-{
 }
 
 // ---------------------------------------------------------------------------

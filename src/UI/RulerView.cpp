@@ -29,7 +29,7 @@ CRulerView::CRulerView(
 	ulong resizingMode,
 	ulong flags)
 	:	CScrollerTarget(frame, name, resizingMode, flags),
-		CObserver(looper, track),
+		CObserver(track),
 		m_track(track),
 		m_frameView(frameView),
 		m_showMarkers(true),
@@ -40,6 +40,14 @@ CRulerView::CRulerView(
 	m_frameView->SetRuler(this);
 	m_markerBitmap = ResourceUtils::LoadImage("SectionMarker");
 	SetViewColor(B_TRANSPARENT_COLOR);
+}
+
+CRulerView::~CRulerView()
+{
+	D_ALLOC(("CRulerView::~CRulerView()\n"));
+
+	if (m_track != NULL)
+		m_track->RemoveObserver(this);
 }
 
 // ---------------------------------------------------------------------------
@@ -169,6 +177,28 @@ CRulerView::Draw(
 }
 
 void
+CRulerView::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case CObservable::UPDATED:
+		{
+			int32 trackHint;
+			// Only ONE change we are interested in, and that's section markers...
+			if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
+			{
+				if (trackHint &
+					(CTrack::Update_Section | CTrack::Update_SigMap | CTrack::Update_TempoMap))
+				{
+						Invalidate();
+				}
+			}
+		}
+	}
+}
+
+void
 CRulerView::MouseDown(
 	BPoint point)
 {
@@ -270,7 +300,8 @@ CRulerView::MouseUp(
 {
 	D_HOOK(("CRulerView::MouseUp()\n"));
 
-	m_track->NotifyUpdate(CTrack::Update_Section, this);
+	if (m_track != NULL)
+		m_track->NotifyUpdate(CTrack::Update_Section, this);
 }
 
 void
@@ -286,21 +317,26 @@ CRulerView::SetScrollValue(
 // CObserver Implementation
 
 void
-CRulerView::OnUpdate(
+CRulerView::Released(
+	CObservable *subject)
+{
+	D_HOOK(("CRulerView::Released()\n"));
+
+	if (LockLooper())
+	{
+		m_track = NULL;
+		UnlockLooper();
+	}
+}
+
+void
+CRulerView::Updated(
 	BMessage *message)
 {
-	D_HOOK(("CRulerView::OnUpdate()\n"));
-	
-	int32 trackHint;
-	// Only ONE change we are interested in, and that's section markers...
-	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
-	{
-		if (trackHint &
-			(CTrack::Update_Section | CTrack::Update_SigMap | CTrack::Update_TempoMap))
-		{
-				Invalidate();
-		}
-	}
+	D_HOOK(("CRulerView::Updated()\n"));
+
+	if (Window())
+		Window()->PostMessage(message, this);
 }
 
 // END - RulerView.cpp

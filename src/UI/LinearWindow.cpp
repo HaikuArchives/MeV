@@ -209,7 +209,19 @@ CLinearWindow::MessageReceived(
 }
 
 void
-CLinearWindow::OnUpdate(
+CLinearWindow::SubjectReleased(
+	CObservable *subject)
+{
+	if (subject == Track())
+	{
+		PostMessage(B_QUIT_REQUESTED, this);
+	}
+	
+	CTrackWindow::SubjectReleased(subject);
+}
+
+void
+CLinearWindow::SubjectUpdated(
 	BMessage *message)
 {
 	int32 trackHint;
@@ -238,15 +250,15 @@ CLinearWindow::AddStrip(
 
 	if (type == "Piano Roll")
 	{
-		strip = new CLinearEditor(*this, *stripFrame, rect);
+		strip = new CLinearEditor(*stripFrame, rect);
 	}
 	else if (type == "Velocity")
 	{
-		strip = new CVelocityEditor(*this, *stripFrame, rect);
+		strip = new CVelocityEditor(*stripFrame, rect);
 	}
 	else if (type == "Pitch Bend")
 	{
-		strip = new CPitchBendEditor(*this, *stripFrame, rect);
+		strip = new CPitchBendEditor(*stripFrame, rect);
 	}
 	else if (type == "Control Change")
 	{
@@ -254,7 +266,7 @@ CLinearWindow::AddStrip(
 	}
 	else if (type == "Sequence")
 	{
-		strip = new CTrackCtlStrip(*this, *stripFrame, rect, Track(),
+		strip = new CTrackCtlStrip(*stripFrame, rect, Track(),
 								   "Sequence");
 	}
 	else if (type == "Record Strip")

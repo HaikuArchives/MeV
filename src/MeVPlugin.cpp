@@ -531,6 +531,13 @@ void MeVTrackRef::Merge( Event *inEventArray, long inEventCount )
 	track->MergeEvents( inEventArray, inEventCount, (EventListUndoAction *)undo );
 }
 
+int32
+MeVTrackRef::Duration() const
+{
+	CTrack *track = (CTrack *)trackData;
+	return track->LogicalLength();
+}
+
 #if 0
 	/**	Select all events on this track. */
 void MeVTrackRef::SelectAll()

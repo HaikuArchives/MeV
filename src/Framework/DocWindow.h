@@ -34,7 +34,7 @@
 #ifndef __C_DocWindow_H__
 #define __C_DocWindow_H__
 
-#include "WindowState.h"
+#include "AppWindow.h"
 
 // Support Kit
 #include <String.h>
@@ -140,6 +140,9 @@ public:							// CAppWindow Implementation
 	virtual void				MenusBeginning();
 	
 	virtual bool				QuitRequested();
+
+	virtual void				SubjectReleased(
+									CObservable *subject);
 
 	virtual void				WindowActivated(
 									bool active);

@@ -94,7 +94,6 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CEventEditor(
-									BLooper	&looper,
 									CStripFrameView	&frame,
 									BRect rect,
 									const char *name,
@@ -102,7 +101,6 @@ public:							// Constructor/Destructor
 									bool makeMagButtons = false);
 
 								CEventEditor(
-									BLooper &looper,
 									CStripFrameView &frame,
 									BRect rect,
 									CEventTrack *track,
@@ -160,6 +158,12 @@ public:							// Hook Functions
 	virtual void				StartDrag(
 									BPoint point,
 									ulong buttons);
+
+	virtual void				SubjectReleased(
+									CObservable *subject);
+
+	virtual void				SubjectUpdated(
+									BMessage *message);
 
 	// Returns TRUE if this editor supports "shadowing"
 	// of events being dragged in the inspector window.
@@ -283,6 +287,9 @@ protected:						// Internal Operations
 
 public:							// CStripView Implementation
 
+	virtual void				MessageReceived(
+									BMessage *message);
+
 	virtual void				MouseDown(
 									BPoint point);
 
@@ -300,10 +307,12 @@ public:							// CStripView Implementation
 
 public:							// CObserver Implementation
 
-	// Update message from another observer
-	virtual void				OnUpdate(
+	virtual void				Released(
+									CObservable *subject);
+
+	virtual void				Updated(
 									BMessage *message)
-								{ Invalidate(); }
+								{ Window()->PostMessage(message, this); }
 
 protected:						// Instance Data
 

@@ -429,10 +429,9 @@ CPitchBendEventHandler::CreateTimeOp(
 // Constructor/Destructor
 
 CPitchBendEditor::CPitchBendEditor(
-	BLooper &looper,
 	CStripFrameView	&frame,
 	BRect rect)
-	:	CContinuousValueEditor(looper, frame, rect, "Pitch Bend")
+	:	CContinuousValueEditor(frame, rect, "Pitch Bend")
 {
 	SetHandlerFor(EvtType_PitchBend, new CPitchBendEventHandler(this));
 
@@ -505,26 +504,6 @@ CPitchBendEditor::DrawHorizontalGrid(
 }
 
 void
-CPitchBendEditor::MessageReceived(
-	BMessage *message)
-{
-	switch (message->what)
-	{
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
-		default:
-		{
-			CStripView::MessageReceived(message);
-			break;
-		}
-	}
-}
-
-void
 CPitchBendEditor::MouseMoved(
 	BPoint point,
 	uint32 transit,
@@ -545,83 +524,6 @@ CPitchBendEditor::MouseMoved(
 			text << value;
 			TrackWindow()->SetVerticalPositionInfo(text);
 		}
-	}
-}
-
-void
-CPitchBendEditor::OnUpdate(
-	BMessage *message)
-{
-	BRect r(Bounds());
-	bounds = r;
-
-	bool selChange = false;
-	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
-	{
-		if (!IsSelectionVisible())
-			return;
-	}
-
-	int32 trackHint = 0;
-	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
-	{
-		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
-						   CTrack::Update_TempoMap)))
-			return;
-	}
-
-	int32 minTime;
-	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
-		minTime = ViewCoordsToTime(Bounds().left);
-	r.left = TimeToViewCoords(minTime) - 3.0;
-
-	int32 maxTime;
-	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
-		maxTime = ViewCoordsToTime(Bounds().right);
-	r.right = TimeToViewCoords(maxTime) + 4.0;
-
-	if (trackHint & CTrack::Update_Duration)
-		RecalcScrollRangeH();
-
-	uint8 channel;
-	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
-	{
-		// Invalidate everything if signature map changed
-		Invalidate();
-	}
-	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
-	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
-		EventMarker	marker(Track()->Events());
-
-		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
-			 ev;
-			 ev = marker.NextItemInRange(minTime, maxTime))
-		{
-			if ((ev->HasProperty(Event::Prop_Channel))
-			 && (ev->GetVChannel() == channel))
-			{
-				HandlerFor(*ev)->Invalidate(*ev);
-			}
-		}
-	}
-	else if (selChange)
-	{
-		StSubjectLock trackLock(*Track(), Lock_Shared);
-		EventMarker marker(Track()->Events());
-
-		// For each event that overlaps the current view, draw it.
-		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
-			 ev;
-			 ev = marker.NextItemInRange(minTime, maxTime))
-		{
-			HandlerFor(*ev)->Invalidate(*ev);
-		}
-	}
-	else
-	{
-		Invalidate(r);
 	}
 }
 

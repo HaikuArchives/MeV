@@ -9,6 +9,7 @@
 #include "IconMenuItem.h"
 #include "ResourceUtils.h"
 #include "ToolBar.h"
+#include "WindowState.h"
 
 // Interface Kit
 #include <Alert.h>
@@ -76,8 +77,13 @@ CDocWindow::CDocWindow(
 
 CDocWindow::~CDocWindow()
 {
-	m_document->RemoveWindow(this);
-	CRefCountObject::Release(m_document);
+	if (m_document)
+	{
+		m_document->RemoveWindow(this);
+		CRefCountObject::Release(m_document);
+		m_document = NULL;
+	}
+
 	if (be_app->Lock())
 	{
 		if (this == s_activeDocWin)
@@ -116,13 +122,27 @@ CDocWindow::SetToolBar(
 // Operations
 
 void
-CDocWindow::WindowActivated(
-	bool active)
+CDocWindow::AcquireSelectToken()
 {
-	CAppWindow::WindowActivated(active);
-
-	if (active)
-		AcquireSelectToken();
+	if (be_app->Lock())
+	{
+		if (this != ActiveDocWindow())
+		{
+			if (ActiveDocWindow())
+			{
+				BMessage message(SELECTED);
+				message.AddBool("active", false);
+				BMessenger messenger(NULL, ActiveDocWindow());
+				messenger.SendMessage(&message);
+			}
+			s_activeDocWin = this;
+	
+			BMessage message(SELECTED);
+			message.AddBool("active", true);
+			PostMessage(&message, this);
+		}
+		be_app->Unlock();
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -274,27 +294,30 @@ CDocWindow::QuitRequested()
 }
 
 void
-CDocWindow::AcquireSelectToken()
+CDocWindow::SubjectReleased(
+	CObservable *subject)
 {
-	if (be_app->Lock())
+	D_OBSERVE(("CDocWindow<%p>::SubjectReleased()\n", this));
+
+	if (subject == m_document)
 	{
-		if (this != ActiveDocWindow())
-		{
-			if (ActiveDocWindow())
-			{
-				BMessage message(SELECTED);
-				message.AddBool("active", false);
-				BMessenger messenger(NULL, ActiveDocWindow());
-				messenger.SendMessage(&message);
-			}
-			s_activeDocWin = this;
-	
-			BMessage message(SELECTED);
-			message.AddBool("active", true);
-			PostMessage(&message, this);
-		}
-		be_app->Unlock();
+		D_OBSERVE((" -> stop observing document\n"));
+
+		m_document->RemoveObserver(this);
+		CRefCountObject::Release(m_document);
+		m_document = NULL;
+		PostMessage(B_QUIT_REQUESTED, this);
 	}
+}
+
+void
+CDocWindow::WindowActivated(
+	bool active)
+{
+	CAppWindow::WindowActivated(active);
+
+	if (active)
+		AcquireSelectToken();
 }
 
 // ---------------------------------------------------------------------------

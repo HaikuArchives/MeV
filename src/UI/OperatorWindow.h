@@ -49,7 +49,9 @@ class CEventTrack;
 
 	/**	Real-time operator editor window. */
 
-class COperatorWindow : public CDocWindow, public CObserver {
+class COperatorWindow
+	:	public CDocWindow
+{
 	CMultiColumnListView	*operList;
 	CEventTrack			*watchTrack;
 	BButton				*editButton,
@@ -62,7 +64,6 @@ class COperatorWindow : public CDocWindow, public CObserver {
 	};
 	
 	void MessageReceived( BMessage *msg );
-	void OnUpdate( BMessage *inMsg );
 
 public:
 	COperatorWindow( CWindowState &inState, CMeVDoc &inDocument );

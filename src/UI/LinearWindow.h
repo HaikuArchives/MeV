@@ -42,8 +42,6 @@
 #define __C_LinearWindow_H__
 
 #include "TrackWindow.h"
-// ---------------------------------------------------------------------------
-// Linear editor window
 
 class CTimeIntervalEditor;
 class CTextDisplay;
@@ -74,7 +72,10 @@ public:							// CTrackWindow Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	virtual void				OnUpdate(
+	virtual void				SubjectReleased(
+									CObservable *subject);
+
+	virtual void				SubjectUpdated(
 									BMessage *message);
 
 protected:

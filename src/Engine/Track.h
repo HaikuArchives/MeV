@@ -53,7 +53,7 @@ class CTrackWindow;
 #define TRACK_NAME_LENGTH 64
 
 class CTrack
-	:	public CObservableSubject
+	:	public CObservable
 {
 	friend class CMeVDoc;
 	friend class CTrackDeleteUndoAction;

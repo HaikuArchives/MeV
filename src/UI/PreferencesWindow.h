@@ -41,7 +41,7 @@
 #define __PreferencesWindow_H__
 
 #include "MeVApp.h"
-#include "WindowState.h"
+#include "AppWindow.h"
 
 class CTextSlider;
 
@@ -82,6 +82,10 @@ public:							// CAppWindow Implementation
 
 	virtual void				MessageReceived(
 									BMessage *message);
+
+	virtual void				SubjectReleased(
+									CObservable *subject)
+								{ }
 
 protected:						// Internal Operations
 

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * InspectorWindow.cpp (MeV/User Interface)
+ * InspectorWindow.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "InspectorWindow.h"
@@ -19,6 +19,8 @@
 #include <stdio.h>
 // Interface Kit
 #include <StringView.h>
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // Constants Initialization
@@ -37,7 +39,6 @@ const int					channelBoxWidth = 14,
 	// Channel locking
 
 enum EInspectorControlIDs {
-	ChannelControl_ID	= 'chan',
 	Slider1_ID			= 'sld1',
 	Slider2_ID			= 'sld2',
 	Slider3_ID			= 'sld3',
@@ -133,7 +134,6 @@ CInspectorWindow::CInspectorWindow(
 						 B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
 						 | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 						 B_CURRENT_WORKSPACE),
-		CObserver(*this, NULL),
 		m_track(NULL),
 		m_previousValue(-1)
 {
@@ -157,7 +157,7 @@ CInspectorWindow::CInspectorWindow(
 
 	BRect r(240.0, 3.0, 240.0 + channelBoxWidth * 16 + 2.0,
 			3.0 + channelBoxHeight * 4 + 2.0);
-	m_channelControl = new CDestinationListView(r, this);
+	m_channelControl = new CDestinationListView(r);
 	bgView->AddChild(m_channelControl);
 
 	// REM: Get window position from preferences.
@@ -167,147 +167,14 @@ CInspectorWindow::CInspectorWindow(
 }
 
 // ---------------------------------------------------------------------------
-// CObserver Implementation
-
-void
-CInspectorWindow::OnDeleteRequested(
-	BMessage *message)
-{
-	WatchTrack(NULL);
-}
-
-void
-CInspectorWindow::OnUpdate(
-	BMessage *message)
-{
-	if(message->HasInt8("channel"))
-	{
-		m_channelControl->Update();
-	}
-
-	if((m_track == NULL)
-		|| (m_track->SelectionType() == CTrack::Select_None))
-	{
-		Clear();
-	}
-	else
-	{
-		StSubjectLock trackLock(*m_track, Lock_Shared);
-		const Event *event = m_track->CurrentEvent();
-		int	channel = event->GetVChannel();
-		StWindowLocker lck(this);
-	
-		// Set the event name
-		BString title = "Inspector: ";
-		title << event->NameText();
-		SetTitle(title.String());
-
-		if(event->HasProperty(Event::Prop_Channel))
-		{
-			if (channel != m_doc->GetDefaultAttribute(EvAttr_Channel))
-			{
-				m_doc->SetDefaultAttribute(EvAttr_Channel, channel);
-			}
-			
-			m_channelControl->SetChannel(channel);
-		}
-
-		// Set up the data values for all three sliders
-		for(int i = 0; i < 3; i++)
-		{
-			enum E_EventAttribute attrType;
-			attrType = event->QueryAttribute(i);
-			m_editedAttr[i] = attrType;
-			if(attrType == EvAttr_None)
-			{
-				m_vSlider[i]->SetRange(0.0, 0.0);
-				m_vSlider[i]->SetEnabled(false);
-				m_vSlider[i]->SetTextHook(NULL);
-				m_vLabel[i]->SetText("");
-			}
-			else
-			{
-				int32	minVal, maxVal, offset;
-				const char
-						*text = UEventAttributeTable::Name(attrType),
-						*oldText = m_vLabel[i]->Text();
-						
-				if (text == NULL || oldText == NULL || strcmp(text, oldText) != 0)
-				{
-					m_vLabel[i]->SetText(UEventAttributeTable::Name(attrType));
-				}
-
-				UEventAttributeTable::Range(attrType, minVal, maxVal);
-				offset = UEventAttributeTable::Offset(attrType);
-				m_vSlider[i]->SetRange(minVal + offset, maxVal + offset);
-				m_vSlider[i]->SetEnabled(true);
-				m_vSlider[i]->SetBodyIncrement(10);
-				
-				// Set the text formatting hook
-				switch (attrType)
-				{
-					case EvAttr_TSigBeatSize:
-					{
-						m_vSlider[i]->SetTextHook(&bsHook);
-						break;
-					}
-					case EvAttr_TempoValue:
-					{
-						// A kludge -- sliders simply don't work for that much dynamic range...
-						m_vSlider[i]->SetBodyIncrement(1000);
-						m_vSlider[i]->SetTextHook(&fpHook22);
-						break;
-					}
-					default:
-					{
-						m_vSlider[i]->SetTextHook(NULL);
-						break;
-					}
-				}
-
-				m_baseValue[i] = event->GetAttribute(attrType);
-				m_vSlider[i]->SetValue(m_baseValue[i]);
-			}
-		}
-	}
-}
+// CAppWindow Implementation
 
 void
 CInspectorWindow::MessageReceived(
 	BMessage *message)
 {
-	switch(message->what)
+	switch (message->what)
 	{
-		case ChannelControl_ID:
-		{
-			if(m_doc)
-			{
-				int8 channel;
-				if (message->FindInt8("channel", &channel) != B_OK)
-					return;
-
-				if((channel >= 0) && (channel <= Max_Destinations) && m_track)
-				{
-					// Set attribute for newly created events
-					m_doc->SetDefaultAttribute(EvAttr_Channel, channel);
-					// Do audio feedback
-					if (m_track->SelectionType() != CEventTrack::Select_None)
-					{
-						EventOp *op = new ChannelOp(static_cast<uint8>(channel));
-						// Modify any selected events
-						m_track->ModifySelectedEvents(NULL, *op, "Change channel");
-						CRefCountObject::Release(op);
-						if (gPrefs.feedbackAdjustMask & CGlobalPrefs::FB_Channel)
-						{
-							CPlayerControl::DoAudioFeedback(m_doc, EvAttr_Channel,
-															channel,
-															m_track->CurrentEvent());
-						}
-					}
-				}
-			}
-			break;
-		}
 		case Slider1_ID:
 		case Slider2_ID:
 		case Slider3_ID:
@@ -381,15 +248,9 @@ CInspectorWindow::MessageReceived(
 			be_app->Unlock();
 			break;
 		}
-		case Update_ID:
-		case Delete_ID:
-		{
-			CObserver::MessageReceived(message);
-			break;
-		}
 		default:
 		{
-			BWindow::MessageReceived(message);
+			CAppWindow::MessageReceived(message);
 			break;
 		}
 	}
@@ -410,23 +271,25 @@ CInspectorWindow::WatchTrack(
 {
 	if (track != m_track)
 	{
+		if (m_track)
+			m_track->RemoveObserver(this);
+
 		m_track = track;
 		m_channelControl->SetTrack(m_track);
-		SetSubject(m_track);
 		if (m_track)
 		{
+			m_track->AddObserver(this);
 			m_doc = &(m_track->Document());
 		}
 		else
 		{
 			m_doc = NULL;
 		}
-		CUpdateHint hint(Update_ID);
-		PostMessage(&hint);
 	}
 }
 
-void CInspectorWindow::Clear()
+void
+CInspectorWindow::Clear()
 {
 	// Set the event name
 	SetTitle("Inspector: (None)");
@@ -438,4 +301,97 @@ void CInspectorWindow::Clear()
 	}
 }
 
-// =============================================================================
+// ---------------------------------------------------------------------------
+// CAppWindow Implementation
+
+void
+CInspectorWindow::SubjectReleased(
+	CObservable *subject)
+{
+	D_OBSERVE(("CTransportWindow<%p>::SubjectReleased()\n", this));
+
+	if (subject == m_track)
+		WatchTrack(NULL);
+}
+
+void
+CInspectorWindow::SubjectUpdated(
+	BMessage *message)
+{
+	if ((m_track == NULL)
+	 || (m_track->SelectionType() == CTrack::Select_None))
+	{
+		Clear();
+	}
+	else
+	{
+		StSubjectLock trackLock(*m_track, Lock_Shared);
+		const Event *event = m_track->CurrentEvent();
+		StWindowLocker lck(this);
+	
+		// Set the event name
+		BString title = "Inspector: ";
+		title << event->NameText();
+		SetTitle(title.String());
+
+		// Set up the data values for all three sliders
+		for(int i = 0; i < 3; i++)
+		{
+			enum E_EventAttribute attrType;
+			attrType = event->QueryAttribute(i);
+			m_editedAttr[i] = attrType;
+			if(attrType == EvAttr_None)
+			{
+				m_vSlider[i]->SetRange(0.0, 0.0);
+				m_vSlider[i]->SetEnabled(false);
+				m_vSlider[i]->SetTextHook(NULL);
+				m_vLabel[i]->SetText("");
+			}
+			else
+			{
+				int32	minVal, maxVal, offset;
+				const char
+						*text = UEventAttributeTable::Name(attrType),
+						*oldText = m_vLabel[i]->Text();
+						
+				if (text == NULL || oldText == NULL || strcmp(text, oldText) != 0)
+				{
+					m_vLabel[i]->SetText(UEventAttributeTable::Name(attrType));
+				}
+
+				UEventAttributeTable::Range(attrType, minVal, maxVal);
+				offset = UEventAttributeTable::Offset(attrType);
+				m_vSlider[i]->SetRange(minVal + offset, maxVal + offset);
+				m_vSlider[i]->SetEnabled(true);
+				m_vSlider[i]->SetBodyIncrement(10);
+				
+				// Set the text formatting hook
+				switch (attrType)
+				{
+					case EvAttr_TSigBeatSize:
+					{
+						m_vSlider[i]->SetTextHook(&bsHook);
+						break;
+					}
+					case EvAttr_TempoValue:
+					{
+						// A kludge -- sliders simply don't work for that much dynamic range...
+						m_vSlider[i]->SetBodyIncrement(1000);
+						m_vSlider[i]->SetTextHook(&fpHook22);
+						break;
+					}
+					default:
+					{
+						m_vSlider[i]->SetTextHook(NULL);
+						break;
+					}
+				}
+
+				m_baseValue[i] = event->GetAttribute(attrType);
+				m_vSlider[i]->SetValue(m_baseValue[i]);
+			}
+		}
+	}
+}
+
+// END - InspectorWindow.cpp

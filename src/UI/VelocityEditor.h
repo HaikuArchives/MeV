@@ -66,7 +66,6 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CVelocityEditor(
-									BLooper &looper,
 									CStripFrameView &frame,
 									BRect rect);
 
@@ -100,10 +99,6 @@ public:							// CEventEditor Implementation
 									ulong buttons,
 									bool commit);
 
-	/** Update message from another observer */
-	void						OnUpdate(
-									BMessage *message);
-	
 	/**	Called when the window activates to tell this view
 		to make the selection visible.
 	*/

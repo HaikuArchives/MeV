@@ -371,6 +371,8 @@ public:
 		/**	Function to release a track handle */
 	void ReleaseEventRef( MeVEventHandle );
 	
+	int32 Duration() const;
+
 #if 0
 		/**	Returns the number of selected events. */
 	int CountSelected();
@@ -457,7 +459,7 @@ public:
 	void SetSection( int32 start, int32 end );
 
 #if 0
-		/**	Overrides AddUndoAction from CObservableSubject to deal with
+		/**	Overrides AddUndoAction from CObservable to deal with
 			master track issues. */
 	void AddUndoAction( UndoAction *inAction );
 

@@ -37,64 +37,111 @@
 #ifndef __C_DestinationListView_H__ 
 #define __C_DestinationListView_H__ 
 
+#include "DestinationModifier.h" 
 #include "EventTrack.h" 
 #include "TextDisplay.h" 
-#include "View.h" 
-#include "IconMenuItem.h" 
-//#include "DestinationList.h" 
+#include "IconMenuItem.h"
 #include "Observer.h" 
-#include <PopUpMenu.h> 
+
+// Application Kit
+#include <Looper.h> 
+// Interface Kit
 #include <Button.h> 
 #include <CheckBox.h> 
-#include <StringView.h> 
-#include <Looper.h> 
 #include <MenuField.h>
+#include <PopUpMenu.h> 
+#include <StringView.h> 
 //stl 
 #include <map.h> 
-#include "DestinationModifier.h" 
 
-class CDestinationListView : 
-        public BView ,public CObserver{ 
+class CDestinationListView
+	:	public BView,
+		public CObserver
+{
 
-private: 
-       // uint8                   m_selected_id; 
-        uint8                   m_default_id; 
-        CDestination *m_dest;//selected vc. 
-        CMeVDoc					*m_doc;
-        CEventTrack             *track; 
-        uint8                   channel; 
-        BPopUpMenu              *m_destMenu; 
-        BButton                 *m_editButton; 
-        BButton                 *m_deleteButton; 
-        BMenuField				*m_destfield;
-        BCheckBox               *m_muted; 
-        BCheckBox               *m_lock; 
-        map <int,CDestinationModifier *> m_modifierMap;  
+public:							// Constants
 
-        virtual void AttachedToWindow(); 
-        //update the info on selected channel; 
-        
-public: 
-                /**     Constructor */ 
-        CDestinationListView(BRect           inFrame,
-                             BLooper		*looper,
-                             uint32          inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT, 
-                             uint32          inFlags = B_WILL_DRAW ); 
+	enum
+	{
+								DESTINATION_SELECTED = 'dliA',
+
+								CREATE_DESTINATION,
+
+								EDIT_DESTINATION,
+
+								DELETE_DESTINATION
+	};
+
+public:							// Constructor/Destructor
+
+	/** Constructor. */ 
+								CDestinationListView(
+									BRect frame,
+                             		uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT, 
+                             		uint32 flags = B_WILL_DRAW);
                                                         
-        ~CDestinationListView() { CRefCountObject::Release( track ); } 
-                /*      Select which track we are looking at, so we can draw channel 
-                        array properly.*/ 
-                        
-        void SetDocument (CMeVDoc *doc)
-        	{m_doc=doc;}
-        CMeVDoc * Document () const
-        	{return m_doc;}
-        		
-        void SetTrack( CEventTrack *inTrack ); 
-        void Update(); 
-        virtual void MessageReceived(BMessage *msg); 
-                /**     Set which channel is selected. */ 
-        void SetChannel( int inChannel ); 
-        virtual void OnUpdate (BMessage *message); 
+	/** Destructor. */ 
+        						~CDestinationListView();
+
+public:							// Accessors
+
+	/**	Select which track we are looking at, so we can draw channel 
+       	array properly.*/                     
+	void						SetDocument(
+									CMeVDoc *doc);
+	CMeVDoc *					Document() const
+								{ return m_doc; }
+
+	void						SetTrack(
+									CEventTrack *track);
+
+public:							// Operations
+
+	void						SubjectUpdated(
+									BMessage *message);
+
+public:							// BView Implementation
+
+	/** Update the info on selected channel. */
+	virtual void				AttachedToWindow(); 
+        
+	virtual void				MessageReceived(
+									BMessage *message);
+
+public:							// CObserver Implementation
+
+	virtual void				Released(
+									CObservable *subject);
+
+	virtual void				Updated(
+									BMessage *message);
+
+public:							// Internal Operations
+
+	void						DestinationAdded(
+									int32 id);
+
+	void						DestinationChanged(
+									int32 id);
+
+	void						DestinationRemoved(
+									int32 originalIndex);
+
+private:						// Instance Data
+
+	CMeVDoc *					m_doc;
+
+	CEventTrack *				m_track; 
+
+	BPopUpMenu *				m_destMenu; 
+
+	BButton *					m_editButton; 
+
+	BButton *					m_deleteButton; 
+
+	BMenuField *				m_destField;
+
+	map<int, CDestinationModifier *> m_modifierMap;  
 }; 
-#endif /* __C_ChannelSelectorView_H__ */
+
+#endif /* __C_DestinationListView_H__ */

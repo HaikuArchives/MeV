@@ -46,14 +46,13 @@
 class CContinuousValueEditor
 	:	public CEventEditor
 {
-	// ++++++ this class shouldn't need to now about a descendant-related
+	// ++++++ this class shouldn't need to know about a descendant-related
 	//		  class !
 	friend class CPitchBendEventHandler;
 
 public:							// Constructor/Destructor
 
 								CContinuousValueEditor(
-									BLooper &looper,
 									CStripFrameView &frameView,
 									BRect rect,
 									const char *name);
@@ -82,10 +81,6 @@ public:							// CEventEditor Implementation
 
 	virtual void				Draw(
 									BRect updateRect);
-
-	// Update message from another observer
-	virtual void				OnUpdate(
-									BMessage *message);
 
 	virtual bool				SupportsShadowing()
 								{ return true; }

@@ -394,10 +394,8 @@ void CEventTrack::SelectAll( CEventEditor *inEditor )
 
 	SummarizeSelection();
 
-	CEventSelectionUpdateHint	 hint( *this );
-
-	if (inEditor) inEditor->PostUpdate( &hint, true );
-	else PostUpdate( &hint, NULL );
+	CEventSelectionUpdateHint hint(*this);
+	PostUpdate(&hint, inEditor);
 }
 
 // ---------------------------------------------------------------------------
@@ -436,8 +434,8 @@ void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
 	}
 
 	SummarizeSelection();
-	if (inEditor) inEditor->PostUpdate( &hint, true );
-	else if (inDoUpdate) PostUpdate( &hint, NULL );
+	if (inDoUpdate)
+		PostUpdate(&hint, inEditor);
 }
 
 // ---------------------------------------------------------------------------
@@ -717,8 +715,7 @@ void CEventTrack::ModifySelectedEvents(
 		CTrack::AddUpdateHintBits( hint, CTrack::Update_Duration );
 	}
 
-	if (inEditor) inEditor->PostUpdate( &hint, true );
-	else PostUpdate( &hint, NULL );
+	PostUpdate(&hint, inEditor);
 }
 
 	// Create a new event
@@ -792,8 +789,7 @@ void CEventTrack::CreateEvent(
 			CTrack::AddUpdateHintBits( hint, CTrack::Update_Duration );
 		}
 
-		if (inEditor) inEditor->PostUpdate( &hint, true );
-		else PostUpdate( &hint, NULL );
+		PostUpdate(&hint, inEditor);
 	}
 }
 
@@ -881,8 +877,7 @@ void CEventTrack::CopySelectedEvents(
 		CTrack::AddUpdateHintBits( hint, CTrack::Update_Duration );
 	}
 
-	if (inEditor) inEditor->PostUpdate( &hint, true );
-	else PostUpdate( &hint, NULL );
+	PostUpdate(&hint, inEditor);
 }
 
 	// Merge-in an event stream.
@@ -943,7 +938,7 @@ void CEventTrack::MergeEvents(
 		CTrack::AddUpdateHintBits( hint, CTrack::Update_Duration );
 	}
 
-	PostUpdate( &hint, NULL );
+	PostUpdate(&hint, NULL);
 }
 
 	// Filter an event through all of the filters assigned to this track.
@@ -1032,7 +1027,7 @@ CEventTrack *CEventTrack::Sibling()
 	return NULL;
 }
 
-	/**	Overrides AddUndoAction from CObservableSubject to deal with
+	/**	Overrides AddUndoAction from CObservable to deal with
 		master track issues. */
 void CEventTrack::AddUndoAction( UndoAction *inAction )
 {

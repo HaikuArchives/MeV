@@ -1,142 +1,112 @@
 /* ===================================================================== *
- * WindowState.cpp (MeV/Application Framework)
+ * WindowState.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "WindowState.h"
+
+#include "AppWindow.h"
 
 // Application Kit
 #include <AppDefs.h>
 // Support Kit
 #include <Debug.h>
 
-// Debugging Macros
-#define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
-#define D_HOOK(x) //PRINT (x)		// BControl Implementation
-
-// ---------------------------------------------------------------------------
-// Constructor/Destructor
-
-CAppWindow::CAppWindow(
-	BRect frame,
-	const char *title,
-	window_type type,
-	uint32 flags,
-	uint32 workspaces)
-	:	BWindow(frame, title, type, flags, workspaces),
-		m_state(NULL)
-{
-	D_ALLOC(("CAppWindow::CAppWindow()\n"));
-}
-
-CAppWindow::CAppWindow(
-	CWindowState &state,
-	BRect frame,
-	const char *title,
-	window_type type,
-	uint32 flags,
-	uint32 workspaces)
-	:	BWindow(frame, title, type, flags, workspaces),
-		m_state(NULL)
-{
-	D_ALLOC(("CAppWindow::CAppWindow()\n"));
-
-	RememberState(state);
-}
-
-CAppWindow::~CAppWindow()
-{
-	D_ALLOC(("CAppWindow::~CAppWindow()\n"));
-
-	if (m_state)
-	{
-		m_state->OnWindowClosing();
-	}
-}
-
-// ---------------------------------------------------------------------------
-// BWindow Implementation
-
-bool
-CAppWindow::QuitRequested()
-{
-	if (m_state)
-	{
-		m_state->OnWindowClosing();
-	}
-	return true;
-}
-
 // ---------------------------------------------------------------------------
 // Operations
 
-void
-CAppWindow::RememberState(
-	CWindowState &state)
+bool
+CWindowState::IsOpen()
 {
-	m_state = &state;
-	m_state->OnWindowOpen(this);
-}
-
-void
-CWindowState::OnWindowOpen(
-	CAppWindow *window)
-{
-	lock.Lock();
-	w = window;
-	lock.Unlock();
-}
+	bool result = false;
+	if (Lock())
+	{
+		result = (m_window != NULL);
+		Unlock();
+	}
 	
-void CWindowState::OnWindowClosing()
-{
-	if (w != NULL)
-	{
-		lock.Lock();
-		if (w != NULL)
-		{
-			wRect = w->Frame();
-			w = NULL;
-		}
-		lock.Unlock();
-	}
+	return result;
 }
 
-bool CWindowState::Activate()
+bool
+CWindowState::Activate()
 {
-	lock.Lock();
-	if (w != NULL)
+	if (Lock())
 	{
-		w->Activate();
-		lock.Unlock();
-		return true;
+		if (m_window != NULL)
+		{
+			m_window->Activate();
+			Unlock();
+			return true;
+		}
+		Unlock();
 	}
-	lock.Unlock();
+
 	return false;
 }
 
-BRect CWindowState::Rect()
+BRect
+CWindowState::Rect()
 {
-	lock.Lock();
-	if (w != NULL) wRect = w->Frame();
-	lock.Unlock();
-	return wRect;
+	if (Lock())
+	{
+		if (m_window != NULL)
+			m_frame = m_window->Frame();
+		Unlock();
+	}
+
+	return m_frame;
 }
 
-BPoint CWindowState::Pos()
+BPoint
+CWindowState::Pos()
 {
 	Rect();
-	return BPoint( wRect.left, wRect.top );
+	return BPoint(m_frame.left, m_frame.top);
 }
 
-void CWindowState::Close()
+void
+CWindowState::Close()
 {
-	lock.Lock();
-	if (w != NULL)
+	if (Lock())
 	{
-		BWindow		*wnd = w;
-	
-		wRect = wnd->Frame();
-		w = NULL;
-		wnd->Quit();
+		if (m_window != NULL)
+		{
+			BWindow *window = m_window;
+		
+			m_frame = window->Frame();
+			m_window = NULL;
+			window->Quit();
+		}
+		Unlock();
 	}
-	lock.Unlock();
 }
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CWindowState::WindowOpened(
+	CAppWindow *window)
+{
+	if (Lock())
+	{
+		m_window = window;
+		Unlock();
+	}
+}
+	
+void
+CWindowState::WindowClosed()
+{
+	if (m_window != NULL)
+	{
+		if (Lock())
+		{
+			m_frame = m_window->Frame();
+			m_window = NULL;
+			Unlock();
+		}
+	}
+}
+
+// END - WindowState.cpp

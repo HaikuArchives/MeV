@@ -29,7 +29,7 @@ CMidiManager* CMidiManager::Instance()
 	return m_instance;
 }
 
-CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservableSubject()
+CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservable()
 {
 	BMidiRoster* m_roster = BMidiRoster::MidiRoster();
 	if (! m_roster) {
@@ -157,7 +157,7 @@ void CMidiManager::_addConsumer(int32 id)
 	CUpdateHint hint;
 	hint.AddInt32("midiop",op);
 	hint.AddString("name",con->Name());
-	CObservableSubject::PostUpdate(&hint,NULL);
+	CObservable::PostUpdate(&hint,NULL);
 */
 }
 void CMidiManager::_removeConsumer(int32 id)
@@ -179,7 +179,7 @@ void CMidiManager::_removeConsumer(int32 id)
 	CUpdateHint hint;
 	hint.AddInt32("midiop",op);
 	hint.AddString("name",con->Name());
-	CObservableSubject::PostUpdate(&hint,NULL);*/
+	CObservable::PostUpdate(&hint,NULL);*/
 }
 void CMidiManager::_addProducer(int32 id)
 {

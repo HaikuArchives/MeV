@@ -63,7 +63,6 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CLinearEditor(
-									BLooper &looper,
 									CStripFrameView &frame,
 									BRect rect);
 
@@ -84,9 +83,6 @@ public:							// CEventEditor Implementation
 	// Remove any feedback artifacts for this event
 	virtual void				KillEventFeedback();
 
-	virtual void				MessageReceived(
-									BMessage *message);
-
 	virtual void				MouseMoved(
 									BPoint point,
 									ulong transit,
@@ -101,10 +97,6 @@ public:							// CEventEditor Implementation
 	// to hide the selection.
 	virtual void				OnLoseSelection()
 								{ InvalidateSelection(); }
-
-	// Update message from another observer
-	virtual void				OnUpdate(
-									BMessage *message);
 
 	virtual void				Pulse();
 

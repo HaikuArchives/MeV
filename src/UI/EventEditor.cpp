@@ -27,14 +27,13 @@
 // Constructor/Destructor
 
 CEventEditor::CEventEditor(
-	BLooper	&looper,
 	CStripFrameView	&frame,
 	BRect rect,
 	const char *name,
 	bool makeScroller,
 	bool makeMagButtons)
 	:	CStripView(frame, rect, name, makeScroller, makeMagButtons),
-		CObserver(looper, frame.Track()),
+		CObserver(frame.Track()),
 		m_track((CEventTrack *)frame.Track()),
 		m_frame(frame),
 		m_lasso(NULL),
@@ -50,7 +49,6 @@ CEventEditor::CEventEditor(
 }
 					
 CEventEditor::CEventEditor(
-	BLooper &looper,
 	CStripFrameView &frame,
 	BRect rect,
 	CEventTrack *track,
@@ -58,7 +56,7 @@ CEventEditor::CEventEditor(
 	bool makeScroller,
 	bool makeMagButtons)
 	:	CStripView(frame, rect, name, makeScroller, makeMagButtons),
-		CObserver(looper, track),
+		CObserver(track),
 		m_track(track),
 		m_frame(frame),
 		m_lasso(NULL),
@@ -81,6 +79,9 @@ CEventEditor::~CEventEditor()
 		if (m_handlers[i] != m_nullEventHandler)
 			delete m_handlers[i];
 	delete m_nullEventHandler;
+
+	if (m_track != NULL)
+		m_track->RemoveObserver(this);
 }
 	
 // ---------------------------------------------------------------------------
@@ -106,7 +107,6 @@ CEventEditor::DoDrag(
 	BPoint point,
 	ulong buttons)
 {
-	bounds = Bounds();
 	int32 editMode = TrackWindow()->CurrentTool();
 
 	switch (m_dragType)
@@ -323,8 +323,6 @@ CEventEditor::FinishDrag(
 	// Initialize an event marker for this Track().
 	StSubjectLock trackLock(*Track(), Lock_Exclusive);
 
-	bounds = Bounds();
-
 	TrackWindow()->Document()->SetActiveMaster(Track());
 
 	int32 editMode = TrackWindow()->CurrentTool();
@@ -452,7 +450,6 @@ CEventEditor::StartDrag(
 	EventMarker marker(Track()->Events());
 	short partCode;
 	ulong modifierKeys = modifiers();
-	bounds = Bounds();
 	int32 toolState = TrackWindow()->CurrentTool();
 
 	if ((ev = PickEvent(marker, point, partCode)) != NULL)
@@ -481,7 +478,7 @@ CEventEditor::StartDrag(
 	
 					// Let the world know the selection has changed
 					CEventSelectionUpdateHint hint(*Track(), true);
-					PostUpdate(&hint, true);
+					Track()->PostUpdate(&hint, this);
 					return;
 				}
 			}
@@ -503,7 +500,7 @@ CEventEditor::StartDrag(
 
 				// Let the world know the selection has changed
 				CEventSelectionUpdateHint hint(*Track(), true);
-				PostUpdate(&hint, true);
+				Track()->PostUpdate(&hint, this);
 			}
 
 			Track()->SetCurrentEvent(marker);
@@ -564,6 +561,93 @@ CEventEditor::StartDrag(
 			TrackWindow()->SetHorizontalPositionInfo(Track(),
 													 ViewCoordsToTime(point.x));
 		}
+	}
+}
+
+void
+CEventEditor::SubjectReleased(
+	CObservable *subject)
+{
+	if (subject == m_track)
+	{
+		m_track->RemoveObserver(this);
+		m_track = NULL;
+	}
+}
+
+void
+CEventEditor::SubjectUpdated(
+	BMessage *message)
+{
+	BRect r(Bounds());
+
+	bool selChange = false;
+	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
+	{
+		if (!IsSelectionVisible())
+			return;
+	}
+
+	int32 trackHint = 0;
+	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
+	{
+		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
+						   CTrack::Update_TempoMap)))
+			return;
+	}
+
+	int32 minTime;
+	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
+		minTime = ViewCoordsToTime(Bounds().left);
+	r.left = TimeToViewCoords(minTime) - 3.0;
+
+	int32 maxTime;
+	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
+		maxTime = ViewCoordsToTime(Bounds().right);
+	r.right = TimeToViewCoords(maxTime) + 4.0;
+
+	if (trackHint & CTrack::Update_Duration)
+		RecalcScrollRangeH();
+
+	uint8 channel;
+	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
+	{
+		// Invalidate everything if signature map changed
+		Invalidate();
+	}
+	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
+	{
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker	marker(Track()->Events());
+
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
+		{
+			if ((ev->HasProperty(Event::Prop_Channel))
+			 && (ev->GetVChannel() == channel))
+			{
+				HandlerFor(*ev)->Invalidate(*ev);
+			}
+		}
+	}
+	else if (selChange)
+	{
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
+
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
+		{
+			HandlerFor(*ev)->Invalidate(*ev);
+		}
+	}
+	else
+	{
+		Invalidate(r);
 	}
 }
 
@@ -655,7 +739,7 @@ CEventEditor::DoLassoTracking(
 		
 			// Let the world know the selection has changed
 			CEventSelectionUpdateHint hint(*Track(), true);
-			PostUpdate(&hint, true);
+			Track()->PostUpdate(&hint, this);
 		}
 	}
 }
@@ -744,7 +828,7 @@ CEventEditor::DoRectangleTracking(
 		
 			// Let the world know the selection has changed
 			CEventSelectionUpdateHint hint(*Track(), true);
-			PostUpdate(&hint, true);
+			Track()->PostUpdate(&hint, this);
 		}
 	}
 }
@@ -1012,62 +1096,7 @@ CEventEditor::UpdatePBMarkers()
 		DrawPlaybackMarkers(m_pbMarkers, m_pbCount, Bounds(), false);
 	}
 }
-/*
-void
-CEventEditor::DoRectangleSelection()
-{
-	BRect		r;
-	DrawSelectRect();
-	long			minTime,
-				maxTime;
-	EventMarker	marker( Track()->Events() );
-	const Event	*ev;
-	
-	r.left			= MIN(m_cursorPos.x, m_anchorPos.x );
-	r.right			= MAX(m_cursorPos.x, m_anchorPos.x );
-	r.top			= MIN(m_cursorPos.y, m_anchorPos.y );
-	r.bottom		= MAX(m_cursorPos.y, m_anchorPos.y );
 
-	if (r.Width()  == 0.0)
-		r.right += 1.0;
-	if (r.Height() == 0.0)
-		r.bottom += 1.0;
-
-	minTime = ViewCoordsToTime(r.left);
-	maxTime = ViewCoordsToTime(r.right);
-
-	// Now, select all events in the rectangle...
-	// For each event that overlaps the current view, draw it.
-	for (ev = marker.FirstItemInRange(minTime, maxTime);
-		 ev;
-		 ev = marker.NextItemInRange(minTime, maxTime))
-	{
-		// Don't allow picking of events on locked channels...
-		if (Track()->IsChannelLocked(*ev)) continue;
-
-		if (!ev->IsSelected())
-		{
-			const CAbstractEventHandler	&handler(*HandlerFor(*ev));
-			if (&handler == &gNullEventHandler)
-				continue;
-
-			if (r.Contains(handler.Extent(*this, *ev))
-				|| (gPrefs.inclusiveSelection
-					&& r.Intersects(handler.Extent(*this, *ev))))
-			{
-				((Event *)ev)->SetSelected(true);
-				handler.Invalidate(*this, *ev);
-			}
-		}
-	}
-
-	Track()->SummarizeSelection();
-
-	// Let the world know the selection has changed
-	CEventSelectionUpdateHint hint(*Track(), true);
-	PostUpdate(&hint, true);
-}
-*/
 void
 CEventEditor::DrawCreateEcho(
 	int32 startTime,
@@ -1092,6 +1121,24 @@ CEventEditor::DrawCreateEcho(
 
 // ---------------------------------------------------------------------------
 // CStripView Implementation
+
+void
+CEventEditor::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case CObservable::UPDATED:
+		{
+			SubjectUpdated(message);
+			break;
+		}
+		default:
+		{
+			CStripView::MessageReceived(message);
+		}
+	}
+}
 
 void
 CEventEditor::MouseDown(
@@ -1200,6 +1247,20 @@ CEventEditor::SetScrollValue(
 	CStripView::SetScrollValue(inScrollValue, inOrient);
 	if (RulerView())
 		RulerView()->ScrollTo(scrollValue.x, 0.0);
+}
+
+// ---------------------------------------------------------------------------
+// CObserver Implementation
+
+void
+CEventEditor::Released(
+	CObservable *subject)
+{
+	if (LockLooper())
+	{
+		SubjectReleased(subject);
+		UnlockLooper();
+	}
 }
 
 // ---------------------------------------------------------------------------
