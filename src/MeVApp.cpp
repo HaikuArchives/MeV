@@ -1861,12 +1861,3 @@ bool CGlobalPrefs::FeedbackEnabled( int32 inAttribute, bool inDrag )
 	}
 	return false;
 }
-
-BBitmap *LoadImage( BBitmap *&outBM, int32 inID )
-{
-	if (outBM == NULL)
-	{
-		outBM = LoadBitmap( 'BMAP', inID );
-	}
-	return outBM;
-}

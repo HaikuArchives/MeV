@@ -198,7 +198,7 @@ void MeVPlugIn::ReleaseDocument( MeVDocHandle inHandle )
 
 char *MeVPlugIn::LookupErrorText( status_t error )
 {
-	return ::LookupErrorText( error );
+	return strerror( error );
 }
 
 MeVDocRef::MeVDocRef()

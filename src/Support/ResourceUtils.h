@@ -35,11 +35,38 @@
  *
  * ===================================================================== */
 
-#ifndef __MeV_H__
-#define __MeV_H__
+#ifndef __U_ResourceUtils_H__
+#define __U_ResourceUtils_H__
 
-#include "AppHelp.h"
+// Kernel Kit
+#include <OS.h>
 
-const uint32			Max_MidiPorts = 16;
+class BBitmap;
+class BCursor;
 
-#endif /* __Mev_H__ */
+namespace ResourceUtils
+{
+	void *		LoadResource(
+					type_code type,
+					int32 resourceID,
+					size_t *size);
+
+	void *		LoadResource(
+					type_code type,
+					const char *resourceName,
+					size_t *size);
+
+	BBitmap *	LoadImage(
+					int32 resourceID);
+
+	BBitmap *	LoadImage(
+					const char *resourceName);
+
+	uint8 *		LoadCursor(
+					int32 resourceID);
+
+	uint8 *		LoadCursor(
+					const char *resourceName);
+};
+
+#endif /* __U_ResourceUtils_H__ */

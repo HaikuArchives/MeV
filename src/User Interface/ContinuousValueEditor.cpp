@@ -7,6 +7,7 @@
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "PlayerControl.h"
+#include "ResourceUtils.h"
 
 // ---------------------------------------------------------------------------
 // Constructor
@@ -254,8 +255,7 @@ void CContinuousValueEditor::MouseMoved(
 	{
 		if (crossCursor == NULL)
 		{
-			size_t		size;
-			crossCursor = (const uint8 *)LoadResource( 'CURS', (long)1, &size );
+			crossCursor = ResourceUtils::LoadCursor(1);
 		}
 
 		newCursor = crossCursor;

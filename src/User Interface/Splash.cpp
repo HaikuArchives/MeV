@@ -4,10 +4,13 @@
 
 #include "ScreenUtils.h"
 #include "Splash.h"
-#include "AppHelp.h"
+#include "ResourceUtils.h"
+//#include "AppHelp.h"
 
 // Gnu C Library
 #include "stdarg.h"
+// Application Kit
+#include <Application.h>
 // Interface Kit
 #include <Bitmap.h>
 #include <Box.h>
@@ -69,7 +72,7 @@ CSplashWindow::CSplashWindow()
 
 	r.InsetBy(4.0, 4.0);
 
-	splash = LoadBitmap( 'BMAP', 400 );
+	splash = ResourceUtils::LoadImage(400);
 
 	/**	Constructor for popup menu button. Args are the same as for a BView */
 	if (splash) {

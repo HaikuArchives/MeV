@@ -44,6 +44,7 @@
 #include "DynamicMenu.h"
 #include "Idents.h"
 #include "EventTrack.h"
+#include "ResourceUtils.h"
 
 class CScroller;
 class CMeVDoc;
@@ -154,47 +155,5 @@ filter_result DefocusTextFilterFunc(
 	BMessage			*msg,
 	BHandler			**target,
 	BMessageFilter	*messageFilter );
-
-// ---------------------------------------------------------------------------
-// Ruler view for asembly window
-
-class CAssemblyRulerView : public CRulerView, public CObserver {
-	bool showMarkers;
-
-protected:
-
-	void OnUpdate( BMessage * );
-	void Draw( BRect updateRect );
-	void MouseDown( BPoint point );
-	void AttachedToWindow()
-	{
-//		SetViewColor( 255, 255, 220 );
-		SetViewColor( B_TRANSPARENT_32_BIT );
-	}
-	
-public:
-	CAssemblyRulerView(	BLooper			&inLooper,
-						CTrackEditFrame	&inFrameView,
-						CEventTrack		*inTrack,
-						BRect			rect,
-						const char		*name,
-						ulong			resizeMask,
-						ulong			flags)
-		:	CRulerView( inFrameView, rect, name, resizeMask, flags ),
-			CObserver( inLooper, inTrack )
-	{
-		showMarkers = true;
-		LoadImage( sectionMarkerImage, SectionMarker_Image );
-	}
-	
-	void ShowMarkers( bool inShow )
-	{
-		if (inShow != showMarkers)
-		{
-			showMarkers = inShow;
-			Invalidate();
-		}
-	}
-};
 
 #endif /* __C_TrackWindow_H__ */

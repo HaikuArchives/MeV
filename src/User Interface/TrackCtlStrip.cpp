@@ -10,6 +10,7 @@
 #include "StdEventOps.h"
 #include "MidiDeviceInfo.h"
 #include "PlayerControl.h"
+#include "ResourceUtils.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -134,8 +135,6 @@ long CTrackEventHandler::Pick(
 
 const uint8 *CTrackEventHandler::CursorImage( short partCode ) const
 {
-	size_t		size;
-
 	switch (partCode) {
 	case 0:
 		return B_HAND_CURSOR;			// Return the normal hand cursor
@@ -143,7 +142,7 @@ const uint8 *CTrackEventHandler::CursorImage( short partCode ) const
 	case 1:								// Return resizing cursor
 		if (resizeCursor == NULL)
 		{
-			resizeCursor = (uint8 *)LoadResource( 'CURS', (long)2, &size );
+			resizeCursor = ResourceUtils::LoadCursor(2);
 		}
 		return resizeCursor;
 	}
@@ -669,7 +668,7 @@ void CProgramChangeEventHandler::Draw(
 	BBitmap			*horn;
 	BRect			hornRect;
 	
-	horn = LoadImage( programToolImage, ProgramTool_Image );
+	horn = ResourceUtils::LoadImage("ProgramTool");
 	hornRect = horn->Bounds();
 	
 	patchName = GetPatchName( editor, ev, patchNameBuf );
@@ -741,7 +740,7 @@ BRect CProgramChangeEventHandler::Extent(
 	BBitmap			*horn;
 	BRect			hornRect;
 	
-	horn = LoadImage( programToolImage, ProgramTool_Image );
+	horn = ResourceUtils::LoadImage("ProgramTool");
 	hornRect = horn->Bounds();
 	
 	patchName = GetPatchName( editor, ev, patchNameBuf );
@@ -925,7 +924,7 @@ void CTempoEventHandler::Draw(
 	int32			radius = rEditor.barHeight / 2 - 1;
 	BBitmap			*icon;
 	
-	icon = LoadImage( smallClockImage, SmallClock_Image );
+	icon = ResourceUtils::LoadImage("SmallClock");
 	
 	rEditor.SetFont( be_plain_font );
 	rEditor.SetFontSize( 10 );
@@ -974,7 +973,8 @@ BRect CTempoEventHandler::Extent(
 	BBitmap			*metro;
 	BRect			metroRect;
 	
-	metro = LoadImage( programToolImage, ProgramTool_Image );
+//	metro = ResourceUtils::LoadImage("ProgramTool");
+	metro = ResourceUtils::LoadImage("MetroTool");
 	metroRect = metro->Bounds();
 	
 	rEditor.SetFont( be_plain_font );
@@ -1033,8 +1033,6 @@ long CTempoEventHandler::Pick(
 
 const uint8 *CTempoEventHandler::CursorImage( short partCode ) const
 {
-	size_t		size;
-
 	switch (partCode) {
 	case 0:
 		return B_HAND_CURSOR;			// Return the normal hand cursor
@@ -1042,7 +1040,7 @@ const uint8 *CTempoEventHandler::CursorImage( short partCode ) const
 	case 1:								// Return resizing cursor
 		if (resizeCursor == NULL)
 		{
-			resizeCursor = (uint8 *)LoadResource( 'CURS', (long)2, &size );
+			resizeCursor = ResourceUtils::LoadCursor(2);
 		}
 		return resizeCursor;
 	}
@@ -1541,7 +1539,7 @@ void CTrackCtlStrip::MouseMoved(
 			if (crossCursor == NULL)
 			{
 				size_t		size;
-				crossCursor = (const uint8 *)LoadResource( 'CURS', (long)1, &size );
+				crossCursor = ResourceUtils::LoadCursor(1);
 			}
 
 			newCursor = crossCursor;

@@ -6,6 +6,7 @@
 #include "VChannel.h"
 #include "MeVDoc.h"
 #include "MathUtils.h"
+#include "ResourceUtils.h"
 
 extern const uint8	*crossCursor;
 
@@ -129,7 +130,7 @@ const uint8 *CVelocityNoteEventHandler::CursorImage( short partCode ) const
 	case 1:								// Return resizing cursor
 		if (resizeCursor == NULL)
 		{
-			resizeCursor = (uint8 *)LoadResource( 'CURS', (long)2, &size );
+			resizeCursor = ResourceUtils::LoadCursor(2);
 		}
 		return resizeCursor;
 	}
@@ -370,8 +371,7 @@ void CVelocityEditor::MouseMoved(
 
 	if (crossCursor == NULL)
 	{
-		size_t		size;
-		crossCursor = (const uint8 *)LoadResource( 'CURS', (long)1, &size );
+		crossCursor = ResourceUtils::LoadCursor(1);
 	}
 
 	TrackWindow()->SetCursor( crossCursor );

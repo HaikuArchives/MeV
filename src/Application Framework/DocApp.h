@@ -53,9 +53,6 @@ class CDocApp :
 	
 protected:
 
-	friend void *LoadResource(type_code type, long id, size_t *data_size);
-	friend void *LoadResource(type_code type, const char *name, size_t *data_size);
-
 	BResources		*resFile;
 	BMessenger		*messenger;
 	BList				documents;

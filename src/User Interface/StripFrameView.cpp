@@ -6,10 +6,11 @@
 #include "StWindowUtils.h"
 #include "DocWindow.h"
 #include "StripView.h"
+#include "ResourceUtils.h"
 
 #include "MeV.h"
 
-char			*CStripFrameView::cursor = NULL;
+uint8 *CStripFrameView::cursor = NULL;
 
 
 const int		StripDivider_Height = 5;
@@ -27,8 +28,7 @@ CStripFrameView::CStripFrameView(
 
 	if (cursor == NULL)
 	{
-		size_t	size;
-		cursor = (char *)LoadResource( 'CURS', (long)0, &size );
+		cursor = ResourceUtils::LoadCursor((int32)0);
 	}
 
 	SetViewColor( B_TRANSPARENT_32_BIT );

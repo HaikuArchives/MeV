@@ -3,6 +3,7 @@
  * ===================================================================== */
 
 #include "AssemblyWindow.h"
+#include "AssemblyRulerView.h"
 #include "LinearWindow.h"
 #include "PlayerControl.h"
 #include "Idents.h"
@@ -218,12 +219,29 @@ public:
 
 const int ToolArea_Width		= 190;
 
-CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
-	: CTrackWindow( frame, inDocument, (CEventTrack *)inDocument.FindTrack( 1 ) )
+CAssemblyWindow::CAssemblyWindow(
+	BRect frame,
+	CMeVDoc &document )
+	:	CTrackWindow(frame, document, (CEventTrack *)document.FindTrack(1)),
+		m_gridToolBitmap(NULL),
+		m_arrowToolBitmap(NULL),
+		m_eraserToolBitmap(NULL),
+		m_metroToolBitmap(NULL),
+		m_programToolBitmap(NULL),
+		m_timeSigToolBitmap(NULL),
+		m_textToolBitmap(NULL)
 {
+	// load bitmaps from resources
+	m_gridToolBitmap = ResourceUtils::LoadImage("GridTool");
+	m_arrowToolBitmap = ResourceUtils::LoadImage("ArrowTool");
+	m_eraserToolBitmap = ResourceUtils::LoadImage("EraserTool");
+	m_metroToolBitmap = ResourceUtils::LoadImage("MetroTool");
+	m_programToolBitmap = ResourceUtils::LoadImage("ProgramTool");
+	m_timeSigToolBitmap = ResourceUtils::LoadImage("TimeSigTool");
+	m_textToolBitmap = ResourceUtils::LoadImage("TextTool");
+
 	BView			*leftToolArea;
-	BMenu			*menu,
-					*submenu;
+	BMenu			*menu, *submenu;
 	float			yPos;
 
 	newEventType = EvtType_Sequence;
@@ -299,8 +317,8 @@ CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
 		// Add the track list.
 	yPos = frame.bottom - 100.0 - 14.0;
 	trackList = new CTrackListView(
-		&inDocument, BRect( 4.0, 2.0, ToolArea_Width - 5.0, yPos ),
-		NULL, B_SINGLE_SELECTION_LIST, B_FOLLOW_ALL );
+		&document, BRect(4.0, 2.0, ToolArea_Width - 5.0, yPos),
+		NULL, B_SINGLE_SELECTION_LIST, B_FOLLOW_ALL);
 	trackList->SetInvocationMessage( new BMessage( TrackEdit_ID ) );
 	trackList->SetColumnClickMessage( new BMessage( 'tClk' ) );
 	trackList->SetSelectionMessage( new BMessage( 'tSel' ) );
@@ -318,6 +336,7 @@ CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
 	
 	yPos += 3;
 
+	// add the tool bar
 	toolBar = new CToolBar(	BRect( 4.0, yPos, 83, yPos + 24.0 ),
 							new BMessage( ToolBar_ID ),
 							BPoint( 24.0, 24.0 ),
@@ -326,34 +345,32 @@ CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
 							B_WILL_DRAW );
 	toolBar->SetTarget( (CDocWindow *)this );
 
-	toolBar->AddTool( TOOL_GRID, true, LoadImage( gridToolImage, GridTool_Image ) );
+	toolBar->AddTool(TOOL_GRID, true, m_gridToolBitmap);
 	toolBar->AddSeperator();
+	toolBar->AddTool(TOOL_SELECT, false, m_arrowToolBitmap);
+	toolBar->ExcludeTool(TOOL_SELECT, 0);
+	toolBar->AddTool(TOOL_ERASE, false, m_eraserToolBitmap);
+	toolBar->ExcludeTool(TOOL_ERASE, 0);
+	toolBar->EnableTool(TOOL_ERASE, false);
+	toolBar->Select(TOOL_GRID, true, false);
+	toolBar->Select(TOOL_SELECT, true, false);
 
-	toolBar->AddTool( TOOL_SELECT, false, LoadImage( arrowToolImage, ArrowTool_Image ) );
-	toolBar->ExcludeTool( TOOL_SELECT, 0 );
+	leftToolArea->AddChild(toolBar);
+	toolBar->SetViewColor(B_TRANSPARENT_32_BIT);
 
-	toolBar->AddTool( TOOL_ERASE, false, LoadImage( eraserToolImage, EraserTool_Image ) );
-	toolBar->ExcludeTool( TOOL_ERASE, 0 );
-	toolBar->EnableTool( TOOL_ERASE, false );
-
-	toolBar->Select( TOOL_GRID, true, false );
-	toolBar->Select( TOOL_SELECT, true, false );
-
-	leftToolArea->AddChild( toolBar );
-	toolBar->SetViewColor( B_TRANSPARENT_32_BIT );
-
+	// add event palette
 	eventPalette = new CDragPalette(	BRect( 	84.0, yPos, ToolArea_Width - 5.0, yPos + 24.0 ),
 								"DraggableEvents",
 								new BMessage( 'evdr' ),
 								B_FOLLOW_LEFT | B_FOLLOW_BOTTOM,
 								B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
-	eventPalette->AddIcon( LoadImage( metroToolImage, MetrolTool_Image ) );
-	eventPalette->AddIcon( LoadImage( programToolImage, ProgramTool_Image ) );
-	eventPalette->AddIcon( LoadImage( timeSigToolImage, TimeSigTool_Image ) );
-	eventPalette->AddIcon( LoadImage( textToolImage, TextTool_Image ) );
-	leftToolArea->AddChild( eventPalette );
+	eventPalette->AddIcon(m_metroToolBitmap);
+	eventPalette->AddIcon(m_programToolBitmap);
+	eventPalette->AddIcon(m_timeSigToolBitmap);
+	eventPalette->AddIcon(m_textToolBitmap);
+	leftToolArea->AddChild(eventPalette);
 	yPos += 28.0;
-	
+
 	BStringView *stv;
 
 	stv = new BStringView( BRect( 4.0, yPos, 80, yPos + 16.0 ), "", "Event Count:", B_FOLLOW_LEFT | B_FOLLOW_BOTTOM );
@@ -395,20 +412,21 @@ CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
 	frame.bottom		-= B_H_SCROLL_BAR_HEIGHT;
 	frame.left		+= ToolArea_Width + 1.0;
 
-	CreateFrames( frame, (CTrack *)inDocument.FindTrack( 1 ) );
+	CreateFrames(frame, (CTrack *)document.FindTrack(1));
 
 		// Now, create some strips for test purposes
 	CStripView		*sv;
 	CAssemblyRulerView	*realRuler;
 	CScrollerTarget	*oldRuler = stripFrame->Ruler();
 
-	sv = new CTrackCtlStrip(	*this, *stripFrame, frame, (CEventTrack *)inDocument.FindTrack( 1 ), "Metrical" );
-	stripFrame->AddChildView( sv->TopView(), 50 );
+	sv = new CTrackCtlStrip(*this, *stripFrame, frame,
+							(CEventTrack *)document.FindTrack(1), "Metrical");
+	stripFrame->AddChildView(sv->TopView(), 50);
 
 	realRuler = new CAssemblyRulerView(
 		*this,
 		*stripFrame,
-		(CEventTrack *)inDocument.FindTrack( (int32)0 ),
+		(CEventTrack *)document.FindTrack( (int32)0 ),
 		BRect(	0.0, 0.0, frame.Width() - 14, Ruler_Height - 1 ),
 		(char *)NULL,
 		B_FOLLOW_LEFT_RIGHT,
@@ -417,7 +435,8 @@ CAssemblyWindow::CAssemblyWindow( BRect frame, CMeVDoc &inDocument )
 	stripFrame->SetRuler( oldRuler );
 
 	CEventEditor *ee;
-	ee = new CTrackCtlStrip(	*this, *stripFrame, frame, (CEventTrack *)inDocument.FindTrack( (int32)0 ), "Real" );
+	ee = new CTrackCtlStrip(*this, *stripFrame, frame, 
+							(CEventTrack *)document.FindTrack((int32)0), "Real");
 	ee->SetRuler( realRuler );
 	stripFrame->AddChildView( ee->TopView(), 8 );
 }
@@ -580,52 +599,51 @@ void CAssemblyWindow::MessageReceived( BMessage* theMessage )
 		break;
 		
 	case 'evdr':			// drag a new event
-
-		int32		index;
+	{
 		int32		eventType;
-		BBitmap		*bMap;			// Drag and drop bitmap
-		
-		index = eventPalette->Value();
+		BBitmap		*bitmap;			// Drag and drop bitmap
+		int32 index = eventPalette->Value();
 		
 		switch (index) {
-		case 0:
-			bMap = LoadImage( metroToolImage, MetrolTool_Image );
-			eventType = EvtType_Tempo;
-			break;
-
-		case 1:
-			bMap = LoadImage( programToolImage, ProgramTool_Image );
-			eventType = EvtType_ProgramChange;
-			break;
-
-		case 2:
-			bMap = LoadImage( timeSigToolImage, TimeSigTool_Image );
-			eventType = EvtType_TimeSig;
-			break;
-
-		default:
-			bMap = LoadImage( textToolImage, TextTool_Image );
-			eventType = EvtType_Text;
-			break;
+			case 0:
+			{
+				bitmap = ResourceUtils::LoadImage("MetroTool");
+				eventType = EvtType_Tempo;
+				break;
+			}
+			case 1:
+			{
+				bitmap = ResourceUtils::LoadImage("ProgramTool");
+				eventType = EvtType_ProgramChange;
+				break;
+			}
+			case 2:
+			{
+				bitmap = ResourceUtils::LoadImage("TimeSigTool");
+				eventType = EvtType_TimeSig;
+				break;
+			}
+			default:
+			{
+				bitmap = ResourceUtils::LoadImage("TextTool");
+				eventType = EvtType_Text;
+				break;
+			}
 		}
 
-		if (bMap != NULL)
+		if (bitmap != NULL)
 		{
-			BRect		br( bMap->Bounds() );
-			BPoint		hSpot( (br.left + br.right) / 2, (br.top + br.bottom) / 2 );
-			BMessage		dragMsg( MeVDragMsg_ID );
-			BBitmap		*bCopy = new BBitmap( br, bMap->ColorSpace(), false, true );
-			
-			bCopy->SetBits( bMap->Bits(), bMap->BitsLength(), 0, bMap->ColorSpace() );
-
-			dragMsg.AddInt32( "Type", DragEvent_ID );
-			dragMsg.AddInt32( "EventType", eventType );
-			dragMsg.AddPointer( "Document", &doc );
-
-			eventPalette->DragMessage( &dragMsg, bCopy, hSpot, NULL );
+			BRect br(bitmap->Bounds() );
+			BPoint hSpot((br.left + br.right) / 2, (br.top + br.bottom) / 2);
+			BMessage dragMsg(MeVDragMsg_ID);
+//			BBitmap *bCopy = new BBitmap(bitmap);
+			dragMsg.AddInt32("Type", DragEvent_ID);
+			dragMsg.AddInt32("EventType", eventType);
+			dragMsg.AddPointer("Document", &doc);
+			eventPalette->DragMessage(&dragMsg, bitmap, hSpot, NULL);
 		}
 		break;
-
+	}
 	case 'cMet':
 		stripFrame->SetFrameClockType( ClockType_Metered );
 		break;
@@ -870,175 +888,4 @@ void CAssemblyWindow::ShowTrackInfo()
 	
 	eventCount->SetText( "" );
 	channelsUsed->SetText( "" );
-}
-
-void CAssemblyRulerView::Draw( BRect updateRect )
-{
-	CEventTrack	*track = (CEventTrack *)subject;
-	TClockType	clockType = track->ClockType();
-	long			startTime = frame.ViewCoordsToTime( updateRect.left - 48.0, clockType );
-	if (startTime < 0) startTime = 0;
-
-	CSignatureMap::Iterator		timeIter( track->SigMap(), startTime );
-	long			time;
-	BRect		r = Bounds();
-	bool			major;
-// int32		majorTime = timeIter.MajorUnitTime();
-	int32		majorTime = track->SigMap().entries->sigMajorUnitDur;
-	double		majorXStep = frame.TimeToViewCoords( majorTime, clockType );
-	int32		steps = 1;
-	
-
-	while (majorXStep < 24)
-	{
-		if (steps == 2) steps = 5;
-		else steps *= 2;
-		majorXStep = frame.TimeToViewCoords( majorTime * steps, clockType );
-	}
-	
-	SetHighColor( 255, 255, 220 );
-	FillRect( BRect( updateRect.left, r.top, updateRect.right, r.bottom - 1 ) );
-
-	SetHighColor( 0, 0, 0 );
-	FillRect( BRect( updateRect.left, r.bottom, updateRect.right, r.bottom ) );
-	
-	for (time = timeIter.First( major ); ; time = timeIter.Next( major ) )
-	{
-		double		x;
-		
-		x = frame.TimeToViewCoords( time, clockType );
-		if (x > updateRect.right) break;
-
-		if (major)
-		{
-			if (timeIter.MajorCount() % steps) continue;
-			SetHighColor( 160, 160, 140 );
-		}
-		else if (steps > 1)	continue;
-		else					SetHighColor( 210, 210, 180 );
-		
-		if (x > 0.0)
-		{
-			StrokeLine(	BPoint( x, updateRect.top ),
-						BPoint( x, updateRect.bottom ) );
-		}
-	}
-
-	CSignatureMap::Iterator		timeIter2( track->SigMap(), startTime );
-
-	SetHighColor( 0, 0, 0 );
-
-	for (time = timeIter2.First( major ) ;
-		 ;	
-		 time = timeIter2.Next( major ) )
-	{
-		double		x;
-		
-		x = frame.TimeToViewCoords( time, clockType );
-		if (x > updateRect.right) break;
-
-		if (major && !(timeIter2.MajorCount() % steps))
-		{
-			char		str[ 16 ];
-		
-			if (track->ClockType() == ClockType_Metered)
-				sprintf( str, "%02ld", timeIter2.MajorCount() );
-			else sprintf( str, "%02ld:00", timeIter2.MajorCount() );
-
-			DrawString( str, BPoint( x + 4, 9 ) );
-		}
-	}
-	
-	if (showMarkers)
-	{
-			// Now, draw the track section markers...
-		double	x;
-	
-		SetDrawingMode( B_OP_OVER );
-		x = frame.TimeToViewCoords( track->SectionStart(), clockType );
-		DrawBitmap( sectionMarkerImage, BPoint( x - 4.0, 0.0 ) );
-
-		x = frame.TimeToViewCoords( track->SectionEnd(), clockType );
-		DrawBitmap( sectionMarkerImage, BPoint( x - 4.0, 0.0 ) );
-		SetDrawingMode( B_OP_COPY );
-	}
-}
-
-void CAssemblyRulerView::MouseDown( BPoint point )
-{
-	CEventTrack	*track = (CEventTrack *)subject;
-	ulong		buttons;
-	int32		markers[ 2 ];
-	int32		i,
-				index = -1;
-	double		x;
-	
-	if (!showMarkers) return;
-	
-	markers[ 0 ] = track->SectionStart();
-	markers[ 1 ] = track->SectionEnd();
-
-		// Check if we hit a marker...
-	for (i = 0; i < 2; i++)
-	{
-		x = frame.TimeToViewCoords( markers[ i ], track->ClockType() );
-		if (point.x >= x - 4.0 && point.x <= x + 4.0)
-		{
-			index = i;
-			break;
-		}
-	}
-	
-	if (index >= 0)
-	{
-		do
-		{
-			GetMouse( &point, &buttons, TRUE );
-			
-			int32	time = frame.ViewCoordsToTime( point.x, track->ClockType() );
-			
-			if (track->GridSnapEnabled())
-			{
-				int32	majorUnit,
-						extraTime;
-
-				track->SigMap().DecomposeTime( time, majorUnit, extraTime );
-	
-				time += DataSnapNearest( extraTime, 0, track->TimeGridSize() ) - extraTime;
-			}
-			
-			if (time < 0) time = 0;
-			
-			if (time != markers[ index ])
-			{
-				x = frame.TimeToViewCoords( markers[ index ], track->ClockType() );
-				Invalidate( BRect( x - 4.0, 0.0, x + 5.0, 10 ) );
-
-				markers[ index ] = time;
-				track->SetSection( markers[ 0 ], markers[ 1 ] );
-
-				x = frame.TimeToViewCoords( markers[ index ], track->ClockType() );
-				Invalidate( BRect( x - 4.0, 0.0, x + 5.0, 10 ) );
-			}
-
-				// Implement auto-scrolling (horizontal for frame)
-			BRect	r( Bounds() );
-			if (point.x > r.right)
-			{
-				frame.ScrollBy(	MIN( (point.x - r.right)/4, 10.0 ),
-								B_HORIZONTAL );
-			}
-			else if (point.x < r.left)
-			{
-				frame.ScrollBy(	MAX( (point.x - r.left)/4, -10.0 ),
-								B_HORIZONTAL );
-			}
-			
-			Window()->UpdateIfNeeded();
-			snooze(20 * 1000);
-		}
-		while (buttons) ;
-	}
-	
-	track->NotifyUpdate( CTrack::Update_Section, this );
 }

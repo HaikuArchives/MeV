@@ -8,6 +8,7 @@
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "StdEventOps.h"
+#include "ResourceUtils.h"
 
 // Interface Kit
 #include <Region.h>
@@ -238,8 +239,6 @@ long CLinearNoteEventHandler::Pick(
 
 const uint8 *CLinearNoteEventHandler::CursorImage( short partCode ) const
 {
-	size_t		size;
-
 	switch (partCode) {
 	case 0:
 		return B_HAND_CURSOR;			// Return the normal hand cursor
@@ -247,7 +246,7 @@ const uint8 *CLinearNoteEventHandler::CursorImage( short partCode ) const
 	case 1:								// Return resizing cursor
 		if (resizeCursor == NULL)
 		{
-			resizeCursor = (uint8 *)LoadResource( 'CURS', (long)2, &size );
+			resizeCursor = ResourceUtils::LoadCursor(2);
 		}
 		return resizeCursor;
 	}
@@ -755,8 +754,7 @@ void CLinearEditor::MouseMoved(
 	{
 		if (crossCursor == NULL)
 		{
-			size_t		size;
-			crossCursor = (const uint8 *)LoadResource( 'CURS', (long)1, &size );
+			crossCursor = ResourceUtils::LoadCursor(1);
 		}
 
 		newCursor = crossCursor;

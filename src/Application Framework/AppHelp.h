@@ -56,18 +56,6 @@ inline void CheckSuccess(bool inSuccess )
 //	if (inSuccess == false) throw CGenericException( "Internal Error" );
 }
 
-	/**	Load resource from application resource file */
-void *LoadResource(type_code type, long id, size_t *data_size);
-
-	/**	Load resource from application resource file */
-void *LoadResource(type_code type, const char *name, size_t *data_size);
-
-	/**	Load Bitmap from application resource file. */
-BBitmap *LoadBitmap( type_code type, long id );
-
-	/**	Load Bitmap from application resource file. */
-BBitmap *LoadBitmap( type_code type, const char *name );
-
 inline void DeleteListItems( BListView *inView )
 {
 	BListItem		*listItem;
@@ -76,7 +64,5 @@ inline void DeleteListItems( BListView *inView )
 		delete listItem;
 	}
 }
-
-char *LookupErrorText( status_t );
 
 #endif /* __C_AppHelp_H__ */

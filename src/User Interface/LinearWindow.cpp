@@ -7,6 +7,7 @@
 #include "Idents.h"
 #include "MeVDoc.h"
 #include "MeVApp.h"
+#include "ResourceUtils.h"
 
 #include "TimeIntervalEditor.h"
 #include "QuickKeyMenuItem.h"
@@ -41,8 +42,8 @@ public:
 							const BBitmap	 *inBitmap,
 							BPoint		inSize,
 							BMessage		*inMessage,
-							char			inShortcutKey = NULL,
-							uint32		inModifiers = NULL )
+							char			inShortcutKey = 0,
+							uint32		inModifiers = 0)
 		: BMenuItem( inLabel, inMessage, inShortcutKey, inModifiers )
 	{
 		bitmap = inBitmap;
@@ -59,17 +60,16 @@ public:
 		font.GetHeight( &fh );
 
 		Menu()->MovePenTo( r.left + imageSize.x + 4, (r.bottom + r.top - fh.descent + fh.ascent)/2 );
+		Menu()->SetDrawingMode( B_OP_OVER );
 		Menu()->DrawString( Label() );
 		
 		if (bitmap != NULL)
 		{
 			BRect	br( bitmap->Bounds() );
 
-			Menu()->SetDrawingMode( B_OP_OVER );
 			Menu()->DrawBitmapAsync(	bitmap,
 									BPoint(	r.left + (imageSize.x - br.Width())/2,
 											(r.top + r.bottom - br.Height())/2 ) );
-			Menu()->SetDrawingMode( B_OP_COPY );
 		}
 	}
 
@@ -155,31 +155,31 @@ CLinearWindow::CLinearWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inT
 
 	BPopUpMenu		*createMenu = new BPopUpMenu( "", false, false );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"Default",
-													LoadImage( pencilToolImage, PencilTool_Image ),
+													ResourceUtils::LoadImage("PencilTool"),
 													isize,
 													new BMessage( 3000 + EvtType_Count ) ) );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"Program Change",
-													LoadImage( programToolImage, ProgramTool_Image ),
+													ResourceUtils::LoadImage("ProgramTool"),
 													isize,
 													new BMessage( 3000 + EvtType_ProgramChange ) ) );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"Nested Track",
-													LoadImage( trackToolImage, TrackTool_Image ),
+													ResourceUtils::LoadImage("TrackTool"),
 													isize,
 													new BMessage( 3000 + EvtType_Sequence ) ) );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"Repeat",
-													LoadImage( repeatToolImage, RepeatTool_Image ),
+													ResourceUtils::LoadImage("RepeatTool"),
 													isize,
 													new BMessage( 3000 + EvtType_Repeat ) ) );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"Time Signature",
-													LoadImage( timeSigToolImage, TimeSigTool_Image ),
+													ResourceUtils::LoadImage("TimeSigTool"),
 													isize,
 													new BMessage( 3000 + EvtType_TimeSig ) ) );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"System Exclusive",
-													LoadImage( sysexToolImage, SysExTool_Image ),
+													ResourceUtils::LoadImage("SysExTool"),
 													isize,
 													new BMessage( 3000 + EvtType_SysEx ) ) );
 	createMenu->AddItem( new CImageAndTextMenuItem(	"Track End",
-													LoadImage( endToolImage, EndTool_Image ),
+													ResourceUtils::LoadImage("EndTool"),
 													isize,
 													new BMessage( 3000 + EvtType_End ) ) );
 	createMenu->SetTargetForItems( (CDocWindow *)this );
@@ -200,32 +200,33 @@ CLinearWindow::CLinearWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inT
 							B_WILL_DRAW );
 	toolBar->SetTarget( (CDocWindow *)this );
 
-	toolBar->AddTool( TOOL_GRID, true, LoadImage( gridToolImage, GridTool_Image ) );
+	toolBar->AddTool(TOOL_GRID, true, ResourceUtils::LoadImage("GridTool"));
 	toolBar->AddSeperator();
 
-	toolBar->AddTool( TOOL_SELECT, false, LoadImage( arrowToolImage, ArrowTool_Image ) );
-	toolBar->ExcludeTool( TOOL_SELECT, 0 );
+	toolBar->AddTool(TOOL_SELECT, false, ResourceUtils::LoadImage("ArrowTool"));
+	toolBar->ExcludeTool(TOOL_SELECT, 0);
 
-	toolBar->AddTool( TOOL_CREATE, false, LoadImage( pencilToolImage, PencilTool_Image ), NULL, NULL, createMenu );
-	toolBar->ExcludeTool( TOOL_CREATE, 0 );
+	toolBar->AddTool(TOOL_CREATE, false, ResourceUtils::LoadImage("PencilTool"),
+					 NULL, NULL, createMenu);
+	toolBar->ExcludeTool(TOOL_CREATE, 0);
 
-	toolBar->AddTool( TOOL_ERASE, false, LoadImage( eraserToolImage, EraserTool_Image ) );
-	toolBar->ExcludeTool( TOOL_ERASE, 0 );
-	toolBar->EnableTool( TOOL_ERASE, false );
+	toolBar->AddTool(TOOL_ERASE, false, ResourceUtils::LoadImage("EraserTool"));
+	toolBar->ExcludeTool(TOOL_ERASE, 0);
+	toolBar->EnableTool(TOOL_ERASE, false);
 
-	toolBar->AddTool( TOOL_TEXT, false, LoadImage( textToolImage, TextTool_Image ) );
-	toolBar->ExcludeTool( TOOL_TEXT, 0 );
-	toolBar->EnableTool( TOOL_TEXT, false );
+	toolBar->AddTool(TOOL_TEXT, false, ResourceUtils::LoadImage("TextTool"));
+	toolBar->ExcludeTool(TOOL_TEXT, 0);
+	toolBar->EnableTool(TOOL_TEXT, false);
 
-	toolBar->AddTool( TOOL_TEXT + 5, false, LoadImage( textToolImage, TextTool_Image ) );
-	toolBar->ExcludeTool( TOOL_TEXT + 5, 0 );
-	toolBar->EnableTool( TOOL_TEXT + 5, false );
+	toolBar->AddTool(TOOL_TEXT + 5, false, ResourceUtils::LoadImage("TextTool"));
+	toolBar->ExcludeTool(TOOL_TEXT + 5, 0);
+	toolBar->EnableTool(TOOL_TEXT + 5, false);
 
-	toolBar->Select( TOOL_GRID, true, false );
-	toolBar->Select( TOOL_SELECT, true, false );
+	toolBar->Select(TOOL_GRID, true, false);
+	toolBar->Select(TOOL_SELECT, true, false);
 
-	topToolArea->AddChild( toolBar );
-	toolBar->SetViewColor( B_TRANSPARENT_32_BIT );
+	topToolArea->AddChild(toolBar);
+	toolBar->SetViewColor(B_TRANSPARENT_32_BIT);
 
 	trackNameCtl = new BTextControl(
 		BRect( 1.0, 28.0, Tool_Width - 2.0, 46.0 ),
@@ -262,7 +263,7 @@ CLinearWindow::CLinearWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inT
 	stripScroll->ResizeTo( scrollFrame.Width() - 100.0, scrollFrame.Height() );
 	stripScroll->MoveTo(   scrollFrame.left    + 100.0, scrollFrame.top );
 
-#if 0
+/*
 	x += 212.0;
 		// Now, add the menu field for the type of event being added.
 		
@@ -290,7 +291,7 @@ CLinearWindow::CLinearWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inT
 											B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW );
 	topToolArea->AddChild( newType );
 	newType->SetDivider( 60.0 );
-#endif
+*/
 	
 		// Add the left tool area.
 	scrollFrame.right = 100.0;
@@ -352,13 +353,13 @@ void CLinearWindow::MessageReceived( BMessage* theMessage )
 		newEventType = (enum E_EventType)(theMessage->what - 3000);
 		
 		switch (newEventType) {
-		case EvtType_ProgramChange:	image = LoadImage( programToolImage, ProgramTool_Image ); break;
-		case EvtType_TimeSig:			image = LoadImage( timeSigToolImage, TimeSigTool_Image ); break;
-		case EvtType_Sequence:		image = LoadImage( trackToolImage, TrackTool_Image ); break;
-		case EvtType_Repeat:			image = LoadImage( repeatToolImage, RepeatTool_Image ); break;
-		case EvtType_End:				image = LoadImage( endToolImage, EndTool_Image ); break;
-		case EvtType_SysEx:			image = LoadImage( sysexToolImage, SysExTool_Image ); break;
-		default:						image = LoadImage( pencilToolImage, PencilTool_Image ); break;
+		case EvtType_ProgramChange:	image = ResourceUtils::LoadImage("ProgramTool"); break;
+		case EvtType_TimeSig:		image = ResourceUtils::LoadImage("TimeSigTool"); break;
+		case EvtType_Sequence:		image = ResourceUtils::LoadImage("TrackTool"); break;
+		case EvtType_Repeat:		image = ResourceUtils::LoadImage("RepeatTool"); break;
+		case EvtType_End:			image = ResourceUtils::LoadImage("EndTool"); break;
+		case EvtType_SysEx:			image = ResourceUtils::LoadImage("SysExTool"); break;
+		default:					image = ResourceUtils::LoadImage("PencilTool"); break;
 		}
 		
 		if (image) toolBar->SetToolImage( TOOL_CREATE, image, NULL, NULL );

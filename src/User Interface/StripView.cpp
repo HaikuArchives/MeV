@@ -8,6 +8,7 @@
 #include "BorderView.h"
 #include "DocWindow.h"
 #include "BorderButton.h"
+#include "ResourceUtils.h"
 
 CStripView::CStripView(
 	CStripFrameView	&inFrame,
@@ -15,11 +16,11 @@ CStripView::CStripView(
 	const char		*name,
 	bool			makeScroller,
 	bool			makeMagButtons )
-	: frame( inFrame ),
-	  CScrollerTarget(	BRect( 0.0, 0.0, rect.Width(), rect.Height() ),
+	: CScrollerTarget(BRect( 0.0, 0.0, rect.Width(), rect.Height() ),
 	  					name,
 	  					B_FOLLOW_ALL,
-	  					B_WILL_DRAW | B_FRAME_EVENTS )
+	  					B_WILL_DRAW | B_FRAME_EVENTS ),
+	  frame( inFrame )
 {
 	rightScroller = NULL;
 	rightSpacer = NULL;
@@ -46,7 +47,7 @@ CStripView::CStripView(
 						rect.bottom - 27,
 						rect.right + 1,
 						rect.bottom - 13 ),
-				NULL, LoadImage( smallPlusImage, SmallPlus_Image ),
+				NULL, ResourceUtils::LoadImage("SmallPlus"),
 				new BMessage( ZoomOut_ID ),
 				B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 				B_WILL_DRAW );
@@ -58,7 +59,7 @@ CStripView::CStripView(
 						rect.bottom - 13,
 						rect.right + 1,
 						rect.bottom + 1 ),
-				NULL, LoadImage( smallMinusImage, SmallMinus_Image ),
+				NULL, ResourceUtils::LoadImage("SmallMinus"),
 				new BMessage( ZoomIn_ID ),
 				B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 				B_WILL_DRAW );

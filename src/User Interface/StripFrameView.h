@@ -54,7 +54,7 @@ protected:
 	BList			childInfoList;
 	CScrollerTarget	*ruler;			// Optional horizontal ruler frame
 	
-	static char		*cursor;
+	static uint8	*cursor;
 
 	void ArrangeViews();
 

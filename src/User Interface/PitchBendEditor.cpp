@@ -9,7 +9,7 @@
 #include "PlayerControl.h"
 #include "StdEventOps.h"
 #include "MathUtils.h"
-
+#include "ResourceUtils.h"
 
 // Gnu C Library
 #include <float.h>
@@ -342,8 +342,6 @@ long CPitchBendEventHandler::Pick(
 
 const uint8 *CPitchBendEventHandler::CursorImage( short partCode ) const
 {
-	size_t		size;
-
 	switch (partCode) {
 	case Part_Whole:
 	case Part_Start:
@@ -352,7 +350,7 @@ const uint8 *CPitchBendEventHandler::CursorImage( short partCode ) const
 	case Part_End:						// Return resizing cursor
 		if (resizeCursor == NULL)
 		{
-			resizeCursor = (uint8 *)LoadResource( 'CURS', (long)2, &size );
+			resizeCursor = ResourceUtils::LoadCursor(2);
 		}
 		return resizeCursor;
 	}

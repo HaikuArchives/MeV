@@ -13,6 +13,8 @@
 #include "MeVDoc.h"
 #include "BorderButton.h"
 #include "QuickKeyMenuItem.h"
+#include "AssemblyRulerView.h"
+#include "ResourceUtils.h"
 
 #include "Junk.h"
 
@@ -543,7 +545,7 @@ void CTrackWindow::CreateFrames( BRect frame, CTrack *inTrack )
 				frame.bottom + 1,
 				frame.right - 13,
 				frame.bottom + 15 ),
-		NULL, LoadImage( smallPlusImage, SmallPlus_Image ),
+		NULL, ResourceUtils::LoadImage("SmallPlus"),
 		new BMessage( ZoomIn_ID ),
 		B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 		B_WILL_DRAW );
@@ -556,7 +558,7 @@ void CTrackWindow::CreateFrames( BRect frame, CTrack *inTrack )
 				frame.bottom + 1,
 				frame.right - 27,
 				frame.bottom + 15 ),
-		NULL, LoadImage( smallMinusImage, SmallMinus_Image ),
+		NULL, ResourceUtils::LoadImage("SmallMinus"),
 		new BMessage( ZoomOut_ID ),
 		B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 		B_WILL_DRAW );
@@ -619,18 +621,4 @@ filter_result DefocusTextFilterFunc(
 		looper->PostMessage( &msg );
 	}
 	return B_DISPATCH_MESSAGE;
-}
-
-
-void CAssemblyRulerView::OnUpdate( BMessage *msg )
-{
-	int32		trackHint;
-
-		// Only ONE change we are interested in, and that's section markers...
-	if (msg->FindInt32( "TrackAttrs", 0, &trackHint ) == B_OK)
-	{
-		if (trackHint &
-			(CTrack::Update_Section|CTrack::Update_SigMap|CTrack::Update_TempoMap))
-				Invalidate();
-	}
 }

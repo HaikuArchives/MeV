@@ -116,8 +116,8 @@ class CBitmapMenuItem : public BMenuItem {
 	}
 
 public:
-	CBitmapMenuItem( BBitmap *inBM, BMessage *message, char shortcut = NULL,
-		uint32 modifiers = NULL )
+	CBitmapMenuItem( BBitmap *inBM, BMessage *message, char shortcut = 0,
+		uint32 modifiers = 0)
 		: BMenuItem( "", message, shortcut, modifiers )
 	{
 		bm = inBM;

@@ -9,6 +9,7 @@
 #include "Spinner.h"
 #include "ToolBar.h"
 #include "MeVDoc.h"
+#include "ResourceUtils.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -34,7 +35,7 @@ void LoadNoteImages()
 	
 		for (int i = 0; i < Note_IndexCount; i++)
 		{
-			LoadImage( noteImages[ i ], 200 + i );
+			 noteImages[i] = ResourceUtils::LoadImage(200 + i);
 		}
 	}
 	be_app->Unlock();
@@ -67,7 +68,7 @@ CTimeIntervalEditor::CTimeIntervalEditor(
 										B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW );
 	AddChild( baseDuration );
 
-	x = 32.0;
+	x = 32;
 						
 	modBar = new CToolBar(	BRect( x, 0.0, x + 18*5 + 5, 26.0 ),
 							new BMessage( ModBar_ID ),
@@ -76,20 +77,20 @@ CTimeIntervalEditor::CTimeIntervalEditor(
 							B_FOLLOW_TOP | B_FOLLOW_LEFT,
 							B_WILL_DRAW );
 
-	modBar->AddTool( Tuplet3_ID, true, LoadImage( tuplet3Image, 150 ) );
+	modBar->AddTool( Tuplet3_ID, true, ResourceUtils::LoadImage("Tuplet3"));
 	modBar->ExcludeTool( Tuplet3_ID, 0 );
 
-	modBar->AddTool( Tuplet5_ID, true, LoadImage( tuplet5Image, 151 ) );
+	modBar->AddTool( Tuplet5_ID, true, ResourceUtils::LoadImage("Tuplet5"));
 	modBar->ExcludeTool( Tuplet5_ID, 0 );
 
-	modBar->AddTool( Tuplet7_ID, true, LoadImage( tuplet7Image, 152 ) );
+	modBar->AddTool( Tuplet7_ID, true, ResourceUtils::LoadImage("Tuplet7"));
 	modBar->ExcludeTool( Tuplet7_ID, 0 );
 	modBar->AddSeperator();
 
-	modBar->AddTool( Dot_ID, true, LoadImage( dot1Image, 153 ) );
+	modBar->AddTool( Dot_ID, true, ResourceUtils::LoadImage("Dot1"));
 	modBar->ExcludeTool( Dot_ID, 1 );
 
-	modBar->AddTool( DoubleDot_ID, true, LoadImage( dot2Image, 154 ) );
+	modBar->AddTool( DoubleDot_ID, true, ResourceUtils::LoadImage("Dot2"));
 	modBar->ExcludeTool( DoubleDot_ID, 1 );
 
 	AddChild( modBar );
@@ -125,16 +126,14 @@ CTimeIntervalEditor::CTimeIntervalEditor(
 	ShowRatio();
 }
 
-const int	MenuBorder_H = 2.0,
-			ImageBorder_H = 4.0;
+const int	MenuBorder_H = 2,
+			ImageBorder_H = 4;
 
 void CTimeIntervalEditor::AttachedToWindow()
 {
 	int		i;
 	float	menuWidth = MenuBorder_H * 2;
-	int32	bmHeight = 0;
 	float	x;
-	BRect	r;
 	float	h = baseDuration->Frame().Height() - 4.0;
 
 	LoadNoteImages();
@@ -234,7 +233,7 @@ void CTimeIntervalEditor::MessageReceived( BMessage *msg )
 
 void CTimeIntervalEditor::ShowRatio( bool inUpdateSlider )
 {
-	sprintf( ratioText, "%d/%d", numerator, denominator );
+	sprintf( ratioText, "%ld/%ld", numerator, denominator );
 	
 	ratio->SetText( ratioText );
 	

@@ -85,6 +85,16 @@ public:
 		/**	For windows which edit dual tracks, select which one
 			has selected events. */
 	CEventTrack *ActiveTrack() { return Document().ActiveMaster(); }
+
+private:						// Instance Data
+
+	BBitmap	*					m_gridToolBitmap;
+	BBitmap *					m_arrowToolBitmap;
+	BBitmap *					m_eraserToolBitmap;
+	BBitmap *					m_metroToolBitmap;
+	BBitmap *					m_programToolBitmap;
+	BBitmap *					m_timeSigToolBitmap;
+	BBitmap *					m_textToolBitmap;
 };
 
 #endif /* __C_AssemblyWindow_H__ */

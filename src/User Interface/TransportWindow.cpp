@@ -25,7 +25,7 @@ public:
 		/**	Return the width in pixels of the largest possible knob text. */
 	int32 Largest( BView *inView, int32 inMin, int32 inMax )
 	{
-		return inView->StringWidth( "000.0" );
+		return static_cast<int32>(inView->StringWidth("000.0"));
 	}
 
 		/**	Format the text for the text slider knob */
@@ -93,39 +93,39 @@ CTransportWindow::CTransportWindow( BPoint pos, CWindowState &inState )
 	
 	bb = new CBorderButton(
 		BRect( x, y, x + Thin_Width, y + Btn_Height ),
-		"ToStart", LoadImage( beginBtnImage, BeginBtn_Image ), new BMessage( MENU_LOCATE_START ) );
+		"ToStart", ResourceUtils::LoadImage("Begin"), new BMessage( MENU_LOCATE_START ) );
 	bg->AddChild( bb );
 	x += Thin_Width;
 
 	bb = new CBorderButton(
 		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Play FromStart", LoadImage( playBegImage, PlayBeg_Image ), new BMessage( MENU_PLAY_FROM_START ) );
+		"Play FromStart", ResourceUtils::LoadImage("PlayBeg"), new BMessage( MENU_PLAY_FROM_START ) );
 	bg->AddChild( bb );
 	x += Thick_Width;
 
 	bb = new CPushOnButton(
 		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Play", LoadImage( playBtnImage, PlayBtn_Image ), new BMessage( MENU_PLAY ) );
+		"Play", ResourceUtils::LoadImage("Play"), new BMessage( MENU_PLAY ) );
 	bg->AddChild( bb );
 	playButton = bb;
 	x += Thick_Width;
 	
 	bb = new CBorderButton(
 		BRect( x, y, x + Thin_Width, y + Btn_Height ),
-		"ToEnd", LoadImage( endBtnImage, EndBtn_Image ), new BMessage( MENU_LOCATE_END ) );
+		"ToEnd", ResourceUtils::LoadImage("End"), new BMessage( MENU_LOCATE_END ) );
 	bg->AddChild( bb );
 	x += Thin_Width;
 
 	bb = new CPushOnButton(
 		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Stop", LoadImage( stopBtnImage, StopBtn_Image ), new BMessage( MENU_STOP ) );
+		"Stop", ResourceUtils::LoadImage("Stop"), new BMessage( MENU_STOP ) );
 	bg->AddChild( bb );
 	stopButton = bb;
 	x += Thick_Width + 3;
 	
 	bb = new CToggleButton(
 		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Pause", LoadImage( pauseBtnImage, PauseBtn_Image ), new BMessage( MENU_PAUSE ) );
+		"Pause", ResourceUtils::LoadImage("Pause"), new BMessage( MENU_PAUSE ) );
 	bg->AddChild( bb );
 	pauseButton = bb;
 	x += Thick_Width;
@@ -137,12 +137,14 @@ CTransportWindow::CTransportWindow( BPoint pos, CWindowState &inState )
 	y += Btn_Height + 3;
 
 	bb = new CToggleButton(
-		BRect( x, y, x + 44, y + Btn_Height2 ), "Record", LoadImage( recBtnImage, RecBtn_Image ), NULL );
+		BRect( x, y, x + 44, y + Btn_Height2 ), "Record", 
+		ResourceUtils::LoadImage("Rec"), NULL );
 	bg->AddChild( bb );
 	x += 44 + 3;
 
 	loopButton = new CToggleButton(
-		BRect( x, y, x + 32, y + Btn_Height2 ), "Loop", LoadImage( loop1Image, Loop1_Image ), new BMessage( 'loop' ) );
+		BRect( x, y, x + 32, y + Btn_Height2 ), "Loop",
+		ResourceUtils::LoadImage("LoopOff"), new BMessage( 'loop' ) );
 	bg->AddChild( loopButton );
 	loopButton->SetValue( ((CMeVApp *)be_app)->GetLoopFlag() );
 	x += 32 + 3;
