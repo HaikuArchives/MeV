@@ -34,6 +34,7 @@ SRCS= \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
+	Midi/DestinationConfigView.cpp \
 	Midi/GeneralMidi.cpp \
 	Midi/InternalSynth.cpp \
 	Midi/MidiDestination.cpp \
@@ -55,10 +56,12 @@ SRCS= \
 	UI/BitmapTool.cpp \
 	UI/BorderButton.cpp \
 	UI/BorderView.cpp \
+	UI/ConsoleView.cpp \
 	UI/ContinuousValueEditor.cpp \
 	UI/CursorCache.cpp \
 	UI/DestinationListView.cpp \
 	UI/DestinationModifier.cpp \
+	UI/DestinationView.cpp \
 	UI/EventEditor.cpp \
 	UI/GridWindow.cpp \
 	UI/IconMenuItem.cpp \
