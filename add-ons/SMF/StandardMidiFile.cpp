@@ -6,7 +6,6 @@
 #include "BeFileReader.h"
 #include "IFFWriter.h"
 #include "Error.h"
-#include "MidiManager.h"
 
 // Application Kit
 #include <Message.h>
