@@ -29,6 +29,8 @@
  * History:
  *	06/02/2000	cell
  *		Original implementation
+ *	07/10/200	cell
+ *		added ctor for alternative font & colors
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -59,7 +61,21 @@ public:							// Constructor/Destructor
 									BMessage *message,
 									BMessenger messenger);
 
+								CStringEditView(
+									BRect frame,
+									BString text,
+									BFont *font,
+									rgb_color textColor,
+									rgb_color bgColor,
+									BMessage *message,
+									BMessenger messenger);
+
 	virtual 					~CStringEditView();
+
+public:							// Accessors
+
+	BTextView *					TextView() const
+								{ return m_textView; }
 
 public:							// BMenuItem Implementation
 

@@ -48,8 +48,46 @@ CStringEditView::CStringEditView(
 
 	m_textView->MakeResizable(true, this);
 	m_textView->SetText(m_text.String());
-//	m_textView->SelectAll();
-//	m_textView->MakeFocus(true);
+}
+
+CStringEditView::CStringEditView(
+	BRect frame,
+	BString text,
+	BFont *font,
+	rgb_color textColor,
+	rgb_color bgColor,
+	BMessage *message,
+	BMessenger messenger)
+	:	BView(frame.InsetByCopy(-2.0, -1.0), "StringEditView",
+			  B_FOLLOW_NONE, B_WILL_DRAW),
+		BInvoker(message, messenger),
+		m_text(text)
+{
+	D_ALLOC(("CStringEditView::CStringEditView()\n", label));
+
+	BRect rect(Bounds());
+	rect.InsetBy(1.0, 1.0);
+	m_textView = new BTextView(rect, "StringEditTextView", rect,
+							   font, 0, B_FOLLOW_ALL, B_WILL_DRAW);
+	m_textView->SetViewColor(bgColor);
+	m_textView->SetLowColor(bgColor);
+	m_textView->SetHighColor(textColor);
+	m_textView->SetWordWrap(false);
+
+	rect.right = rect.left + m_textView->LineWidth() + 3.0;
+	rect.bottom = rect.top + m_textView->LineHeight() + 1.0;
+	m_textView->ResizeTo(rect.Width(), rect.Height());
+	rect.left += 1.0;
+	rect.right -= 3;
+	rect.bottom--;
+	m_textView->SetTextRect(rect);
+	AddChild(m_textView);
+	ResizeTo(m_textView->Bounds().Width() + 2.0,
+			 m_textView->Bounds().Height() + 2.0);
+	MoveBy(-1.0, -1.0);
+
+	m_textView->MakeResizable(true, this);
+	m_textView->SetText(m_text.String());
 }
 
 CStringEditView::~CStringEditView()
