@@ -211,7 +211,7 @@ CDocument::RemoveWindow(
 	}
 	else
 	{
-		StSubjectLock lock(*this, Lock_Exclusive);
+		CWriteLock lock(this);
 		m_windows.RemoveItem(window);
 		RemoveObserver(window);
 	}

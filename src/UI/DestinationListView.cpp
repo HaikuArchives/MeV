@@ -98,11 +98,11 @@ CDestinationListView::SetDocument(
 		{
 			m_doc->RemoveObserver(this);
 
-			StSubjectLock lock(*m_doc, Lock_Shared);
-			CDestination *dest = NULL;
-			int32 index = 0;
-			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
-				_destinationRemoved(0);
+			// clear the destination menu
+			BMenuItem *item;
+			while ((item = m_destMenu->RemoveItem((int32)0)) != NULL)
+				delete item;
+			m_destField->Invalidate();
 		}
 
 		m_doc = document;
@@ -110,7 +110,7 @@ CDestinationListView::SetDocument(
 		{
 			m_doc->AddObserver(this);
 
-			StSubjectLock lock(*m_doc, Lock_Shared);	
+			CReadLock lock(m_doc);
 			CDestination *dest = NULL;
 			int32 index = 0;
 			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
@@ -129,26 +129,17 @@ CDestinationListView::SetTrack(
 			m_track->RemoveObserver(this);
 
 		m_track = track;
-		if (m_track)
+		if (m_track != NULL)
 		{
 			m_track->AddObserver(this);
-			if (LockLooper())
-			{
-				m_destField->SetEnabled(true);
-				UnlockLooper();
-			}
+			m_destField->SetEnabled(true);
 
 			if (m_doc != &m_track->Document())
 				SetDocument(&m_track->Document());
 		}
 		else
 		{
-			if (LockLooper())
-			{
-				m_destField->SetEnabled(false);
-				UnlockLooper();
-			}
-
+			m_destField->SetEnabled(false);
 			SetDocument(NULL);
 		}
 	}
@@ -290,8 +281,6 @@ bool
 CDestinationListView::Released(
 	CObservable *subject)
 {
-	D_OBSERVE(("CDestinationListView<%p>::Released()\n", this));
-
 	bool released = false;
 
 	if (LockLooper())
@@ -400,7 +389,7 @@ CDestinationListView::_destinationRemoved(
 	if (item)
 		delete item;
 
-	StSubjectLock lock(*m_doc, Lock_Shared);
+	CReadLock lock(m_doc);
 	int32 current = m_doc->GetDefaultAttribute(EvAttr_Channel);
 	CDestination *dest = m_doc->FindDestination(current);
 	if (dest && !dest->IsDeleted())

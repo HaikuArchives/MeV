@@ -27,6 +27,7 @@
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)		// CAppWindow Implementation
+#define D_MESSAGE(x) //PRINT(x)		// Messaging
 #define D_INTERNAL(x) //PRINT(x)	// Internal Operations
 
 // ---------------------------------------------------------------------------
@@ -170,10 +171,14 @@ void
 CInspectorWindow::MessageReceived(
 	BMessage *message)
 {
+	D_MESSAGE(("CInspectorWindow::MessageReceived()\n"));
+
 	switch (message->what)
 	{
 		case CMeVApp::WATCH_TRACK:
 		{
+			D_MESSAGE((" -> CMeVApp::WATCH_TRACK\n"));
+
 			CEventTrack *track = NULL;
 			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
 				return;
@@ -295,7 +300,7 @@ CInspectorWindow::SubjectUpdated(
 	}
 	else
 	{
-		StSubjectLock trackLock(*m_track, Lock_Shared);
+		CReadLock lock(m_track);
 		const CEvent *event = m_track->CurrentEvent();
 		if (event == NULL)
 		{

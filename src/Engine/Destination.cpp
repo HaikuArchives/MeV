@@ -442,13 +442,13 @@ CDestinationDeleteUndoAction::CDestinationDeleteUndoAction(
 	:	m_dest(dest),
 		m_index(-1)
 {
-	D_ALLOC("CDestinationDeleteUndoAction::CDestinationDeleteUndoAction()");	
+	D_ALLOC(("CDestinationDeleteUndoAction::CDestinationDeleteUndoAction()"));
 	m_dest->Delete();
 }
 
 CDestinationDeleteUndoAction::~CDestinationDeleteUndoAction()
 {
-	D_ALLOC("CDestinationDeleteUndoAction::~CDestinationDeleteUndoAction()");	
+	D_ALLOC(("CDestinationDeleteUndoAction::~CDestinationDeleteUndoAction()"));
 }
 
 // ---------------------------------------------------------------------------

@@ -46,6 +46,7 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT (x)			// Constructor/Destructor
+#define D_HOOK(x) //PRINT (x)			// CDocWindow Implementation
 #define D_MESSAGE(x) //PRINT (x)		// MessageReceived()
 #define D_INTERNAL(x) //PRINT (x)		// Internal Operations
 
@@ -92,22 +93,6 @@ CTrackWindow::~CTrackWindow()
 
 // ---------------------------------------------------------------------------
 // Hook Functions
-
-void
-CTrackWindow::FrameResized(
-	float width,
-	float height)
-{
-	float minWidth, minHeight, maxWidth, maxHeight;
-	GetSizeLimits(&minWidth, &maxWidth, &minHeight, &maxHeight);
-	
-	minWidth = m_posInfoBar->Frame().Width() + 6 * B_V_SCROLL_BAR_WIDTH + 3;
-	minHeight = KeyMenuBar()->Frame().Height() + ToolBar()->Frame().Height() +
-	stripFrame->MinimumHeight() + m_posInfoBar->Frame().Height();
-	
-	SetSizeLimits(minWidth, maxWidth, minHeight, maxHeight);
-	CDocWindow::FrameResized(width, height);
-}
 
 void
 CTrackWindow::AddFrameView(
@@ -307,8 +292,28 @@ CTrackWindow::WriteState(
 // CDocWindow Implementation
 
 void
+CTrackWindow::FrameResized(
+	float width,
+	float height)
+{
+	D_HOOK(("CTrackWindow::FrameResized()\n"));
+
+	float minWidth, minHeight, maxWidth, maxHeight;
+	GetSizeLimits(&minWidth, &maxWidth, &minHeight, &maxHeight);
+	
+	minWidth = m_posInfoBar->Frame().Width() + 6 * B_V_SCROLL_BAR_WIDTH + 3;
+	minHeight = KeyMenuBar()->Frame().Height() + ToolBar()->Frame().Height() +
+	stripFrame->MinimumHeight() + m_posInfoBar->Frame().Height();
+	
+	SetSizeLimits(minWidth, maxWidth, minHeight, maxHeight);
+	CDocWindow::FrameResized(width, height);
+}
+
+void
 CTrackWindow::MenusBeginning()
 {
+	D_HOOK(("CTrackWindow::MenusBeginning()\n"));
+
 	BMenuItem *item = NULL;
 	BString itemLabel;
 	const char *description;
@@ -420,12 +425,12 @@ CTrackWindow::MessageReceived(
 	{
 		case MENU_QUIT:
 		{
-			be_app->PostMessage( B_QUIT_REQUESTED );
+			be_app->PostMessage(B_QUIT_REQUESTED);
 			break;
 		}
 		case MENU_ABOUT:
 		{
-			be_app->PostMessage( B_ABOUT_REQUESTED );
+			be_app->PostMessage(B_ABOUT_REQUESTED);
 			break;
 		}
 		case MENU_SAVE:
