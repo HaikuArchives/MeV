@@ -90,7 +90,7 @@ public:							// Accessors
 
 	/**	Returns the time in milliseconds. */
 	long long					Microseconds() const
-								{ return (long long)m_time * 1000LL; }
+								{ return (long long)Milliseconds() * 1000LL; }
 
 	/**	Returns the time in milliseconds. */
 	long						Milliseconds() const
@@ -98,22 +98,37 @@ public:							// Accessors
 
 	/**	Returns the time in seconds. */
 	long						Seconds() const
-								{ return m_time / 1000; }
+								{ return (Milliseconds() / 1000); }
 
 	/**	Returns the time in minutes. */
 	long						Minutes() const
-								{ return m_time / 60000; }
+								{ return (Seconds() / 60); }
 
 	/**	Returns the time in hours. */
 	long						Hours() const
-								{ return m_time / 360000; }
+								{ return (Minutes() / 60); }
 
 	/**	Returns the time in frames.
 	 *	@param	framesPerSec	The number of frames per second.
 	 */
 	long						Frames(
-									long framesPerSec) const
-								{ return Seconds() / framesPerSec; }
+									short framesPerSec) const
+								{ return Milliseconds() * framesPerSec / 1000L; }
+
+public:							// Operations
+
+	void						Decode(
+									long *outHours,
+									long *outMinutes,
+									long *outSeconds,
+									long *outFrames,
+									short framesPerSec) const;
+	void						Encode(
+									long hours,
+									long minutes,
+									long seconds,
+									long frames,
+									short framesPerSec);
 
 private:
 
