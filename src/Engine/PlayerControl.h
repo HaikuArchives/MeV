@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *  5/13/2000   dwalton
+ *		Added procedures to control the midi2 kit.
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -166,10 +168,21 @@ public:
 	static void SetPortName(uint32 inPortIndex, char *inPortName );
 	
 		/**	Get the port device string of the Nth port. */
-	static char *PortDevice(uint32 inPortIndex );
 	
+	static const char *PortDevice(uint32 inPortIndex );
 		/**	Set the port device string of the Nth port. */
-	static bool SetPortDevice(uint32 inPortIndex, char *inDeviceString );
+	static bool SetPortDevice(uint32 inPortIndex, char *inPortName );
+	//in general we don't seem to like working with pointers here, but for now...
+	static bool SetPortConnect(uint32 inPortIndex, BMidiConsumer *sink );
+	
+	//returns the midiroster proviced endpoint ID.
+	static int32 PortDeviceID(uint32 inPortIndex);
+	static bool DeleteDevice(int inPortIndex);
+	
+	static int CountDefinedPorts();
+	static bool IsDefined(uint32 inPortIndex);
+
+private:
 };
 
 #endif /* __C_PlayerControl_H__ */
