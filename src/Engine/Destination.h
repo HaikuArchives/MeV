@@ -46,6 +46,7 @@
 // Support Kit
 #include <Mime.h>
 
+class CConsoleView;
 class CMeVDoc;
 
 class BBitmap;
@@ -95,6 +96,12 @@ public:							// Hook Functions
 	virtual status_t			GetIcon(
 									icon_size which,
 									BBitmap *outIcon) = 0;
+
+	virtual CConsoleView *		MakeConfigurationView(
+									BRect frame) = 0;
+
+	virtual CConsoleView *		MakeMonitorView(
+									BRect frame) = 0;
 
 protected:
 

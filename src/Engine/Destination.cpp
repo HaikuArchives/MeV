@@ -69,6 +69,7 @@ CDestination::CDestination(
 {
 	D_ALLOC(("CDestination::CDestination()\n"));
 
+	CWriteLock lock(this);
 	snprintf(m_name, DESTINATION_NAME_LENGTH, "%s %ld", name, id + 1);
 }
 
@@ -95,24 +96,34 @@ CDestination::~CDestination()
 unsigned long
 CDestination::Type() const
 {
+	D_ACCESS(("CDestination::Type()\n"));
+
 	return m_type;
 }
 
 long
 CDestination::ID() const
 {
+	D_ACCESS(("CDestination::ID()\n"));
+
 	return m_id;
 }
 
 bool
 CDestination::IsValid() const
 {
+	D_ACCESS(("CDestination::IsValid()\n"));
+	ASSERT(IsReadLocked());
+
 	return ((m_flags & DISABLED) || (m_flags & DELETED));
 }
 
 bool
 CDestination::IsMuted(
-	bool *fromSolo) const {
+	bool *fromSolo) const
+{
+	D_ACCESS(("CDestination::IsMuted()\n"));
+	ASSERT(IsReadLocked());
 
 	if (fromSolo) {
 		*fromSolo = m_flags & MUTED_FROM_SOLO;
@@ -125,6 +136,9 @@ void
 CDestination::SetMuted(
 	bool muted)
 {
+	D_ACCESS(("CDestination::SetMuted(%s)\n", muted ? "true" : "false"));
+	ASSERT(IsWriteLocked());
+
 	bool changed = false;
 	if (muted)
 		changed = _addFlag(MUTED);
@@ -146,6 +160,9 @@ CDestination::SetMuted(
 bool
 CDestination::IsSolo() const
 {
+	D_ACCESS(("CDestination::IsSolo()\n"));
+	ASSERT(IsReadLocked());
+
 	return m_flags & SOLO;
 }
 
@@ -153,6 +170,9 @@ void
 CDestination::SetSolo(
 	bool solo)
 {
+	D_ACCESS(("CDestination::SetSolo(%s)\n", solo ? "true" : "false"));
+	ASSERT(IsWriteLocked());
+
 	bool changed = false;
 	if (solo)
 		changed = _addFlag(SOLO);
@@ -175,6 +195,9 @@ void
 CDestination::SetName(
 	const char *name)
 {
+	D_ACCESS(("CDestination::SetName(%s)\n", name));
+	ASSERT(IsWriteLocked());
+
 	if (strcmp(m_name, name) != 0)
 	{
 		strncpy(m_name, name, DESTINATION_NAME_LENGTH);
@@ -194,6 +217,7 @@ CDestination::SetLatency(
 	bigtime_t latency)
 {
 	D_ACCESS(("CDestination::SetLatency(%Ld)\n", latency));
+	ASSERT(IsWriteLocked());
 
 	if (latency != m_latency)
 	{
@@ -211,6 +235,10 @@ void
 CDestination::SetColor(
 	rgb_color color)
 {
+	D_ACCESS(("CDestination::SetColor(%d, %d, %d, %d)\n",
+			  color.red, color.green, color.blue, color.alpha));
+	ASSERT(IsWriteLocked());
+
 	if ((color.red != m_color.red)
 	 || (color.green != m_color.green)
 	 || (color.blue != m_color.blue))
@@ -230,6 +258,9 @@ CDestination::SetColor(
 bool
 CDestination::IsDisabled() const
 {
+	D_ACCESS(("CDestination::IsDisabled()\n"));
+	ASSERT(IsReadLocked());
+
 	return m_flags & DISABLED;
 }
 
