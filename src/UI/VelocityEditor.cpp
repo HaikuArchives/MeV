@@ -12,6 +12,9 @@
 
 #include "StripLabelView.h"
 
+// Gnu C Library
+#include <stdio.h>
+
 // ---------------------------------------------------------------------------
 // Note handler class for linear editor
 

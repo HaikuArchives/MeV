@@ -6,6 +6,7 @@
 #include "EventTrack.h"
 #include "Idents.h"
 #include "MeVApp.h"
+#include "MeVDoc.h"
 #include "BorderView.h"
 #include "BorderButton.h"
 #include "TextSlider.h"

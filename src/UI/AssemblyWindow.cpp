@@ -151,16 +151,6 @@ CAssemblyWindow::MessageReceived(
 			((CMeVApp *)be_app)->ShowPrefs();
 			break;
 		}
-		case MENU_MIDI_CONFIG:
-		{
-			((CMeVApp *)be_app)->ShowMidiConfig();
-			break;
-		}
-		case MENU_VIRTUAL_CHANNELS:
-		{
-			Document()->ShowWindow(CMeVDoc::VChannel_Window);
-			break;
-		}
 		case MENU_PLAY:
 		{
 			if (CPlayerControl::IsPlaying(Document()))

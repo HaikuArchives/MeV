@@ -582,6 +582,7 @@ CTrackWindow::CreateFileMenu(
 	BMenuBar *menus)
 {
 	BMenu *menu, *submenu;
+	BMenuItem *item;
 
 	// Create the file menu
 	menu = new BMenu("File");
@@ -594,7 +595,7 @@ CTrackWindow::CreateFileMenu(
 	menu->AddSeparatorItem();
 
 	submenu = new BMenu("Export");
-	((CMeVApp *)be_app)->BuildExportMenu(submenu);
+	Document()->Application()->BuildExportMenu(submenu);
 	if (submenu->CountItems() <= 0)
 		submenu->SetEnabled(false);
 
@@ -602,6 +603,8 @@ CTrackWindow::CreateFileMenu(
 	menu->AddItem(new BMenuItem(submenu));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS)));
+	menu->AddItem(item = new BMenuItem("Help..", NULL));
+	item->SetEnabled(false);
 	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT), 0));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));

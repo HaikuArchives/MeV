@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * Junk.h (MeV/User Interface)
+ * Junk.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	08/06/2000	cell
+ *		Moved prefs window into PreferencesWindow.h
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -38,24 +40,10 @@
 #ifndef __Junk_H__
 #define __Junk_H__
 
-#include "Observer.h"
-#include "Track.h"
-#include "TrackEditFrame.h"
-#include "EventEditor.h"
-#include "ToolBar.h"
-#include "TrackWindow.h"
-#include "MeVApp.h"
-#include "MeVDoc.h"
-#include "TextSlider.h"
-#include "Idents.h"
+#include "TempoMap.h"
 
-class CTimeIntervalEditor;
-class CMultiColumnListView;
-
-//--------------
-
-// ---------------------------------------------------------------------------
-// Time editing control
+// Interface Kit
+#include <Control.h>
 
 class CTimeEditControl : public BControl {
 	int16				numDigits;
@@ -91,77 +79,5 @@ public:
 
 	void SetValue( int32 value );
 };
-	
-	// Generic preferences window
-	
-class CPrefsWindow : public CAppWindow {
-protected:
-	enum {
-		Max_Panels = 32,
-	};
 
-	BListView		*panelList;
-
-	enum {
-		Select_ID	= 'sele',
-	};
-	
-	BBox				*panels[ Max_Panels ];
-	BView			*background;
-	int32			panelCount;
-	int32			currentPanel;
-
-	void MessageReceived( BMessage* theMessage );
-	BView *AddPanel( char *name );
-
-public:
-	int32 GetPanelNum();
-	void SetPanelNum( int inPanelNum );
-	CPrefsWindow( CWindowState &inState, char *name, uint32 flags = 0 );
-	~CPrefsWindow();
-};
-
-class CDevListItem;
-
-class CAppPrefsWindow : 
-	public CPrefsWindow
-{
-
-protected:
-	enum {
-		Max_Panels = 32,
-	};
-
-	enum ETrackPrefsPanels {
-		Panel_Feedback = 0,
-		Panel_Editing,
-
-		Panel_Count
-	};
-	
-	CGlobalPrefs		prefs;
-	BCheckBox		*cb[ 4 ][ 2 ],
-					*chan_cb,
-					*rect_cb;
-	CTextSlider		*fbDelay;
-	
-	void MessageReceived( BMessage *msg );
-
-	void ReadPrefs();
-	void WritePrefs();
-	bool QuitRequested();
-
-public:
-	CAppPrefsWindow( CWindowState &inState );
-};
-
-	// Generic preferences window
-	
-class CMiniDialog : public BWindow {
-protected:
-	BView		*background;
-public:
-	CMiniDialog( int32 inWidth, int32 inHeight, BWindow *parent, const char *title );
-};
- 
 #endif /* __Junk_H__ */
