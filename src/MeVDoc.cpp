@@ -112,6 +112,10 @@ CMeVDoc::~CMeVDoc()
 {
 	D_ALLOC(("CMeVDoc::~CMeVDoc()\n"));
 
+	// first stop the player if it's playing this document
+	if (CPlayerControl::IsPlaying(this))
+		CPlayerControl::StopSong(this);
+
 	D_ALLOC((" -> delete master real track\n"));
 	delete m_masterRealTrack;
 
