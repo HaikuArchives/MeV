@@ -55,6 +55,14 @@ CDestinationModifier::Update()
 void
 CDestinationModifier::MenusBeginning()
 {
+	int i = m_midiPorts->CountItems();
+	while (i >= 0)
+	{
+		BMenuItem *item = (m_midiPorts->RemoveItem(i));
+		if (item)
+			delete item;
+		i--;
+	}
 	_populatePortsMenu();
 }
 
@@ -98,7 +106,7 @@ CDestinationModifier::MessageReceived(
 			int32 portID;
 			if (message->FindInt32("port_id", &portID) != B_OK)
 				return;
-			m_dest->ToggleConnect(m_midiManager->FindConsumer(portID));
+			m_dest->SetConnect(m_midiManager->FindConsumer(portID),1);
 			break;
 		}
 		case MUTED:
@@ -173,11 +181,11 @@ CDestinationModifier::_buildUI()
 	// add "Ports" menu
 	rect.OffsetBy(0.0, rect.Height() + 10.0);
 	m_midiPorts = new BPopUpMenu("Ports");
-	m_midiPorts->SetRadioMode(false);
+	m_midiPorts->SetLabelFromMarked(true);
 	menuField = new BMenuField(rect, "Ports", "Ports:", m_midiPorts);
 	menuField->SetDivider(maxLabelWidth);
 	m_background->AddChild(menuField);
-
+	
 	// add "Channels" menu
 	rect.OffsetBy(0.0, rect.Height() + 5.0);
 	rect.right = Bounds().Width() / 2.0;
@@ -233,12 +241,12 @@ CDestinationModifier::_buildUI()
 	{
 		ResizeBy(0.0, m_colors->Frame().bottom - (Bounds().bottom - 5.0));
 	}
+	_populatePortsMenu();
 }
 
 void
 CDestinationModifier::_populatePortsMenu()
 {
-	int32 countConnections = 0;
 	BMidiConsumer *con = NULL;
 
 	int32 id = 0;
@@ -251,11 +259,11 @@ CDestinationModifier::_populatePortsMenu()
 			BBitmap *icon = m_midiManager->ConsumerIcon(id, B_MINI_ICON);
 			CIconMenuItem *item = new CIconMenuItem(con->Name(), msg, icon);
 			m_midiPorts->AddItem(item);
-			if (m_dest->GetProducer()->IsConnected(con))
+			if (m_dest->IsConnected(con))
 			{
 				item->SetMarked(true);
-				countConnections++;
 			}
+			con->Release();
 		}
 	}
 
@@ -269,7 +277,6 @@ CDestinationModifier::_populatePortsMenu()
 	if (m_dest->GetProducer()->IsConnected(internalSynth))
 	{
 		item->SetMarked(true);
-		countConnections++;
 	}
 }
 
