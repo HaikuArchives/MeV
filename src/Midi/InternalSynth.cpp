@@ -41,8 +41,8 @@ CInternalSynth::CInternalSynth()
 					  smallIcon->BitsLength());
 		delete smallIcon;
 	}
-	SetLatency(50);
 	SetProperties(&props);
+	SetLatency(0);
 }
 
 CInternalSynth::~CInternalSynth()
