@@ -23,6 +23,8 @@
 #include <stdio.h>
 // Storage Kit
 #include <NodeInfo.h>
+// Support Kit
+#include <String.h>
 
 	// REM: Move these elsewhere, eventually
 
@@ -161,6 +163,7 @@ void CMeVDoc::AddDefaultOperators()
 	// CDocument();
 CMeVDoc::CMeVDoc( CMeVApp &inApp )
 	:	CDocument( (CDocApp &)inApp ),
+		m_newTrackID(2),
 		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
 		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
@@ -179,7 +182,8 @@ CMeVDoc::CMeVDoc( CMeVApp &inApp )
 }
 
 CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
-	: CDocument( (CDocApp &)inApp, inRef ),
+	:	CDocument( (CDocApp &)inApp, inRef ),
+		m_newTrackID(2),
 		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
 		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
@@ -216,12 +220,7 @@ CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
 	CIFFReader	iffReader( reader );
 	int32		formType;
 	
-	iffReader.ChunkID(1, &formType);
-	if (formType != MeV_ID)
-	{
-		CDocApp::Error("File does not contain MeV data");
-		return;
-	}
+	iffReader.ChunkID( 1, &formType );
 	
 	for (;;) {
 	
@@ -320,9 +319,12 @@ CTrack *CMeVDoc::NewTrack( ulong inTrackType, TClockType inClockType )
 	case TrackType_Event:
 		CEventTrack		*etk;
 
-		etk = new CEventTrack( *this, inClockType, -1, NULL );
+		etk = new CEventTrack( *this, inClockType, m_newTrackID++, NULL );
 		if (etk)
 		{
+			BString name = etk->Name();
+			name << " " << etk->GetID() - 1;
+			etk->SetName(name.String());
 			tracks.AddItem( etk );
 			return etk;
 		}
@@ -579,16 +581,13 @@ void CMeVDoc::SetActiveMaster( CEventTrack *inTrack )
 	}
 }
 
-void CMeVDoc::ChangeTrackOrder( int32 oldIndex, int32 newIndex )
+void
+CMeVDoc::ChangeTrackOrder(
+	int32 oldIndex,
+	int32 newIndex)
 {
-	void			*ptr;
-	
-	ptr = tracks.RemoveItem( oldIndex );
-	if (ptr)
-	{
-		tracks.AddItem( ptr, newIndex );
-		NotifyUpdate( Update_TrackOrder, NULL );
-	}
+	tracks.MoveItem(oldIndex, newIndex);
+	NotifyUpdate(Update_TrackOrder, NULL);
 }
 
 void CMeVDoc::VirtualChannelName( int32 inChannelIndex, char *outBuf )
@@ -681,8 +680,8 @@ void CMeVDoc::SaveDocument()
 		
 		if (ni.InitCheck() == B_NO_ERROR)
 		{
-			ni.SetType("application/x-vnd.MeV-Data" );
-			ni.SetPreferredApp("application/x-vnd.MeV" );
+			ni.SetType( "audio/x-vnd.SylvanTechnicalArts-MeV" );
+			ni.SetPreferredApp( "application/x-vnd.SylvanTechnicalArts-MeV" );
 		}
 	}
 }

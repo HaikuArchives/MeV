@@ -20,7 +20,6 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
- *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -31,8 +30,6 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
- *	06/05/2000	malouin
- *		Changed file types
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -61,6 +58,8 @@ class CMeVDoc : public CDocument {
 	friend class CTrack;
 	
 	BList				tracks;
+	int32				m_newTrackID;
+
 	BList				operators;			// Opers associated with doc
 	BList				activeOperators;		// Operators in use...
 	CEventTrack			*masterRealTrack,	// Master track (real)
