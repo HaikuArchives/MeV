@@ -100,28 +100,51 @@ static void WriteWindowState( BMessage &msg, char *prefsName, CWindowState &wSta
 	msg.AddBool( oName, wState.IsOpen() );
 }
 
-class CMeVRefFilter : public BRefFilter {
-	bool Filter( const entry_ref *ref, BNode *node, struct stat *st, const char *filetype )
-	{
-		return (strstr( filetype, "MeV" ) != NULL || node->IsDirectory());
-	}
+class CMeVRefFilter
+	:	public BRefFilter
+{
+
+public:						// BRefFilter Implementation
+
+	bool					Filter(
+								const entry_ref *ref,
+								BNode *node,
+								struct stat *st,
+								const char *filetype)
+							{ return (strstr(filetype, "MeV") != NULL || node->IsDirectory()); }
 };
 
-class CImportRefFilter : public BRefFilter {
-	bool Filter( const entry_ref *ref, BNode *node, struct stat *st, const char *filetype )
-	{
-		BList			&list = ((CMeVApp *)be_app)->importerList;
-	
-		for (int i = 0; i < list.CountItems(); i++)
-		{
-			MeVPlugIn	*pi = (MeVPlugIn *)list.ItemAt( i );
+class CImportRefFilter
+	:	public BRefFilter
+{
 
-			if (node->IsDirectory() || pi->DetectFileType(ref, node, st, filetype) >= 0)
-				return true;
-		}
-		return false;
-	}
+public:						// BRefFilter Implementation
+
+	bool					Filter(
+								const entry_ref *ref,
+								BNode *node,
+								struct stat *st,
+								const char *filetype);
 };
+
+bool
+CImportRefFilter::Filter(
+	const entry_ref *ref,
+	BNode *node,
+	struct stat *st,
+	const char *fileType)
+{
+	BList &list = ((CMeVApp *)be_app)->importerList;
+
+	for (int i = 0; i < list.CountItems(); i++)
+	{
+		MeVPlugIn *plugin = (MeVPlugIn *)list.ItemAt(i);
+		if (node->IsDirectory()
+		 || (plugin->DetectFileType(ref, node, st, fileType) >= 0))
+			return true;
+	}
+	return false;
+}
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -160,7 +183,7 @@ CMeVApp::CMeVApp()
 	Event::InitTables();
 	activeTrack = NULL;
 	filter = new CMeVRefFilter;
-	importFilter = new CImportRefFilter;
+	m_importFilter = new CImportRefFilter;
 	loopFlag = false;
 	
 	// Initialize default global prefs
@@ -248,7 +271,7 @@ CMeVApp::~CMeVApp()
 	CMidiManager *mm = CMidiManager::Instance(); 
 	mm->Die();
 	delete filter;
-	delete importFilter;
+	delete m_importFilter;
 
 	CCursorCache::Release();
 
@@ -520,22 +543,21 @@ void CMeVApp::ShowPrefs()
 
 BFilePanel *
 CMeVApp::GetImportPanel(
-	BMessenger *msngr)
+	BMessenger *messenger)
 {
 	if (m_importPanel == NULL)
 	{
 		// Create a new import panel
-		m_importPanel = new BFilePanel(B_OPEN_PANEL, msngr, NULL, B_FILE_NODE,
-									   false);
+		m_importPanel = new BFilePanel(B_OPEN_PANEL, messenger, NULL,
+									   B_FILE_NODE, false);
 		m_importPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Import");
 		m_importPanel->Window()->SetTitle("MeV: Import");
 	}
 	else if (m_importPanel->IsShowing())
+	{
 		return NULL;
+	}
 
-	m_importPanel->SetMessage(new BMessage(B_REFS_RECEIVED));
-	m_importPanel->SetTarget(*msngr);
-	m_importPanel->SetRefFilter(NULL);
 	return m_importPanel;
 }
 
@@ -562,11 +584,11 @@ CMeVApp::GetExportPanel(
 void
 CMeVApp::ImportDocument()
 {
-	BFilePanel *fp = GetImportPanel(&be_app_messenger);
+	BFilePanel *filePanel = GetImportPanel(&be_app_messenger);
 
-	fp->SetMessage(new BMessage('impt'));
-	fp->SetRefFilter(importFilter);
-	fp->Show();
+	filePanel->SetMessage(new BMessage(IMPORT_REQUESTED));
+//	filePanel->SetRefFilter(m_importFilter);
+	filePanel->Show();
 }
 
 void
@@ -732,7 +754,7 @@ CMeVApp::MessageReceived(
 			ImportDocument();
 			break;
 		}
-		case 'impt':
+		case IMPORT_REQUESTED:
 		{
 			int32 refCount;
 			type_code type;
@@ -751,18 +773,18 @@ CMeVApp::MessageReceived(
 			}
 			break;
 		}
-		case 'expt':
+		case EXPORT_REQUESTED:
 		{
 			CMeVDoc *doc = NULL;
 			entry_ref saveRef;
 			BString saveName;
 			BMessage pluginMsg;
 			MeVPlugIn *plugin;
-			if (message->FindPointer("Document" , (void **)&doc) == B_OK &&
-				message->FindRef("directory" , &saveRef) == B_OK &&
-				message->FindString("name" , &saveName) == B_OK &&
-				message->FindPointer("plugin", (void **)&plugin) == B_OK &&
-				message->FindMessage("msg", &pluginMsg) == B_OK)
+			if ((message->FindPointer("Document" , (void **)&doc) == B_OK)
+			 && (message->FindRef("directory" , &saveRef) == B_OK)
+			 && (message->FindString("name" , &saveName) == B_OK)
+			 && (message->FindPointer("plugin", (void **)&plugin) == B_OK)
+			 && (message->FindMessage("msg", &pluginMsg) == B_OK))
 			{
 				entry_ref ref;
 				BDirectory dir(&saveRef);

@@ -93,6 +93,15 @@ class CMeVApp
 		char				*menuText;
 	};
 
+public:							// Constants
+
+	enum messages
+	{
+								IMPORT_REQUESTED = 'mevA',
+
+								EXPORT_REQUESTED
+	};
+
 public:							// Constructor/Destructor
 
 								CMeVApp();
@@ -263,9 +272,9 @@ private:						// Instance Data
 	BList						deviceList;
 
 	/** Menu lists for plug-ins */
-	CDynamicMenuDef				assemWindowPlugIns,
-								trackWindowPlugIns,
-								operWindowPlugIns;
+//	CDynamicMenuDef				assemWindowPlugIns,
+//								trackWindowPlugIns,
+//								operWindowPlugIns;
 	BList						importerList,
 								exporterList;
 
@@ -274,7 +283,7 @@ private:						// Instance Data
 	
 	static CTrack *				activeTrack;
 	BRefFilter *				filter;
-	BRefFilter *				importFilter;
+	BRefFilter *				m_importFilter;
 
 	/** Turn looping on/off */
 	bool						loopFlag;

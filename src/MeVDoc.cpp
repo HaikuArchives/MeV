@@ -540,30 +540,29 @@ int32
 CMeVDoc::MaxDestinationLatency (uint8 clockType)
 {
 	if (clockType==ClockType_Real)
-	{
 		return m_maxDestLatency;
-	}
-	if (clockType==ClockType_Metered)
-	{
+	else if (clockType==ClockType_Metered)
 		return (TempoMap().ConvertRealToMetered(m_maxDestLatency));
-	}
+
+	return 0;
 }
-void CMeVDoc::SetDestinationLatency(int32 id,int32 microseconds)
+
+void
+CMeVDoc::SetDestinationLatency(
+	int32 id,
+	int32 microseconds)
 {
 	CDestination *dest;
-	int did;
-	did=-1;
-	while (dest=(FindNextHigherDestinationID(did)))
+	int did = -1;
+	//go though entire destination list and find the one with the highest latency.
+	while ((dest = FindNextHigherDestinationID(did)) != NULL)
 	{
 		if (m_maxDestLatency<dest->Latency(ClockType_Real))
-		{
 			m_maxDestLatency=dest->Latency(ClockType_Real);
-		}
 		did++;
 	}
-//go though entire destination list and find the one with the highest latency.
-
 }
+
 void CMeVDoc::ReplaceTempoMap( CTempoMapEntry *entries, int length )
 {
 		// REM: Should be exclusively locked when this occurs
@@ -788,7 +787,7 @@ CMeVDoc::Export(
 	BFilePanel	*fp = ((CMeVApp *)be_app)->GetExportPanel( &be_app_messenger );
 	if (fp != NULL)
 	{
-		BMessage	exportMsg( 'expt' );
+		BMessage	exportMsg(CMeVApp::EXPORT_REQUESTED);
 		BMessage	pluginMsg;
 		void		*pluginPtr;
 		
@@ -799,8 +798,7 @@ CMeVDoc::Export(
 		exportMsg.AddPointer("plugin", pluginPtr);
 		exportMsg.AddMessage("msg", &pluginMsg);
 
-		fp->SetMessage( &exportMsg );
-		fp->SetRefFilter( NULL ); // exportFilter????
+		fp->SetMessage(&exportMsg);
 		fp->Show();
 	}
 }

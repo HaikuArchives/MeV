@@ -32,15 +32,15 @@ void MeVPlugIn::AddMenuItem( char *inMenuText, int32 inWhichMenu, BMessage *inMs
 
 	switch (inWhichMenu) {
 	case Assembly_Menu:
-		def = &app.assemWindowPlugIns;
+//		def = &app.assemWindowPlugIns;
 		break;
 		
 	case TrackEditor_Menu:
-		def = &app.trackWindowPlugIns;
+//		def = &app.trackWindowPlugIns;
 		break;
 		
 	case Operator_Menu:
-		def = &app.operWindowPlugIns;
+//		def = &app.operWindowPlugIns;
 		break;
 		
 	case Import_List:
