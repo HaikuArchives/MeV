@@ -48,55 +48,27 @@
 class CMeVDoc;
 class CIFFReader;
 class CIFFWriter;
+class CTrackWindow;
 
 #define TRACK_NAME_LENGTH 64
 
 class CTrack
 	:	public CObservableSubject
 {
+	friend class CMeVDoc;
 	friend class CTrackDeleteUndoAction;
 
-private:						// Instance Data
+public:							// Constants
 
-	short			trackID;				// id number of this track
-
-	/** name of the track */
-	char			m_name[TRACK_NAME_LENGTH];
-	CMeVDoc			&document;				// pointer to parent document
-	
-	bool			muted;						// track is muted
-	bool			muteFromSolo;				// track is muted because of solo
-	bool			solo;						// track is soloed
-	bool			recording;					// track is recording
-	bool			deleted;						// track hidden because deleted
-
-protected:
-		// Time of the last event on the track
-	long				lastEventTime,			// duration of track in favored units
-					logicalLength;			// Logical play-length of track
-	TClockType		clockType;				// Track's clock type
-	CSignatureMap	sigMap;					// Temporal structure
-
-public:
-
-		// Types of selection for each track
+	/** Types of selection for each track */
 	enum E_SelectionTypes {
-			// These describe the state of the current selection
+		// These describe the state of the current selection
 		Select_None = 0,					// nothing is selected
 		Select_Single,						// a single event is selected
 		Select_Subset,						// use select bits for each item
-
-			// These describe how the selection got that way
-// 	Select_RealRange,					// selection by real time
-// 	Select_MeterRange,					// selection by metered time
-// 	Select_Vertex,						// vertex/vertices of a countour
 	};
 
-public:
-		// Track update hints
-
 	enum ETrackUpdateHintBits {
-
 		Update_Name		= (1<<0),			// Track name changed
 		Update_Duration	= (1<<1),			// Track duration changed
 		Update_Flags		= (1<<2),			// Muted / recording flag
@@ -107,52 +79,107 @@ public:
 		Update_TempoMap	= (1<<7)			// Tempo map changed
 	};
 
-		// ---------- Constructors
+public:							// Constructor/Destructor
 
-		/** New track constructor */
-	CTrack( CMeVDoc &inDoc, TClockType &cType, int32 inID = -1, char *inName = NULL );
+	/** New track constructor */
+								CTrack(
+									CMeVDoc &inDoc,
+									TClockType &cType,
+									int32 inID = -1,
+									char *inName = NULL);
+
+	/** Deserialization constructor */
+								CTrack(
+									CMeVDoc &inDoc,
+									CIFFReader &inReader);
+
+	/** Destructor */
+								~CTrack();
 	
-		/** Deserialization constructor */
-	CTrack( CMeVDoc &inDoc, CIFFReader &inReader );
+public:							// Hook Functions
 
-		/** Destructor */
-	~CTrack();
-	
-		// ---------- Loading and saving
+	virtual int32				Bytes()
+								{ return sizeof *this; }
 
-		/** Write track data to MeV file. */
-	virtual void WriteTrack( CIFFWriter &writer );
+	virtual void				DeleteSelection() = 0;
 
-		/** Read track data from MeV file. */
-	virtual void ReadTrackChunk( CIFFReader &reader );
+	virtual void				SelectAll() = 0;
 
-		// ---------- Getters
-
-		/**	Return pointer to track name */
-	const char *Name() const { return m_name; }
-	short GetID() const { return trackID; }
-	bool Muted() { return muted; }
-	bool MutedFromSolo() { return muteFromSolo; }
-	bool Solo() { return solo; }
-	bool Recording() { return recording; }
-	long LastEventTime() { return lastEventTime; }
-	int32 LogicalLength() { return logicalLength; }
-	CMeVDoc &Document() { return document; }
-	CSignatureMap &SigMap() { return sigMap; }
 	virtual enum E_SelectionTypes SelectionType() = 0;
-	TClockType ClockType() { return clockType; }
-	virtual int32 Bytes() { return sizeof *this; }
-	bool Deleted() { return deleted; }
-	virtual int32 TrackType() const = 0;
+
+	virtual uint32				TrackType() const = 0;
 	
-		// ---------- Setters
+public:							// Serialization
 
-	void SetName( const char *name );
-	void SetMuted( bool inMute ) { muted = inMute; NotifyUpdate( Update_Flags, NULL ); }
-	void SetRecording( bool inRecord ) { recording = inRecord; NotifyUpdate( Update_Flags, NULL ); }
-// void SetSolo( bool inSolo );
+	/** Read track data from MeV file. */
+	virtual void				ReadTrackChunk(
+									CIFFReader &reader);
 
-		// ---------- Operations
+	/** Write track data to MeV file. */
+	virtual void				WriteTrack(
+									CIFFWriter &writer);
+
+public:							// Accessors
+
+	TClockType					ClockType() const
+								{ return clockType; }
+
+	bool						Deleted() const
+								{ return m_deleted; }
+
+	short						GetID() const
+								{ return m_trackID; }
+
+	const char *				Name() const
+								{ return m_name; }
+	void						SetName(
+									const char *name);
+
+	bool						Muted() const
+								{ return m_muted; }
+	void						SetMuted(
+									bool muted);
+
+	bool						MutedFromSolo() const
+								{ return m_muteFromSolo; }
+
+	bool						Solo() const
+								{ return m_solo; }
+	void						SetSolo(
+									bool solo);
+
+	bool						Recording() const
+								{ return m_recording; }
+	void						SetRecording(
+									bool recording);
+
+	long						LastEventTime() const
+								{ return lastEventTime; }
+
+	int32						LogicalLength() const
+								{ return logicalLength; }
+
+	CMeVDoc &					Document()
+								{ return *m_document; }
+
+	CSignatureMap &				SigMap()
+								{ return sigMap; }
+
+	/** Remember the associated TrackWindows' state */
+	void						SetWindowSettings(
+									BMessage *message);
+	BMessage *					GetWindowSettings() const
+								{ return m_windowSettings; }
+
+	CTrackWindow *				Window() const
+								{ return m_window; }
+
+public:							// Operations
+
+	/**	Add update hint bits to an update message. */
+	static void					AddUpdateHintBits(
+									CUpdateHint &inHint,
+									int32 inBits);
 
 	/** Delete this track from the document. */
 	void						Delete();
@@ -163,15 +190,63 @@ public:
 	void						Undelete(
 									int32 originalIndex);
 
-	virtual void SelectAll() = 0;
-	virtual void DeleteSelection() = 0;
+	/**	Notify all observers (including possibly observers of the document
+		as well) that some attributes of this track have changed.
+	*/
+	void						NotifyUpdate(
+									int32 inHintBits,
+									CObserver *source);
 
-		/**	Notify all observers (including possibly observers of the document
-			as well) that some attributes of this track have changed. */
-	void NotifyUpdate( int32 inHintBits, CObserver *source );
+protected:						// Instance Data
+
+	// Time of the last event on the track
+	long						lastEventTime;
+
+	// duration of track in favored units
+	// Logical play-length of track
+	long						logicalLength;
 	
-		/**	Add update hint bits to an update message. */
-	static void AddUpdateHintBits( CUpdateHint &inHint, int32 inBits );
+	// Track's clock type
+	TClockType					clockType;
+	
+	// Temporal structure
+	CSignatureMap				sigMap;
+
+private:
+
+	/** pointer to parent document */
+	CMeVDoc *					m_document;
+
+	/** id number of this track */
+	short						m_trackID;
+
+	/** name of the track */
+	char						m_name[TRACK_NAME_LENGTH];
+
+	/** track is muted */
+	bool						m_muted;
+
+	/** track is muted because of solo */
+	bool						m_muteFromSolo;
+
+	/** track is soloed */
+	bool						m_solo;
+
+	/** track is recording */
+	bool						m_recording;
+
+	/** track hidden because deleted */
+	bool						m_deleted;
+
+	/** a pointer to the associated window */
+	CTrackWindow *				m_window;
+
+	/** a message containing the settings of the associated TrackWindow */
+	BMessage *					m_windowSettings;
+
+	/** indicates that the associated window should be opened after loading
+	 the track. */
+	bool						m_openWindow;
 };
 
 // ---------------------------------------------------------------------------

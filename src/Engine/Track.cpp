@@ -7,6 +7,7 @@
 #include "MeVFileID.h"
 #include "IFFWriter.h"
 #include "IFFReader.h"
+#include "TrackWindow.h"
 
 // Support Kit
 #include <Debug.h>
@@ -16,6 +17,7 @@
 #define D_HOOK(x) //PRINT(x)		// Hook Functions
 #define D_ACCESS(x) //PRINT(x)		// Accessors
 #define D_OPERATION(x) // PRINT(x)	// Operations
+#define D_SERIALIZE(x) PRINT(x)		// Serialization
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -25,21 +27,26 @@ CTrack::CTrack(
 	TClockType &cType,
 	int32 inID,
 	char *name)
-	:	document(inDoc),
-		muted(false),
-		muteFromSolo(false),
-		solo(false),
-		recording(false),
-		deleted(false),
-		lastEventTime(0),
+	:	lastEventTime(0),
 		logicalLength(0),
-		clockType(cType)
+		clockType(cType),
+		m_document(&inDoc),
+		m_muted(false),
+		m_muteFromSolo(false),
+		m_solo(false),
+		m_recording(false),
+		m_deleted(false),
+		m_window(NULL),
+		m_windowSettings(NULL),
+		m_openWindow(false)
 {
-		// REM: Calculate a unique track ID.
-	if (inID < 0) trackID = document.GetUniqueTrackID();
-	else trackID = inID;
+	// REM: Calculate a unique track ID.
+	if (inID < 0)
+		m_trackID = Document().GetUniqueTrackID();
+	else
+		m_trackID = inID;
 
-		// Initialize the signature map
+	// Initialize the signature map
 	static CSignatureMap::SigChange relSigMap[] = {
 		{	0, Ticks_Per_QtrNote, Ticks_Per_QtrNote * 4 },
 	};
@@ -50,15 +57,72 @@ CTrack::CTrack(
 		
 	strcpy(m_name, name ? name : "Untitled Track");
 
-		// Initialize the signature map.
-	sigMap.entries		= (cType != ClockType_Metered ? absSigMap : relSigMap);
-	sigMap.numEntries	= 1;
-	sigMap.clockType		= cType;
+	// Initialize the signature map.
+	sigMap.entries = (cType != ClockType_Metered ? absSigMap : relSigMap);
+	sigMap.numEntries = 1;
+	sigMap.clockType = cType;
 }
 
 CTrack::~CTrack()
 {
 	// REM: Delete the signature map.
+
+	if (m_windowSettings)
+	{
+		delete m_windowSettings;
+		m_windowSettings = NULL;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+void
+CTrack::SetName(
+	const char *name)
+{
+	strncpy(m_name, name, TRACK_NAME_LENGTH);
+
+	// Tell everyone that the name of the track changed
+	CUpdateHint hint;
+	hint.AddInt32("TrackID", GetID());
+	hint.AddInt32("TrackAttrs", Update_Name);
+	Document().PostUpdateAllTracks(&hint);
+	Document().PostUpdate(&hint, NULL);
+}
+
+void
+CTrack::SetMuted(
+	bool muted)
+{
+	m_muted = muted;
+	NotifyUpdate(Update_Flags, NULL);
+}
+
+void
+CTrack::SetRecording(
+	bool recording)
+{
+	m_recording = recording;
+	NotifyUpdate(Update_Flags, NULL);
+}
+
+void
+CTrack::SetSolo(
+	bool solo)
+{
+	m_solo = solo;
+	NotifyUpdate(Update_Flags, NULL);
+}
+
+void
+CTrack::SetWindowSettings(
+	BMessage *message)
+{
+	m_windowSettings = message;
+
+	// the window has been closed; reset the pointer
+	m_window = NULL;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,7 +133,7 @@ CTrack::Delete()
 {
 	if (Document().tracks.RemoveItem(this))
 	{
-		deleted = true;
+		m_deleted = true;
 		Document().SetModified();
 
 		// Tell everyone that the track has been deleted
@@ -87,7 +151,7 @@ CTrack::Undelete(
 {
 	if (Document().tracks.AddItem(this, originalIndex))
 	{
-		deleted = false;
+		m_deleted = false;
 		Document().SetModified();
 
 		// Tell everyone that the track has been re-added
@@ -100,20 +164,6 @@ CTrack::Undelete(
 }
 
 void
-CTrack::SetName(
-	const char *name)
-{
-	strncpy(m_name, name, TRACK_NAME_LENGTH);
-
-	// Tell everyone that the name of the track changed
-	CUpdateHint hint;
-	hint.AddInt32("TrackID", GetID());
-	hint.AddInt32("TrackAttrs", Update_Name);
-	document.PostUpdateAllTracks(&hint);
-	document.PostUpdate(&hint, NULL);
-}
-
-void
 CTrack::NotifyUpdate(
 	int32 hintBits,
 	CObserver *source)
@@ -123,21 +173,27 @@ CTrack::NotifyUpdate(
 	hint.AddInt32("TrackAttrs", hintBits);
 	
 	PostUpdate(&hint, source);
-	document.PostUpdate(&hint, source);
+	Document().PostUpdate(&hint, source);
 }
 
-	/**	Add update hint bits to an update message. */
-void CTrack::AddUpdateHintBits( CUpdateHint &inHint, int32 inBits )
+void
+CTrack::AddUpdateHintBits(
+	CUpdateHint &inHint,
+	int32 inBits)
 {
-	int32			flags;
+	int32 flags;
 
 	if (inHint.FindInt32( "TrackAttrs", 0, &flags ) == B_NO_ERROR )
 	{
 		flags |= inBits;
 		inHint.ReplaceInt32( "TrackAttrs", 0, flags );
 	}
-	else inHint.AddInt32( "TrackAttrs", inBits );
+	else
+		inHint.AddInt32( "TrackAttrs", inBits );
 }
+
+// ---------------------------------------------------------------------------
+// Serialization
 
 enum ETrackFlags {
 	Track_Muted = (1<<0),
@@ -145,41 +201,88 @@ enum ETrackFlags {
 	Track_Recording = (1<<2)
 };
 
-void CTrack::ReadTrackChunk( CIFFReader &reader )
+void
+CTrack::ReadTrackChunk(
+	CIFFReader &reader)
 {
-	uint8		flags, clock;
+	uint8 flags, clock;
 
-	switch (reader.ChunkID()) {
-	case Track_Header_ID:
-		reader >> trackID;
-		reader >> flags >> clock;
-		clockType = (TClockType)clock;
-		if (flags & Track_Muted)		muted = true;
-		if (flags & Track_Solo)		solo = true;
-		if (flags & Track_Recording)	recording = true;
-		break;
-		
-	case Track_Name_ID:
-		reader.MustRead(m_name, MIN(reader.ChunkLength(), TRACK_NAME_LENGTH));
-		break;
+	switch (reader.ChunkID())
+	{
+		case Track_Header_ID:
+		{
+			reader >> m_trackID;
+			reader >> flags >> clock;
+			clockType = (TClockType)clock;
+			if (flags & Track_Muted)
+				m_muted = true;
+			if (flags & Track_Solo)
+				m_solo = true;
+			if (flags & Track_Recording)
+				m_recording = true;
+			break;
+		}
+		case Track_Name_ID:
+		{
+			reader.MustRead(m_name, MIN(reader.ChunkLength(), TRACK_NAME_LENGTH));
+			break;
+		}
+		case CTrackWindow::FILE_CHUNK_ID:
+		{
+			int8 visible;
+			reader >> visible;
+			if (visible != 0)
+				m_openWindow = true;
+			BMessage *settings = new BMessage();
+			CTrackWindow::ReadState(reader, settings);
+			SetWindowSettings(settings);
+		}
 	}
 }
 
-void CTrack::WriteTrack( CIFFWriter &writer )
+void
+CTrack::WriteTrack(
+	CIFFWriter &writer)
 {
-	uint8		flags = 0, clock = clockType;
-	
-	if (trackID == 0 || trackID == 1) return;
+	D_SERIALIZE(("CTrack<%s>::WriteTrack()\n", Name()));	
 
-	writer.Push( Track_Header_ID );
-	writer << trackID;
-	if (muted)	flags |= Track_Muted;
-	if (solo)		flags |= Track_Solo;
-	if (recording)	flags |= Track_Recording;
+	uint8 flags = 0;
+	uint8 clock = clockType;
+
+	if (m_trackID == 0)
+		// master real track doesn't have window settings!
+		return;
+
+	writer.Push(Track_Header_ID);
+	writer << m_trackID;
+	if (Muted())
+		flags |= Track_Muted;
+	if (Solo())
+		flags |= Track_Solo;
+	if (Recording())
+		flags |= Track_Recording;
 	writer << flags << clock;
 	writer.Pop();
 
+	// write track name
 	writer.WriteChunk(Track_Name_ID, m_name, TRACK_NAME_LENGTH);
+
+	// write window settings
+	if (m_window)
+	{
+		if (m_windowSettings)
+			delete m_windowSettings;
+		m_windowSettings = new BMessage();
+		m_window->ExportSettings(m_windowSettings);
+	}
+	if (m_windowSettings)
+	{
+		writer.Push(CTrackWindow::FILE_CHUNK_ID);
+		// indicate visibility
+		writer << (int8)(m_window != NULL);
+		CTrackWindow::WriteState(writer, m_windowSettings);
+		writer.Pop();
+	}
 }
 
 // ---------------------------------------------------------------------------

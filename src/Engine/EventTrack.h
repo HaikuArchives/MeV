@@ -101,7 +101,7 @@ public:
 		/** Returns the count of the number of events in this track */
 	int32 CountItems() const { return events.TotalItems(); }
 
-	int32 TrackType() const { return TrackType_Event; }
+	uint32 TrackType() const { return TrackType_Event; }
 
 	long MinSelectTime() const { return minSelectTime; }
 	long MaxSelectTime() const { return maxSelectTime; }
