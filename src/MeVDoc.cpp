@@ -887,7 +887,7 @@ CMeVDoc::_init()
 	m_masterMeterTrack = NULL;
 
 	// Initialize default attributes
-	defaultAttributes[EvAttr_Duration] = Ticks_Per_QtrNote;
+	defaultAttributes[EvAttr_Duration] = Ticks_Per_QtrNote - 1;
 	defaultAttributes[EvAttr_Type] = EvtType_Note;
 	defaultAttributes[EvAttr_Selected] = 0;
 	defaultAttributes[EvAttr_Channel] = 0;

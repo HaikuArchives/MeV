@@ -133,9 +133,9 @@ int32
 CTrackWindow::NewEventDuration() const
 {
 	if (ActiveTrack()->GridSnapEnabled())
-		return ActiveTrack()->TimeGridSize();
+		return ActiveTrack()->TimeGridSize() - 1;
 	else
-		return Ticks_Per_QtrNote;
+		return Ticks_Per_QtrNote - 1;
 }
 
 event_type

@@ -1408,8 +1408,7 @@ CTrackCtlStrip::MouseMoved(
 						dragEv.sequence.vPos = static_cast<uint8>(point.y / BarHeight());
 						dragEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
 						dragEv.sequence.sequence = trackID;
-						// Rem: Change this to the logical length of the track we are ADDING. */
-						dragEv.SetDuration(track->LogicalLength());
+						dragEv.SetDuration(track->LogicalLength() - 1);
 					
 						if ((m_dragType != DragType_DropTarget)
 						 || (memcmp(&dragEv, &m_newEv, sizeof(m_newEv)) != 0))
@@ -1625,7 +1624,7 @@ CTrackCtlStrip::ConstructEvent(
 			m_newEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
 			m_newEv.sequence.sequence = sequence;
 			m_newEv.sequence.flags = 0;
-			m_newEv.SetDuration(track->LogicalLength());
+			m_newEv.SetDuration(track->LogicalLength() - 1);
 			break;
 		}
 		case EvtType_TimeSig:

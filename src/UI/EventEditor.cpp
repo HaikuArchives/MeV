@@ -1202,7 +1202,7 @@ CEventEditor::KeyDown(
 	{
 		if (Track()->SelectionType() != CTrack::Select_None)
 		{
-			int32 delta = Track()->GridSnapEnabled() ? Track()->TimeGridSize()
+			int32 delta = Track()->GridSnapEnabled() ? Track()->TimeGridSize() - 1
 													 : 1;
 			EventOp *op;
 			if (modifiers() & B_SHIFT_KEY)
