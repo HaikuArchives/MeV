@@ -103,7 +103,9 @@ public:							// Constants
 	{
 								IMPORT_REQUESTED = 'mevA',
 
-								EXPORT_REQUESTED
+								EXPORT_REQUESTED,
+
+								WATCH_TRACK
 	};
 
 public:							// Constructor/Destructor

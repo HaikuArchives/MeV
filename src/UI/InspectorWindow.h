@@ -81,8 +81,6 @@ public:						// Operations
 	
 public:						// CAppWindow Implementation
 
-	virtual void            MenusBeginning();
-
 	virtual void			MessageReceived(
 								BMessage *message);
 

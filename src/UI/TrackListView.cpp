@@ -474,6 +474,8 @@ bool
 CTrackListView::Released(
 	CObservable *subject)
 {
+	D_OBSERVE(("CTrackListView<%p>::Released()\n", this));
+
 	bool released = false;
 
 	if (LockLooper())

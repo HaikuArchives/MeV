@@ -112,6 +112,8 @@ bool
 CMeVModule::Released(
 	CObservable *subject)
 {
+	D_OBSERVE(("CMeVModule<%p>::Released()\n", this));
+
 	bool released = false;
 
 	if (Lock())

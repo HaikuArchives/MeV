@@ -377,47 +377,40 @@ CMeVApp::HelpRequested()
 
 void
 CMeVApp::WatchTrack(
-	CEventTrack *inTrack)
+	CEventTrack *track)
 {
-	CMeVApp *mApp = (CMeVApp *)be_app;
-	CAppWindow *w;
+	CMeVApp *app = (CMeVApp *)be_app;
+	CAppWindow *window;
 
-	if (activeTrack == inTrack)
+	if (activeTrack == track)
+		// nothing to do
 		return;
 	
-	activeTrack = inTrack;
+	activeTrack = track;
 
-	mApp->trackListState.Lock();
-	w = mApp->trackListState.Window();
-	if (w)
-	{
-		((CTrackListWindow *)w)->WatchTrack(inTrack);
-	}
-	mApp->trackListState.Unlock();
+	BMessage message(WATCH_TRACK);
+	message.AddPointer("mev:track", (void *)track);
+	BMessenger messenger;
 
-	mApp->inspectorState.Lock();
-	w = mApp->inspectorState.Window();
-	if (w)
-	{
-		((CInspectorWindow *)w)->WatchTrack(inTrack);
-	}
-	mApp->inspectorState.Unlock();
+	app->trackListState.Lock();
+	messenger = BMessenger(NULL, app->trackListState.Window());
+	messenger.SendMessage(&message);
+	app->trackListState.Unlock();
 
-	mApp->gridWinState.Lock();
-	w = mApp->gridWinState.Window();
-	if (w)
-	{
-		((CGridWindow *)w)->WatchTrack(inTrack);
-	}
-	mApp->gridWinState.Unlock();
+	app->inspectorState.Lock();
+	messenger = BMessenger(NULL, app->inspectorState.Window());
+	messenger.SendMessage(&message);
+	app->inspectorState.Unlock();
 
-	mApp->transportState.Lock();
-	w = mApp->transportState.Window();
-	if (w)
-	{
-		((CTransportWindow *)w)->WatchTrack(inTrack);
-	}
-	mApp->transportState.Unlock();
+	app->gridWinState.Lock();
+	messenger = BMessenger(NULL, app->gridWinState.Window());
+	messenger.SendMessage(&message);
+	app->gridWinState.Unlock();
+
+	app->transportState.Lock();
+	messenger = BMessenger(NULL, app->transportState.Window());
+	messenger.SendMessage(&message);
+	app->transportState.Unlock();
 }
 
 // ---------------------------------------------------------------------------
@@ -477,7 +470,12 @@ CMeVApp::ShowTrackList( bool inShow )
 										  trackListState);
 			window->Show();
 			if (activeTrack != NULL)
-				window->WatchTrack((CEventTrack *)activeTrack);
+			{
+				BMessenger messenger(NULL, window);
+				BMessage message(WATCH_TRACK);
+				message.AddPointer("mev:track", (void *)activeTrack);
+				messenger.SendMessage(&message);
+			}
 		}
 	}
 	else
@@ -502,8 +500,13 @@ CMeVApp::ShowInspector(
 			window = new CInspectorWindow(inspectorState.Rect().LeftTop(),
 										  inspectorState);
 			window->Show();
-			if (activeTrack)
-				window->WatchTrack(dynamic_cast<CEventTrack *>(activeTrack));
+			if (activeTrack != NULL)
+			{
+				BMessenger messenger(NULL, window);
+				BMessage message(WATCH_TRACK);
+				message.AddPointer("mev:track", (void *)activeTrack);
+				messenger.SendMessage(&message);
+			}
 		}
 	}
 	else
@@ -528,8 +531,13 @@ CMeVApp::ShowGridWindow(
 			window = new CGridWindow(gridWinState.Rect().LeftTop(),
 									 gridWinState);
 			window->Show();
-			if (activeTrack)
-				window->WatchTrack(dynamic_cast<CEventTrack *>(activeTrack));
+			if (activeTrack != NULL)
+			{
+				BMessenger messenger(NULL, window);
+				BMessage message(WATCH_TRACK);
+				message.AddPointer("mev:track", (void *)activeTrack);
+				messenger.SendMessage(&message);
+			}
 		}
 	}
 	else
@@ -557,8 +565,13 @@ CMeVApp::ShowTransportWindow(
 			window = new CTransportWindow(transportState.Rect().LeftTop(),
 										  transportState);
 			window->Show();
-			if (activeTrack)
-				window->WatchTrack(dynamic_cast<CEventTrack *>(activeTrack));
+			if (activeTrack != NULL)
+			{
+				BMessenger messenger(NULL, window);
+				BMessage message(WATCH_TRACK);
+				message.AddPointer("mev:track", (void *)activeTrack);
+				messenger.SendMessage(&message);
+			}
 		}
 	}
 	else
@@ -721,7 +734,6 @@ CMeVApp::AboutRequested()
 	// add team info
 	aboutText << "\nThe MeV Team:\n";
 	aboutText << "Christopher Lenz, ";
-	aboutText << "Claes Johanson, ";
 	aboutText << "Curt Malouin, ";
 	aboutText << "Dan Walton, ";
 	aboutText << "Eric Moon, ";

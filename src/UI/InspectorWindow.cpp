@@ -179,6 +179,14 @@ CInspectorWindow::MessageReceived(
 {
 	switch (message->what)
 	{
+		case CMeVApp::WATCH_TRACK:
+		{
+			CEventTrack *track = NULL;
+			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
+				return;
+			WatchTrack(track);
+			break;
+		}
 		case Slider1_ID:
 		case Slider2_ID:
 		case Slider3_ID:
@@ -265,17 +273,9 @@ CInspectorWindow::MessageReceived(
 // Operations
 
 void
-CInspectorWindow::MenusBeginning()
-{
-
-}
-
-void
 CInspectorWindow::WatchTrack(
 	CEventTrack *track)
 {
-	BAutolock lock(this);
-
 	if (track != m_track)
 	{
 		if (m_track)

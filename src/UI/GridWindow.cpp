@@ -6,6 +6,7 @@
 
 #include "BorderView.h"
 #include "EventTrack.h"
+#include "MeVApp.h"
 #include "TimeIntervalControl.h"
 
 // Support Kit
@@ -74,6 +75,14 @@ CGridWindow::MessageReceived(
 {
 	switch(message->what)
 	{
+		case CMeVApp::WATCH_TRACK:
+		{
+			CEventTrack *track = NULL;
+			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
+				return;
+			WatchTrack(track);
+			break;
+		}
 		case GRID_INTERVAL_CHANGED:
 		{
 			if (m_track)
@@ -120,8 +129,6 @@ void
 CGridWindow::WatchTrack(
 	CEventTrack *track)
 {
-	BAutolock lock(this);
-
 	if (track != m_track)
 	{
 		if (m_track != NULL)

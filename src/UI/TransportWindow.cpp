@@ -237,9 +237,6 @@ void
 CTransportWindow::MessageReceived(
 	BMessage *message)
 {
-	if (m_track == NULL)
-		return;
-
 	switch(message->what)
 	{
 		case MENU_LOCATE_START:
@@ -322,6 +319,14 @@ CTransportWindow::MessageReceived(
 			m_tempoCtl->SetTempo(CPlayerControl::Tempo(m_document));
 			break;
 		}
+		case CMeVApp::WATCH_TRACK:
+		{
+			CEventTrack *track = NULL;
+			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
+				return;
+			WatchTrack(track);
+			break;
+		}
 		default:
 		{
 			CAppWindow::MessageReceived(message);
@@ -333,8 +338,6 @@ void
 CTransportWindow::WatchTrack(
 	CEventTrack *track)
 {
-	BAutolock lock(this);
-
 	if (track != m_track)
 	{
 		if (m_track != NULL)

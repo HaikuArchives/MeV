@@ -158,6 +158,8 @@ bool
 CConsoleView::Released(
 	CObservable *subject)
 {
+	D_OBSERVE(("CConsoleView<%p>::Released()\n", this));
+
 	bool released = false;
 
 	if (LockLooper())

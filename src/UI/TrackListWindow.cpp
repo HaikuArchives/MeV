@@ -234,6 +234,14 @@ CTrackListWindow::MessageReceived(
 			m_doc->SetModified();
 			break;
 		}
+		case CMeVApp::WATCH_TRACK:
+		{
+			CEventTrack *track = NULL;
+			if (message->FindPointer("mev:track", (void **)&track) != B_OK)
+				return;
+			WatchTrack(track);
+			break;
+		}
 		default:
 		{
 			CAppWindow::MessageReceived(message);
@@ -354,9 +362,7 @@ void
 CTrackListWindow::WatchTrack(
 	CEventTrack *track)
 {
-	D_OPERATION(("CTrackListWindow::WatchDocument()\n"));
-
-	BAutolock lock(this);
+	D_OPERATION(("CTrackListWindow::WatchTrack()\n"));
 
 	if (track != NULL)
 	{

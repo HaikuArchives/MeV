@@ -1424,6 +1424,8 @@ bool
 CEventEditor::Released(
 	CObservable *subject)
 {
+	D_OBSERVE(("CEventEditor<%p>::Released()\n", this));
+
 	bool released = false;
 
 	if (LockLooper())

@@ -118,11 +118,15 @@ CMeVDoc::~CMeVDoc()
 {
 	D_ALLOC(("CMeVDoc::~CMeVDoc()\n"));
 
+	CWriteLock lock(this);
+
 	// first stop the player if it's playing this document
+	D_ALLOC((" -> stop player\n"));
 	if (CPlayerControl::IsPlaying(this))
 		CPlayerControl::StopSong(this);
 
 	// request all observers to stop immediately
+	D_ALLOC((" -> request delete\n"));
 	RequestDelete();
 
 	D_ALLOC((" -> delete tracks\n"));
