@@ -162,10 +162,21 @@ CDocWindow::QuitRequested()
 			alert->SetShortcut(1, B_ESCAPE);
 			result = alert->Go();
 			
-			if (result == 1)
+			if (result == 0)
+			{
+				if (m_document->Application()->CountDocuments() == 1)
+					be_app->PostMessage(B_QUIT_REQUESTED);
+			}
+			else if (result == 1)
+			{
 				return false;
-			if (result == 2)
+			}
+			else if (result == 2)
+			{
 				m_document->Save();
+				if (m_document->Application()->CountDocuments() == 1)
+					be_app->PostMessage(B_QUIT_REQUESTED);
+			}
 		}
 	}
 

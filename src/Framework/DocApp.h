@@ -105,6 +105,10 @@ public:							// BApplication Implementation
 
 protected:						// Instance Data
 
+	bool						m_waitingToQuit;
+
+private:
+
 	// the list of open documents
 	BList						m_documents;
 

@@ -21,6 +21,7 @@
 CDocApp::CDocApp(
 	const char *signature)
 	:	BApplication(signature),
+		m_waitingToQuit(false),
 		m_openPanel(NULL)
 {
 }
@@ -104,8 +105,7 @@ CDocApp::MessageReceived(
 			{
 				CRefCountObject::Release( doc );
 			}
-			RemoveDocument(doc);
-			PostMessage(B_QUIT_REQUESTED);
+			m_waitingToQuit = false;
 			break;
 		}
 		case B_SAVE_REQUESTED:
@@ -127,8 +127,11 @@ CDocApp::MessageReceived(
 					doc->Save();
 				}
 			}
-			RemoveDocument(doc);
-			PostMessage(B_QUIT_REQUESTED);
+			if (m_waitingToQuit)
+			{
+				RemoveDocument(doc);
+				PostMessage(B_QUIT_REQUESTED);
+			}
 			break;
 		}
 		default:
@@ -141,6 +144,8 @@ CDocApp::MessageReceived(
 bool
 CDocApp::QuitRequested()
 {
+	m_waitingToQuit = true;
+
 	for (int32 i = 0; i < CountDocuments(); i++)
 	{
 		if (DocumentAt(i)->IsSaving())
