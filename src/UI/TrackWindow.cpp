@@ -17,6 +17,7 @@
 #include "OperatorWindow.h"
 #include "PlayerControl.h"
 #include "QuickKeyMenuItem.h"
+#include "RecentDocumentsMenu.h"
 #include "ResourceUtils.h"
 #include "StdEventOps.h"
 #include "StripFrameView.h"
@@ -28,9 +29,15 @@
 #include <stdio.h>
 // Application Kit
 #include <MessageFilter.h>
+#include <Roster.h>
 // Interface Kit
+#include <Bitmap.h>
 #include <MenuBar.h>
 #include <StringView.h>
+// Storage Kit
+#include <Entry.h>
+#include <Node.h>
+#include <NodeInfo.h>
 // Support Kit
 #include <Debug.h>
 #include <String.h>
@@ -699,21 +706,38 @@ CTrackWindow::CreateFileMenu(
 {
 	BMenu *menu, *submenu;
 	BMenuItem *item;
+	BMessage refList;
 
 	// Create the file menu
 	menu = new BMenu("File");
 	menu->AddItem(item = new BMenuItem("New", new BMessage(MENU_NEW)));
 	item->SetTarget(be_app);
-	menu->AddItem(item = new BMenuItem("Open...", new BMessage(MENU_OPEN), 'O'));
+
+	submenu = new CRecentDocumentsMenu("Open" B_UTF8_ELLIPSIS,
+									   new BMessage(B_REFS_RECEIVED),
+									   6, CMeVDoc::MimeType()->Type());
+	submenu->SetTargetForItems(be_app);
+	menu->AddItem(item = new BMenuItem(submenu, new BMessage(MENU_OPEN)));
+	item->SetShortcut('O', B_COMMAND_KEY);
 	item->SetTarget(be_app);
-	menu->AddItem(new BMenuItem("Close Window", new BMessage(B_QUIT_REQUESTED), 'W'));
+
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Save", new BMessage(MENU_SAVE), 'S'));
-	menu->AddItem(new BMenuItem("Save As...", new BMessage(MENU_SAVE_AS)));
+	menu->AddItem(new BMenuItem("Save As" B_UTF8_ELLIPSIS,
+								new BMessage(MENU_SAVE_AS)));
+	menu->AddItem(new BMenuItem("Close", new BMessage(B_QUIT_REQUESTED),
+								'W'));
 	menu->AddSeparatorItem();
 
-	menu->AddItem(item = new BMenuItem("Import...", new BMessage(MENU_IMPORT)));
+	const char *importFormats[2] = { "audio/x-midi", "audio/midi" };
+	be_roster->GetRecentDocuments(&refList, 6, importFormats, 2);
+	submenu = new CRecentDocumentsMenu("Import" B_UTF8_ELLIPSIS,
+									   new BMessage(B_REFS_RECEIVED),
+									   6, importFormats, 2);
+	submenu->SetTargetForItems(be_app);
+	menu->AddItem(item = new BMenuItem(submenu, new BMessage(MENU_IMPORT)));
 	item->SetTarget(be_app);
+
 	submenu = new BMenu("Export");
 	Document()->Application()->BuildExportMenu(submenu);
 	if (submenu->CountItems() <= 0)
@@ -721,11 +745,14 @@ CTrackWindow::CreateFileMenu(
 	menu->AddItem(new BMenuItem(submenu));
 	menu->AddSeparatorItem();
 
-	menu->AddItem(item = new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS)));
+	menu->AddItem(item = new BMenuItem("Preferences" B_UTF8_ELLIPSIS,
+									   new BMessage(MENU_PROGRAM_SETTINGS)));
 	item->SetTarget(be_app);
-	menu->AddItem(item = new BMenuItem("Help..", new BMessage(MENU_HELP)));
+	menu->AddItem(item = new BMenuItem("Help" B_UTF8_ELLIPSIS,
+									   new BMessage(MENU_HELP)));
 	item->SetTarget(be_app);
-	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT)));
+	menu->AddItem(new BMenuItem("About MeV" B_UTF8_ELLIPSIS,
+								new BMessage(MENU_ABOUT)));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));
 	menuBar->AddItem(menu);
