@@ -270,7 +270,6 @@ void CDestinationList::ReadVCTable (CIFFReader &reader)
 			pname.SetTo(buff);
 			//connect with name
 			ToggleConnectFor  (portid,m_midimanager->FindConsumer(pname.String()));
-			PRINT (("%s loading\n",pname.String()));
 		}
 		
 		

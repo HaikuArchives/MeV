@@ -165,8 +165,6 @@ void
 CTrackWindow::ExportSettings(
 	BMessage *settings) const
 {
-	PRINT(("CTrackWindow::ExportSettings()\n"));
-
 	settings->AddRect("frame", Frame());
 	stripFrame->ExportSettings(settings);
 }
@@ -566,8 +564,6 @@ CTrackWindow::MessageReceived(
 bool
 CTrackWindow::QuitRequested()
 {
-	PRINT(("CTrackWindow<%s>::QuitRequested()\n", BWindow::Name()));
-
 	BMessage *message = Track()->GetWindowSettings();
 	if (message != NULL)
 		delete message;

@@ -1,6 +1,7 @@
 /* ===================================================================== *
  * MidiManager.cpp (MeV/Midi)
  * ===================================================================== */
+
 #include "MidiManager.h"
 #include "PortNameMap.h"
 #include "list.h"
@@ -10,6 +11,9 @@
 #include <Messenger.h>
 #include <Debug.h>
 #include <stdio.h>
+
+// Debugging Macros
+#define D_ROSTER(x) //PRINT(x)	// BMidiRoster Interaction
 
 enum EDestinationModifierControlID {
 	NOTIFY='ntfy'
@@ -29,7 +33,7 @@ CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservableSubject()
 {
 	BMidiRoster* m_roster = BMidiRoster::MidiRoster();
 	if (! m_roster) {
-		PRINT(("Couldn't get MIDI m_roster\n"));
+		D_ROSTER(("Couldn't get MIDI m_roster\n"));
 		be_app->PostMessage(B_QUIT_REQUESTED);
 		return;
 	}
@@ -123,7 +127,7 @@ void CMidiManager::AddInternalSynth()
 	{
 		m_internalSynth=new CInternalSynth("Internal Synth");
 		m_internalSynth->Register();
-		PRINT(("adding %s\n",m_internalSynth->Name()));
+		D_ROSTER(("adding %s\n",m_internalSynth->Name()));
 	}
 }
 void CMidiManager::_addConsumer(int32 id)
@@ -301,7 +305,7 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 	
 	int32 op;
 	if (msg->FindInt32("be:op", &op) != B_OK) {
-		PRINT(("MidiManager::HandleMidiEvent: \"op\" field not found\n"));
+		D_ROSTER(("MidiManager::HandleMidiEvent: \"op\" field not found\n"));
 		return;
 	}
 
@@ -311,17 +315,17 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 id;
 			if (msg->FindInt32("be:id", &id) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_REGISTERED event\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_REGISTERED event\n"));
 				break;
 			}
 			
 			const char* type;
 			if (msg->FindString("be:type", &type) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_REGISTERED event\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_REGISTERED event\n"));
 				break;
 			}
 			
-			PRINT(("MIDI Roster Event B_MIDI_REGISTERED: id=%ld, type=%s\n", id, type));
+			D_ROSTER(("MIDI Roster Event B_MIDI_REGISTERED: id=%ld, type=%s\n", id, type));
 			if (! strcmp(type, "producer")) {
 				_addProducer(id);
 			} else if (! strcmp(type, "consumer")) {
@@ -333,17 +337,17 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 id;
 			if (msg->FindInt32("be:id", &id) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_UNREGISTERED\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_UNREGISTERED\n"));
 				break;
 			}
 			
 			const char* type;
 			if (msg->FindString("be:type", &type) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_UNREGISTERED\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_UNREGISTERED\n"));
 				break;
 			}
 			
-			PRINT(("MIDI Roster Event B_MIDI_UNREGISTERED: id=%ld, type=%s\n", id, type));
+			D_ROSTER(("MIDI Roster Event B_MIDI_UNREGISTERED: id=%ld, type=%s\n", id, type));
 			if (! strcmp(type, "producer")) {
 				_removeProducer(id);
 			} else if (! strcmp(type, "consumer")) {
@@ -356,23 +360,23 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 id;
 			if (msg->FindInt32("be:id", &id) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:id\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
 				break;
 			}
 			
 			const char* type;
 			if (msg->FindString("be:type", &type) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:type\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
 				break;
 			}
 			
 			BMessage props;
 			if (msg->FindMessage("be:properties", &props) != B_OK) {
-				PRINT(("MidiManager::HandleMidiEvent: \"be:properties\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
+				D_ROSTER(("MidiManager::HandleMidiEvent: \"be:properties\" field not found in B_MIDI_CHANGED_PROPERTIES\n"));
 				break;
 			}
 			
-			PRINT(("MIDI Roster Event B_MIDI_CHANGED_PROPERTIES: id=%ld, type=%s\n", id, type));
+			D_ROSTER(("MIDI Roster Event B_MIDI_CHANGED_PROPERTIES: id=%ld, type=%s\n", id, type));
 			if (! strcmp(type, "producer")) {
 			//	_updateProducerProps(id, &props);
 			} else if (! strcmp(type, "consumer")) {
@@ -387,16 +391,16 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 prod;
 			if (msg->FindInt32("be:producer", &prod) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:producer\" field not found in B_MIDI_CONNECTED\n"));
+				D_ROSTER(("PatchView::HandleMidiEvent: \"be:producer\" field not found in B_MIDI_CONNECTED\n"));
 				break;
 			}
 			
 			int32 cons;
 			if (msg->FindInt32("be:consumer", &cons) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:consumer\" field not found in B_MIDI_CONNECTED\n"));
+				D_ROSTER(("PatchView::HandleMidiEvent: \"be:consumer\" field not found in B_MIDI_CONNECTED\n"));
 				break;
 			}
-			PRINT(("MIDI Roster Event B_MIDI_CONNECTED: producer=%ld, consumer=%ld\n", prod, cons));
+			D_ROSTER(("MIDI Roster Event B_MIDI_CONNECTED: producer=%ld, consumer=%ld\n", prod, cons));
 			_connect(prod, cons);
 		}
 		break;
@@ -404,16 +408,16 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		{
 			int32 prod;
 			if (msg->FindInt32("be:producer", &prod) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:producer\" field not found in B_MIDI_DISCONNECTED\n"));
+				D_ROSTER(("PatchView::HandleMidiEvent: \"be:producer\" field not found in B_MIDI_DISCONNECTED\n"));
 				break;
 			}
 			
 			int32 cons;
 			if (msg->FindInt32("be:consumer", &cons) != B_OK) {
-				PRINT(("PatchView::HandleMidiEvent: \"be:consumer\" field not found in B_MIDI_DISCONNECTED\n"));
+				D_ROSTER(("PatchView::HandleMidiEvent: \"be:consumer\" field not found in B_MIDI_DISCONNECTED\n"));
 				break;
 			}
-			PRINT(("MIDI Roster Event B_MIDI_DISCONNECTED: producer=%ld, consumer=%ld\n", prod, cons));
+			D_ROSTER(("MIDI Roster Event B_MIDI_DISCONNECTED: producer=%ld, consumer=%ld\n", prod, cons));
 			_disconnect(prod, cons);
 		}
 		break;
@@ -421,7 +425,7 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		//we don't care about these right now.
 	break;
 	default:
-		PRINT(("MidiManager::HandleMidiEvent: unknown opcode %ld\n", op));
+		D_ROSTER(("MidiManager::HandleMidiEvent: unknown opcode %ld\n", op));
 		break;
 	}
 }
