@@ -4,6 +4,7 @@
 
 #include "RulerView.h"
 
+#include "CursorCache.h"
 #include "DataSnap.h"
 #include "EventTrack.h"
 #include "ResourceUtils.h"
@@ -16,6 +17,7 @@
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)		// CScrollerTarget/CObserver Implementation
 #define D_OPERATION(x) //PRINT(x)	// Operations
+#define D_INTERNAL(x) //PRINT(x)	// Internal Methods
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -214,10 +216,27 @@ CRulerView::MessageReceived(
 			// Only ONE change we are interested in, and that's section markers...
 			if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 			{
-				if (trackHint &
-					(CTrack::Update_Section | CTrack::Update_SigMap | CTrack::Update_TempoMap))
+				if (trackHint & CTrack::Update_Section)
 				{
-						Invalidate();
+					BRect r(Bounds());
+					int32 minTime;
+					if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
+						minTime = m_frameView->ViewCoordsToTime(Bounds().left,
+																m_track->ClockType());
+					r.left = m_frameView->TimeToViewCoords(minTime,
+														   m_track->ClockType());
+					int32 maxTime;
+					if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
+						maxTime = m_frameView->ViewCoordsToTime(Bounds().right,
+																m_track->ClockType());
+					r.right = m_frameView->TimeToViewCoords(maxTime,
+															m_track->ClockType());
+					r.InsetBy(-m_markerWidth, 0.0);
+					Invalidate(r);
+				}
+				else if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
+				{
+					Invalidate();
 				}
 			}
 		}
@@ -242,21 +261,12 @@ CRulerView::MouseDown(
 		SetMouseEventMask(B_POINTER_EVENTS, B_NO_POINTER_HISTORY | B_LOCK_WINDOW_FOCUS);
 
 		// Check if we hit a marker...
-		int32 markers[] = { m_track->SectionStart(), m_track->SectionEnd() };
-		for (int i = 0; i < 2; i++)
+		int32 marker = MarkerAt(point);
+		if (marker >= 0)
 		{
-			float x = m_frameView->TimeToViewCoords(markers[i],
-													m_track->ClockType());
-			if (((i == SECTION_START) && (point.x >= x)
-									  && (point.x <= x + m_markerWidth))
-			 || ((i == SECTION_END) && (point.x >= x - m_markerWidth)
-			 						&& (point.x <= x)))
-			{
-				BMessage message(MARKER_MOVED);
-				message.AddInt32("which", i);
-				DragMessage(&message, BRect(0.0, 0.0, -1.0, -1.0), (CScrollerTarget *)this);
-				break;
-			}
+			BMessage message(MARKER_MOVED);
+			message.AddInt32("which", marker);
+			DragMessage(&message, BRect(0.0, 0.0, -1.0, -1.0), this);
 		}
 	}
 }
@@ -281,6 +291,7 @@ CRulerView::MouseMoved(
 				if (message->FindInt32("which", &which) != B_OK)
 					return;
 
+				StSubjectLock lock(*m_track, Lock_Exclusive);
 				int32 time = m_frameView->ViewCoordsToTime(point.x, m_track->ClockType());
 				if (m_track->GridSnapEnabled())
 				{
@@ -295,22 +306,8 @@ CRulerView::MouseMoved(
 				int32 markers[] = { m_track->SectionStart(), m_track->SectionEnd() };
 				if (time != markers[which])
 				{
-					float x1 = m_frameView->TimeToViewCoords(markers[which],
-															 m_track->ClockType());
 					markers[which] = time;
-					float x2 = m_frameView->TimeToViewCoords(markers[which],
-															 m_track->ClockType());
-					if (x1 > x2)
-					{
-						float temp = x1;
-						x1 = x2;
-						x2 = temp;
-					}
-					x1 -= m_markerWidth;
-					x2 += m_markerWidth;
-					Invalidate(BRect(x1, Bounds().top, x2, Bounds().bottom));
 					m_track->SetSection(markers[0], markers[1]);
-					Invalidate(BRect(x1, Bounds().top, x2, Bounds().bottom));
 				}
 
 				// Implement auto-scrolling (horizontal for frame)
@@ -328,6 +325,14 @@ CRulerView::MouseMoved(
 			}
 		}
 	}
+	else
+	{
+		int32 marker = MarkerAt(point);
+		if (marker >= 0)
+			be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::HORIZONTAL_RESIZE));
+		else
+			be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::DEFAULT));
+	}
 }
 
 void
@@ -336,8 +341,6 @@ CRulerView::MouseUp(
 {
 	D_HOOK(("CRulerView::MouseUp()\n"));
 
-	if (m_track != NULL)
-		m_track->NotifyUpdate(CTrack::Update_Section, this);
 }
 
 void
@@ -373,6 +376,39 @@ CRulerView::Updated(
 
 	if (Window())
 		Window()->PostMessage(message, this);
+}
+
+// ---------------------------------------------------------------------------
+// Internal Methods
+
+int32
+CRulerView::MarkerAt(
+	BPoint point)
+{
+	D_INTERNAL(("CRulerView::Updated()\n"));
+
+	// won't manipulate markers that aren't visible
+	if (!m_showMarkers)
+		return - 1;
+
+	int32 markers[] = { m_track->SectionStart(), m_track->SectionEnd() };
+	for (int i = 0; i < 2; i++)
+	{
+		float x = m_frameView->TimeToViewCoords(markers[i],
+												m_track->ClockType());
+		if ((i == SECTION_START)
+		 && (point.x >= x) && (point.x <= x + m_markerWidth))
+		{
+			return SECTION_START;
+		}
+		if ((i == SECTION_END)
+		 && (point.x >= x - m_markerWidth) && (point.x <= x))
+		{
+			return SECTION_END;			
+		}
+	}
+
+	return -1;
 }
 
 // END - RulerView.cpp

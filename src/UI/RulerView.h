@@ -81,6 +81,14 @@ public:							// Constructor/Destructor
 
 	virtual						~CRulerView();
 
+protected:						// Accessors
+
+	/**	Returns either SECTION_START or SECTION_BEGIN if a marker is
+	 *	under point. If no marker is found, this function returns -1.
+	 */
+	int32						MarkerAt(
+									BPoint point);
+
 public:							// Operations
 
 	void						ShowMarkers(
@@ -117,7 +125,7 @@ public:							// CObserver Implementation
 	virtual void				Updated(
 									BMessage *message);
 
-protected:						// Instance Data
+private:						// Instance Data
 
 	CEventTrack *				m_track;
 
