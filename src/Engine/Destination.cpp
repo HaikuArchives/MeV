@@ -89,6 +89,9 @@ CDestination::CDestination(
 CDestination::~CDestination()
 {
 	D_ALLOC(("CDestination::~CDestination()\n"));
+
+	// request all observers to stop immediately
+	RequestDelete();
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +108,9 @@ CDestination::Stack(
 			event.NameText(), duration));
 
 	event.stack.destination = this;
-	event.stack.start -= (Latency() / 1000);
+
+	// this does not seem to work, disable for release
+//	event.stack.start -= (Latency() / 1000);
 }
 
 // ---------------------------------------------------------------------------
