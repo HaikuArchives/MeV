@@ -4,7 +4,9 @@
 
 #include "DestinationModifier.h"
 
-#include "MidiDestination.h"
+#include "ConsoleView.h"
+#include "Destination.h"
+#include "DestinationView.h"
 #include "MeVDoc.h"
 #include "DestinationListView.h"
 #include "MidiManager.h"
@@ -22,6 +24,8 @@
 // Support Kit
 #include <Debug.h>
 
+#define D_HOOK(x) //PRINT(x)		// CAppWindow Implementation
+
 using namespace Midi;
 
 // ---------------------------------------------------------------------------
@@ -32,24 +36,24 @@ CDestinationModifier::CDestinationModifier(
 	int32 id,
 	CMeVDoc *doc,
 	BHandler *parent)
-	:	CAppWindow(frame, "CDestination Modifier", B_TITLED_WINDOW,
+	:	CAppWindow(frame, "", B_TITLED_WINDOW,
 				B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
-		m_dest((CMidiDestination *)doc->FindDestination(id)),
-		m_id(id),
-		m_midiManager(Midi::CMidiManager::Instance()),
+		m_dest(doc->FindDestination(id)),
 		m_parent(parent)
 {
+	ASSERT(m_dest != NULL);
+
+	CWriteLock lock(m_dest);
 	m_dest->AddObserver(this);
 
-	StSubjectLock lock(*m_dest, Lock_Shared);
-	BString title;
-	title << "Destination: ";
-	title << m_dest->Name();
-	SetTitle(title.String());
+	CDestinationView *view = new CDestinationView(Bounds(), m_dest);
+	AddChild(view);
+	float width, height;
+	view->GetPreferredSize(&width, &height);
+	view->ResizeTo(width, height);
+	ResizeTo(width, height);
 
-	_buildUI();
-
-	m_name->MakeFocus(true);
+	_updateName();
 }
 
 CDestinationModifier::~CDestinationModifier()
@@ -61,95 +65,12 @@ CDestinationModifier::~CDestinationModifier()
 // ---------------------------------------------------------------------------
 // CAppWindow Implementation
 
-void
-CDestinationModifier::MenusBeginning()
-{
-	int i = m_midiPorts->CountItems();
-	while (i >= 0)
-	{
-		BMenuItem *item = (m_midiPorts->RemoveItem(i));
-		if (item)
-			delete item;
-		i--;
-	}
-	_populatePortsMenu();
-}
-
-void
-CDestinationModifier::MenusEnded()
-{
-	int i = m_midiPorts->CountItems();
-	while (i >= 0)
-	{
-		BMenuItem *item = (m_midiPorts->RemoveItem(i));
-		if (item)
-			delete item;
-		i--;
-	}
-}
-
-void
-CDestinationModifier::MessageReceived(
-	BMessage *message)
-{
-	switch (message->what)
-	{
-		case NAME_CHANGED:
-		{
-			StSubjectLock lock(*m_dest, Lock_Exclusive);
-
-			BString name;
-			name << m_name->Text();
-			m_dest->SetName(name.String());
-			BString title;
-			title << "Destination: ";
-			title << name;
-			SetTitle(title.String());
-			break;
-		}
-		case CHANNEL_SELECTED:
-		{
-			StSubjectLock lock(*m_dest, Lock_Exclusive);
-
-			m_dest->SetChannel(message->FindInt8("value"));	
-			break;
-		}
-		case PORT_SELECTED:
-		{
-			StSubjectLock lock(*m_dest, Lock_Exclusive);
-
-			int32 portID;
-			if (message->FindInt32("port_id", &portID) != B_OK)
-				return;
-			m_dest->ConnectTo(portID);
-			break;
-		}
-		case MUTED:
-		{
-			StSubjectLock lock(*m_dest, Lock_Exclusive);
-
-			m_dest->SetMuted(m_muted->Value());
-			break;
-		}
-		case COLOR_CHANGED:
-		{
-			StSubjectLock lock(*m_dest, Lock_Exclusive);
-
-			m_dest->SetColor(m_colors->ValueAsColor());
-			break;
-		}
-		default:
-		{
-			BWindow::MessageReceived(message);
-		}
-	}
-}
 
 bool 
 CDestinationModifier::QuitRequested()
 {
 	BMessage *msg = new BMessage(WINDOW_CLOSED);
-	msg->AddInt32("destination_id", m_id);
+	msg->AddInt32("destination_id", m_dest->ID());
 	BMessenger *amsgr = new BMessenger(m_parent);
 	amsgr->SendMessage(msg);
 
@@ -164,7 +85,7 @@ CDestinationModifier::SubjectReleased(
 	{
 		m_dest->RemoveObserver(this);
 		m_dest = NULL;
-		PostMessage(B_QUIT_REQUESTED, this);
+		Quit();
 		return true;
 	}
 
@@ -175,156 +96,24 @@ void
 CDestinationModifier::SubjectUpdated(
 	BMessage *message)
 {
-	// i don't really know why this would happen.
-	// -> if there were other means to edit the destination
-}
+	D_HOOK(("CDestinationModifier::SubjectUpdated()\n"));
 
-// ---------------------------------------------------------------------------
-// Internal Operations
-
-void
-CDestinationModifier::_buildUI()
-{
-	StSubjectLock lock(*m_dest, Lock_Shared);
-
-	BMenuField *menuField;
-	float maxLabelWidth = be_plain_font->StringWidth("Channel:  ");
-
-	BRect rect(Bounds());
-	m_background = new BView(rect, "", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
-	m_background->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-	AddChild(m_background);
-
-	font_height fh;
-	be_plain_font->GetHeight(&fh);
-
-	// add "Name" text-control
-	rect.InsetBy(5.0, 5.0);
-	rect.bottom = rect.top + fh.ascent + fh.descent + fh.leading + 6.0;
-	m_name = new BTextControl(rect, "Name", "Name:", "",
-							  new BMessage(NAME_CHANGED));
-	m_name->SetDivider(maxLabelWidth);
-	m_name->SetText(m_dest->Name());
-	m_background->AddChild(m_name);
-
-	// add "Ports" menu
-	rect.OffsetBy(0.0, rect.Height() + 10.0);
-	m_midiPorts = new BPopUpMenu("Ports");
-	m_midiPorts->SetLabelFromMarked(true);
-	menuField = new BMenuField(rect, "Ports", "Ports:", m_midiPorts);
-	menuField->SetDivider(maxLabelWidth);
-	m_background->AddChild(menuField);
-	
-	// add "Channels" menu
-	rect.OffsetBy(0.0, rect.Height() + 5.0);
-	rect.right = Bounds().Width() / 2.0;
-	m_channels = new BPopUpMenu("Channel");
-	for (int c = 0;c <= 15; c++)
-	{
-		BMessage *msg = new BMessage(CHANNEL_SELECTED);
-		msg->AddInt8("value", c);
-		BString cname;
-		cname << (c + 1);
-		BMenuItem *item = new BMenuItem(cname.String(), msg);
-		m_channels->AddItem(item);
-	}
-	(m_channels->ItemAt((m_dest->Channel())))->SetMarked(true);
-	menuField = new BMenuField(rect, "Channel", "Channel:", m_channels);
-	menuField->SetDivider(maxLabelWidth);
-	m_background->AddChild(menuField);
-
-	// add "Mute" check-box
-	rect.left = rect.right;
-	rect.right = Bounds().Width() * 0.75;
-	m_muted = new BCheckBox(rect, "Mute", "Mute", new BMessage(MUTED));
-	m_background->AddChild(m_muted);
-	if (m_dest->IsMuted())
-		m_muted->SetEnabled(false);
-
-	// add "Solo" check-box
-	rect.left = rect.right;
-	rect.right = Bounds().Width() - 5.0;
-	m_solo = new BCheckBox(rect, "Solo", "Solo", new BMessage(SOLOED));
-	m_solo->SetEnabled(false);
-	m_background->AddChild(m_solo);
-
-	// add CDestination color-control
-	rect.left = Bounds().left + 5.0;
-	rect.top = rect.bottom + 15.0;
-	rect.bottom = Bounds().bottom - 5.0;
-	m_colors = new BColorControl(rect.LeftTop(), B_CELLS_32x8, 4.0,
-								 "Destination Color",
-								 new BMessage(COLOR_CHANGED));
-	m_colors->SetValue(m_dest->Color());
-	m_background->AddChild(m_colors);
-
-	// resize the window to fit the color control
-	if (m_colors->Frame().right > (Bounds().right - 5.0))
-	{
-		ResizeBy(m_colors->Frame().right - (Bounds().right - 5.0),
-				 0.0);
-	}
-
-	if (m_colors->Frame().bottom < (Bounds().bottom - 5.0))
-	{
-		ResizeBy(0.0, m_colors->Frame().bottom - (Bounds().bottom - 5.0));
-	}
-	_populatePortsMenu();
+	int32 destAttrs;
+	if (message->FindInt32("DestAttrs", &destAttrs) != B_OK)
+		return;
+	if (destAttrs & CDestination::Update_Name)
+		_updateName();
 }
 
 void
-CDestinationModifier::_populatePortsMenu()
+CDestinationModifier::_updateName()
 {
-	BMidiConsumer *consumer = NULL;
+	CReadLock lock(m_dest);
 
-	consumer = m_midiManager->InternalSynth();
-	if (consumer)
-	{
-		BMessage *msg = new BMessage(PORT_SELECTED);
-		msg->AddInt32("port_id", consumer->ID());
-	
-		BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
-										  B_MINI_ICON - 1.0), B_CMAP8);
-		if (m_midiManager->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
-		{
-			delete icon;
-			icon = NULL;
-		}
-	
-		CIconMenuItem *item = new CIconMenuItem(consumer->Name(), msg, 
-												icon);
-		m_midiPorts->AddItem(item);
-		StSubjectLock lock(*m_dest, Lock_Shared);
-		if (m_dest->IsConnectedTo(consumer))
-			item->SetMarked(true);
-	}
-
-	int32 id = 0;
-	while ((consumer = m_midiManager->GetNextConsumer(&id)) != NULL)
-	{
-		if (consumer->IsValid())
-		{
-			BMessage *msg = new BMessage(PORT_SELECTED);
-			msg->AddInt32("port_id", id);
-
-			BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
-											  B_MINI_ICON - 1.0), B_CMAP8);
-			if (m_midiManager->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
-			{
-				delete icon;
-				icon = NULL;
-			}
-
-			CIconMenuItem *item = new CIconMenuItem(consumer->Name(), msg,
-													icon);
-			m_midiPorts->AddItem(item);
-
-			StSubjectLock lock(*m_dest, Lock_Shared);
-			if (m_dest->IsConnectedTo(consumer))
-				item->SetMarked(true);
-			consumer->Release();
-		}
-	}
+	BString title;
+	title << "Destination: ";
+	title << m_dest->Name();
+	SetTitle(title.String());
 }
 
 // END - DestinationModifier.cpp

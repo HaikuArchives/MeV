@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * DestinationModifier.h (MeV/UI)
+ * DestinationView.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -36,42 +36,72 @@
  * 
  * ===================================================================== */
 
-#ifndef __C_VChannelModifier_H__
-#define __C_VChannelModifier_H__
+#ifndef __C_DestinationView_H__
+#define __C_DestinationView_H__
 
-#include "AppWindow.h"
+#include "ConsoleView.h"
 
-class CConsoleView;
+// Support Kit
+#include <String.h>
+
 class CDestination;
-class CDestinationList;
-class CMeVDoc;
 
-class CDestinationModifier
-	:	public CAppWindow
+class BBitmap;
+class BCheckBox;
+class BPopUpMenu;
+class BStringView;
+class BTextControl;
+
+class CDestinationView
+	:	public CConsoleView
 {
 
 public:							// Constants
 
 	enum messages
 	{
-								ADD_ID,
+								NAME_CHANGED = 'dmoA',
 
-								WINDOW_CLOSED
+								RENAME,
+
+								MUTED,
+
+								SOLO,
+
+								LATENCY_CHANGED,
+
+								COLOR_CHANGED
 	};
 
 public:							// Constructor/Destructor
 
-								CDestinationModifier(
+								CDestinationView(
 									BRect frame,
-									int32 id,
-									CMeVDoc *doc,
-									BHandler *parent);
+									CDestination *destination);
 
-	virtual 					~CDestinationModifier();
+	virtual 					~CDestinationView();
 
-public:							// CAppWindow Implementation
+public:							// Accessors
 
-	virtual bool				QuitRequested();
+	CDestination *				Destination() const
+								{ return m_destination; }
+
+public:							// CConsoleView Implementation
+
+	virtual void				AttachedToWindow();
+
+	virtual void				Draw(
+									BRect updateRect);
+
+	virtual void				GetPreferredSize(
+									float *width,
+									float *height);
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				MouseDown(
+									BPoint point);
 
 	virtual bool				SubjectReleased(
 									CObservable *subject);
@@ -81,16 +111,43 @@ public:							// CAppWindow Implementation
 
 private:						// Internal Operations
 
+	void						_showContextMenu(
+									BPoint point);
+
+	void						_updateIcon();
+
+	void						_updateLatency();
+
 	void						_updateName();
 
 private:						// Instance Data
 
-	//pointer to the currently selected dest.
-	CDestination *				m_dest;
+	CDestination *				m_destination;
 
-	int32						m_id;
+	BString						m_truncatedName;
 
-	BHandler *					m_parent;
+	BRect						m_nameFrame;
+
+	bool						m_editingName;
+
+	BBitmap *					m_icon;
+
+	BPoint						m_iconOffset;
+
+	BCheckBox *					m_mutedCheckBox;
+
+	BCheckBox *					m_soloCheckBox;
+
+	BTextControl *				m_latencyControl;
+	BStringView *				m_msLabel;
+
+	CConsoleView *				m_configView;
+
+	CConsoleView *				m_monitorView;
+
+	BColorControl *				m_colorControl;
+
+	BPopUpMenu *				m_contextMenu;
 };
 
-#endif /* __C_DestinationModifier_H__ */
+#endif /* __C_DestinationView_H__ */
