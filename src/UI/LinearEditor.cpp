@@ -160,8 +160,6 @@ CLinearEditor::CLinearEditor(
 	SetLabelView(new CPianoKeyboardView(BRect(-1.0, 0.0, 20.0, rect.Height()),
 										this, B_FOLLOW_TOP_BOTTOM,
 										B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
-
-	SetFlags(Flags() | B_PULSE_NEEDED);
 }
 
 // ---------------------------------------------------------------------------
