@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -30,6 +31,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/30/2000	malouin
+ *		EMenuIDs start at 'menA' to avoid conflict with other constants
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -40,7 +43,7 @@
 
 enum EMenuIDs	{
 		// File menus
-	MENU_NEW = 1,
+	MENU_NEW = 'menA',
 	MENU_OPEN,
 	MENU_SAVE,
 	MENU_SAVE_AS,
