@@ -469,7 +469,7 @@ CTimeEditControl::DrawInto(
 			for (int i = 0; i < 3; i++)
 			{
 				char digits[4];
-				sprintf(digits, "%03ld", val[i]);
+				sprintf(digits, "%03ld", val[i] + 1);
 				BPoint offset(cellRect.LeftBottom());
 				offset.x += cellRect.Width() / 2.0
 							- m_digitFont.StringWidth(digits) / 2.0;

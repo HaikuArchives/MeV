@@ -183,7 +183,7 @@ CRulerView::Draw(
 		{
 			char str[16];
 			if (m_track->ClockType() == ClockType_Metered)
-				sprintf(str, "%02ld", timeIter2.MajorCount());
+				sprintf(str, "%02ld", timeIter2.MajorCount() + 1);
 			else
 				sprintf(str, "%02ld:00", timeIter2.MajorCount());
 
