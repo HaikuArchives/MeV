@@ -822,12 +822,11 @@ bool CStandardMidiFile::SMFTrackReader::ReadProgramChange(uint8 status, CEvent& 
 
 bool CStandardMidiFile::SMFTrackReader::ReadPitchBend(uint8 status, CEvent& event)
 {
-	int16 bendAmount;
-
 	event.SetCommand(EvtType_PitchBend);
 	event.SetVChannel(m_destinationID[status & 0x0F]);
-	bendAmount  = GetByte() * 128;
-	bendAmount += GetByte();
+
+	int16 bendAmount = GetByte() - 8192;
+	bendAmount += GetByte() * 128;
 	event.SetAttribute(EvAttr_BendValue,   bendAmount);
 	event.SetAttribute(EvAttr_InitialBend, bendAmount);
 	PRINT(("\t\t\tPitch Bend vChannel=%-3d, amount=%-3ld\n",
@@ -848,6 +847,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadSystemExclusive(uint8 status, CEvent
 		buf.push_back(ch);
 
 	event.SetCommand(EvtType_SysEx);
+	event.SetVChannel(m_destinationID[status & 0x0F]); // is this correct ???
 	if (event.SetExtendedDataSize(buf.size()))
 		memcpy(event.ExtendedData(), &buf[0], buf.size());
 	PRINT(("\t\t\tSystem Exclusive length=%ld\n", buf.size()));
