@@ -37,6 +37,8 @@ bool
 CObservable::AddObserver(
 	CObserver *observer)
 {
+	ASSERT(observer != NULL);
+
 	CWriteLock lock(this);
 	return m_observers.AddItem(observer);
 }
@@ -45,6 +47,8 @@ bool
 CObservable::RemoveObserver(
 	CObserver *observer)
 {
+	ASSERT(observer != NULL);
+
 	CWriteLock lock(this);
 	return m_observers.RemoveItem(observer);
 }
@@ -89,10 +93,11 @@ CObservable::RequestDelete()
 		D_OBSERVE((" -> %ld observers hanging on\n", count));
 
 		ReadLock();
-		CObserver *ob = (CObserver *)m_observers.ItemAt(count - 1);
+		CObserver *ob = (CObserver *)m_observers.LastItem();
 		ReadUnlock();
 
 		D_OBSERVE((" -> releasing observer at %p\n", ob));
+		ASSERT(ob != NULL);
 		if (ob->Released(this) == false)
 		{
 			D_OBSERVE((" !! observer did not release subject\n"));
