@@ -55,8 +55,8 @@ CEventEditor::CEventEditor(
 	// start observing every destination in use by this part
 	CDestination *dest = NULL;
 	int32 index = 0;
-	CReadLock lock(Track());
-	while ((dest = Track()->GetNextUsedDestination(&index)) != NULL)
+	CReadLock lock(m_track);
+	while ((dest = m_track->GetNextUsedDestination(&index)) != NULL)
 	{
 		D_ALLOC((" -> start observing used destination '%s'\n",
 				 dest->Name()));
@@ -92,8 +92,8 @@ CEventEditor::CEventEditor(
 	// start observing every destination in use by this part
 	CDestination *dest = NULL;
 	int32 index = 0;
-	CReadLock lock(Track());
-	while ((dest = Track()->GetNextUsedDestination(&index)) != NULL)
+	CReadLock lock(m_track);
+	while ((dest = m_track->GetNextUsedDestination(&index)) != NULL)
 	{
 		D_ALLOC((" -> start observing used destination '%s'\n",
 				 dest->Name()));
@@ -111,9 +111,22 @@ CEventEditor::~CEventEditor()
 	delete m_nullEventRenderer;
 
 	if (m_track != NULL)
+	{
 		m_track->RemoveObserver(this);
+
+		// stop observing the destinations in use by this part
+		CDestination *dest = NULL;
+		int32 index = 0;
+		CReadLock lock(m_track);
+		while ((dest = m_track->GetNextUsedDestination(&index)) != NULL)
+		{
+			D_ALLOC((" -> stop observing used destination '%s'\n",
+					 dest->Name()));
+			dest->RemoveObserver(this);
+		}
+	}
 }
-	
+
 // ---------------------------------------------------------------------------
 // Hook Functions
 
