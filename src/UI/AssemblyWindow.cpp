@@ -103,42 +103,6 @@ CAssemblyWindow::MessageReceived(
 			Track()->Redo();
 			break;
 		}
-		case B_CUT:
-		{
-			if (CurrentFocus())
-			{
-				DispatchMessage(message, CurrentFocus());
-			}
-			else
-			{
-				// Add CUT code here
-			}
-			break;
-		}
-		case B_COPY:
-		{
-			if (CurrentFocus())
-			{
-				DispatchMessage(message, CurrentFocus());
-			}
-			else
-			{
-				// Add COPY code here
-			}
-			break;
-		}
-		case B_PASTE:
-		{
-			if (CurrentFocus())
-			{
-				DispatchMessage( message, CurrentFocus() );
-			}
-			else
-			{
-				// Add PASTE code
-			}
-			break;
-		}
 		case MENU_CLEAR:
 		{
 			ActiveTrack()->DeleteSelection();

@@ -561,101 +561,22 @@ CTrackWindow::MessageReceived(
 		}
 		case B_KEY_DOWN:
 		{
-			int32		key;
-			int32		modifiers;
-			CEventTrack	*tk;
-			
-			tk = ActiveTrack();
-	
+			PRINT((" B_KEY_DOWN\n"));
+
+			int32 key;
 			message->FindInt32("raw_char", &key);
+			int32 modifiers;
 			message->FindInt32("modifiers", &modifiers);
-	
-			if (key == B_LEFT_ARROW || key == B_RIGHT_ARROW)
-			{
-				if (tk->SelectionType() != CTrack::Select_None )
-				{
-					int32		delta;
-					EventOp		*op;
-					
-					delta = tk->GridSnapEnabled() ? tk->TimeGridSize() : 1;
-						
-					if (modifiers & B_SHIFT_KEY)
-					{
-						op = new DurationOffsetOp( key == B_RIGHT_ARROW ? delta : -delta );
-	
-						tk->ModifySelectedEvents(
-							NULL, *op, "Change Duration", EvAttr_Duration );
-					}
-					else
-					{
-						if (key == B_LEFT_ARROW)
-						{
-							if (delta > tk->MinSelectTime()) break;
-							delta = -delta;
-						}
-						op = new TimeOffsetOp( delta );
-	
-						tk->ModifySelectedEvents(
-							NULL, *op, "Move", EvAttr_None );
-					}
-					
-					CRefCountObject::Release( op );
-				}
-			}
-			else if (key == B_UP_ARROW || key == B_DOWN_ARROW)
-			{
-				if (tk->CurrentEvent() != NULL )
-				{
-					enum E_EventAttribute		attr = EvAttr_None;
-					int32					delta;
-					
-					if (	key == B_UP_ARROW) delta = -1;
-					else delta = 1;
-							
-					switch (tk->CurrentEvent()->Command()) {
-					case EvtType_Note:
-						attr = EvAttr_Pitch;
-						delta = -delta;
-						if (modifiers & B_SHIFT_KEY) delta *= 12;
-						break;
-					case EvtType_Repeat:
-					case EvtType_Sequence:
-					case EvtType_TimeSig:
-						attr = EvAttr_VPos;
-						break;
-					}
-					
-					if (attr != EvAttr_None)
-					{
-						EventOp *op = CreateOffsetOp( attr, delta, 0 );
-						if (op)
-						{
-							tk->ModifySelectedEvents(
-								NULL, *op, "Modify Events", attr );
-							CRefCountObject::Release( op );
-		
-							if (gPrefs.FeedbackEnabled( attr, false )
-								&&	tk->SelectionCount() == 1)
-							{
-								CPlayerControl::DoAudioFeedback(Document(),
-																attr,
-																tk->CurrentEvent()->GetAttribute( attr ),
-																tk->CurrentEvent() );
-							}
-						}
-					}
-				}
-			}
-		
 			if (!(modifiers & B_COMMAND_KEY))
 			{
-					// REM: Make sure delete menu is enabled before
-					// checking menus. We ought to call MenusBeginning, but
-					// I'm not sure that's safe...
+				// REM: Make sure delete menu is enabled before
+				// checking menus. We ought to call MenusBeginning, but
+				// I'm not sure that's safe...
 				BMenuItem *item = KeyMenuBar()->FindItem("Clear");
 				item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
 	
-				if (key == B_BACKSPACE) key = B_DELETE;
+				if (key == B_BACKSPACE)
+					key = B_DELETE;
 				if (CQuickKeyMenuItem::TriggerShortcutMenu(KeyMenuBar(), key))
 					break;
 			}

@@ -207,7 +207,7 @@ CEventEditor::DoDrag(
 			// and only if we're dragging something that can be fed back.
 			if ((newValueOp != NULL) && (newValueDelta != m_valueDelta))
 			{
-				Event feedbackEvent(*(Event *)dragEvent);
+				Event feedbackEvent(*dragEvent);
 	
 				// REM: EvAttr_Pitch should not be hard coded.
 				// This should be in fact computed from the renderer.
@@ -300,7 +300,7 @@ CEventEditor::DrawEchoEvents(
 	{
 		if (ev->IsSelected())
 		{
-			Event evCopy(*(Event *)ev);
+			Event evCopy(*ev);
 			(*echoOp)(evCopy, clockType);
 			if ((evCopy.Start() <= stopTime) && (evCopy.Stop() >= startTime))
 				RendererFor(evCopy)->Draw(evCopy, true);
@@ -484,7 +484,7 @@ CEventEditor::InvalidateSelection(
 		// by not invalidating notes outside the time range
 		if (ev->IsSelected())
 		{
-			Event evCopy(*(Event *)ev);
+			Event evCopy(*ev);
 			inOp(evCopy, clockType);
 			RendererFor(*ev)->Invalidate(evCopy);
 		}
@@ -1180,6 +1180,101 @@ CEventEditor::DrawCreateEcho(
 
 // ---------------------------------------------------------------------------
 // CStripView Implementation
+
+void
+CEventEditor::KeyDown(
+	const char *bytes,
+	int32 numBytes)
+{
+	if ((bytes[0] == B_LEFT_ARROW) || (bytes[0] == B_RIGHT_ARROW))
+	{
+		if (Track()->SelectionType() != CTrack::Select_None)
+		{
+			int32 delta = Track()->GridSnapEnabled() ? Track()->TimeGridSize()
+													 : 1;
+			EventOp *op;
+			if (modifiers() & B_SHIFT_KEY)
+			{
+				op = new DurationOffsetOp((bytes[0] == B_RIGHT_ARROW) ? delta
+																	  : -delta);
+				Track()->ModifySelectedEvents(NULL, *op, "Change Duration",
+											  EvAttr_Duration);
+			}
+			else
+			{
+				if (bytes[0] == B_LEFT_ARROW)
+				{
+					if (delta > Track()->MinSelectTime())
+						return;
+					delta = -delta;
+				}
+				op = new TimeOffsetOp(delta);
+				Track()->ModifySelectedEvents(NULL, *op, "Move", EvAttr_None);
+			}
+			CRefCountObject::Release(op);
+		}
+	}
+	else if ((bytes[0] == B_UP_ARROW) || (bytes[0] == B_DOWN_ARROW))
+	{
+		if (Track()->CurrentEvent() != NULL)
+		{
+			enum E_EventAttribute attr = EvAttr_None;
+			int32 delta;
+			
+			if (bytes[0] == B_UP_ARROW)
+				delta = -1;
+			else
+				delta = 1;
+					
+			switch (Track()->CurrentEvent()->Command())
+			{
+				case EvtType_Note:
+				{
+					attr = EvAttr_Pitch;
+					delta = -delta;
+					if (modifiers() & B_SHIFT_KEY)
+						delta *= 12;
+					break;
+				}
+				case EvtType_Repeat:
+				case EvtType_Sequence:
+				case EvtType_TimeSig:
+				{
+					attr = EvAttr_VPos;
+					break;
+				}
+			}
+			
+			if (attr != EvAttr_None)
+			{
+				EventOp *op = CreateOffsetOp(attr, delta, 0);
+				if (op)
+				{
+					Track()->ModifySelectedEvents(NULL, *op, "Modify Events",
+												  attr);
+					CRefCountObject::Release(op);
+
+					if (gPrefs.FeedbackEnabled(attr, false)
+					 &&	(Track()->SelectionCount() == 1))
+					{
+						CPlayerControl::DoAudioFeedback(TrackWindow()->Document(),
+														attr,
+														Track()->CurrentEvent()->GetAttribute(attr),
+														Track()->CurrentEvent());
+					}
+				}
+			}
+		}
+	}
+	else if ((bytes[0] == B_DELETE) || (bytes[0] == B_BACKSPACE))
+	{
+		if (Track()->SelectionType() != CTrack::Select_None)
+		{
+			Track()->DeleteSelection();
+// 			TrackWindow()->Document()->SetModified();
+		}		
+	}
+}
 
 void
 CEventEditor::MessageReceived(

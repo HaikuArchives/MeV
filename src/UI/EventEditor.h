@@ -293,6 +293,10 @@ protected:						// Internal Operations
 
 public:							// CStripView Implementation
 
+	virtual void				KeyDown(
+									const char *bytes,
+									int32 numBytes);
+
 	virtual void				MessageReceived(
 									BMessage *message);
 

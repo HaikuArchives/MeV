@@ -120,24 +120,6 @@ CLinearWindow::MessageReceived(
 			Track()->Redo();
 			break;
 		}
-		case B_CUT:
-		{
-			if (CurrentFocus()) DispatchMessage( message, CurrentFocus() );
-			else { /* REM: Add CUT code */ };
-			break;
-		}
-		case B_COPY:
-		{
-			if (CurrentFocus()) DispatchMessage( message, CurrentFocus() );
-			else { /* REM: Add CUT code */ };
-			break;
-		}
-		case B_PASTE:
-		{
-			if (CurrentFocus()) DispatchMessage( message, CurrentFocus() );
-			else { /* REM: Add CUT code */ };
-			break;
-		}
 		case MENU_CLEAR:
 		{
 			Track()->DeleteSelection();

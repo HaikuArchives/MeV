@@ -106,6 +106,7 @@ CMeVDoc::CMeVDoc(
 			ShowWindowFor(TrackAt(i));
 
 	SetValid();
+	SetModified(false);
 }
 
 CMeVDoc::~CMeVDoc()
