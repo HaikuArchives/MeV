@@ -44,6 +44,7 @@
 #define __C_Event_H__
 
 #include "MeVSpec.h"
+#include "Time.h"
 
 // Gnu C Library
 #include <string.h>
@@ -637,15 +638,15 @@ public:							// Accessors
 	int32						Start() const
 								{ return common.start; }
 	void						SetStart(
-									const int32 start)
-								{ common.start = start; }
+									CTime start)
+								{ common.start = start.Milliseconds(); }
 
 	// Access functions for duration
 	int32						Duration() const
 								{ return common.duration; }
 	void						SetDuration(
-									const int32 duration)
-								{ common.duration = duration; }
+									CTime duration)
+								{ common.duration = duration.Milliseconds(); }
 
 	// Access functions for stop time (start + duration)
 	int32						Stop() const
