@@ -35,6 +35,7 @@ SRCS= \
 	Midi/MidiDeviceInfo.cpp \
 	Midi/MidiManager.cpp \
 	Midi/PortNameMap.cpp \
+	Midi/ReconnectingMidiProducer.cpp \
 	Support/BeError.cpp \
 	Support/BeFileReader.cpp \
 	Support/Dictionary.cpp \
@@ -81,7 +82,6 @@ SRCS= \
 	UI/Tool.cpp \
 	UI/ToolBar.cpp \
 	UI/TrackCtlStrip.cpp \
-	UI/TrackEditFrame.cpp \
 	UI/TrackListItem.cpp \
 	UI/TrackListView.cpp \
 	UI/TrackListWindow.cpp \
