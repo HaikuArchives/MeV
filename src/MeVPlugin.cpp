@@ -248,15 +248,16 @@ MeVDocRef::NewDestination(
 	int consumerID,
 	int channel)
 {
+	CMeVDoc *doc = reinterpret_cast<CMeVDoc *>(data);
+
 	// +++ move this midi-specific stuff outta here
 	using namespace Midi;
-
-	CMeVDoc *doc = reinterpret_cast<CMeVDoc *>(data);
 	CMidiDestination *dest = (CMidiDestination *)doc->NewDestination();
-
-	dest->SetName(name);
+	CWriteLock lock(dest);
 	dest->ConnectTo(consumerID);
 	dest->SetChannel(channel - 1);
+
+	dest->SetName(name);
 
 	return dest->ID();
 }
@@ -265,13 +266,13 @@ int
 MeVDocRef::GetChannelForDestination(
 	int destinationID)
 {
+	// +++ move this midi-specific stuff outta here
 	CMeVDoc *doc = reinterpret_cast<CMeVDoc *>(data);
 	if (doc->IsDefinedDest(destinationID))
 	{
-		// +++ move this midi-specific stuff outta here
-		using namespace Midi;
 		CDestination *dest = doc->FindDestination(destinationID);
-		return ((CMidiDestination *)dest)->Channel();
+		CReadLock lock(dest);
+		return ((Midi::CMidiDestination *)dest)->Channel();
 	}
 
 	return -1;
