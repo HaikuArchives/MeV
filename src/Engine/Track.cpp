@@ -233,7 +233,7 @@ CTrack::ReadTrackChunk(
 			reader.MustRead(m_name, MIN(reader.ChunkLength(), TRACK_NAME_LENGTH));
 			break;
 		}
-		case CTrackWindow::FILE_CHUNK_ID:
+		case TRACK_WINDOW_CHUNK:
 		{
 			int8 visible;
 			reader >> visible;
@@ -288,7 +288,7 @@ CTrack::WriteTrack(
 	}
 	if (m_windowSettings)
 	{
-		writer.Push(CTrackWindow::FILE_CHUNK_ID);
+		writer.Push(TRACK_WINDOW_CHUNK);
 		// indicate visibility
 		writer << (int8)(m_window != NULL);
 		CTrackWindow::WriteState(writer, m_windowSettings);
