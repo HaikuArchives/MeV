@@ -897,7 +897,8 @@ CProgramChangeEventHandler::GetPatchName(
 																dest->channel - 1);
 	if (info == NULL)
 	{
-		*outName = "(Unknown)";
+		*outName = "Program ";
+		*outName << ev.programChange.program;
 		return false;
 	}
 	
