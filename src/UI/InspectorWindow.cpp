@@ -24,7 +24,7 @@
 // Constants Initialization
 
 const BRect
-CInspectorWindow::DEFAULT_DIMENSIONS(0.0, 0.0, 445.0, 64.0);
+CInspectorWindow::DEFAULT_DIMENSIONS(0.0, 0.0, 470.0, 64.0);
 
 const int					channelBoxWidth = 14,
 						channelBoxHeight = 14;
@@ -130,30 +130,32 @@ CInspectorWindow::CInspectorWindow(
 						 position.x + DEFAULT_DIMENSIONS.Width(),
 						 position.y + DEFAULT_DIMENSIONS.Height()),
 						 "Inspector", B_FLOATING_WINDOW,
-						 B_WILL_ACCEPT_FIRST_CLICK | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
+						 B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
+						 | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 						 B_CURRENT_WORKSPACE),
 		CObserver(*this, NULL),
 		m_track(NULL),
 		m_previousValue(-1)
 {
 	CBorderView *bgView = new CBorderView(Bounds(), "", B_FOLLOW_ALL_SIDES,
-										  B_WILL_DRAW, 0, CBorderView::BEVEL_BORDER);
+										  B_WILL_DRAW, false, NULL,
+										  CBorderView::BEVEL_BORDER);
 	AddChild(bgView);
 
 	for(int i = 0; i < 3; i++)
 	{
 		static int32 ids[3] = { Slider1_ID, Slider2_ID, Slider3_ID };
 		float y = 8.0 + 18.0 * i;
-		m_vLabel[i] = new BStringView(BRect(5.0, y, 55.0, y + 13.0), "", "Pitch");
+		m_vLabel[i] = new BStringView(BRect(5.0, y, 75.0, y + 13.0), "", "Pitch");
 		bgView->AddChild(m_vLabel[i]);
 		m_vLabel[i]->SetAlignment(B_ALIGN_RIGHT);
-		m_vSlider[i] = new CTextSlider(BRect(55.0, y, 210.0, y + 13.0),
+		m_vSlider[i] = new CTextSlider(BRect(80.0, y, 235.0, y + 13.0),
 									   new BMessage(ids[i]), "");
 		bgView->AddChild(m_vSlider[i]);
 		m_vSlider[i]->SetEnabled(false);
 	}
 
-	BRect r(215.0, 3.0, 215.0 + channelBoxWidth * 16 + 2.0,
+	BRect r(240.0, 3.0, 240.0 + channelBoxWidth * 16 + 2.0,
 			3.0 + channelBoxHeight * 4 + 2.0);
 	m_channelControl = new CDestinationListView(r, this);
 	bgView->AddChild(m_channelControl);

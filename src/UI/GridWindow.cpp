@@ -26,14 +26,16 @@ CGridWindow::CGridWindow(
 						 position.y + DEFAULT_DIMENSIONS.Height()),
 				   "Grid",
 				   B_FLOATING_WINDOW,
-				   B_WILL_ACCEPT_FIRST_CLICK | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
+				   B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
+				   | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 				   B_CURRENT_WORKSPACE),
 		CObserver(*this, NULL),
 		m_intervalControl(NULL),
 		m_track(NULL)
 {
 	CBorderView *bgView = new CBorderView(Bounds(), "", B_FOLLOW_NONE,
-										  B_WILL_DRAW, 0, CBorderView::BEVEL_BORDER);
+										  B_WILL_DRAW, false, NULL,
+										  CBorderView::BEVEL_BORDER);
 	AddChild(bgView);
 
 	m_intervalControl = new CTimeIntervalControl(Bounds().InsetByCopy(5.0, 5.0),

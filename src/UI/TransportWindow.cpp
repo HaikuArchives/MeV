@@ -36,7 +36,8 @@ CTransportWindow::CTransportWindow(
 							  pos.y + Transport_Height),
 					"Transport",
 					B_FLOATING_WINDOW,
-					B_WILL_ACCEPT_FIRST_CLICK | B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
+					B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS
+					| B_NOT_RESIZABLE | B_NOT_ZOOMABLE,
 					B_CURRENT_WORKSPACE),
 	CObserver(*this, NULL),
 	m_document(NULL),
@@ -47,8 +48,8 @@ CTransportWindow::CTransportWindow(
 	float x, y;
 
 	rect.right++;
-	bg = new CBorderView(rect, NULL, B_FOLLOW_ALL_SIDES, B_WILL_DRAW, 0,
-						 CBorderView::BEVEL_BORDER);
+	bg = new CBorderView(rect, NULL, B_FOLLOW_ALL_SIDES, B_WILL_DRAW, 
+						 false, NULL, CBorderView::BEVEL_BORDER);
 	AddChild(bg);
 
 	x = 5.0;
@@ -57,13 +58,15 @@ CTransportWindow::CTransportWindow(
 
 	bb = new CBorderButton(
 		BRect( x, y, x + Thin_Width, y + Btn_Height ),
-		"ToStart", ResourceUtils::LoadImage("Begin"), new BMessage( MENU_LOCATE_START ) );
+		"ToStart", ResourceUtils::LoadImage("Begin"),
+		new BMessage(MENU_LOCATE_START), false);
 	bg->AddChild( bb );
 	x += Thin_Width;
 
 	bb = new CBorderButton(
 		BRect( x, y, x + Thick_Width, y + Btn_Height ),
-		"Play FromStart", ResourceUtils::LoadImage("PlayBeg"), new BMessage( MENU_PLAY_FROM_START ) );
+		"Play FromStart", ResourceUtils::LoadImage("PlayBeg"),
+		new BMessage(MENU_PLAY_FROM_START), false);
 	bg->AddChild( bb );
 	x += Thick_Width;
 
@@ -76,7 +79,8 @@ CTransportWindow::CTransportWindow(
 
 	bb = new CBorderButton(
 		BRect( x, y, x + Thin_Width, y + Btn_Height ),
-		"ToEnd", ResourceUtils::LoadImage("End"), new BMessage(MENU_LOCATE_END));
+		"ToEnd", ResourceUtils::LoadImage("End"),
+		new BMessage(MENU_LOCATE_END), false);
 	bg->AddChild( bb );
 	x += Thin_Width;
 
