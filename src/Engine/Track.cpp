@@ -96,7 +96,13 @@ CTrack::SetMuted(
 	bool muted)
 {
 	m_muted = muted;
-	NotifyUpdate(Update_Flags, NULL);
+
+	// Tell everyone that the name of the track changed
+	CUpdateHint hint;
+	hint.AddInt32("TrackID", GetID());
+	hint.AddInt32("TrackAttrs", Update_Flags);
+	Document().PostUpdateAllTracks(&hint);
+	Document().PostUpdate(&hint, NULL);
 }
 
 void

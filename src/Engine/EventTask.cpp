@@ -77,6 +77,7 @@ CEventTask::PlayEvent(
 {
 	CMIDIPlayer::ChannelState *chState = NULL;
 	Destination *dest = NULL;
+
 	Event stackedEvent(ev);
 
 	// Make a copy of the duration field before we kick it to death (below).
@@ -316,8 +317,9 @@ CEventTask::PlayEvent(
 			
 			CEventTrack	*tk = dynamic_cast<CEventTrack *>(tr);
 			
-				// If it's an event track and not empty
-			if (tk != NULL && tk->Events().IsEmpty() == false)
+			// If it's an event track and not empty or muted
+			if ((tk != NULL) && !tk->Events().IsEmpty()
+			 && !tk->Muted() && !tk->MutedFromSolo())
 			{
 				CEventTask		*th;
 				int32			start = stackedEvent.stack.start,

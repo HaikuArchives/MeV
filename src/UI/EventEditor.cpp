@@ -837,12 +837,11 @@ CEventEditor::DrawPlaybackMarkers(
 void
 CEventEditor::DrawSelectRect()
 {
-	BRect		r;
-	
-	r.left		= MIN(m_cursorPos.x, m_anchorPos.x);
-	r.right		= MAX(m_cursorPos.x, m_anchorPos.x);
-	r.top		= MIN(m_cursorPos.y, m_anchorPos.y);
-	r.bottom	= MAX(m_cursorPos.y, m_anchorPos.y);
+	BRect r;
+	r.left = MIN(m_cursorPos.x, m_anchorPos.x);
+	r.right = MAX(m_cursorPos.x, m_anchorPos.x);
+	r.top = MIN(m_cursorPos.y, m_anchorPos.y);
+	r.bottom = MAX(m_cursorPos.y, m_anchorPos.y);
 
 	if (r.Width()  == 0.0)
 		r.right += 1.0;

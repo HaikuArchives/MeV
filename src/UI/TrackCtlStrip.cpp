@@ -4,17 +4,14 @@
 
 #include "TrackCtlStrip.h"
 
-#include "MidiManager.h"
+#include "EventTrack.h"
 #include "Idents.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
-#include "EventTrack.h"
-#include "PlayerControl.h"
-#include "StdEventOps.h"
 #include "MidiDeviceInfo.h"
 #include "PlayerControl.h"
 #include "ResourceUtils.h"
-// StripView
+#include "StdEventOps.h"
 #include "StripLabelView.h"
 
 // Gnu C Library
@@ -423,7 +420,8 @@ CSequenceEventHandler::Draw(
 									  r.Width() - 8.0);
 
 		editor.SetDrawingMode(B_OP_OVER);
-		if ((track == NULL) || shadowed)
+		if ((track == NULL) || shadowed
+		 || track->Muted() || track->MutedFromSolo())
 			editor.SetHighColor(128, 128, 128, 255);
 		else
 			editor.SetHighColor(0, 0, 0, 255);
@@ -1360,7 +1358,8 @@ CTrackCtlStrip::OnUpdate(
 	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
 	{
 		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
-						   CTrack::Update_TempoMap | CTrack::Update_Name)))
+						   CTrack::Update_TempoMap | CTrack::Update_Name |
+						   CTrack::Update_Flags)))
 			return;
 	}
 
