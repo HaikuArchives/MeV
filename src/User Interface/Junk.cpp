@@ -423,7 +423,7 @@ void CAppPrefsWindow::MessageReceived( BMessage *msg )
 /*	case Select_ID:
 			// When they change panels, you can no longer revert...?
 		prefs = gPrefs;
-		inherited::MessageReceived( msg );
+		CPrefsWindow::MessageReceived( msg );
 		break; */
 		
 	case New_Value:
@@ -431,7 +431,7 @@ void CAppPrefsWindow::MessageReceived( BMessage *msg )
 		break;
 		
 	default:
-		inherited::MessageReceived( msg );
+		CPrefsWindow::MessageReceived( msg );
 		break;
 	}
 }

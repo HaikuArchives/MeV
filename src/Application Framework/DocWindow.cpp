@@ -108,7 +108,7 @@ void CDocWindow::BuildWindowMenu( BMenu *inMenu )
 void CDocWindow::MessageReceived( BMessage *msg )
 {
 	if (msg->what == Activate_ID)	Activate();
-	else inherited::MessageReceived( msg );
+	else CAppWindow::MessageReceived( msg );
 }
 
 void CDocWindow::MenusBeginning()
@@ -138,7 +138,7 @@ bool CDocWindow::QuitRequested()
 		alert->SetShortcut( 1, B_ESCAPE );
 		result = alert->Go();
 		
-		if (result == 0) return inherited::QuitRequested();
+		if (result == 0) return CAppWindow::QuitRequested();
 		if (result == 1) return false;
 		if (result == 2)
 		{
@@ -148,7 +148,7 @@ bool CDocWindow::QuitRequested()
 		}
 		return false;
 	}
-	return inherited::QuitRequested();
+	return CAppWindow::QuitRequested();
 }
 
 	/**	Acquires the active selection token. */

@@ -338,7 +338,7 @@ CLinearWindow::CLinearWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inT
 bool CLinearWindow::QuitRequested()
 {
 	Track()->SetName( trackNameCtl->Text() );
-	return inherited::QuitRequested();
+	return CTrackWindow::QuitRequested();
 }
 
 void CLinearWindow::MessageReceived( BMessage* theMessage )
@@ -492,7 +492,7 @@ void CLinearWindow::MessageReceived( BMessage* theMessage )
 			break;
 		}		
 		default: {
-			inherited::MessageReceived( theMessage );
+			CTrackWindow::MessageReceived( theMessage );
 			break;
 		}
 	}

@@ -761,7 +761,7 @@ void CAssemblyWindow::MessageReceived( BMessage* theMessage )
 			break;
 		}	
 		default: {
-			inherited::MessageReceived( theMessage );
+			CTrackWindow::MessageReceived( theMessage );
 			break;
 		}
 	}

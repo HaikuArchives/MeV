@@ -782,7 +782,7 @@ void CMidiConfigWindow::MessageReceived( BMessage *msg )
 		break;
 		
 	default:
-		inherited::MessageReceived( msg );
+		CAppWindow::MessageReceived( msg );
 		break;
 	}
 }
