@@ -209,7 +209,9 @@ void CStandardMidiFile::OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetec
 		reader.Skip( chunkLength - (sizeof format + sizeof numTracks + sizeof division) );
 		
 			// At this point, it's time to create a new document.
-		doc = NewDocument(false);
+		BString docName(name);
+		docName << " (Converted)";
+		doc = NewDocument(docName.String(), false);
 		CreateDestinations(doc, name);
 		
 			// Read in each of the tracks.
@@ -247,16 +249,12 @@ void CStandardMidiFile::CreateDestinations(MeVDocHandle doc, const char* filenam
 	for (int ch = 0; ch < 16; ++ch)
 	{
 		BString name(filename);
-		name << " ch. " << ch + 1;
+		name << " " << ch + 1;
 		int internalSynth = doc->GetInternalSynthConsumerID();
 		
 		m_destinationID[ch] = doc->NewDestination(name.String(), internalSynth, ch + 1);
 	}
 }
-
-
-// ---------------------------------------------------------------------------
-// Function to read a track
 
 bool
 CStandardMidiFile::ReadTrack(
