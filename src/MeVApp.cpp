@@ -150,8 +150,6 @@ CMeVApp::CMeVApp()
 	// Check if the MIME types are installed
 	UpdateMimeDatabase();
 
-	// Iterate through all the plugins...
-	BDirectory			addOnDir( "/boot/home/config/add-ons/MeV" );
 	bool				trackListOpen = true,
 						inspectorOpen = true,
 						gridWindowOpen = false,
@@ -181,37 +179,7 @@ CMeVApp::CMeVApp()
 	CMidiManager::Instance();
 	CPlayerControl::InitPlayer();
 
-	// Load in add-ons
-	if (addOnDir.InitCheck() == B_NO_ERROR)
-	{
-		BEntry		entry;
-		
-		for (;;)
-		{
-			BPath		path;
-			image_id		id;
-			MeVPlugIn	*pi;
-			MeVPlugIn 	*(*func_create)();
-
-			if (addOnDir.GetNextEntry( &entry ) == B_ENTRY_NOT_FOUND) break;
-			
-			entry.GetPath( &path );
-			
-			id = load_add_on( path.Path() );
-			if (id == B_ERROR) continue;
-			
-			entry.GetName( gPlugInName );
-
-			if (get_image_symbol(	id,
-								"CreatePlugin",  //"CreatePlugin__Fv",
-								B_SYMBOL_TYPE_TEXT,
-								(void **)&func_create ) == B_NO_ERROR)
-			{
-				pi = (func_create)();
- 				plugInList.AddItem(pi);
-			}
-		}
-	}
+	LoadAddOns();
 	
 	// Load in application preferences
 	if (!winSettings.InitCheck())
@@ -919,6 +887,56 @@ CMeVApp::BuildExportMenu(
 }
 
 void
+CMeVApp::LoadAddOns()
+{
+	// get application info
+	app_info appInfo;
+	if (GetAppInfo(&appInfo) != B_OK)
+		return;
+
+	// get application parent directory
+	BDirectory appDir;
+	BEntry appEntry(&appInfo.ref);
+	if ((appEntry.InitCheck() != B_OK)
+	 || (appEntry.GetParent(&appDir) != B_OK))
+	 	return;
+
+	// get add-ons directory inside app directory
+	BEntry addOnDirEntry;
+	if (appDir.FindEntry("add-ons", &addOnDirEntry, true) != B_OK)
+		return;
+	BDirectory addOnDir(&addOnDirEntry);	
+
+	// iterate through the files in that dir, and load add-ons
+	if (addOnDir.InitCheck() == B_NO_ERROR)
+	{
+		BEntry entry;	
+		while (addOnDir.GetNextEntry(&entry) == B_OK)
+		{
+			BPath path;
+			image_id image;
+			MeVPlugIn *plugin;
+			MeVPlugIn *(*func_create)();
+
+			entry.GetPath(&path);
+			image = load_add_on(path.Path());
+			if (!image)
+				continue;
+			
+			entry.GetName(gPlugInName);
+
+			if (get_image_symbol(image, "CreatePlugin",
+								 B_SYMBOL_TYPE_TEXT,
+								 (void **)&func_create) == B_OK)
+			{
+				plugin = (func_create)();
+ 				m_plugins.AddItem(plugin);
+			}
+		}
+	}
+}
+
+void
 CMeVApp::UpdateMimeDatabase()
 {
 	BMimeType *docType = CMeVDoc::MimeType();
@@ -963,9 +981,9 @@ CAboutPluginWindow::CAboutPluginWindow(
 										B_PLAIN_BORDER );
 	background->AddChild( sv );
 	
-	for (int i = 0; i < app->plugInList.CountItems(); i++)
+	for (int i = 0; i < app->m_plugins.CountItems(); i++)
 	{
-		MeVPlugIn		*pi = (MeVPlugIn *)app->plugInList.ItemAt( i );
+		MeVPlugIn		*pi = (MeVPlugIn *)app->m_plugins.ItemAt( i );
 		
 		pList->AddItem( new BStringItem( pi->Name() ) );
 	}
@@ -995,7 +1013,7 @@ CAboutPluginWindow::MessageReceived(
 		case PLUGIN_SELECTED:
 		{
 			int num = pList->CurrentSelection();
-			MeVPlugIn *pi = (MeVPlugIn *)((CMeVApp *)be_app)->plugInList.ItemAt( num );
+			MeVPlugIn *pi = (MeVPlugIn *)((CMeVApp *)be_app)->m_plugins.ItemAt( num );
 			textView->SetText(pi->AboutText());
 			break;
 		}

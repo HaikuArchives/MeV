@@ -235,6 +235,9 @@ private:						// Internal Operations
 	void						BuildExportMenu(
 									BMenu *menu);
 
+	/** called at launch, loads all the add-ons it can find. */
+	void						LoadAddOns();
+
 	/** Install the document mime type if not already done. */
 	void						UpdateMimeDatabase();
 
@@ -252,10 +255,12 @@ private:						// Instance Data
 								transportState,
 								appPrefsWinState,
 								aboutPluginWinState;
-	BList						plugInList;
+
+	BList						m_plugins;
+
 	BList						defaultOperatorList;
+
 	BList						deviceList;
-//	BList						patchList;
 
 	/** Menu lists for plug-ins */
 	CDynamicMenuDef				assemWindowPlugIns,

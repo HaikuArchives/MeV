@@ -21,9 +21,12 @@ extern char				gPlugInName[ B_FILE_NAME_LENGTH ];
 
 MeVPlugIn::MeVPlugIn()
 {
-	((CMeVApp *)be_app)->plugInList.AddItem( this );
-	be_app->AddHandler( this );
-	SetName( gPlugInName );
+	// ++++++ doesn't the app do this already ??
+	//		  see LoadAddOns()
+	((CMeVApp *)be_app)->m_plugins.AddItem(this);
+
+	be_app->AddHandler(this);
+	SetName(gPlugInName);
 }
 
 void MeVPlugIn::AddMenuItem( char *inMenuText, int32 inWhichMenu, BMessage *inMsg )
