@@ -32,6 +32,8 @@
  *		General cleanup in preparation for initial SourceForge checkin
  *  05/19/2000	dwalton
  *		Quick fix of annoying seg-fault during MenuBeginning
+ *	07/02/2000	cell
+ *		new event duration is now same as the grid size
  * ---------------------------------------------------------------------
  * To Do:
  * Further investigate menubeginning no-item seg-fault bug. 
@@ -52,8 +54,6 @@ class CScroller;
 class CMeVDoc;
 class CTrackOperation;
 
-const int Ruler_Height	 = 12;
-
 // ---------------------------------------------------------------------------
 // A window which displays and edits strips
 
@@ -73,6 +73,8 @@ public:							// Constants
 								TOOL_GRID,
 								TOOL_TEMPO
 	};
+
+	static const float			DEFAULT_RULER_HEIGHT;
 
 public:							// Constructor/Destructor
 
@@ -102,28 +104,19 @@ public:							// Accessors
 
 	// For windows which edit dual tracks, select which one
 	// has selected events
-	virtual CEventTrack *		ActiveTrack()
-								{
-									return track;
-								}
+	virtual CEventTrack *		ActiveTrack() const
+								{ return track; }
 
 	// Return a pointer to the track that this window is viewing
-	CEventTrack *				Track()
-								{
-									return track;
-								}
+	CEventTrack *				Track() const
+								{ return track; }
 
 	// Get the pending operation
-	EventOp *					PendingOperation()
-								{
-									return trackOp;
-								}
+	EventOp *					PendingOperation() const
+								{ return trackOp; }
 
 	// Returns the default event duration
-	int32						NewEventDuration()
-								{
-									return newEventDuration;
-								}
+	int32						NewEventDuration() const;
 	
 public:							// Operations
 
@@ -153,9 +146,7 @@ public:							// CDocWindow Implementation
 
 	// Returns a pointer to the current document
 	CMeVDoc &					Document()
-								{
-									return (CMeVDoc &)document;
-								}
+								{ return (CMeVDoc &)document; }
 	
 	virtual void				MenusBeginning();
 
@@ -201,7 +192,7 @@ protected:						// Instance Data
 	// Type of newly created events
 	enum E_EventType			newEventType;
 
-	int32						newEventDuration;
+//	int32						newEventDuration;
 
 	CWindowState				prefsWinState;
 };
