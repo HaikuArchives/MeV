@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -30,6 +31,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	09/13/2000	malouin
+ *		Added friend declaration for MeVTrackRef
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -56,6 +59,7 @@ const int			Max_Track_Filters = 8;
 class CEventTrack : 
 	public CTrack
 {
+	friend class MeVTrackRef;
 
 private:
 	EventList		events;					// List of events for this class
