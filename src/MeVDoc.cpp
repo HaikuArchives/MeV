@@ -216,7 +216,12 @@ CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
 	CIFFReader	iffReader( reader );
 	int32		formType;
 	
-	iffReader.ChunkID( 1, &formType );
+	iffReader.ChunkID(1, &formType);
+	if (formType != MeV_ID)
+	{
+		CDocApp::Error("File does not contain MeV data");
+		return;
+	}
 	
 	for (;;) {
 	
@@ -676,8 +681,8 @@ void CMeVDoc::SaveDocument()
 		
 		if (ni.InitCheck() == B_NO_ERROR)
 		{
-			ni.SetType( "audio/x-vnd.SylvanTechnicalArts-MeV" );
-			ni.SetPreferredApp( "application/x-vnd.SylvanTechnicalArts-MeV" );
+			ni.SetType("application/x-vnd.MeV-Data" );
+			ni.SetPreferredApp("application/x-vnd.MeV" );
 		}
 	}
 }
