@@ -62,6 +62,7 @@ SRCS= \
 	UI/OperatorWindow.cpp \
 	UI/PitchBendEditor.cpp \
 	UI/Polygon.cpp \
+	UI/PreferencesWindow.cpp \
 	UI/QuickKeyMenuItem.cpp \
 	UI/RulerView.cpp \
 	UI/Scroller.cpp \
