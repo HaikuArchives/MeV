@@ -30,6 +30,8 @@ CObservable::~CObservable()
 			   m_observers.CountItems()));
 	}
 #endif
+
+	RequestDelete();
 }
 
 // ---------------------------------------------------------------------------
@@ -39,8 +41,7 @@ bool
 CObservable::AddObserver(
 	CObserver *observer)
 {
-	StSubjectLock myLock(*this, Lock_Exclusive);
-	Acquire();
+	StSubjectLock lock(*this, Lock_Exclusive);
 	return m_observers.AddItem(observer);
 }
 
@@ -48,7 +49,7 @@ bool
 CObservable::RemoveObserver(
 	CObserver *observer)
 {
-	StSubjectLock myLock(*this, Lock_Exclusive);
+	StSubjectLock lock(*this, Lock_Exclusive);
 	return m_observers.RemoveItem(observer);
 }
 
@@ -96,7 +97,11 @@ CObservable::RequestDelete()
 		Unlock(Lock_Shared);
 
 		D_OBSERVE((" -> releasing observer at %p\n", ob));
-		ob->Released(this);
+		if (ob->Released(this) == false)
+		{
+			D_OBSERVE((" !! observer did not release subject\n"));
+			RemoveObserver(ob);
+		}
 
 		Lock(Lock_Shared);
 		count = m_observers.CountItems();

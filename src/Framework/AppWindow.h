@@ -71,8 +71,9 @@ public:							// Constructor/Destructor
 
 public:							// Hook Functions
 
-	virtual void				SubjectReleased(
-									CObservable *subject) = 0;
+	virtual bool				SubjectReleased(
+									CObservable *subject)
+								{ return false; }
 
 	virtual void				SubjectUpdated(
 									BMessage *message)
@@ -87,7 +88,7 @@ public:							// BWindow Implementation
 
 public:							// CObserver Implementation
 
-	virtual void				Released(
+	virtual bool				Released(
 									CObservable *subject);
 
 	virtual void				Updated(

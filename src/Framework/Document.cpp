@@ -17,6 +17,7 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
+#define D_WINDOW(x) //PRINT(x)			// Window Management
 
 // ---------------------------------------------------------------------------
 //	Class Data Initialization
@@ -28,8 +29,8 @@ CDocument::s_newDocCount = 0;
 //	Constructor/Destructor
 
 CDocument::CDocument(
-	CDocApp &app)
-	:	app(app),
+	CDocApp *app)
+	:	m_app(app),
 		m_modified(false),
 		m_named(false),
 		m_valid(false),
@@ -40,7 +41,7 @@ CDocument::CDocument(
 
 	char name[32];
 
-	app.AddDocument(this);
+	m_app->AddDocument(this);
 	
 	//	Get a unique name
 	if (++s_newDocCount == 1)
@@ -54,10 +55,10 @@ CDocument::CDocument(
 }
 
 CDocument::CDocument(
-	CDocApp &app,
+	CDocApp *app,
 	entry_ref &ref)
 	:	m_entry(&ref),
-		app(app),
+		m_app(app),
 		m_modified(false),
 		m_named(true),
 		m_valid(false),
@@ -66,7 +67,7 @@ CDocument::CDocument(
 {
 	D_ALLOC(("CDocument::CDocument()\n"));
 
-	app.AddDocument(this);
+	m_app->AddDocument(this);
 }
 
 CDocument::~CDocument()
@@ -75,7 +76,8 @@ CDocument::~CDocument()
 
 	if (m_savePanel)
 		delete m_savePanel;
-	app.RemoveDocument(this);
+	RequestDelete();
+	m_app->RemoveDocument(this);
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +168,9 @@ void
 CDocument::AddWindow(
 	CDocWindow *window)
 {
-	StSubjectLock(*this, Lock_Exclusive);
+	D_WINDOW(("CDocument::AddWindow(%s)\n", window->Name()));
+
+	StSubjectLock lock(*this, Lock_Exclusive);
 
 	AddObserver(window);
 	if (window->IsMasterWindow())
@@ -179,27 +183,24 @@ void
 CDocument::RemoveWindow(
 	CDocWindow *window)
 {
-	StSubjectLock(*this, Lock_Exclusive);
+	D_WINDOW(("CDocument::RemoveWindow(%s)\n", window->Name()));
 
 	if (window->IsMasterWindow())
 	{
-		for (int32 i = 0; i < CountWindows(); i++)
-		{
-			WindowAt(i)->Lock();
-			WindowAt(i)->QuitRequested();
-			WindowAt(i)->Quit();
-		}
+		D_WINDOW((" -> '%s' is master window\n", window->Name()));
+		RemoveObserver(window);
 		if (!IsSaving())
 		{
-			RequestDelete();
-			Application()->RemoveDocument(this);
+			D_WINDOW((" -> delete self\n"));
+			delete this;
 		}
 	}
 	else
 	{
+		StSubjectLock lock(*this, Lock_Exclusive);
 		m_windows.RemoveItem(window);
+		RemoveObserver(window);
 	}
-	RemoveObserver(window);
 }
 
 void
@@ -222,7 +223,6 @@ CDocument::SaveAs()
 {
 	if (m_savePanel == NULL)
 		m_savePanel = CreateSavePanel();
-	CRefCountObject::Acquire();
 	m_savePanel->Show();
 }
 

@@ -35,7 +35,6 @@
 #define __C_Observable_H__
 
 #include "Undo.h"
-#include "RefCount.h"
 #include "SharedLock.h"
 
 // Application Kit
@@ -53,7 +52,6 @@ class UndoHistory;
  *	@package	Framework
 */
 class CObservable
-	:	public CRefCountObject
 {
 	friend class		CObserver;
 	friend class		StSubjectLock;

@@ -61,10 +61,10 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CDocument(
-									CDocApp &app);
+									CDocApp *app);
 
 								CDocument(
-									CDocApp &app,
+									CDocApp *app,
 									entry_ref &ref);
 
 	virtual						~CDocument();
@@ -80,7 +80,7 @@ public:							// Hook Functions
 public:							// Accessors
 
 	virtual CDocApp *			Application() const
-								{ return &app; }
+								{ return m_app; }
 
 	const BEntry &				DocLocation()
 								{ return m_entry; }
@@ -148,7 +148,7 @@ private:						//	Instance Data
 	/**	Location of this doc in hierarchy.	*/
 	BEntry						m_entry;
 
-	CDocApp &					app;
+	CDocApp *					m_app;
 
 	/**	List of open windows relating to this document.	*/
 	BList						m_windows;

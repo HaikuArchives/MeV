@@ -1,12 +1,11 @@
 /* ===================================================================== *
- * RefCount.cpp (MeV/Application Framework)
+ * RefCount.cpp (MeV/Framework)
  * ===================================================================== */
 
 #include "RefCount.h"
 
-#ifdef __POWERPC__
-#pragma export on
-#endif
+// Support Kit
+#include <Debug.h>
 
 CRefCountObject *CRefCountObject::Acquire()
 {

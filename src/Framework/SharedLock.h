@@ -34,7 +34,12 @@
 #ifndef __C_SharedLock_H__
 #define __C_SharedLock_H__
 
+// Kernel Kit
 #include <OS.h>
+// Support Kit
+#include <Debug.h>
+
+#define D_LOCK(x) PRINT(x)		// Locking messages for many classes
 
 typedef enum
 {
@@ -91,12 +96,12 @@ public:							// Operations
 
 	/** Returns true if the lock is read-locked. */
 	bool						IsLocked() const
-								{ return IsReadLocked(); }
+								{ return (IsReadLocked() || IsWriteLocked()); }
 
 public:							// Accessors
 
-	status_t					InitCheck() const
-								{ return (m_sem > 0 ? B_OK : B_ERROR); }
+	/**	Returns B_OK if the semaphore initialized correctly. */
+	status_t					InitCheck() const;
 
 	/**	Determines whether the object is locked for read access.
 	 *	Also returns true if the object has been locked for writing 

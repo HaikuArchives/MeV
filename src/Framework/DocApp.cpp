@@ -17,6 +17,8 @@
 // Support Kit
 #include <Debug.h>
 
+#define D_HOOK(x) //PRINT(x)			// BApplication Implementation
+
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
@@ -74,9 +76,7 @@ CDocApp::RemoveDocument(
 {
 	m_documents.RemoveItem(doc);
 	if (CountDocuments() == 0)
-	{
 		PostMessage(B_QUIT_REQUESTED);
-	}
 }
 
 void
@@ -101,13 +101,8 @@ CDocApp::MessageReceived(
 		case CDocWindow::DONE_SAVING:
 		{
 			CDocument *doc;
-			if (message->FindPointer("Document",
-									  reinterpret_cast<void **>(&doc)) == B_OK)
-			{
+			if (message->FindPointer("Document", (void **)&doc) == B_OK)
 				RemoveDocument(doc);
-				if (CountDocuments() == 0)
-					PostMessage(B_QUIT_REQUESTED);
-			}
 			break;
 		}
 		default:
@@ -120,6 +115,8 @@ CDocApp::MessageReceived(
 bool
 CDocApp::QuitRequested()
 {
+	D_HOOK(("CDocApp::QuitRequested()\n"));
+
 	for (int32 i = 0; i < CountDocuments(); i++)
 	{
 		if (DocumentAt(i)->IsSaving())
@@ -133,11 +130,7 @@ void
 CDocApp::ReadyToRun()
 {
 	if (CountDocuments() == 0)
-	{
-		CDocument *doc = NewDocument(true, NULL);
-		// Release reference because newly created window has a ref
-		CRefCountObject::Release(doc);
-	}
+		NewDocument(true, NULL);
 }
 
 void
@@ -154,9 +147,7 @@ CDocApp::RefsReceived(
 		for (int32 i = 0; i < count; i++)
 		{
 			if (message->FindRef("refs", i, &ref) == B_OK)
-			{
-				CRefCountObject::Release(NewDocument(true, &ref));
-			}
+				NewDocument(true, &ref);
 		}
 	}
 }

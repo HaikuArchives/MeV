@@ -24,6 +24,9 @@
 #include <Debug.h>
 #include <String.h>
 
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)			// CAppWindow Implementation
+
 // ---------------------------------------------------------------------------
 // Class Data Initialization
 
@@ -49,9 +52,10 @@ CDocWindow::CDocWindow(
 		m_name(inTypeName),
 		m_waitingToQuit(false)
 {
+	D_ALLOC(("CDocWindow::CDocWindow(rect)\n"));
+
 	CalcWindowTitle();
 
-	m_document->Acquire();
 	m_document->AddWindow(this);
 }
 
@@ -71,18 +75,20 @@ CDocWindow::CDocWindow(
 		m_name(inTypeName),
 		m_waitingToQuit(false)
 {
+	D_ALLOC(("CDocWindow::CDocWindow(state)\n"));
+
 	CalcWindowTitle();
 
-	m_document->Acquire();
 	m_document->AddWindow(this);
 }
 
 CDocWindow::~CDocWindow()
 {
+	D_ALLOC(("CDocWindow<%s>::~CDocWindow()\n", Name()));
+
 	if (m_document)
 	{
 		m_document->RemoveWindow(this);
-		CRefCountObject::Release(m_document);
 		m_document = NULL;
 	}
 
@@ -100,7 +106,6 @@ CDocWindow::~CDocWindow()
 CDocument *
 CDocWindow::Document()
 {
-	m_document->Acquire();
 	return m_document;
 }
 
@@ -164,6 +169,8 @@ CDocWindow::AcquireSelectToken()
 void
 CDocWindow::MenusBeginning()
 {
+	D_HOOK(("CDocWindow::MenusBeginning()\n"));
+
 	UpdateWindowMenu();
 
 	CAppWindow::MenusBeginning();
@@ -261,6 +268,8 @@ CDocWindow::MessageReceived(
 bool
 CDocWindow::QuitRequested()
 {
+	D_HOOK(("CDocWindow<%s>::QuitRequested()\n", Name()));
+
 	if (IsMasterWindow())
 	{
 		if (m_document->Modified())
@@ -306,7 +315,7 @@ CDocWindow::QuitRequested()
 	return CAppWindow::QuitRequested();
 }
 
-void
+bool
 CDocWindow::SubjectReleased(
 	CObservable *subject)
 {
@@ -316,17 +325,21 @@ CDocWindow::SubjectReleased(
 	{
 		D_OBSERVE((" -> stop observing document\n"));
 
-		m_document->RemoveObserver(this);
-		CRefCountObject::Release(m_document);
+		m_document->RemoveWindow(this);
 		m_document = NULL;
 		PostMessage(B_QUIT_REQUESTED, this);
+		return true;
 	}
+
+	return CAppWindow::SubjectReleased(subject);
 }
 
 void
 CDocWindow::WindowActivated(
 	bool active)
 {
+	D_HOOK(("CDocWindow::WindowActivated()\n"));
+
 	CAppWindow::WindowActivated(active);
 
 	if (active)

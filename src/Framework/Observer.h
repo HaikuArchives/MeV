@@ -65,12 +65,15 @@ public:							// Constructor/Destructor
 public:							// Hook Functions
 
 	/**	We want to delete the subject, please stop observing...
-		You absolutely must have stopped observing the subject
-		when this call returns !!
+		You should have stopped observing the subject when this 
+		call returns. Otherwise you must return false.
 		@see CObservable::RemoveObserver()
+		@return	true if the observer stopped reserving the object,
+				false otherwise.
 	*/
-	virtual void				Released(
-									CObservable *subject) = 0;
+	virtual bool				Released(
+									CObservable *subject)
+								{ return false; }
 
 	/**	A subject has been updated. */
 	virtual void				Updated(

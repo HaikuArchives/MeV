@@ -47,6 +47,15 @@ CSharedLock::~CSharedLock()
 // ---------------------------------------------------------------------------
 // Accessors
 
+status_t
+CSharedLock::InitCheck() const
+{
+	if (m_sem > 0)
+		return B_OK;
+
+	return B_ERROR;
+}
+
 bool 
 CSharedLock::IsReadLocked() const
 {
@@ -114,9 +123,7 @@ bool
 CSharedLock::ReadLock(
 	bigtime_t timeout)
 {
-	D_OPERATION(("CSharedLock<%s>::ReadLock(%Ld)\n",
-				 Name() ? Name() : "NULL",
-				 timeout));
+	D_OPERATION(("CSharedLock<%ld>::ReadLock(%Ld)\n", m_sem, timeout));
 
 	bool locked = false;
 
@@ -141,8 +148,7 @@ CSharedLock::ReadLock(
 bool
 CSharedLock::ReadUnlock()
 {
-	D_OPERATION(("CSharedLock<%s>::ReadUnlock()\n",
-				 Name() ? Name() : "NULL"));
+	D_OPERATION(("CSharedLock<%ld>::ReadUnlock()\n", m_sem));
 
 	bool unlocked = false;
 
@@ -168,9 +174,7 @@ bool
 CSharedLock::WriteLock(
 	bigtime_t timeout)
 {
-	D_OPERATION(("CSharedLock<%s>::WriteLock(%Ld)\n",
-				 Name() ? Name() : "NULL",
-				 timeout));
+	D_OPERATION(("CSharedLock<%ld>::WriteLock(%Ld)\n", m_sem, timeout));
 
 	bool locked = false;
 	uint32 stackBase = 0;
@@ -202,6 +206,8 @@ CSharedLock::WriteLock(
 bool 
 CSharedLock::WriteUnlock()
 {
+	D_OPERATION(("CSharedLock<%ld>::WriteUnlock()\n", m_sem));
+
 	bool unlocked = false;
 
 	if (IsWriteLocked())

@@ -93,17 +93,21 @@ CAppWindow::QuitRequested()
 // ---------------------------------------------------------------------------
 // CObservable Implementation
 
-void
+bool
 CAppWindow::Released(
 	CObservable *subject)
 {
 	D_OBSERVE(("CAppWindow<%p>::Released()\n", this));
 
+	bool released = false;
+
 	if (Lock())
 	{
-		SubjectReleased(subject);
+		released = SubjectReleased(subject);
 		Unlock();
 	}
+
+	return released;
 }
 
 // ---------------------------------------------------------------------------
