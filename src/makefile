@@ -64,7 +64,6 @@ SRCS= \
 	UI/RulerView.cpp \
 	UI/Scroller.cpp \
 	UI/Spinner.cpp \
-	UI/Splash.cpp \
 	UI/Splitter.cpp \
 	UI/StdBevels.cpp \
 	UI/StdButton.cpp \

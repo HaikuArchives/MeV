@@ -591,7 +591,7 @@ CMeVApp::AboutRequested()
 	// add team info
 	aboutText << "\nThe MeV Team:\n";
 	aboutText << "Christopher Lenz, ";
-	aboutText << "Claes Johansen, ";
+	aboutText << "Claes Johanson, ";
 	aboutText << "Curt Malouin, ";
 	aboutText << "Dan Walton, ";
 	aboutText << "Eric Moon, ";
