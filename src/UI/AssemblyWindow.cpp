@@ -45,7 +45,8 @@ CAssemblyWindow::CAssemblyWindow(
 	BRect frame,
 	CMeVDoc *document,
 	bool hasSettings)
-	:	CTrackWindow(frame, document, (CEventTrack *)document->FindTrack(1),
+	:	CTrackWindow(frame, document, true, 
+					 (CEventTrack *)document->FindTrack(1),
 					 hasSettings)
 {
 	D_ALLOC(("CAssemblyWindow::CAssemblyWindow(%s)\n",

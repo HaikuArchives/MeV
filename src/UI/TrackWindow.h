@@ -77,6 +77,7 @@ public:							// Constructor/Destructor
 								CTrackWindow(
 									BRect frame,
 									CMeVDoc *document,
+									bool isMaster,
 									CEventTrack *track,
 									bool hasSettings = false);
 

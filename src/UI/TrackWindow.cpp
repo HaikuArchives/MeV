@@ -59,9 +59,10 @@ CTrackWindow::DEFAULT_RULER_HEIGHT = 12.0;
 CTrackWindow::CTrackWindow(
 	BRect frame,
 	CMeVDoc *document,
+	bool isMaster,
 	CEventTrack *inTrack,
 	bool hasSettings)
-	:	CDocWindow(frame, document,
+	:	CDocWindow(frame, document, isMaster,
 				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL,
 				   B_DOCUMENT_WINDOW,
 				   B_ASYNCHRONOUS_CONTROLS),
@@ -766,13 +767,13 @@ CTrackWindow::CreateWindowMenu(
 
 	// Create the file menu
 	menu = new BMenu("Window");
-	menu->AddItem(new BMenuItem("Show Parts",
+	menu->AddItem(new BMenuItem("Parts",
 								new BMessage(MENU_TRACKLIST), 'L'));
-	menu->AddItem(new BMenuItem("Show Inspector",
+	menu->AddItem(new BMenuItem("Inspector",
 								new BMessage(MENU_INSPECTOR), 'I'));
-	menu->AddItem(new BMenuItem("Show Grid",
+	menu->AddItem(new BMenuItem("Grid",
 								new BMessage(MENU_GRIDWINDOW), 'G'));
-	menu->AddItem(new BMenuItem("Show Transport",
+	menu->AddItem(new BMenuItem("Transport",
 								new BMessage(MENU_TRANSPORT), 'T'));
 	menu->AddSeparatorItem();
 	SetWindowMenu(menu);

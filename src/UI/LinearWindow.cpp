@@ -47,7 +47,7 @@ CLinearWindow::CLinearWindow(
 	CMeVDoc *document,
 	CEventTrack *track,
 	bool hasSettings)
-	:	CTrackWindow(frame, document, track, hasSettings)
+	:	CTrackWindow(frame, document, false, track, hasSettings)
 {
 	BRect rect(Bounds());
 

@@ -68,7 +68,7 @@ public:
 COperatorWindow::COperatorWindow(
 	CWindowState &inState,
 	CMeVDoc &inDocument )
-	: CDocWindow( inState, &inDocument, "Event Operators", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
+	: CDocWindow( inState, &inDocument, false, "Event Operators", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
 	  CObserver( *this, &inDocument )
 {
 	BRect			r( inState.Rect() );
