@@ -74,7 +74,6 @@ CMeVDoc::CMeVDoc(
 	m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
 	m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
 	m_activeMaster = m_masterMeterTrack;
-	NewTrack(TrackType_Event, ClockType_Metered);
 	SetValid();
 }
 
@@ -333,6 +332,10 @@ CMeVDoc::ShowWindowFor(
 
 	if (window == NULL)
 	{
+		// Create default track if no tracks have been added already
+		if (CountTracks() == 0)
+			NewTrack(TrackType_Event, ClockType_Metered);
+
 		CEventTrack *eventTrack = dynamic_cast<CEventTrack *>(track);
 		BMessage *settings = eventTrack->GetWindowSettings();
 

@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -30,6 +31,9 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	09/13/2000	malouin
+ *		Don't add default track if any tracks were created before the doc
+ *		window is first shown.
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -61,6 +65,7 @@ class CMeVDoc
 {
 	friend class CTrackDeleteUndoAction;
 	friend class CTrack;
+	friend class MeVTrackRef;
 
 public:							// Constants
 
