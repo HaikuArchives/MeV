@@ -81,10 +81,6 @@ protected:
 		// Variables pertaining to Repeat events
 	RepeatState			*repeatStack;
 	
-		// Variables pertaining to implicit repeat
-//	EventMarker			implicitRepeatPos;
-//	int32				implicitRepeatStart;
-
 	bool Repeat();
 	void Play();
 
@@ -110,17 +106,12 @@ public:
 	void BeginRepeat( int32 inRepeatStart, int32 inRepeatDuration, int32 inRepeatCount );
 
 	int32 CurrentTime();
-
-//	void RecalcImplicitLoop( bool inAtStart, int32 inRepeatEnd );
 };
 
 // ---------------------------------------------------------------------------
 // CRealTimeEventTask -- play events in real time
 
 class CRealClockEventTask : public CEventTask {
-
-		// playback routine
-//	void Play();
 
 public:
 		// constructor
@@ -136,9 +127,6 @@ public:
 
 class CMeteredClockEventTask : public CEventTask {
 
-		// playback routine
-//	void Play();
-
 public:
 		// constructor
 	CMeteredClockEventTask(		CPlaybackTaskGroup &group,
@@ -147,27 +135,5 @@ public:
 								int32			start,
 								int32			end );
 };
-
-#if 0
-// ---------------------------------------------------------------------------
-// CRealTimeEventTask -- play events in real time
-
-class CMasterEventTask : public CEventTask {
-
-	EventMarker			mPlayPos;				// Playback position
-
-		// playback routine
-	void Play();
-
-public:
-		// constructor
-	CMasterEventTask(	CPlaybackTaskGroup &group,
-						CEventTrack		*track,
-						CTrack			*parent,
-						long				start );
-
-	int32 CurrentTime() { return 0; }
-};
-#endif
 
 #endif /* __C_EventTask_H__ */

@@ -35,8 +35,6 @@ CEventTask::CEventTask(
 	interruptable		= true;
 
 	playPos.First();
-//	implicitRepeatPos = playPos;
-//	implicitRepeatStart = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,37 +51,7 @@ CEventTask::CEventTask( CPlaybackTaskGroup &group, CEventTask &th )
 	trackEndTime		= th.trackEndTime;
 	taskDuration		= th.taskDuration;
 	interruptable		= th.interruptable;
-
-//	implicitRepeatPos	= th.implicitRepeatPos;
-//	implicitRepeatStart	= th.implicitRepeatStart;
-
-// RepeatState			repeatStack[ maxRepeatNest ];
 }
-
-/* ---------------------------------------------------------------------------
-	This instructs the track that the implicit loop feature is going to be used.
-	If the "inAtStart" is true, it means the loop point is at the start of the
-	sequence; If it is false, then it means that the loop point is at the
-	current point to which the sequence is located.
-*/
-
-#if 0
-void CEventTask::RecalcImplicitLoop( bool inAtStart, int32 inImplicitRepeatEnd )
-{
-	if (inAtStart)
-	{
-		implicitRepeatPos.First();
-		implicitRepeatStart = 0;
-	}
-	else
-	{
-		implicitRepeatPos = playPos;
-		implicitRepeatStart = timeBase.seekTime - originTime;
-	}
-	trackEndTime = inImplicitRepeatEnd;
-	flags |= Task_ImplicitLoop;
-}
-#endif
 
 // ---------------------------------------------------------------------------
 // destructor
@@ -147,6 +115,7 @@ CEventTask::PlayEvent(
 				stackedEvent.note.pitch += transposition;
 	
 					// If pitch went out of bounds, then don't play the note.
+					// +++++ CLIPPING WOULD BE MUCH NICER!
 				if (stackedEvent.note.pitch & 0x80) break;
 			}
 			
@@ -316,7 +285,7 @@ CEventTask::PlayEvent(
 			// 	break;
 		}
 		case EvtType_Repeat:							// repeat a section
-		{	
+		{
 			BeginRepeat( ev.Start(), ev.Duration(), ev.repeat.repeatCount );
 			break;
 		}
@@ -353,7 +322,7 @@ CEventTask::PlayEvent(
 				CEventTask		*th;
 				int32			start = stackedEvent.stack.start,
 								stop = start + duration;
-	
+								
 					// Launch based on clock type.
 				if (tr->ClockType() == ClockType_Real)
 				{
@@ -496,12 +465,12 @@ bool CEventTask::Repeat()
 		}
 	}
 	
+
 		// OK, here's another go at it. If the sequence failed to repeat, and we're seeking to
 		// a time which is beyond the end of the track, and we're doing auto-looping, then
 		// let's attempt to re-start the sequence.
 	if (		result == false
 		&&	currentTime >= trackEndTime
-		&&	currentTime < taskDuration
 		&& 	(flags & Task_ImplicitLoop))
 	{
 			// Delete all pending repeats
@@ -515,9 +484,7 @@ bool CEventTask::Repeat()
 		if (taskDuration != LONG_MAX) taskDuration -= track->LogicalLength();
 
 			// Set play position to start of track, and adjust origin and current time.
-//		playPos = implicitRepeatPos;
 		playPos.First();
-//		originTime += track->LogicalLength() - implicitRepeatStart;
 		originTime += track->LogicalLength();
 		currentTime = timeBase.seekTime - originTime;
 		
@@ -565,6 +532,7 @@ void CEventTask::Play()
 		targetTime = timeBase.seekTime + eventAdvance;
 	}
 
+	int32 actualEndTime = originTime + taskDuration - 1;	
 	currentTime = targetTime - originTime;
 
 		// If there's a repeat scheduled before the playback time.
@@ -574,6 +542,8 @@ void CEventTask::Play()
 		for (const Event *ev = (const Event *)playPos; ev != NULL; )
 		{
 			if (ev->Start() >= nextRepeatTime) break;
+			if (IsTimeGreater( taskDuration-1, ev->Start())) break;
+
 			PlayEvent( *ev, timeBase.stack, originTime );
 			ev = playPos.Seek( 1 );
 		}
@@ -605,24 +575,17 @@ void CEventTask::Play()
 
 	for (const Event *ev = (const Event *)playPos; ev != NULL; )
 	{
-/*		if (ev->Start() >= nextRepeatTime)
-		{
-			if (Repeat( timeBase )) continue;
-
-			if (ev->Start() >= trackEndTime)
-			{
-				flags |= Task_Finished;
-				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
-			}
-			else ReQueue( timeBase.stack, nextRepeatTime + originTime );
-			track->Unlock();
-			return;
-		} */
-
 		long		t = ev->Start() + originTime;
+
+		if (IsTimeGreater( actualEndTime, t ))
+		{
+			// past end of task
+			break;
+		}
 
 		if (IsTimeGreater( targetTime, t ))
 		{
+			// done with this chunk
 			ReQueue( timeBase.stack, locating ? t : t - trackAdvance );
 #if USE_SHARED_LOCKS
 			track->Unlock( Lock_Shared );
@@ -631,7 +594,7 @@ void CEventTask::Play()
 #endif
 			return;
 		}
-		//for some reason we are playing blank tracks here.
+
 		PlayEvent( *ev, timeBase.stack, originTime );
 		ev = playPos.Seek( 1 );
 	}
@@ -683,102 +646,6 @@ CRealClockEventTask::CRealClockEventTask(
 }
 
 // ---------------------------------------------------------------------------
-// playback routine
-
-#if 0
-void CRealClockEventTask::Play()
-{
-	int32		targetTime;
-	bool			locating = (group.flags & CPlaybackTaskGroup::Clock_Locating) != false;
-
-		// If we're locating, then we want to lock for certain
-	if (locating)
-	{
-		targetTime = timeBase.seekTime;
-#if USE_SHARED_LOCKS
-		track->Lock( Lock_Shared );
-#else
-		track->Lock();
-#endif
-	}
-	else
-	{
-#if USE_SHARED_LOCKS
-		if (track->Lock( Lock_Shared, 5000 ) == false)
-#else
-		if (track->Lock( 5000 ) == false)
-#endif
-		{
-				// Attempt to lock the track; if we fail, then just continue
-				// and play something else.
-			ReQueue( timeBase.stack, timeBase.seekTime + 10 );
-			return;
-		}
-		targetTime = timeBase.seekTime + cEventAdvance_Real;
-	}
-
-	currentTime = timeBase.seekTime - originTime;
-	Repeat();
-	
-	for (const Event *ev = (const Event *)playPos; ev != NULL; )
-	{
-		if (ev->Start() >= nextRepeatTime)
-		{
-			if (Repeat()) continue;
-
-			if (ev->Start() >= trackEndTime)
-			{
-				flags |= Task_Finished;
-				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
-			}
-			else ReQueue( timeBase.stack, nextRepeatTime + originTime );
-#if USE_SHARED_LOCKS
-			track->Unlock( Lock_Shared );
-#else
-			track->Unlock();
-#endif
-			return;
-		}
-		
-		long		t = ev->Start() + originTime;
-
-		if (IsTimeGreater( targetTime, t ))
-		{
-			ReQueue( timeBase.stack, locating ? t : t - cTrackAdvance_Real );
-#if USE_SHARED_LOCKS
-			track->Unlock( Lock_Shared );
-#else
-			track->Unlock();
-#endif
-			return;
-		}
-		PlayEvent( *ev, timeBase.stack, originTime );
-		ev = playPos.Seek( 1 );
-	}
-
-	if (repeatStack != NULL || currentTime < taskDuration)
-	{
-		ReQueue( timeBase.stack, nextRepeatTime + originTime );
-#if USE_SHARED_LOCKS
-		track->Unlock( Lock_Shared );
-#else
-		track->Unlock();
-#endif
-		return;
-	}
-	
-		// REM: Is this incorrect for the master track?
-#if USE_SHARED_LOCKS
-	track->Unlock( Lock_Shared );
-#else
-	track->Unlock();
-#endif
-	flags |= Task_Finished;
-	ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
-}
-#endif
-
-// ---------------------------------------------------------------------------
 // CRealTimeEventTask constructor
 
 CMeteredClockEventTask::CMeteredClockEventTask(
@@ -794,196 +661,3 @@ CMeteredClockEventTask::CMeteredClockEventTask(
 	clockType		= ClockType_Metered;
 	ReQueue( timeBase.stack, start );
 }
-
-// ---------------------------------------------------------------------------
-// playback routine
-
-#if 0
-void CMeteredClockEventTask::Play()
-{
-	int32		targetTime;
-	bool			locating = (group.flags & CPlaybackTaskGroup::Clock_Locating) != false;
-
-		// If we're locating, then we want to lock for certain
-	if (locating)
-	{
-		targetTime = timeBase.seekTime;
-#if USE_SHARED_LOCKS
-		track->Lock( Lock_Shared );
-#else
-		track->Lock();
-#endif
-	}
-	else
-	{
-#if USE_SHARED_LOCKS
-		if (track->Lock( Lock_Shared, 5000 ) == false)
-#else
-		if (track->Lock( 5000 ) == false)
-#endif
-		{
-				// Attempt to lock the track; if we fail, then just continue
-				// and play something else.
-			ReQueue( timeBase.stack, timeBase.seekTime + 10 );
-			return;
-		}
-		targetTime = timeBase.seekTime + cEventAdvance_Metered;
-	}
-
-	currentTime = targetTime - originTime;
-
-		// If there's a repeat scheduled before the playback time.
-	while (nextRepeatTime <= currentTime)
-	{
-			// Play all of the events before the repeat.
-		for (const Event *ev = (const Event *)playPos; ev != NULL; )
-		{
-			if (ev->Start() >= nextRepeatTime) break;
-			PlayEvent( *ev, timeBase.stack, originTime );
-			ev = playPos.Seek( 1 );
-		}
-		
-			// Process the repeat. If there was no repeat to process, then...
-		if (Repeat() == false)
-		{
-				// Check to see if we've run out of track
-			if (currentTime >= trackEndTime || (flags & Task_Finished))
-			{
-					// If we've reached the end, then exit this routine...
-				flags |= Task_Finished;
-				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
-			}
-			else
-			{
-				ReQueue( timeBase.stack, nextRepeatTime + originTime - 1 );
-			}
-#if USE_SHARED_LOCKS
-			track->Unlock( Lock_Shared );
-#else
-			track->Unlock();
-#endif
-			return;
-		}
-
-		targetTime = timeBase.seekTime;
-	}
-
-	for (const Event *ev = (const Event *)playPos; ev != NULL; )
-	{
-/*		if (ev->Start() >= nextRepeatTime)
-		{
-			if (Repeat( timeBase )) continue;
-
-			if (ev->Start() >= trackEndTime)
-			{
-				flags |= Task_Finished;
-				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
-			}
-			else ReQueue( timeBase.stack, nextRepeatTime + originTime );
-			track->Unlock();
-			return;
-		} */
-
-		long		t = ev->Start() + originTime;
-
-		if (IsTimeGreater( targetTime, t ))
-		{
-			ReQueue( timeBase.stack, locating ? t : t - cTrackAdvance_Metered );
-#if USE_SHARED_LOCKS
-			track->Unlock( Lock_Shared );
-#else
-			track->Unlock();
-#endif
-			return;
-		}
-		PlayEvent( *ev, timeBase.stack, originTime );
-		ev = playPos.Seek( 1 );
-	}
-
-	if (repeatStack != NULL || currentTime < taskDuration)
-	{
-		ReQueue( timeBase.stack, nextRepeatTime + originTime );
-#if USE_SHARED_LOCKS
-		track->Unlock( Lock_Shared );
-#else
-		track->Unlock();
-#endif
-		return;
-	}
-	
-		// REM: Is this incorrect for the master track?
-#if USE_SHARED_LOCKS
-	track->Unlock( Lock_Shared );
-#else
-	track->Unlock();
-#endif
-	flags |= Task_Finished;
-	ReQueue( timeBase.stack, trackEndTime + originTime );
-}
-#endif
-
-#if 0
-// ---------------------------------------------------------------------------
-// CRealTimeEventTask constructor
-
-CMasterEventTask::CMasterEventTask(
-	CPlaybackTaskGroup &group,
-	CEventTrack		*tr,
-	CTrack			*par,
-	long			start )
-		: CEventTask( group, tr, par, start ),
-			mPlayPos( tr->Events() )
-{
-	clockType		= ClockType_Real;
-	ReQueue( group.real.stack, start );
-	mPlayPos.First();
-}
-
-// ---------------------------------------------------------------------------
-// playback routine
-
-void CMasterEventTask::Play()
-{
-	currentTime = group.real.seekTime - originTime;
-
-// reQueue( &pl->meteredTimeStack, t );
-
-		// Attempt to lock the track; if we fail, then just continue as
-		// and play something else.
-	if (track->Lock( 1000 ) == false) return;
-	
-		// REM: Should we handle repeats? Or not?
-
-	for (const Event *ev = (const Event *)playPos; ev != NULL; )
-	{
-		long		t = ev->Start() + originTime;
-
-		if (IsTimeGreater( group.real.seekTime, t )) break;
-
-			// Ummm, we need to convert the time to absolute before sending it to PlayEvent...
-		PlayEvent( *ev, group.real.stack, originTime );
-		ev = playPos.Seek( 1 );
-	}
-	
-	for (const Event *ev = (const Event *)mPlayPos; ev != NULL; )
-	{
-			// REM: Is this incorrect for the master track?
-			// REM: We need to calc the absolute time of the event...
-		long		t = ev->Start() /* + originTime */;
-
-		if (IsTimeGreater( group.metered.seekTime, t )) break;
-
-			// Ummm, we need to convert the time to absolute before sending it to PlayEvent...
-		PlayEvent( *ev, group.metered.stack, 0 );
-		ev = mPlayPos.Seek( 1 );
-	}
-	
-	track->Unlock();
-	
-	// If we broke out of the loop, it simply means that we've gone ahead...
-	// Should we "re-queue" this?
-
-		// REM: Is this incorrect for the master track?
-// flags |= Task_Finished;
-}
-#endif
