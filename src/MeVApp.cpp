@@ -49,8 +49,9 @@
 #include <Debug.h>
 
 // Debugging Macros
-#define D_MODULE(x) PRINT(x)			// Module Management
-
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
+#define D_MODULE(x) //PRINT(x)			// Module Management
+#define D_WINDOW(x) //PRINT(x)			// Window Management
 
 #define TRACKLIST_NAME		"Part List"
 #define INSPECTOR_NAME		"Inspector"
@@ -164,29 +165,29 @@ CMeVApp::CMeVApp()
 		editSettings( prefs, "settings/edit", true ),
 		midiSettings( prefs, "settings/midi", true ),
 		vtableSettings( prefs, "settings/vtable", true ),
-		trackListState(BRect(0.0, 100.0,
+		trackListState(BRect(620.0, 100.0,
 							 CTrackListWindow::DEFAULT_DIMENSIONS.Width(),
 							 CTrackListWindow::DEFAULT_DIMENSIONS.Height())),
-		inspectorState(BRect(0.0, 406.0,
+		inspectorState(BRect(50.0, 460.0,
 							 CInspectorWindow::DEFAULT_DIMENSIONS.Width(),
 							 CInspectorWindow::DEFAULT_DIMENSIONS.Height())),
 		gridWinState(BRect(0.0 + CInspectorWindow::DEFAULT_DIMENSIONS.Width(),
 						   406.0 - CGridWindow::DEFAULT_DIMENSIONS.Height(),
 						   CGridWindow::DEFAULT_DIMENSIONS.Width(),
 						   CGridWindow::DEFAULT_DIMENSIONS.Height())),
-		transportState(BRect(0.0, 406.0, Transport_Width, Transport_Height)),
+		transportState(BRect(540.0, 462.0, Transport_Width, Transport_Height)),
 		appPrefsWinState(BRect(40, 40, 500, 300)),
 		aboutPluginWinState(BRect(80, 80, 450, 250))
 {
 	// Check if the MIME types are installed
 	UpdateMimeDatabase();
 
-	bool				trackListOpen = true,
-						inspectorOpen = true,
-						gridWindowOpen = false,
-						transportOpen = false,
-						appPrefsOpen = false,
-						aboutPlugOpen = false;
+	bool trackListOpen = true,
+		 inspectorOpen = true,
+		 gridWindowOpen = false,
+		 transportOpen = true,
+		 appPrefsOpen = false,
+		 aboutPlugOpen = false;
 
 	Event::InitTables();
 	activeTrack = NULL;
@@ -198,7 +199,7 @@ CMeVApp::CMeVApp()
 	gPrefs.feedbackDragMask = ULONG_MAX;
 	gPrefs.feedbackAdjustMask = ULONG_MAX;
 	gPrefs.feedbackDelay = 50;
-	gPrefs.inclusiveSelection = false;
+	gPrefs.inclusiveSelection = true;
 	gPrefs.firstMeasureNumber = 1;
 	gPrefs.appPrefsPanel = 0;
 	gPrefs.lEditorPrefsPanel = 0;
@@ -216,16 +217,23 @@ CMeVApp::CMeVApp()
 	// Load in application preferences
 	if (!winSettings.InitCheck())
 	{
-		BMessage		&prefMessage = winSettings.GetMessage();
+		D_ALLOC((" -> retrieve window settings...\n"));
 
-		trackListOpen		= ReadWindowState( prefMessage, TRACKLIST_NAME, trackListState, true );
-		inspectorOpen		= ReadWindowState( prefMessage, INSPECTOR_NAME, inspectorState, true );
-		gridWindowOpen	= ReadWindowState( prefMessage, GRID_NAME,		  gridWinState, false );
-		transportOpen		= ReadWindowState( prefMessage, TRANSPORT_NAME, transportState, false );
-		appPrefsOpen		= ReadWindowState( prefMessage, APP_PREFS_NAME, appPrefsWinState, false );
-		aboutPlugOpen		= ReadWindowState( prefMessage, ABOUT_PI_NAME,  aboutPluginWinState, false );
+		BMessage &prefMessage = winSettings.GetMessage();
+		trackListOpen = ReadWindowState(prefMessage, TRACKLIST_NAME,
+										trackListState, true);
+		inspectorOpen = ReadWindowState(prefMessage, INSPECTOR_NAME,
+										inspectorState, true);
+		gridWindowOpen = ReadWindowState(prefMessage, GRID_NAME,
+										 gridWinState, false);
+		transportOpen = ReadWindowState(prefMessage, TRANSPORT_NAME,
+										transportState, true);
+		appPrefsOpen = ReadWindowState(prefMessage, APP_PREFS_NAME,
+									   appPrefsWinState, false);
+		aboutPlugOpen = ReadWindowState(prefMessage, ABOUT_PI_NAME,
+										aboutPluginWinState, false);
 	}
-	
+
 	if (!editSettings.InitCheck())
 	{
 		BMessage		&prefMessage = editSettings.GetMessage();
@@ -546,11 +554,15 @@ CMeVApp::ShowGridWindow(
 }
 
 void
-CMeVApp::ShowTransportWindow( bool inShow )
+CMeVApp::ShowTransportWindow(
+	bool show)
 {
+	D_WINDOW(("CMeVApp::ShowTransportWindow(%s)\n",
+			  show ? "true" : "false"));
+
 	transportState.Lock();
 
-	if (inShow)
+	if (show)
 	{
 		if (!transportState.Activate())
 		{
