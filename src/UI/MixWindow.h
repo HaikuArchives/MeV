@@ -39,9 +39,10 @@ class CDestination;
 class CDestinationView;
 
 /**
- *		@author	Talin, Christoper Lenz.  
+ *	CDocWindow subclass that displays panels for sources and destinations
+ *	using a mixer metaphor.
+ *	@author	Talin, Christoper Lenz.  
  */
- 
 class CMixWindow
 	:	public CDocWindow
 {
@@ -68,6 +69,10 @@ public:							// CTrackWindow Implementation
 	virtual CMeVDoc *			Document()
 								{ return static_cast<CMeVDoc *>
 										 (CDocWindow::Document()); }
+
+	virtual void				GetContentSize(
+									float *width,
+									float *height) const;
 
 	virtual void				MenusBeginning();
 

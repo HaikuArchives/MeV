@@ -20,7 +20,7 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
-#define D_HOOK(x) //PRINT(x)		// CDocWindow Implementation
+#define D_HOOK(x) PRINT(x)		// CDocWindow Implementation
 #define D_MESSAGE(x) //PRINT (x)	// MessageReceived()
 
 // ---------------------------------------------------------------------------
@@ -60,6 +60,17 @@ CMixWindow::~CMixWindow()
 
 // ---------------------------------------------------------------------------
 // CDocWindow Implementation
+
+void
+CMixWindow::GetContentSize(
+	float *width,
+	float *height) const
+{
+	D_HOOK(("CMixWindow::GetContentSize()\n"));
+
+	m_containerView->GetPreferredSize(width, height);
+	*height += KeyMenuBar()->Frame().Height() + 1.0;
+}
 
 void
 CMixWindow::MenusBeginning()

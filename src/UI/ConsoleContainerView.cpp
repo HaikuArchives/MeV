@@ -118,14 +118,13 @@ CConsoleContainerView::GetPreferredSize(
 	float *width,
 	float *height)
 {
-	*width = 0.0;
+	*width = -1.0;
 	*height = 0.0;
 
 	for (int32 i = 0; i < CountSlots(); i++)
 	{
 		BRect rect = SlotAt(i)->Bounds();
-		if (rect.Width() > *width)
-			*width = rect.Width();
+		*width += rect.Width() + 1.0;
 		if (rect.Height() > *height)
 			*height = rect.Height();
 	}
