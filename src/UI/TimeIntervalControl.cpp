@@ -124,7 +124,6 @@ CTimeIntervalControl::CTimeIntervalControl(
 	float width, height;
 	m_toolBar->GetPreferredSize(&width, &height);
 	m_toolBar->ResizeTo(width, height);
-	m_toolBar->Frame().PrintToStream();
 
 	BRect rect(Bounds());
 	rect.top += m_toolBar->Frame().bottom + 5.0;
