@@ -154,11 +154,17 @@ CTrackListWindow::MenusBeginning()
 		item->SetEnabled(false);
 	}
 
-	bool selected = (m_listView->CurrentSelection() >= 0);
+	CTrack *track = NULL;
+	int32 sel;
+	if ((sel = m_listView->CurrentSelection()) >= 0)
+	{
+		track = dynamic_cast<CTrackListItem *>
+				(m_listView->ItemAt(sel))->GetTrack();
+	}
 	item = KeyMenuBar()->FindItem(CTrackListItem::EDIT_TRACK);
 	if (item)
 	{
-		item->SetEnabled(selected);
+		item->SetEnabled(track);
 		item->SetTarget(m_listView);
 	}
 	item = KeyMenuBar()->FindItem(CTrackListItem::RECORD_TRACK);
@@ -170,25 +176,29 @@ CTrackListWindow::MenusBeginning()
 	item = KeyMenuBar()->FindItem(CTrackListItem::MUTE_TRACK);
 	if (item)
 	{
-		item->SetEnabled(selected);
+		item->SetEnabled(track);
+		if (track)
+			item->SetMarked(track->Muted());
 		item->SetTarget(m_listView);
 	}
 	item = KeyMenuBar()->FindItem(CTrackListItem::SOLO_TRACK);
 	if (item)
 	{
 		item->SetEnabled(false); // nyi
+		if (track)
+			item->SetMarked(track->Solo());
 		item->SetTarget(m_listView);
 	}
 	item = KeyMenuBar()->FindItem(CTrackListItem::RENAME_TRACK);
 	if (item)
 	{
-		item->SetEnabled(selected);
+		item->SetEnabled(track);
 		item->SetTarget(m_listView);
 	}
 	item = KeyMenuBar()->FindItem(CTrackListItem::DELETE_TRACK);
 	if (item)
 	{
-		item->SetEnabled(selected);
+		item->SetEnabled(track);
 		item->SetTarget(m_listView);
 	}
 }
