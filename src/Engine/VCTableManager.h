@@ -63,7 +63,7 @@ public:
 	int count;
 private:
 	BMessenger *m_notifier;
-	
+	static const rgb_color m_defaultColorTable[ 16 ] ;
 	int pos;
 };
 #endif /* __C_VChannelManager_H__ */

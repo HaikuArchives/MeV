@@ -14,10 +14,7 @@ CMidiManager* CMidiManager::Instance()
 	if (m_instance==0)
 	{	
 		m_instance=new CMidiManager();
-		m_instance->Run();  //maybe a race condition here.
-		//if its the first time, wait a sec till we fill our lists...is there a better way?
-		snooze(100000);
-			
+		m_instance->Run(); 			
 	}
 	return m_instance;
 }

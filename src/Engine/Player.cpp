@@ -21,8 +21,7 @@
 // Gnu C Library
 #include <math.h>
 // Midi Kit
-//#include <MidiPort.h>
-//#include <MidiSynth.h>
+
 
 #define D_CONTROL(x) //PRINT (x)
 #define D_SYNTH(x) //PRINT (x)
@@ -949,88 +948,15 @@ void CPlayerControl::SetPortName(uint32 inPortIndex, char *inPortName )
 	pi->portName[ sizeof( pi->portName ) - 1 ] = '\0';
 }
 	
-// ---------------------------------------------------------------------------
-int32 CPlayerControl::PortDeviceID(uint32 inPortIndex)
-{
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return -1;
-	//return a bmidi producer id.
-	return (thePlayer.m_ports[inPortIndex]->ID());
-	
-}
+
 // Get the port device string of the Nth port.
-const char *CPlayerControl::PortDevice(uint32 inPortIndex )
-{
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return NULL;
-	if (thePlayer.m_ports[ inPortIndex ]==NULL) return NULL;
-	return thePlayer.m_ports[ inPortIndex ]->Name();
-}
-bool CPlayerControl::IsDefined(uint32 inPortIndex)
-{
-	if (thePlayer.m_ports[inPortIndex]!=NULL) return true;
-	else return false;
-}
-int CPlayerControl::CountDefinedPorts()
-{
-	int index=0;
-	int count=0;
-	while (index<Max_MidiPorts)
-	{
-		if (thePlayer.m_ports[index]!=NULL)
-		{
-			count++;
-		}
-	index++;
-	}
-	return count;
-}
-bool CPlayerControl::DeleteDevice(int inPortIndex)
-{
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
-	if (thePlayer.m_ports[inPortIndex]==NULL) return 0;
-	thePlayer.m_ports[inPortIndex]->Release();
-	//delete? distroy...?
-	thePlayer.m_ports[inPortIndex]==NULL;
-}
+
+
 // ---------------------------------------------------------------------------
 // Set the port device string of the Nth port.
 //when called with a name, if undefined, we define.  if defined, we rename
-bool CPlayerControl::SetPortDevice(uint32 inPortIndex, char *inPortName)
-{
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
-	if (strcmp(inPortName,"")==0)
-	{
-		return 0;
-	}
-	if (thePlayer.m_ports[inPortIndex]==NULL)
-	{
-		thePlayer.m_ports[inPortIndex]=new BMidiLocalProducer(inPortName);
-		thePlayer.m_ports[inPortIndex]->Register();
-		return true;
-	}
-	else
-	{
-		thePlayer.m_ports[inPortIndex]->SetName(inPortName);
-		return true;
-	}
-}
 
-bool CPlayerControl::SetPortConnect(uint32 inPortIndex, BMidiConsumer *sink )
-{
-	if (inPortIndex < 0 || inPortIndex >= Max_MidiPorts) return 0;
-	if (sink==NULL) return 0;
-	if (thePlayer.m_ports[inPortIndex]->IsConnected(sink))
-	{
-		thePlayer.m_ports[inPortIndex]->Disconnect(sink);
-		printf("disconnecting\n");
-		return 1;
-	}
-	else
-	{
-		thePlayer.m_ports[inPortIndex]->Connect(sink);
-		printf("connecting\n");
-		return 1;
-	}
-}
+
 	
 // ---------------------------------------------------------------------------
 // For each task that is currently playing the given track, return

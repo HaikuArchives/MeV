@@ -23,7 +23,8 @@ enum EInspectorControlIDs {
 	EDIT_ID			= 'butt',
 	NEW_ID				= 'nwid',
 	DELETE_ID			= 'dtid',
-	VCTM_NOTIFY			= 'ntfy'
+	VCTM_NOTIFY			= 'ntfy',
+	VCQUIT 				='vcqt'
 };
 
 CChannelManagerView::CChannelManagerView(
@@ -81,15 +82,6 @@ CChannelManagerView::CChannelManagerView(
 	AddChild(m_channelValue);
 	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	
-		//init
-	int c=0;
-	//MaxVChannels 64
- 	while (c<64)
-	{
-		m_modifierArray[c]=NULL;
-		c++;
-	}
-		//sugar.
 	BBox *box=new BBox(Bounds());
 	AddChild(box);
 	
@@ -128,7 +120,6 @@ void CChannelManagerView::Update()
 		{
 			VCptr=m_vcTableM->CurrentVC();
 			id=m_vcTableM->CurrentID();
-			printf("%d\n",id);
 			CIconMenuItem *vc_item;
 			BMessage *vc_message;
 			vc_message=new BMessage(CHANNEL_CONTROL_ID);
@@ -213,30 +204,46 @@ void CChannelManagerView::MessageReceived(BMessage *msg)
 			break;
 			case EDIT_ID:
 			{
-				m_modifierArray[m_selected_id]->Lock();	
-				if (m_modifierArray[m_selected_id]->IsHidden())
+				if (!m_vcMenu->ItemAt(0)->IsMarked())
 				{
-					m_modifierArray[m_selected_id]->Show();
+					Window()->UpdateIfNeeded();
+					if (m_modifierMap[m_selected_id]!=NULL)
+					{
+						m_modifierMap[m_selected_id]->Lock();
+						m_modifierMap[m_selected_id]->Activate();
+						m_modifierMap[m_selected_id]->Unlock();
+					}
+					else 
+					{
+						BRect r;
+						r.Set(40,40,300,200);
+						m_modifierMap[m_selected_id]=new CVChannelModifier(r,m_selected_id,m_vcTableM,this);
+						m_modifierMap[m_selected_id]->Show();
+					}
 				}
-				else if (m_modifierArray[m_selected_id]->IsMinimized())
-				{
-					m_modifierArray[m_selected_id]->Minimize(false);		
-				}
-				m_modifierArray[m_selected_id]->Unlock();
+				
 			}
 			break;
 			case DELETE_ID:
 			{	
-				if (m_vcTableM->IsDefined(m_selected_id))
+				if (!m_vcMenu->ItemAt(0)->IsMarked())
 				{
 					m_vcTableM->RemoveVC(m_selected_id);
 					Update();
 					BMenuItem *select=m_vcMenu->ItemAt(0);
 					select->SetMarked(true);
-					m_modifierArray[m_selected_id]->Lock();	
-					m_modifierArray[m_selected_id]->Die();
-					m_modifierArray[m_selected_id]=NULL;
+					m_modifierMap[m_selected_id]->Lock();	
+					m_modifierMap[m_selected_id]->Quit();
+					m_modifierMap[m_selected_id]=NULL;
 				}
+			}
+			break;
+			case VCQUIT:
+			{
+				int32 quit_id=msg->FindInt32("ID");
+				m_modifierMap[quit_id]->Lock();
+				m_modifierMap[quit_id]->Quit();
+				m_modifierMap[quit_id]=NULL;
 			}
 			break;
 			case NEW_ID:
@@ -245,8 +252,8 @@ void CChannelManagerView::MessageReceived(BMessage *msg)
 				r.Set(40,40,300,200);
 				int n=m_vcTableM->NewVC("Untitled");
 				Update();
-				m_modifierArray[n]=new CVChannelModifier(r,m_vcTableM->get(n),m_vcTableM);
-				m_modifierArray[n]->Show();
+				m_modifierMap[n]=new CVChannelModifier(r,n,m_vcTableM,this);
+				m_modifierMap[n]->Show();
 				SetChannel(n);			
 			}
 			break;

@@ -10,19 +10,21 @@ enum EVChannelModifierControlID {
 	CHANNEL_SELECT='cslt',
 	NOTIFY='ntfy',
 	ADD_ID='add',
-	MOD_ID='mod'
+	MOD_ID='mod',
+	VCQUIT='vcqt'
 	};
 	
-CVChannelModifier::CVChannelModifier(BRect frame,VChannelEntry *vc,CVCTableManager *tm) 
+CVChannelModifier::CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BHandler *parent) 
 	: BWindow(frame,"Destination Modifier",B_TITLED_WINDOW,B_NOT_ZOOMABLE | B_NOT_RESIZABLE)
 
 {
 	m_tm=tm;
 	m_midiManager=CMidiManager::Instance();
-	m_vc=vc;
+	m_vc=tm->get(id);
+	m_id=id;
 	_buildUI();
 	Update();
-	
+	m_parent=parent;
 }
 
 
@@ -30,7 +32,6 @@ CVChannelModifier::CVChannelModifier(BRect frame,VChannelEntry *vc,CVCTableManag
 void
 CVChannelModifier::_buildUI()
 {
-	
 	BRect r;
 	m_background=new BView (Bounds(),"bk",B_FOLLOW_LEFT,B_WILL_DRAW);
 	m_background->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
@@ -46,11 +47,8 @@ CVChannelModifier::_buildUI()
 	BString title;
 	title << "Destination: ";
 	title << m_vc->name.String();
-	
 	SetTitle(title.String());
-	
 	m_background->AddChild(m_name);
-	
 	//fill midi port pop up.
 	m_midiPorts=new BPopUpMenu ("Port");
 	m_channels=new BPopUpMenu ("Channel");
@@ -85,12 +83,17 @@ void CVChannelModifier::AttachedToWindow()
 	m_name->SetTarget(this);
 	m_channels->SetTargetForItems(this);
 	m_midiPorts->SetTargetForItems(this);	
-
+	m_colors->SetTarget(this);
 }
 
 void
 CVChannelModifier::Update()
 {
+	int c=m_midiPorts->CountItems()-1;
+	while (c>=0)
+	{
+		delete (m_midiPorts->RemoveItem(c--));
+	}
 for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManager->NextProducer())
 	{
 		BMessage *msg=new BMessage (PORT_SELECT);
@@ -108,24 +111,22 @@ for (m_midiManager->FirstProducer();!m_midiManager->IsLastProducer();m_midiManag
 		}	
 	}
 }
+void
+CVChannelModifier::MenusBeginning()
+{
+Update();
+}
+
 bool 
 CVChannelModifier::QuitRequested()
-{}
-void
-CVChannelModifier::Quit()
 {
-	//how should this really be done?
-	if (IsHidden())
-	{
-		BWindow::Quit();
-	}
-	Hide();
+	BMessage *msg = new BMessage (VCQUIT);
+	msg->AddInt32("ID",m_id);
+	BMessenger *amsgr=new BMessenger(m_parent);
+	amsgr->SendMessage(msg);
+	return 0;
 }
-void 
-CVChannelModifier::Die()
-{
-BWindow::Quit();
-}
+
 void
 CVChannelModifier::MessageReceived(BMessage *msg)
 {

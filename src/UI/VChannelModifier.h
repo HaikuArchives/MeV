@@ -14,6 +14,8 @@ class CVChannelModifier:
 
 private:
 	VChannelEntry *m_vc;   //pointer to the currently selected vc.
+	int32 m_id;
+	BHandler *m_parent;
 	//int m_selected_id;
 	BView *m_background;
 	BPopUpMenu *m_midiPorts;
@@ -26,13 +28,12 @@ private:
 	void _buildUI();
 	CVCTableManager *m_tm;
 virtual void AttachedToWindow();
-
+virtual void MenusBeginning();
 public:
-	CVChannelModifier(BRect frame,VChannelEntry *vc,CVCTableManager *tm);  //new vchannel;
-	//CVChannelModifier(BRect frame,uint8 editChannel,CVCTableManager *tm); //edit channel;
+	CVChannelModifier(BRect frame,int32 id,CVCTableManager *tm,BHandler *parent);  //new vchannel;
+	
 	virtual void MessageReceived(BMessage *msg);
 	void Update();
 	virtual bool QuitRequested();
-	virtual void Quit();
-	void Die();
+
 };

@@ -43,6 +43,9 @@
 #include <Button.h>
 #include <CheckBox.h>
 #include <StringView.h>
+//stl
+#include <map.h>
+
 #include "VChannelModifier.h"
 class CChannelManagerView : 
 	public BView {
@@ -63,7 +66,7 @@ private:
 	CTextDisplay	*m_portName;
 	BCheckBox		*m_mute;
 	BCheckBox		*m_lock;
-	CVChannelModifier *m_modifierArray[Max_VChannels];
+	map <int,CVChannelModifier *> m_modifierMap;
 	CVCTableManager *m_vcTableM;
 	
 	

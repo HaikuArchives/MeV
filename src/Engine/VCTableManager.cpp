@@ -4,7 +4,25 @@ enum ID {
 	VCTM_NOTIFY='ntfy'
 	};
 #include <stdio.h>
+const rgb_color CVCTableManager::m_defaultColorTable[]= {
 
+	{ 255, 128, 128 },			// Midi Channel 1
+	{ 255, 128,   0 },			// Midi Channel 2
+	{ 255, 255,   0 },			// Midi Channel 3
+	{ 128, 255,   0 },			// Midi Channel 4
+	{   0, 255, 128 },			// Midi Channel 5
+	{   0, 192,   0 },			// Midi Channel 6
+	{   0, 160, 160 },			// Midi Channel 7
+	{   0, 192, 160 },			// Midi Channel 8
+	{ 128, 255, 255 },			// Midi Channel 9
+	{  47, 130, 255 },			// Midi Channel 10
+	{ 128, 128, 255 },			// Midi Channel 11
+	{ 200,   0, 255 },			// Midi Channel 12
+	{ 255,   0, 255 },			// Midi Channel 13
+	{ 255, 128, 255 },			// Midi Channel 14
+	{ 192, 192, 192 },			// Midi Channel 15
+	{ 128, 128,   0 },			// Midi Channel 16
+};
 CVCTableManager::CVCTableManager()
 {
 	count=0;
@@ -15,6 +33,7 @@ CVCTableManager::CVCTableManager()
     {	
     	m_tablerep[c]=NULL;
     }
+    
 }
 void CVCTableManager::AddClient(BHandler *nhandler)
 {
@@ -47,9 +66,7 @@ int CVCTableManager::NewVC(char *name)
     		m_tablerep[c]->flags		= VChannelEntry::transposable;   
     		m_tablerep[c]->velocityContour=0;
     		m_tablerep[c]->VUMeter=0;
-    		m_tablerep[c]->fillColor.red=100;
-    		m_tablerep[c]->fillColor.green=100;
-    		m_tablerep[c]->fillColor.blue=100;
+    		m_tablerep[c]->fillColor=m_defaultColorTable[c % 16];
     		return c;
     	}
     }
