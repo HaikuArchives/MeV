@@ -251,6 +251,7 @@ CAssemblyWindow::CAssemblyWindow(
 
 	rect.left = rect.right + CSplitter::V_SPLITTER_WIDTH;
 	rect.right = Bounds().right;
+	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
 	CreateFrames(rect, (CTrack *)document.FindTrack(1));
 
 	// Now, create some strips for test purposes
@@ -272,6 +273,12 @@ CAssemblyWindow::CAssemblyWindow(
 		B_WILL_DRAW );
 	realRuler->ShowMarkers( false );
 	stripFrame->SetRuler( oldRuler );
+
+	CEventEditor *ee;
+	ee = new CTrackCtlStrip(*this, *stripFrame, frame,
+							(CEventTrack *)document.FindTrack((int32)0), "Real");
+	ee->SetRuler(realRuler);
+	stripFrame->AddChildView(ee->TopView(), 8);
 
 	// Add splitter
 	rect.left = trackList->Frame().right;
@@ -351,17 +358,6 @@ CAssemblyWindow::CAssemblyWindow(
 											B_FOLLOW_LEFT | B_FOLLOW_BOTTOM, B_WILL_DRAW );
 	leftToolArea->AddChild( clockButton );
 	clockButton->SetDivider( 72.0 );
-
-
-	frame.bottom		-= B_H_SCROLL_BAR_HEIGHT;
-	frame.left		+= ToolArea_Width + 1.0 + CSplitter::V_SPLITTER_WIDTH;
-
-
-	CEventEditor *ee;
-	ee = new CTrackCtlStrip(*this, *stripFrame, frame, 
-							(CEventTrack *)document.FindTrack((int32)0), "Real");
-	ee->SetRuler( realRuler );
-	stripFrame->AddChildView( ee->TopView(), 8 );
 */
 }
 
