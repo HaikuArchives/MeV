@@ -678,21 +678,27 @@ public:							// Accessors
 								{ common.vChannel = vchannel; }
 
 	// Properties query functions
-	static void InitTables();
-	int Properties() const { return propTable[ Command() ]; }
-	static int Properties( int inCommand ) { return propTable[ inCommand ]; }
-	bool HasProperty( int inPropertyMask ) const
-		{ return (propTable[ Command() ] & inPropertyMask) != 0; }
+	static void					InitTables();
+	int							Properties() const
+								{ return propTable[Command()]; }
+	static int					Properties(int command)
+								{ return propTable[command]; }
+	bool						HasProperty(
+									int mask) const
+								{ return (propTable[Command()] & mask) != 0; }
 
-		// Event name query function
-	const char *NameText() const { return nameTable[ Command() ]; }
-	static const char *NameText( int inCommand ) { return nameTable[ inCommand ]; }
+	// Event name query function
+	const char *				NameText() const
+								{ return nameTable[Command()]; }
+	static const char *			NameText(
+									int command)
+								{ return nameTable[command]; }
 
-		// Functions dealing with extra data
-	size_t ExtendedDataSize() const
-	{
-		return HasProperty( CEvent::Prop_ExtraData ) ? sysEx.extData.Length() : 0;
-	}
+	// Functions dealing with extra data
+	size_t						ExtendedDataSize() const
+								{ return HasProperty(CEvent::Prop_ExtraData)
+										 ? sysEx.extData.Length() : 0; }
+
 	bool SetExtendedDataSize( int inLength )
 	{
 		if (HasProperty( CEvent::Prop_ExtraData ))
@@ -702,32 +708,35 @@ public:							// Accessors
 		}
 		return false;
 	}
+
 	void *ExtendedData() const
 	{
 		return HasProperty( CEvent::Prop_ExtraData ) ? sysEx.extData.Data() : NULL;
 	}
 
-		/**	Ask this event about its Nth event-specific attribute. */
-	enum E_EventAttribute QueryAttribute( int32 inIndex ) const;
-	
-		/**	returns true if the event possesses the attribute.
-		*/
-	bool HasAttribute( enum E_EventAttribute inAttr ) const;
+	/**	Ask this event about its Nth event-specific attribute. */
+	enum E_EventAttribute		QueryAttribute(
+									int32 index) const;
 
-		/**	Get the value of an attribute.
-			(Note: some attributes are aliases of others, in which
-			case only the "main" attribute is reported by this function.)
-		*/
-	int32 GetAttribute( enum E_EventAttribute inAttr ) const ;
+	/**	Returns true if the event possesses the attribute. */
+	bool						HasAttribute(
+									enum E_EventAttribute attr) const;
 
-		/**	Set the value of an attribute.
-			(returns false if the event has no such attribute.)
-		*/
-	bool SetAttribute( enum E_EventAttribute inAttr, int32 inValue );
+	/**	Get the value of an attribute.
+	 *	(Note: some attributes are aliases of others, in which
+	 *	case only the "main" attribute is reported by this function.)
+	 */
+	int32						GetAttribute(
+									enum E_EventAttribute attr) const;
 
-	// void shareExtendedData( CEvent *ev );
-	
-		// Static functions for event management
+	/**	Set the value of an attribute.
+	 *	(returns false if the event has no such attribute.)
+	 */
+	bool						SetAttribute(
+									enum E_EventAttribute attr,
+									int32 value);
+
+	// Static functions for event management
 	static void Construct( CEvent *inEventArray, int32 count )
 	{
 		while (count--)
@@ -792,7 +801,7 @@ CEvent::SetCommand(
 	if (command != Command())
 	{
 		ReleaseExtendedData();
-		common.command = common.command & 0x80 | command;
+		common.command = (common.command & 0x80) | command;
 		if (HasProperty(CEvent::Prop_ExtraData))
 			sysEx.extData.Init();
 	}

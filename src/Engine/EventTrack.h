@@ -84,12 +84,12 @@ public:							// Accessors
 								{ return events.TotalItems(); }
 
 	long						MinSelectTime() const
-								{ return minSelectTime; }
+								{ return m_minSelectTime; }
 	long						MaxSelectTime() const
-								{ return maxSelectTime; }
+								{ return m_maxSelectTime; }
 	
 	const CEvent *				CurrentEvent()
-								{ return currentEvent.Peek(0); }
+								{ return m_currentEvent.Peek(0); }
 
 	/** Gain access to the event list. */
 	EventList &					Events()
@@ -107,32 +107,31 @@ public:							// Accessors
 
 public:							// Operations
 
-	void SummarizeSelection();
+	/** Compute summary information for currently selected events. */
+	void						SummarizeSelection();
 	
-		/**	Indicates that a signature event has been moved. */
-	void InvalidateSigMap() { validSigMap = false; }
+	/**	Indicates that a signature event has been moved. */
+	void						InvalidateSigMap()
+								{ m_validSigMap = false; }
 	
-		/**	Returns true if the signature map has not been invalidated */
-	bool ValidSigMap() { return validSigMap; }
+	/**	Returns true if the signature map has not been invalidated */
+	bool						ValidSigMap()
+								{ return m_validSigMap; }
 	
-		/**	Indicates that a tempo event has been moved.
-			(only applies to master tracks)
-		*/
-	void InvalidateTempoMap();
+	/**	Indicates that a tempo event has been moved.
+	 *	(only applies to master tracks)
+	 */
+	void						InvalidateTempoMap();
 	
-		/**	This is used to synthesize a selection time when new events are being
-			added.
-		*/
-	void SetSelectTime( long minTime, long maxTime )
-	{
-		minSelectTime = minTime;
-		maxSelectTime = maxTime;
-	}
-	
-	void SetCurrentEvent( EventMarker &inMarker )
-	{
-		currentEvent = inMarker;
-	}
+	/**	This is used to synthesize a selection time when new events are being
+	 *	added.
+	 */
+	void						SetSelectTime(
+									long minTime,
+									long maxTime);
+								
+	void						SetCurrentEvent(
+									EventMarker &marker);
 	
 		/**	Undo the undoable action, if any. */
 	bool Undo()
@@ -203,11 +202,13 @@ public:							// Operations
 		int32				eventCount,
 		EventListUndoAction	*undoAction);
 
-		/**	Return the current selection type. */
-	virtual enum CTrack::E_SelectionTypes SelectionType()
+	/**	Return the current selection type. */
+	enum CTrack::E_SelectionTypes SelectionType()
 	{
-		if (selectionCount == 0) return Select_None;
-		if (selectionCount == 1) return Select_Single;
+		if (m_selectionCount == 0)
+			return Select_None;
+		if (m_selectionCount == 1)
+			return Select_Single;
 		return Select_Subset;
 	}
 
@@ -238,20 +239,27 @@ public:							// Operations
 		/**	Set an operator active / inactive. */
 	void SetOperatorActive( EventOp *inOp, bool enabled );
 	
-		/**	Returns the number of selected events. */
-	int32 SelectionCount() { return selectionCount; }
+	/**	Returns the number of selected events. */
+	int32						SelectionCount() const
+								{ return m_selectionCount; }
 
-		/**	Return the current gridsnap size. */
-	long TimeGridSize() { return timeGridSize; }
+	/**	Return the current gridsnap size. */
+	long						TimeGridSize() const
+								{ return m_timeGridSize; }
 	
-		/**	Return true if gridsnap is enabled for this item. */
-	bool GridSnapEnabled() { return gridSnapEnabled; }
-	
-		/**	Enable or disable gridsnap. */
-	void EnableGridSnap( bool inEnabled ) { gridSnapEnabled = inEnabled; }
-	
-		/**	Set the track grid size. */
-	void SetTimeGridSize( int32 inGrid ) { timeGridSize = inGrid; }
+	/**	Return true if gridsnap is enabled for this item. */
+	bool						GridSnapEnabled() const
+								{ return m_gridSnapEnabled; }
+
+	/**	Enable or disable gridsnap. */
+	void						EnableGridSnap(
+									bool enabled)
+								{ m_gridSnapEnabled = enabled; }
+
+	/**	Set the track grid size. */
+	void						SetTimeGridSize(
+									int32 grid)
+								{ m_timeGridSize = grid; }
 	
 		/**	Overrides AddUndoAction from CObservable to deal with
 			master track issues. */
@@ -290,38 +298,38 @@ private:						// Instance Data
 	EventList					events;
 
 	/** For single-event selection. */
-	EventMarker					currentEvent;
+	EventMarker					m_currentEvent;
 
 	/** Number of selected events. */
-	long						selectionCount;
+	long						m_selectionCount;
 
 	/** Start time of selection. */
-	long						minSelectTime;
+	long						m_minSelectTime;
 
 	/** End time of selection. */
-	long						maxSelectTime;
+	long						m_maxSelectTime;
 					
 	/** Gridsnap size for time. */
-	long						timeGridSize;
+	long						m_timeGridSize;
 
 	/** Grid snap is enabled. */
-	bool						gridSnapEnabled;
+	bool						m_gridSnapEnabled;
 
 	/** Previous aggregate undo action.
 	 *	Aggregate actions are when multiple indpendent events are
 	 *	aggregated into a single UNDO. (arrow-key editing, for example) */
-	UndoAction *				prevAggregateUndo;		
+	UndoAction *				m_prevAggregateUndo;
 
 	/** Previous aggregate action code. */
-	int32						prevAggregateAction;
-					
+	int32						m_prevAggregateAction;
+
+	bool						m_validSigMap;
+
 	/** Operators specific to this track. */
 	BList						operators;
 
-	EventOp *					filters[Max_Track_Filters];
-	int32						filterCount;
-
-	bool						validSigMap;
+	EventOp *					m_filters[Max_Track_Filters];
+	int32						m_filterCount;
 
 	/**	A map of the destinations used by this part. The key is a 
 	 *	pointer to the destination, while the value contains the 

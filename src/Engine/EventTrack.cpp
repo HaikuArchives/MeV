@@ -13,35 +13,29 @@
 // Support Kit
 #include <Debug.h>
 
+#define D_ACCESS(x) //PRINT(x)		// Accessors
+#define D_OPERATION(x) //PRINT(x)	// Operations
 #define D_INTERNAL(x) //PRINT(x)	// Internal Operations
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
 CEventTrack::CEventTrack(
-	CMeVDoc &inDoc,
-	TClockType cType,
-	int32 inID,
-	const char *inName)
-	: CTrack(inDoc, cType, inID, inName)
+	CMeVDoc &doc,
+	TClockType clockType,
+	int32 id,
+	const char *name)
+	:	CTrack(doc, clockType, id, name),
+		m_currentEvent(events),
+		m_selectionCount(0),
+		m_minSelectTime(0),
+		m_maxSelectTime(0),
+		m_timeGridSize(Ticks_Per_QtrNote / 2),
+		m_gridSnapEnabled(true),
+		m_validSigMap(false),
+		m_filterCount(0)
 {
-	StSubjectLock		lock( *this, Lock_Exclusive );
-
-	// Set the initial grid size and enable gridsnap
-	timeGridSize = Ticks_Per_QtrNote / 2;
-	gridSnapEnabled = true;
-
-	// Initialize the count of selected events (initially 0)
-	selectionCount = 0;
-
-	// Associate the current event marker with the event list.
-	currentEvent.SetList(events);
-
-	// Initialize the list of filters
-	filterCount = 0;
-
-	// Set the signature map to invalid so that it will be regenerated
-	validSigMap = false;
+	CWriteLock lock(this);
 
 	// Initialize the signature map.
 	if (sigMap.clockType == ClockType_Metered)
@@ -76,162 +70,181 @@ CEventTrack::GetNextUsedDestination(
 		return NULL;
 }
 
-// ---------------------------------------------------------------------------
-// Compute summary information for currently selected events
-
-void CEventTrack::SummarizeSelection()
+void
+CEventTrack::SummarizeSelection()
 {
-	StSubjectLock		lock( *this, Lock_Exclusive );
-	int32			sigChangeCount = 1,		// Number of timesigs encountered
-					tempoChangeCount = 0;		// Number of tempo changes encountered
-	int32			minorUnitDur,				// Major unit of time signature
-					majorUnitDur,				// Minor unit of time signature
-					prevMajorUnitDur,
-					prevMinorUnitDur,
-					time,
-					sigStart,
-					prevSigStart;
-	double			initialTempoPeriod = 0.0;
+	D_OPERATION(("CEventTrack::SummarizeSelection()\n"));
 
-	prevAggregateAction = 0;
+	CWriteLock lock(this);
+
+	// Number of tempo changes encountered
+	long tempoChangeCount = 0;
+
+	// Number of timesigs encountered
+	long sigChangeCount = 1;
+	// Major unit of time signature
+	long majorUnitDur;
+	long prevMajorUnitDur;
+	// Minor unit of time signature
+	long minorUnitDur;
+	long prevMinorUnitDur;
+
+	long sigStart;
+	long prevSigStart;
+
+	long time;
+	double initialTempoPeriod = 0.0;
+
+	m_prevAggregateAction = 0;
 	
-		// Initialize selection times to an "inside-out" selection.
-	minSelectTime = LONG_MAX;
-	maxSelectTime = LONG_MIN;
-	selectionCount = 0;
+	// Initialize selection times to an "inside-out" selection.
+	m_minSelectTime = LONG_MAX;
+	m_maxSelectTime = LONG_MIN;
+	m_selectionCount = 0;
 
-	EventMarker		marker( events );
-	const CEvent		*ev;
+	EventMarker marker(events);
+	const CEvent *ev;
 
 	lastEventTime = logicalLength = 0;
 
-		// Only metered sequences can have time signature events, so there's
-		// no point in even checking.
-	if (sigMap.clockType != ClockType_Metered) validSigMap = true;
+	// Only metered sequences can have time signature events, so there's
+	// no point in even checking.
+	if (sigMap.clockType != ClockType_Metered)
+		m_validSigMap = true;
 
-		// Every track starts at 4/4 (the default), but can be immediately changed
-		// by the very first event.
+	// Every track starts at 4/4 (the default), but can be immediately
+	// changed by the very first event.
 	prevSigStart = 0;
 	prevMinorUnitDur = Ticks_Per_QtrNote;
 	prevMajorUnitDur = Ticks_Per_QtrNote * 4;
 
-		// Loop through every event in the sequence and compile summary information
-	for (	ev = marker.First();
-			ev;
-			ev = marker.Seek( 1 ))
+	// Loop through every event in the sequence and compile summary
+	// information
+	for (ev = marker.First(); ev != NULL; ev = marker.Seek(1))
 	{
-		long		first = ev->Start(),
-				last;
-				
-			// last <== the stop time of the event
-		if (ev->HasProperty( CEvent::Prop_Duration ))
+		long first = ev->Start();
+		long last;
+
+		// last <== the stop time of the event
+		if (ev->HasProperty(CEvent::Prop_Duration))
 			last = ev->Stop();
-		else last = first;
+		else
+			last = first;
 
-		switch (ev->Command()) {
-		case EvtType_End:
-		
+		switch (ev->Command())
+		{
+			case EvtType_End:
+			{
 				// An 'end' event overrides the implicit track duration.
-			if (logicalLength <= 0) logicalLength = last;
-			break;
-			
-		case EvtType_TimeSig:
+				if (logicalLength <= 0)
+					logicalLength = last;
+				break;
+			}
+			case EvtType_TimeSig:
+			{
+				if (m_validSigMap)
+					break;
 
-			if (validSigMap) break;
+				time = ev->Start();
+				if (time < 0)
+					time = 0;
+				minorUnitDur = (Ticks_Per_QtrNote * 4) >> ev->sigChange.denominator;
+				majorUnitDur = minorUnitDur * ev->sigChange.numerator;
 
-			time = ev->Start();
-			if (time < 0) time = 0;
-			minorUnitDur = (Ticks_Per_QtrNote * 4) >> ev->sigChange.denominator;
-			majorUnitDur = minorUnitDur * ev->sigChange.numerator;
-			
-			if (majorUnitDur <= 0) majorUnitDur = Ticks_Per_QtrNote * 3;
-			if (minorUnitDur <= 0) minorUnitDur = Ticks_Per_QtrNote * 1;
+				if (majorUnitDur <= 0)
+					majorUnitDur = Ticks_Per_QtrNote * 3;
+				if (minorUnitDur <= 0)
+					minorUnitDur = Ticks_Per_QtrNote * 1;
 
 				// If it's effectively the same time signature...
-			if (		prevMinorUnitDur != minorUnitDur
-				||	prevMajorUnitDur != majorUnitDur)
-			{
-					// Justify this time to the beginning of the bar.
-				sigStart = time - (time - prevSigStart) % prevMajorUnitDur;
-
-					// Only if one or more bars have elapsed do we create a new entry.
-				if (sigStart > prevSigStart)
+				if ((prevMinorUnitDur != minorUnitDur)
+				 ||	(prevMajorUnitDur != majorUnitDur))
 				{
-					sigChangeCount++;
-					prevSigStart = sigStart;
+					// Justify this time to the beginning of the bar.
+					sigStart = time - (time - prevSigStart) % prevMajorUnitDur;
+	
+					// Only if one or more bars have elapsed do we create a new entry.
+					if (sigStart > prevSigStart)
+					{
+						sigChangeCount++;
+						prevSigStart = sigStart;
+					}
+					prevMinorUnitDur = minorUnitDur;
+					prevMajorUnitDur = majorUnitDur;
 				}
-				prevMinorUnitDur = minorUnitDur;
-				prevMajorUnitDur = majorUnitDur;
+				break;
+			}			
+			case EvtType_Tempo:
+			{
+				tempoChangeCount++;
+				if (initialTempoPeriod == 0.0)
+					initialTempoPeriod = RateToPeriod((double)ev->tempo.newTempo / 1000.0);
+				break;
 			}
-			break;
-			
-		case EvtType_Tempo:
-			tempoChangeCount++;
-			if (initialTempoPeriod == 0.0)
-				initialTempoPeriod = RateToPeriod( (double)ev->tempo.newTempo / 1000.0 );
-			break;
 		}
 
 		if (ev->IsSelected())
 		{
-				// Add the event to the selection range
-			minSelectTime = MIN( minSelectTime, first );
-			maxSelectTime = MAX( maxSelectTime, last );
+			// Add the event to the selection range
+			m_minSelectTime = MIN(m_minSelectTime, first);
+			m_maxSelectTime = MAX(m_maxSelectTime, last);
 
-				// Set the marker which points to the first selected event
-				// -- but only if it does not already point to a selected event.
-			if (selectionCount == 0)
+			// Set the marker which points to the first selected event
+			// -- but only if it does not already point to a selected event.
+			if (m_selectionCount == 0)
 			{
-				const CEvent	*cEv = currentEvent;
-			
-				if (cEv == NULL || !cEv->IsSelected()) currentEvent = marker;
+				const CEvent *current = m_currentEvent;
+				if ((current == NULL) || !current->IsSelected())
+					m_currentEvent = marker;
 			}
-			selectionCount++;
+			m_selectionCount++;
 		}
 
-			// Compute the time of the last event stop time in the track
-		if (last > lastEventTime) lastEventTime = last;
+		// Compute the time of the last event stop time in the track
+		if (last > lastEventTime)
+			lastEventTime = last;
 	}
 	
-	if (validSigMap == false)	
+	if (m_validSigMap == false)
 	{
-		CSignatureMap::SigChange	*sigList,
-								*prevSig;
-		int32					sigIndex = 0;
+		CSignatureMap::SigChange *sigList, *prevSig;
+		int32 sigIndex = 0;
 		
-		sigList = new CSignatureMap::SigChange[ sigChangeCount ];
+		sigList = new CSignatureMap::SigChange[sigChangeCount];
 		prevSig = sigList;
 
-			// Default is 4/4
-		sigList[ 0 ].sigTime = 0;
-		sigList[ 0 ].sigMinorUnitDur = Ticks_Per_QtrNote;
-		sigList[ 0 ].sigMajorUnitDur = Ticks_Per_QtrNote * 4;
-		
-		for (	ev = marker.First();
-				ev;
-				ev = marker.Seek( 1 ))
+		// Default is 4/4
+		sigList[0].sigTime = 0;
+		sigList[0].sigMinorUnitDur = Ticks_Per_QtrNote;
+		sigList[0].sigMajorUnitDur = Ticks_Per_QtrNote * 4;
+
+		for (ev = marker.First();
+			 ev;
+			 ev = marker.Seek(1))
 		{
-			if (ev->Command() != EvtType_TimeSig) continue;
-			
+			if (ev->Command() != EvtType_TimeSig)
+				continue;
+
 			time = ev->Start();
-			if (time < 0) time = 0;
+			if (time < 0)
+				time = 0;
 			minorUnitDur = (Ticks_Per_QtrNote * 4) >> ev->sigChange.denominator;
 			majorUnitDur = minorUnitDur * ev->sigChange.numerator;
-			
-			if (majorUnitDur <= 0) majorUnitDur = Ticks_Per_QtrNote * 3;
-			if (minorUnitDur <= 0) minorUnitDur = Ticks_Per_QtrNote * 1;
 
-				// If it's effectively the same time signature...
-			if (		prevSig->sigMinorUnitDur == minorUnitDur
-				&&	prevSig->sigMajorUnitDur == majorUnitDur)
-			{
+			if (majorUnitDur <= 0)
+				majorUnitDur = Ticks_Per_QtrNote * 3;
+			if (minorUnitDur <= 0)
+				minorUnitDur = Ticks_Per_QtrNote * 1;
+
+			// If it's effectively the same time signature...
+			if ((prevSig->sigMinorUnitDur == minorUnitDur)
+			 && (prevSig->sigMajorUnitDur == majorUnitDur))
 				continue;
-			}
 
-				// Justify this time to the beginning of the bar.
+			// Justify this time to the beginning of the bar.
 			sigStart = time - (time - prevSig->sigTime) % prevSig->sigMajorUnitDur;
 
-				// Only if one or more bars have elapsed do we create a new entry.
+			// Only if one or more bars have elapsed do we create a new entry.
 			if (sigStart > prevSig->sigTime)
 			{
 				sigIndex++;
@@ -245,82 +258,72 @@ void CEventTrack::SummarizeSelection()
 		delete sigMap.entries;
 		sigMap.entries = sigList;
 		sigMap.numEntries = sigIndex + 1;
-		validSigMap = true;
+		m_validSigMap = true;
 
-			// Tell all observers that our time signature changed.
-		NotifyUpdate( CTrack::Update_SigMap | CTrack::Update_Summary, NULL );
+		// Tell all observers that our time signature changed.
+		NotifyUpdate(CTrack::Update_SigMap | CTrack::Update_Summary, NULL);
 	}
-	else NotifyUpdate( CTrack::Update_Summary, NULL );
-	
-		// If this is the master real track (the only track in which tempo events
-		// have any effect), and tempo events have been modified, then we need
-		// to recompile the document's tempo map.
-	if (GetID() == 1 && !Document().ValidTempoMap())
+	else
 	{
-		CTempoMapEntry		*newTempoMap,
-							*nextEntry;
+		NotifyUpdate(CTrack::Update_Summary, NULL);
+	}
+
+	// If this is the master real track (the only track in which tempo events
+	// have any effect), and tempo events have been modified, then we need
+	// to recompile the document's tempo map.
+	if ((GetID() == 1) && !Document().ValidTempoMap())
+	{
+		CTempoMapEntry *newTempoMap, *nextEntry;
 		
-		if (initialTempoPeriod == 0) initialTempoPeriod = RateToPeriod( Document().InitialTempo() );
-		
-			// We know how many tempo events there are already (since we counted them
-			// in the last section) so we can go ahead and allocate the new array of tempomap
-			// entries.
+		if (initialTempoPeriod == 0)
+			initialTempoPeriod = RateToPeriod(Document().InitialTempo());
+
+		// We know how many tempo events there are already (since we counted them
+		// in the last section) so we can go ahead and allocate the new array of tempomap
+		// entries.
 		if (tempoChangeCount <= 1)
 		{
-			newTempoMap = new CTempoMapEntry[ 1 ];
-			newTempoMap->SetInitialTempo( initialTempoPeriod );
+			newTempoMap = new CTempoMapEntry[1];
+			newTempoMap->SetInitialTempo(initialTempoPeriod);
 		}
 		else
 		{
-			newTempoMap = new CTempoMapEntry[ tempoChangeCount + 1 ];
-			newTempoMap->SetInitialTempo( initialTempoPeriod );
-
-			nextEntry = &newTempoMap[ 1 ];
-
-			for (	ev = marker.First();
-				ev;
-				ev = marker.Seek( 1 ))
+			newTempoMap = new CTempoMapEntry[tempoChangeCount + 1];
+			newTempoMap->SetInitialTempo(initialTempoPeriod);
+			nextEntry = &newTempoMap[1];
+			for (ev = marker.First(); ev != NULL; ev = marker.Seek(1))
 			{
 				if (ev->Command() == EvtType_Tempo)
 				{
-					double		per;
-		
-						// Calculate tempo period
-					per = RateToPeriod( (double)ev->tempo.newTempo / 1000.0 );
+					// Calculate tempo period
+					double period = RateToPeriod((double)ev->tempo.newTempo / 1000.0);
 	
-						// Set up a tempo entry based off the previous one.
-					nextEntry->SetTempo(	nextEntry[ - 1 ],
-										per,
-										ev->Start(),
-										ev->Duration(),
-										ClockType() );
+					// Set up a tempo entry based off the previous one.
+					nextEntry->SetTempo(nextEntry[-1], period,
+										ev->Start(), ev->Duration(),
+										ClockType());
 				}
 			}
 		}
 		
-			// Replace old tempo map with new
-		Document().ReplaceTempoMap( newTempoMap, tempoChangeCount );
-		NotifyUpdate( CTrack::Update_TempoMap, NULL );
+		// Replace old tempo map with new
+		Document().ReplaceTempoMap(newTempoMap, tempoChangeCount);
+		NotifyUpdate(CTrack::Update_TempoMap, NULL);
 		if (Sibling())
-			Sibling()->NotifyUpdate( CTrack::Update_TempoMap, NULL );
-		Document().NotifyUpdate( CMeVDoc::Update_TempoMap, NULL );
+			Sibling()->NotifyUpdate(CTrack::Update_TempoMap, NULL);
+		Document().NotifyUpdate(CMeVDoc::Update_TempoMap, NULL);
 	}
 
-		// If there was no END event, then set the logical length to the end of
-		// the measure of the last event.
+	// If there was no END event, then set the logical length to the end of
+	// the measure of the last event.
 	if (logicalLength <= 0)
 	{
-		int32			majorUnitCount;
-		CSignatureMap::SigChange	*sig;
-		
-		sig = sigMap.PreviousMajorUnit(	lastEventTime,
-										majorUnitCount,
-										logicalLength );
-								
-		if (lastEventTime > logicalLength || logicalLength == 0)
+		int32 majorUnitCount;
+		CSignatureMap::SigChange *sig;
+		sig = sigMap.PreviousMajorUnit(lastEventTime, majorUnitCount,
+									   logicalLength);
+		if ((lastEventTime > logicalLength) || (logicalLength == 0))
 			logicalLength += sig->sigMajorUnitDur;
-
-// 	logicalLength = lastEventTime;
 	}
 }
 
@@ -330,84 +333,93 @@ void CEventTrack::SummarizeSelection()
 
 void CEventTrack::InvalidateTempoMap()
 {
-	if (GetID() == 0 || GetID() == 1) Document().InvalidateTempoMap();
+	if ((GetID() == 0) || (GetID() == 1))
+		Document().InvalidateTempoMap();
 }
 
-// ---------------------------------------------------------------------------
-// Select all events.
-
-void CEventTrack::SelectAll( CEventEditor *inEditor )
+void
+CEventTrack::SetCurrentEvent(
+	EventMarker &marker)
 {
-	StSubjectLock		lock( *this, Lock_Exclusive );
-	EventMarker		marker( events );
-	
-		// If this is a master track, then make this the active one.
-	Document().SetActiveMaster( this );
+	D_ACCESS(("CEventTrack::SetCurrentEvent(%s)\n",
+			  marker.Peek(0) ?
+			  CEvent::NameText(marker.Peek(0)->Command()) :
+			  "(none)"));
 
-		// For each event, select it.
-	if (inEditor != NULL)
+	m_currentEvent = marker;
+}
+
+void
+CEventTrack::SetSelectTime(
+	long minTime,
+	long maxTime)
+{
+	D_ACCESS(("CEventTrack::SetSelectTime(%ld, %ld)\n",
+			  minTime, maxTime));
+
+	m_minSelectTime = minTime;
+	m_maxSelectTime = maxTime;
+}
+
+void
+CEventTrack::SelectAll(
+	CEventEditor *editor)
+{
+	D_OPERATION(("CEventTrack::SelectAll()\n"));
+
+	CWriteLock lock(this);
+	
+	// If this is a master track, then make this the active one.
+	Document().SetActiveMaster(this);
+
+	// For each event, select it.
+	EventMarker	marker(events);
+	for (const CEvent *ev = marker.First(); ev; ev = marker.Seek(1))
 	{
-		for (const CEvent *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
+		if (!ev->IsSelected())
 		{
-			if (!ev->IsSelected())
-			{
-				const_cast<CEvent *>(ev)->SetSelected( true );
-				(inEditor->RendererFor(*ev))->Invalidate(*ev);
-			}
-		}
-	}
-	else
-	{
-		for (const CEvent *ev = marker.First(); ev; ev = marker.Seek( 1 ) )
-		{
-			const_cast<CEvent *>(ev)->SetSelected( true );
+			const_cast<CEvent *>(ev)->SetSelected(true);
+			if (editor != NULL)
+				editor->RendererFor(*ev)->Invalidate(*ev);
 		}
 	}
 
 	SummarizeSelection();
 
 	CEventSelectionUpdateHint hint(*this);
-	PostUpdate(&hint, inEditor);
+	PostUpdate(&hint, editor);
 }
 
-// ---------------------------------------------------------------------------
-// Select all events.
-
-void CEventTrack::DeselectAll( CEventEditor *inEditor, bool inDoUpdate )
+void
+CEventTrack::DeselectAll(
+	CEventEditor *editor,
+	bool doUpdate)
 {
-	StSubjectLock					lock( *this, Lock_Exclusive );
-	EventMarker					marker( events );
-	CEventSelectionUpdateHint		hint( *this, true );
-	const CEvent					*ev;
+	D_OPERATION(("CEventTrack::DeselectAll()\n"));
 
-	if (inEditor != NULL)
+	CWriteLock lock(this);
+
+	const CEvent *ev;
+	EventMarker marker(events);
+	// For each event, deselect it.
+	for (ev = marker.FirstItemInRange(MinSelectTime(), MaxSelectTime());
+		 ev;
+		 ev = marker.NextItemInRange(MinSelectTime(), MaxSelectTime()))
 	{
-			// For each event, select it.
-		for (	ev = marker.FirstItemInRange( MinSelectTime(), MaxSelectTime() );
-				ev;
-				ev = marker.NextItemInRange( MinSelectTime(), MaxSelectTime() ) )
+		if (ev->IsSelected())
 		{
-			if (ev->IsSelected())
-			{
-				const_cast<CEvent *>(ev)->SetSelected( false );
-				(inEditor->RendererFor(*ev))->Invalidate(*ev);
-			}
-		}
-	}
-	else
-	{
-			// For each event, select it.
-		for (	ev = marker.FirstItemInRange( MinSelectTime(), MaxSelectTime() );
-				ev;
-				ev = marker.NextItemInRange( MinSelectTime(), MaxSelectTime() ) )
-		{
-			const_cast<CEvent *>(ev)->SetSelected( false );
+			const_cast<CEvent *>(ev)->SetSelected(false);
+			if (editor != NULL)
+				editor->RendererFor(*ev)->Invalidate(*ev);
 		}
 	}
 
 	SummarizeSelection();
-	if (inDoUpdate)
-		PostUpdate(&hint, inEditor);
+	if (doUpdate)
+	{
+		CEventSelectionUpdateHint hint(*this, true);
+		PostUpdate(&hint, editor);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -562,34 +574,33 @@ void CEventTrack::ModifySelectedEvents(
 
 	memset( eventsModified, 0, sizeof eventsModified );
 
-		/*	IF the most recent undo action is not NULL,
-			and the most recent undo action was created by the code listed below,
-			and the aggregate action code indicates that this action is a continuation
-			of the previous action, then don't create a new undo action.
-		*/
-	if (		inAggregateAction != 0
-		&&	inAggregateAction == prevAggregateAction
-		&&	prevAggregateUndo != NULL
-		&&	IsMostRecentUndoAction( prevAggregateUndo ))
+	// IF the most recent undo action is not NULL,
+	// and the most recent undo action was created by the code listed below,
+	// and the aggregate action code indicates that this action is a 
+	// continuation of the previous action, then don't create a new undo 
+	// action.
+	if ((inAggregateAction != 0)
+	 &&	(inAggregateAction == m_prevAggregateAction)
+	 &&	(m_prevAggregateUndo != NULL)
+	 &&	(IsMostRecentUndoAction(m_prevAggregateUndo)))
 	{
-			// At this point, all of the selected events SHOULD have been
-			// saved in a previous undo action. So, we want to avoid creating
-			// another one.
+		// At this point, all of the selected events SHOULD have been
+		// saved in a previous undo action. So, we want to avoid creating
+		// another one.
 		undoAction = NULL;
 	}
 	else
 	{
-			// Create the undo action normally...
-		undoAction = new EventListUndoAction( events, *this, inActionLabel );
-		prevAggregateUndo = undoAction;
+		// Create the undo action normally...
+		undoAction = new EventListUndoAction(events, *this, inActionLabel);
+		m_prevAggregateUndo = undoAction;
 	}
 
 	if (!op.CanModifyOrder())
 	{
-			// Initialize an event marker for this track.
-		EventMarker		marker( events );
-
-		marker.Track( EventMarker::Track_Next );
+		// Initialize an event marker for this track.
+		EventMarker	marker(events);
+		marker.Track(EventMarker::Track_Next);
 
 		// Applying a modifier to the events which can
 		// cause a change in event order
@@ -659,39 +670,38 @@ void CEventTrack::ModifySelectedEvents(
 		delete [] tempBuffer;
 	}
 
-		// Add the undo action to the undo list for this observable
-	if (undoAction) AddUndoAction( undoAction );
+	// Add the undo action to the undo list for this observable
+	if (undoAction)
+		AddUndoAction(undoAction);
 
-		// If the modified event was a time signature event, then
-		// go head and invalidate the track's signature map.
-	if (eventsModified[ EvtType_TimeSig ]) InvalidateSigMap();
+	// If the modified event was a time signature event, then
+	// go head and invalidate the track's signature map.
+	if (eventsModified[EvtType_TimeSig])
+		InvalidateSigMap();
 
-		// If the modified event was a tempo change event, then
-		// go head and invalidate the document's tempo map.
-	if (eventsModified[ EvtType_Tempo ]) InvalidateTempoMap();
+	// If the modified event was a tempo change event, then
+	// go head and invalidate the document's tempo map.
+	if (eventsModified[EvtType_Tempo])
+		InvalidateTempoMap();
 
-		// Compute the summary of the selection
+	// Compute the summary of the selection
 	SummarizeSelection();
 	
-		// Save aggregate action stuff. Since SummarizeSelection wipes out this
-		// information, this must be done after that call.
-	prevAggregateAction = inAggregateAction;
+	// Save aggregate action stuff. Since SummarizeSelection wipes out this
+	// information, this must be done after that call.
+	m_prevAggregateAction = inAggregateAction;
 
-		// Set the modified flag in the document
+	// Set the modified flag in the document
 	Document().SetModified();
 
-		// Compute an update hint which is the union
-		// of the old and new selection ranges.
-
-	CUpdateHint		hint;
-	hint.AddInt32( "MinTime", MIN( minTime, MinSelectTime() ) );
-	hint.AddInt32( "MaxTime", MAX( maxTime, MaxSelectTime() ) );
-	if (		prevTrackDuration != LastEventTime()
-		||	prevLogicalLength != LogicalLength())
-	{
-		CTrack::AddUpdateHintBits( hint, CTrack::Update_Duration );
-	}
-
+	// Compute an update hint which is the union
+	// of the old and new selection ranges.
+	CUpdateHint hint;
+	hint.AddInt32("MinTime", MIN(minTime, MinSelectTime()));
+	hint.AddInt32("MaxTime", MAX(maxTime, MaxSelectTime()));
+	if ((prevTrackDuration != LastEventTime())
+	 ||	(prevLogicalLength != LogicalLength()))
+		CTrack::AddUpdateHintBits(hint, CTrack::Update_Duration);
 	PostUpdate(&hint, inEditor);
 }
 
@@ -923,9 +933,9 @@ void CEventTrack::MergeEvents(
 	// Filter an event through all of the filters assigned to this track.
 void CEventTrack::FilterEvent( CEvent &ioEv )
 {
-	for (int i = 0; i < filterCount; i++)
+	for (int i = 0; i < m_filterCount; i++)
 	{
-		(*filters[ i ])( ioEv, clockType );
+		(*m_filters[ i ])( ioEv, clockType );
 	}
 }
 
@@ -936,34 +946,34 @@ void CEventTrack::CompileOperators()
 	StSubjectLock			trackLock( *this, Lock_Exclusive );
 	
 		// Release ref counts on all old filters.
-	for (i = 0; i < filterCount; i++)
+	for (i = 0; i < m_filterCount; i++)
 	{
-		CRefCountObject::Release( filters[ i ] );
+		CRefCountObject::Release( m_filters[ i ] );
 	}
 	
-	filterCount = 0;
+	m_filterCount = 0;
 	
 		// Add active filters associated with document to this list.
 	for (	i = 0;
-			i < Document().CountActiveOperators() && filterCount < Max_Track_Filters;
+			i < Document().CountActiveOperators() && m_filterCount < Max_Track_Filters;
 			i++)
 	{
-		filters[ filterCount++ ] = Document().ActiveOperatorAt( i );
+		m_filters[ m_filterCount++ ] = Document().ActiveOperatorAt( i );
 	}
 
 		// Add active filters associated with this track to compiled list,
 		// unless they were already added from document.
 	for (	i = 0;
-			i < CountOperators() && filterCount < Max_Track_Filters;
+			i < CountOperators() && m_filterCount < Max_Track_Filters;
 			i++)
 	{
 		EventOp		*op = OperatorAt( i );
 		
 		if (Document().ActiveOperatorIndex( op ) < 0)
 		{
-			filters[ filterCount++ ] = op;
+			m_filters[ m_filterCount++ ] = op;
 		}
-		else CRefCountObject::Release( filters[ i ] );
+		else CRefCountObject::Release( m_filters[ i ] );
 	}
 }
 
@@ -1114,8 +1124,8 @@ CEventTrack::ReadChunk(
 		case TRACK_GRID_CHUNK:
 		{
 			CWriteLock lock(this);
-			reader >> timeGridSize;
-			reader >> gridSnapEnabled;
+			reader >> m_timeGridSize;
+			reader >> m_gridSnapEnabled;
 			break;
 		}
 		case Body_ID:
@@ -1143,8 +1153,8 @@ CEventTrack::Serialize(
 	CReadLock lock(this);
 
 	writer.Push(TRACK_GRID_CHUNK);
-	writer << timeGridSize;
-	writer << gridSnapEnabled;
+	writer << m_timeGridSize;
+	writer << m_gridSnapEnabled;
 	writer.Pop();
 	
 	if (events.TotalItems() > 0)

@@ -10,6 +10,8 @@
 
 // Gnu C Library
 #include <stdio.h>
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // Compute latest stop time of all events in block
@@ -929,149 +931,152 @@ void WriteEventList( CWriter &writer, EventList &inEvents )
 	}
 }
 
-void ReadEventList( CReader &reader, EventList &outEvents )
+void
+ReadEventList(
+	CReader &reader,
+	EventList &outEvents)
 {
-	CEvent		ev;
-	int32		prevTime = 0;
-	int32		dataSize = 0;
-	EventMarker	marker( outEvents );
-	uint8		byteRead;
-	bool			skip = false;
+	int32 prevTime = 0;
+	bool skip = false;
 	
+	EventMarker	marker(outEvents);
 	marker.First();
-	marker.Track( ItemMarker_Base::Track_Next );
+	marker.Track(ItemMarker_Base::Track_Next);
 	
 	while (reader.BytesAvailable() > 0)
 	{
-		unsigned long		v = 0;
+		uint8 byteRead;
+		unsigned long v = 0;
 
-		ev.SetCommand( EvtType_End );		// clear out any extended data
-		
-			//	Special version of read-delta-value to deal with push-back
+		//	Special version of read-delta-value to deal with push-back
 		do
 		{
-			if (skip) skip = false;
-			else reader >> byteRead;
+			if (skip)
+				skip = false;
+			else
+				reader >> byteRead;
 			v = (v << 7) | (byteRead & 0x7f);
 		} while (byteRead & 0x80);
 		
 		prevTime += v;
-		
-//		prevTime += ReadDeltaValue( reader );
+		CEvent ev;
 		ev.common.start = prevTime;
 		reader >> ev.common.command;
 		
-		if (ev.HasProperty( CEvent::Prop_Duration ))
+		int32 dataSize = 0;
+		if (ev.HasProperty(CEvent::Prop_Duration))
 		{
-				// Read the event's duration
-			ev.common.duration = ReadDeltaValue( reader );
+			// Read the event's duration
+			ev.common.duration = ReadDeltaValue(reader);
 		}
-		else if (ev.HasProperty( CEvent::Prop_ExtraData ))
+		else if (ev.HasProperty(CEvent::Prop_ExtraData))
 		{
-				// Read the event's extended data
+			// Read the event's extended data
 			ev.common.duration = 0;
-			dataSize = ReadDeltaValue( reader );
-			reader.MustRead( ev.ExtendedData(), ev.ExtendedDataSize() );
+			dataSize = ReadDeltaValue(reader);
+			reader.MustRead(ev.ExtendedData(), ev.ExtendedDataSize());
 		}
-		else ReadDeltaValue( reader );						// discard fake duration
+		else
+		{
+			// discard fake duration
+			ReadDeltaValue(reader);
+		}
 
-		if (ev.HasProperty( CEvent::Prop_Channel ))
+		if (ev.HasProperty(CEvent::Prop_Channel))
 			reader >> ev.common.vChannel;
-					
-		switch (ev.Command()) {
-		case EvtType_Note:								// note event
-			reader >> ev.note.pitch >> ev.note.attackVelocity >> ev.note.releaseVelocity;
-			break;
 
-		case EvtType_ChannelATouch:						// channel aftertouch
-			reader >> ev.aTouch.value;
-			ev.aTouch.updatePeriod = ReadFixed( reader, 0x3fff );
-			break;
-
-		case EvtType_PolyATouch:							// polyphonic aftertouch
-			reader >> ev.aTouch.pitch >> ev.aTouch.value;
-			break;
-
-		case EvtType_Controller:							// controller change
-			reader	>> ev.controlChange.controller
-					>> ev.controlChange.MSB
-					>> ev.controlChange.LSB;
-			ev.controlChange.updatePeriod = ReadFixed( reader, 0x3fff );
-			break;
-
-		case EvtType_ProgramChange:						// program change
-			reader	>> ev.programChange.program
-					>> ev.programChange.bankMSB
-					>> ev.programChange.bankLSB
-					>> ev.programChange.vPos;
-			break;
-
-		case EvtType_PitchBend:							// pitch bend
-			ev.pitchBend.targetBend = ReadFixed( reader, 0x3fff );
-			ev.pitchBend.startBend = ReadFixed( reader, 0x3fff );
-			ev.pitchBend.updatePeriod = ReadFixed( reader, 0x3fff );
-			break;
-			
-		case EvtType_SysEx:								// system exclusive
-			reader >> ev.sysEx.vPos;
-			ev.SetExtendedDataSize( dataSize );
-			break;
-			
-		case EvtType_Text:								// text message
-			reader >> ev.text.vPos >> ev.text.textType;
-			ev.SetExtendedDataSize( dataSize );
-			break;
-			
-		case EvtType_Tempo:								// change tempo event
-			ev.tempo.newTempo = ReadFixed( reader, ULONG_MAX);
-			break;
-
-		case EvtType_TimeSig:								// change time signature event
-			reader >> ev.sigChange.vPos >> ev.sigChange.numerator >> ev.sigChange.denominator;
-			break;
-
-		case EvtType_Repeat:								// repeat a section
-			reader >> ev.repeat.vPos;
-			ev.repeat.repeatCount = ReadFixed( reader, 0xffff );
-			break;
-
-		case EvtType_Sequence:							// play another track
-			reader	>> ev.sequence.vPos
-					>> ev.sequence.transposition
-					>> ev.sequence.flags;
-			ev.sequence.sequence = ReadFixed( reader, 0xffff );
-			break;
-
-#if 0
-		case EvtType_Locate:								// locate to "duration" time
-		case EvtType_Cue:									// trigger a cue point
-		case EvtType_MTCCue:								// trigger an MTC cue point
-		case EvtType_MuteVChannel:							// mute a vChannel
-		case EvtType_MuteTrack:							// mute a track
-		case EvtType_SpliceIn:								// a "splice" event for overdub
-		case EvtType_SpliceOut:							// a "splice" event for overdub
-		case EvtType_UserEvent:							// has type and data fields
-		case EvtType_Branch:								// conditional branch to track
-		case EvtType_Erase:								// erase notes on channel
-		case EvtType_Punch:								// punch in over track
-		case EvtType_VelocityContour:						// velocity contour event
-		case EvtType_Transpose:							// transposition for vChannel
-			break;
-
-		case EvtType_End:									// end of track
-		case EvtType_Stop:								// stop the sequencer
-		case EvtType_Go:									// start the sequencer
-			break;
-#endif
-
-		default:
+		switch (ev.Command())
+		{
+			case EvtType_Note:
+			{
+				reader >> ev.note.pitch >> ev.note.attackVelocity >> ev.note.releaseVelocity;
+				break;
+			}
+			case EvtType_ChannelATouch:
+			{
+				reader >> ev.aTouch.value;
+				ev.aTouch.updatePeriod = ReadFixed(reader, 0x3fff);
+				break;
+			}
+			case EvtType_PolyATouch:
+			{
+				reader >> ev.aTouch.pitch >> ev.aTouch.value;
+				break;
+			}
+			case EvtType_Controller:
+			{
+				reader	>> ev.controlChange.controller
+						>> ev.controlChange.MSB
+						>> ev.controlChange.LSB;
+				ev.controlChange.updatePeriod = ReadFixed( reader, 0x3fff );
+				break;
+			}
+			case EvtType_ProgramChange:
+			{
+				reader	>> ev.programChange.program
+						>> ev.programChange.bankMSB
+						>> ev.programChange.bankLSB
+						>> ev.programChange.vPos;
+				break;
+			}
+			case EvtType_PitchBend:
+			{
+				ev.pitchBend.targetBend = ReadFixed(reader, 0x3fff);
+				ev.pitchBend.startBend = ReadFixed(reader, 0x3fff);
+				ev.pitchBend.updatePeriod = ReadFixed(reader, 0x3fff);
+				break;
+			}
+			case EvtType_SysEx:
+			{
+				reader >> ev.sysEx.vPos;
+				ev.SetExtendedDataSize(dataSize);
+				break;
+			}
+			case EvtType_Text:
+			{
+				reader >> ev.text.vPos >> ev.text.textType;
+				ev.SetExtendedDataSize(dataSize);
+				break;
+			}
+			case EvtType_Tempo:
+			{
+				ev.tempo.newTempo = ReadFixed(reader, ULONG_MAX);
+				break;
+			}
+			case EvtType_TimeSig:
+			{
+				reader >> ev.sigChange.vPos >> ev.sigChange.numerator >> ev.sigChange.denominator;
+				break;
+			}
+			case EvtType_Repeat:
+			{
+				reader >> ev.repeat.vPos;
+				ev.repeat.repeatCount = ReadFixed(reader, 0xffff);
+				break;
+			}
+			case EvtType_Sequence:
+			{
+				reader	>> ev.sequence.vPos
+						>> ev.sequence.transposition
+						>> ev.sequence.flags;
+				ev.sequence.sequence = ReadFixed(reader, 0xffff);
+				break;
+			}
+			default:
+			{
 				// Skip over any bytes with high bit clear.
 				// Set the skip flag so that next byte will be read
-			do { reader >> byteRead; } while (!(byteRead & 0x80));
-			skip = true;
-			break;
+				do
+				{
+					reader >> byteRead;
+				} while (!(byteRead & 0x80));
+				skip = true;
+				break;
+			}
 		}
-		
-		marker.Insert( &ev, 1, NULL );
+
+		marker.Insert(&ev, 1, NULL);
 	}
 }
+
+// END -- EventList.cpp
