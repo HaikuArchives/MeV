@@ -42,6 +42,7 @@ SRCS= \
 	Support/DList.cpp \
 	Support/IFFReader.cpp \
 	Support/IFFWriter.cpp \
+	Support/MathUtils.cpp \
 	Support/ResourceUtils.cpp \
 	UI/AssemblyRulerView.cpp \
 	UI/AssemblyWindow.cpp \
@@ -49,6 +50,7 @@ SRCS= \
 	UI/BorderButton.cpp \
 	UI/BorderView.cpp \
 	UI/ContinuousValueEditor.cpp \
+	UI/CursorCache.cpp \
 	UI/DestinationListView.cpp \
 	UI/DestinationModifier.cpp \
 	UI/EventEditor.cpp \
