@@ -100,18 +100,27 @@ public:							// Accessors
 									unsigned char program,
 									char *outName);
 
-	void						SetConnect(
-									BMidiConsumer *sink,
-									bool connect);
-	bool						IsConnected(
-									BMidiConsumer *sink) const;
+	bool						IsConnectedTo(
+									BMidiConsumer *consumer) const;
+	BMidiConsumer *				ConnectedTo() const;
+
+	void						ConnectTo(
+									BMidiConsumer *consumer);
+	void						ConnectTo(
+									int32 consumerID);
+	void						ConnectTo(
+									const char *name);
+
+	void						Disconnect();
+
+
 	BMidiLocalProducer *		Producer() const
 								{ return m_producer; }
 
-	void 						SetChannel(
-									uint8 channel);
 	uint8						Channel() const
 								{ return m_channel; }
+	void 						SetChannel(
+									uint8 channel);
 
 public:							// CDestination Implementation
 

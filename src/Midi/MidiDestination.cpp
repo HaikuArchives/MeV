@@ -120,6 +120,81 @@ CMidiDestination::GetProgramName(
 	return false;
 }
 
+bool
+CMidiDestination::IsConnectedTo(
+	BMidiConsumer *consumer) const
+{
+	D_ACCESS(("CMidiDestination::IsConnectedTo()\n"));
+	ASSERT(consumer != NULL);
+
+	if ((consumer->ID() == m_consumerID)
+	 && (m_producer->IsConnected(consumer)))
+		return true;
+
+	return false;
+}
+
+void
+CMidiDestination::ConnectTo(
+	BMidiConsumer *consumer)
+{
+	D_ACCESS(("CMidiDestination::ConnectTo(consumer)\n"));
+	ASSERT(consumer != NULL);
+
+	Disconnect();
+
+	BMessage props;
+	if (consumer->GetProperties(&props) == B_OK)
+	{
+		if (props.HasBool("mev:internal_synth"))
+			// init internal synth
+			((Midi::CInternalSynth *)consumer)->Init();
+		if (props.HasBool("mev:general_midi"))
+			m_generalMidi = true;
+	}
+	m_producer->Connect(consumer);
+	m_consumerID = consumer->ID();
+	SetLatency(consumer->Latency());
+}
+
+void
+CMidiDestination::ConnectTo(
+	int32 id)
+{
+	D_ACCESS(("CMidiDestination::ConnectTo(id)\n"));
+
+	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(id);
+	if (consumer != NULL)
+		ConnectTo(consumer);
+}
+
+void
+CMidiDestination::ConnectTo(
+	const char *name)
+{
+	D_ACCESS(("CMidiDestination::ConnectTo(name)\n"));
+
+	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(name);
+	if (consumer != NULL)
+		ConnectTo(consumer);
+	// +++ else remember name
+}
+
+void
+CMidiDestination::Disconnect()
+{
+	D_ACCESS(("CMidiDestination::Disconnect()\n"));
+
+	CMidiManager *mm = CMidiManager::Instance();
+	if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
+	{
+		m_producer->Disconnect(mm->FindConsumer(m_consumerID));
+		m_generalMidi = false;
+		m_consumerID = 0;
+		SetLatency(0);
+	}
+}
+
 void
 CMidiDestination::SetChannel(
 	uint8 channel)
@@ -134,57 +209,6 @@ CMidiDestination::SetChannel(
 		hint.AddInt32("DestAttrs", Update_Channel);
 		PostUpdate(&hint);
 	}
-}
-
-void
-CMidiDestination::SetConnect(
-	BMidiConsumer *sink,
-	bool connect)
-{
-	D_ACCESS(("CMidiDestination::SetConnect(%s)\n", sink ? sink->Name() : "(none)"));
-
-	if (sink)
-	{
-		Midi::CMidiManager *mm = Midi::CMidiManager::Instance();
-		if (m_producer->IsConnected(mm->FindConsumer(m_consumerID)))
-		{
-			m_producer->Disconnect(mm->FindConsumer(m_consumerID));
-			m_generalMidi = false;
-		}
-
-		if (connect)
-		{
-			BMessage props;
-			if (sink->GetProperties(&props) == B_OK)
-			{
-				if (props.HasBool("mev:internal_synth"))
-					// init internal synth
-					((Midi::CInternalSynth *)sink)->Init();
-				if (props.HasBool("mev:general_midi"))
-					m_generalMidi = true;
-			}
-			m_producer->Connect(sink);
-			m_consumerID = sink->ID();
-			SetLatency(sink->Latency());
-		}
-		else
-		{
-			m_producer->Disconnect(sink);
-			m_consumerID = 0;
-			SetLatency(0);
-		}
-	}
-}
-
-bool
-CMidiDestination::IsConnected(
-	BMidiConsumer *sink) const
-{
-	if ((sink->ID() == m_consumerID)
-	 && (m_producer->IsConnected(sink)))
-		return true;
-
-	return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -273,8 +297,7 @@ CMidiDestination::ReadChunk(
 			char buffer[Midi::CONNECTION_NAME_LENGTH];
 			reader.MustRead(buffer, MIN((size_t)reader.ChunkLength(),
 										Midi::CONNECTION_NAME_LENGTH));
-			SetConnect(Midi::CMidiManager::Instance()->FindConsumer(buffer),
-					   true);
+			ConnectTo(buffer);
 			break;
 		}
 		case DESTINATION_SETTINGS_CHUNK:
