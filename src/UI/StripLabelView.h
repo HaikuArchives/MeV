@@ -73,6 +73,9 @@ public:							// Accessors
 
 	CStripFrameView *			FrameView() const;
 
+	CStripView *				StripView() const
+								{ return m_stripView; }
+
 public:							// BView Implementation
 
 	virtual void				AttachedToWindow();
