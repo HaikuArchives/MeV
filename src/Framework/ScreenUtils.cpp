@@ -72,14 +72,15 @@ UScreenUtils::ConstrainToScreen(
 
 	BPoint p = frame.LeftTop();
 	p.x = (p.x < screenRect.left)
-		  ? screenRect.left
+		  ? screenRect.left + 1.0
 		  : (p.x > (screenRect.right - frame.Width()))
-		  	? screenRect.right - frame.Width()
-		  	: p.y = p.y < screenRect.top 
-		  	  ? screenRect.top
-		  	  : (p.y > (screenRect.bottom - frame.Height()))
-		  	  	? screenRect.bottom - frame.Height()
-		  	  	: p.y;
+		  	? screenRect.right - frame.Width() - 1.0
+		  	: p.x;
+	p.y = p.y < screenRect.top 
+	  	  ? screenRect.top + 1.0
+	  	  : (p.y > (screenRect.bottom - frame.Height()))
+	  	  	? screenRect.bottom - frame.Height() - 1.0
+	  	  	: p.y;
 	frame.OffsetTo(p);
 
 	return frame;
@@ -87,21 +88,15 @@ UScreenUtils::ConstrainToScreen(
 
 BRect
 UScreenUtils::CenterOnWindow(
-	int32 width,
-	int32 height,
+	float width,
+	float height,
 	BWindow *parent)
 {
-	BRect parentRect(parent->Frame());
-	BPoint p((parentRect.left + parentRect.right - width) / 2.0,
-			 (parentRect.top + parentRect.bottom - height) / 2.0);
-	BRect screenRect = BScreen(parent).Frame();
-
-	p.x = p.x < screenRect.left ? screenRect.left : 
-								  p.x > screenRect.right - width ? screenRect.right - width :
-	p.y = p.y < screenRect.top ? screenRect.top :
-								 p.y > screenRect.bottom - height ? screenRect.bottom - height :
-																	p.y;
-	return BRect(p.x, p.y, p.x + width, p.y + height);
+	BRect frame(parent->Frame());
+	BPoint p(frame.left + (frame.Width() - width) / 2.0,
+			 frame.top + (frame.Height() - height) / 2.0);
+	BRect rect(p.x, p.y, p.x + width, p.y + height);
+	return ConstrainToScreen(rect);
 }
 
 // END - ScreenUtils.cpp

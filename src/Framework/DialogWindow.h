@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * ScreenUtils.h (MeV/Framework)
+ * DialogWindow.h (MeV/Framework)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -22,63 +22,56 @@
  *		Christopher Lenz (cell)
  *
  *  History:
- *  1997		Talin
+ *  11/13/2000	cell
  *		Original implementation
- *  04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
-
-#ifndef __U_ScreenUtils_H__
-#define __U_ScreenUtils_H__
-
-#include "AppFrameSpec.h"
+#ifndef __C_DialogWindow_H__
+#define __C_DialogWindow_H__
 
 // Interface Kit
-#include <Point.h>
-#include <Rect.h>
 #include <Window.h>
 
-class BWindow;
+class CDialogBackgroundView;
 
-/**
- *  Various utility functions related to the screen.
- *	@author		Talin, Christopher Lenz
- */
-class AppFrameSpec UScreenUtils
+/**	A special, small window that is associated with a parent window. */
+class CDialogWindow :
+	public BWindow
 {
+
+public:							// Constructor/Destructor
+
+								CDialogWindow(
+									BRect frame,
+									BWindow *parent);
+
+	virtual						~CDialogWindow();
+
+public:							// Accessors
+
+	BView *						BackgroundView() const;
+
+	BWindow *					Parent() const;
+
+	BRect						ContentFrame() const;
 
 public:							// Operations
 
-	static BRect				CenterOnScreen(
-									int32 width,
-									int32 height,
-									screen_id id = B_MAIN_SCREEN_ID);
+	BButton *					AddButton(
+									const char *label,
+									BMessage *message);
 
-	static BRect				StackOnScreen(
-									int32 width,
-									int32 height,
-									screen_id id = B_MAIN_SCREEN_ID);
+public:							// BWindow Implementation
 
-	static BRect				ConstrainToScreen(
-									BRect frame,
-									screen_id id = B_MAIN_SCREEN_ID);
+	virtual void				Show();
 
-	static BRect				CenterOnWindow(
-									float width,
-									float height,
-									BWindow *parent);
+private:						// Instance Data
 
-private:						// Internal Constants
+	BWindow *					m_parent;
 
-	static const BPoint			DEFAULT_WINDOW_POSITION;
+	CDialogBackgroundView *		m_backgroundView;
 
-	static BPoint				NEXT_WINDOW_POSITION;
-
-	static const BPoint			DEFAULT_WINDOW_OFFSET;
+	float						m_buttonOffset;
 };
 
-#endif /* __U_Screen_Utils_H__ */
+#endif /* __C_DialogWindow_H__ */
