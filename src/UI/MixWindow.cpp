@@ -4,6 +4,7 @@
 
 #include "MixWindow.h"
 
+#include "ConsoleContainerView.h"
 #include "DestinationView.h"
 #include "Idents.h"
 #include "MeVDoc.h"
@@ -41,9 +42,7 @@ CMixWindow::CMixWindow(
 
 	BRect rect(Bounds());
 	rect.top = KeyMenuBar()->Frame().bottom + 1.0;
-	m_containerView = new BView(rect, "", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
-	m_containerView->SetViewColor(tint_color(ui_color(B_PANEL_BACKGROUND_COLOR),
-											 B_DARKEN_1_TINT));
+	m_containerView = new CConsoleContainerView(rect, "Mix");
 	AddChild(m_containerView);
 
 	int32 index = 0;
@@ -51,6 +50,7 @@ CMixWindow::CMixWindow(
 	StSubjectLock lock(*Document(), Lock_Shared);
 	while ((destination = Document()->GetNextDestination(&index)) != NULL)
 		_destinationAdded(destination);
+	m_containerView->Pack();
 }
 
 CMixWindow::~CMixWindow()
@@ -253,6 +253,7 @@ CMixWindow::SubjectUpdated(
 		CDestination *destination = Document()->FindDestination(destID);
 		if (destination)
 			_destinationAdded(destination);
+		m_containerView->Pack();
 	}
 	if (docAttrs & CMeVDoc::Update_DelDest)
 	{
@@ -261,6 +262,7 @@ CMixWindow::SubjectUpdated(
 			return;
 
 		_destinationRemoved(destID);
+		m_containerView->Pack();
 	}
 
 	CDocWindow::SubjectUpdated(message);
@@ -350,8 +352,7 @@ CMixWindow::_destinationAdded(
 	CDestinationView *view = new CDestinationView(rect, destination);
 	view->ResizeToPreferred();
 	rect = view->Frame();
-	m_containerView->AddChild(view);
-	m_consoleOffset = rect.right + 1.0;
+	m_containerView->AddSlot(view);
 
 	m_destinations[destination->ID()] = view;
 }
@@ -363,7 +364,7 @@ CMixWindow::_destinationRemoved(
 	CDestinationView *view = m_destinations[destinationID];
 	if (view)
 	{
-		m_containerView->RemoveChild(view);
+		m_containerView->RemoveSlot(view);
 		delete view;
 		m_destinations.erase(destinationID);
 	}

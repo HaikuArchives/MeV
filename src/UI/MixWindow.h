@@ -34,6 +34,7 @@
 
 #include <map>
 
+class CConsoleContainerView;
 class CDestination;
 class CDestinationView;
 
@@ -84,7 +85,7 @@ private:						// Internal Operations
 
 private:						// Instance Data
 
-	BView *						m_containerView;
+	CConsoleContainerView *		m_containerView;
 
 	float						m_consoleOffset;
 
