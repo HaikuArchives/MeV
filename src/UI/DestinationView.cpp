@@ -5,6 +5,8 @@
 #include "DestinationView.h"
 
 #include "BorderView.h"
+#include "ColorDialogWindow.h"
+#include "ColorWell.h"
 #include "ConsoleView.h"
 #include "Destination.h"
 #include "Idents.h"
@@ -56,7 +58,7 @@ CDestinationView::CDestinationView(
 	GetFont(&font);
 	font_height fh;
 	font.GetHeight(&fh);
-	float controlOffset = font.StringWidth("Latency: ");
+	float controlOffset = font.StringWidth("Latency:   ");
 
 	_updateIcon();
 	_updateName();
@@ -82,6 +84,17 @@ CDestinationView::CDestinationView(
 		m_soloCheckBox->SetValue(B_CONTROL_ON);
 	m_soloCheckBox->ResizeToPreferred();
 
+	// add color-well
+	BRect wellRect(rect);
+	wellRect.left = 5.0;
+	wellRect.right = controlOffset - 5.0;
+	wellRect.top = m_nameFrame.bottom + 8.0;
+	wellRect.bottom = wellRect.top + wellRect.Width();
+	wellRect.InsetBy(5.0, 5.0);
+	m_colorWell = new CColorWell(wellRect, new BMessage(COLOR_CHANGED));
+	m_colorWell->SetColor(Destination()->Color());
+	AddChild(m_colorWell);
+
 	// add "Latency" text field
 	rect.OffsetBy(0.0, rect.Height() + 10.0);
 	rect.left = Bounds().left + 2.0;
@@ -89,12 +102,12 @@ CDestinationView::CDestinationView(
 	m_latencyControl = new BTextControl(rect, "Latency", "Latency:", "",
 										new BMessage(LATENCY_CHANGED));
 	m_latencyControl->SetDivider(controlOffset - 2.0);
-	m_latencyControl->SetAlignment(B_ALIGN_LEFT, B_ALIGN_RIGHT);
+	m_latencyControl->SetAlignment(B_ALIGN_RIGHT, B_ALIGN_RIGHT);
 	AddChild(m_latencyControl);
 	rect.OffsetTo(rect.right + 2.0,
 				  rect.top + 5.0 + rect.Height() / 2.0 - fh.ascent / 2.0);
 	rect.right = Bounds().right - 2.0;
-	m_msLabel = new BStringView(rect, "", "ms");
+	m_msLabel = new BStringView(rect, "", " ms ");
 	AddChild(m_msLabel);
 
 	// add configuration view
@@ -106,16 +119,6 @@ CDestinationView::CDestinationView(
 	AddChild(m_configView);
 	m_configView->ResizeToPreferred();
 	rect = m_configView->Frame();
-
-	// add color-control
-	rect.left = Bounds().left + 5.0;
-	rect.top = rect.bottom + 15.0;
-	rect.bottom = Bounds().bottom - 5.0;
-	m_colorControl = new BColorControl(rect.LeftTop(), B_CELLS_32x8, 4.0,
-									   "Destination Color",
-									   new BMessage(COLOR_CHANGED));
-	m_colorControl->SetValue(Destination()->Color());
-	AddChild(m_colorControl);
 
 	_updateLatency();
 }
@@ -134,10 +137,10 @@ CDestinationView::~CDestinationView()
 void
 CDestinationView::AttachedToWindow()
 {
+	m_colorWell->SetTarget(this);
 	m_mutedCheckBox->SetTarget(this);
 	m_soloCheckBox->SetTarget(this);
 	m_latencyControl->SetTarget(this);
-	m_colorControl->SetTarget(this);
 }
 
 void
@@ -171,8 +174,8 @@ CDestinationView::GetPreferredSize(
 {
 	D_HOOK(("CDestinationView::GetPreferredSize()\n"));
 
-	*width = m_colorControl->Frame().right + 5.0;
-	*height = m_colorControl->Frame().bottom + 5.0;
+	*width = m_configView->Frame().right + 5.0;
+	*height = m_configView->Frame().bottom + 5.0;
 }
 
 void
@@ -242,7 +245,27 @@ CDestinationView::MessageReceived(
 			D_MESSAGE((" -> COLOR_CHANGED\n"));
 
 			CWriteLock lock(Destination());
-			Destination()->SetColor(m_colorControl->ValueAsColor());
+			const void *data;
+			ssize_t size;
+			if (message->FindData("color", B_RGB_COLOR_TYPE, &data, &size) != B_OK)
+				return;
+			rgb_color *color = (rgb_color *)data;
+			Destination()->SetColor(*color);
+			m_colorWell->SetColor(*color);
+			m_colorWell->Invalidate();
+			break;
+		}
+		case CHANGE_COLOR:
+		{
+			D_MESSAGE((" -> CHANGE_COLOR\n"));
+
+			CReadLock lock(Destination());
+			BRect rect(100, 100, 300, 200);
+			CColorDialogWindow *window;
+			window = new CColorDialogWindow(rect, Destination()->Color(),
+											new BMessage(COLOR_CHANGED),
+											this, Window());
+			window->Show();
 			break;
 		}
 		default:
@@ -262,17 +285,11 @@ CDestinationView::MouseDown(
 	Window()->CurrentMessage()->FindInt32("buttons", &buttons);
 
 	if ((buttons == B_PRIMARY_MOUSE_BUTTON) && m_nameFrame.Contains(point))
-	{
 		Window()->PostMessage(RENAME, this);
-	}
 	else if (buttons == B_SECONDARY_MOUSE_BUTTON)
-	{
 		_showContextMenu(point);
-	}
 	else
-	{
 		CConsoleView::MouseDown(point);
-	}
 }
 
 bool
@@ -318,7 +335,7 @@ CDestinationView::_showContextMenu(
 {
 	if (m_contextMenu == NULL)
 	{
-		m_contextMenu = new BPopUpMenu("");
+		m_contextMenu = new BPopUpMenu("", false, false);
 		m_contextMenu->SetFont(be_plain_font);
 
 		BMenuItem *item;
@@ -332,6 +349,8 @@ CDestinationView::_showContextMenu(
 		m_contextMenu->AddSeparatorItem();
 
 		item = new BMenuItem("Rename", new BMessage(RENAME));
+		m_contextMenu->AddItem(item);
+		item = new BMenuItem("Change Color", new BMessage(CHANGE_COLOR));
 		m_contextMenu->AddItem(item);
 	}
 
@@ -377,7 +396,7 @@ CDestinationView::_updateName()
 	font.GetHeight(&fh);
 
 	// calculate name rect and truncate name if necessary
-	m_nameFrame.left = m_iconOffset.x + B_MINI_ICON + 3.0;
+	m_nameFrame.left = m_iconOffset.x + B_MINI_ICON + 5.0;
 	m_nameFrame.right = Bounds().right - 2.0;
 	m_nameFrame.top = m_iconOffset.y + B_MINI_ICON / 2.0
 					  - (fh.ascent + fh.descent) / 2.0;

@@ -44,6 +44,7 @@
 // Support Kit
 #include <String.h>
 
+class CColorWell;
 class CDestination;
 
 class BBitmap;
@@ -69,6 +70,8 @@ public:							// Constants
 								SOLO,
 
 								LATENCY_CHANGED,
+
+								CHANGE_COLOR,
 
 								COLOR_CHANGED
 	};
@@ -134,6 +137,8 @@ private:						// Instance Data
 
 	BPoint						m_iconOffset;
 
+	CColorWell *				m_colorWell;
+
 	BCheckBox *					m_mutedCheckBox;
 
 	BCheckBox *					m_soloCheckBox;
@@ -144,8 +149,6 @@ private:						// Instance Data
 	CConsoleView *				m_configView;
 
 	CConsoleView *				m_monitorView;
-
-	BColorControl *				m_colorControl;
 
 	BPopUpMenu *				m_contextMenu;
 };

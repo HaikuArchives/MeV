@@ -311,7 +311,7 @@ CDestinationListView::MessageReceived(
 			else 
 			{
 				BRect r;
-				r.Set(40, 40, 300, 220);
+				r.Set(120, 120, 260, 300);
 				m_modifierMap[id] = new CDestinationModifier(r, id, m_doc,
 															 this);
 				m_modifierMap[id]->Show();
