@@ -49,7 +49,7 @@ int CDestinationList::NewDest()
 	int c;
 	for (c=0;c<Max_Destinations;c++)
     {
-    	if ((m_tablerep[c])==NULL)
+    	if (!IsDefined(c))
     	{
     		m_tablerep[c]=new Destination;
     		m_tablerep[c]->name << "Untitled ";
@@ -71,7 +71,6 @@ void CDestinationList::RemoveVC (int id)
 {
 	count--;
 	SetDeletedFor(id,true);
-
 }
 Destination *  CDestinationList::operator[](int i)
 {
@@ -85,15 +84,12 @@ bool CDestinationList::IsDefined(int id)
 {
 	if (m_tablerep[id]==NULL)
 	{
-		printf ("not defined\n");
 		return false;
 	}
 	else if (m_tablerep[id]->flags & Destination::deleted)
 	{
-		printf ("not defined\n");
 		return false;
 	}	
-	printf ("defined %d\n",id);
 	return true;	
 }
 
@@ -178,6 +174,7 @@ void CDestinationList::OnUpdate(BMessage *msg)
 					
 					if (dest->producer_name==portname)
 					{
+						printf ("set disabled()\n");
 						SetDisableFor(CurrentID(),true);
 					}
 				}
@@ -216,7 +213,6 @@ void CDestinationList::ReadVCTable (CIFFReader &reader)
 		reader >> m_tablerep[portid]->fillColor.blue;
 		m_tablerep[portid]==NULL;
 		//reader >> midiport;
-		printf ("reading %s\n",midiport.String());
 		//printf ("midiport read %s\n",midiport.String());*/
 	}
 }
@@ -231,7 +227,6 @@ void CDestinationList::WriteVCTable (CIFFWriter &writer)
 		writer << dest->fillColor.green;
 		writer << dest->fillColor.blue;
 		//writer << dest->m_producer->Name();
-		printf ("writing %s\n",dest->m_producer->Name());
 	}
 }
 void CDestinationList::SetNameFor(
@@ -340,7 +335,6 @@ CDestinationList::SetDeletedFor(
 	Destination *dest = m_tablerep[id];
 	if (deleted)
 	{
-		printf ("here\n");
 		dest->flags+=Destination::deleted;		
 		dest->m_producer=NULL;	
 		dest->fillColor.red=150;
@@ -359,8 +353,9 @@ CDestinationList::SetDisableFor(
 	bool disable)
 {
 	Destination *dest = m_tablerep[id];
-	if ((disable)&&(!dest->flags & Destination::disabled))
+	if (disable) 
 	{
+		printf ("disabling\n");
 		dest->flags+=Destination::disabled;		
 		dest->m_producer=NULL;	
 		CUpdateHint hint;
