@@ -283,6 +283,7 @@ CAssemblyWindow::CAssemblyWindow(
 	// Add splitter
 	rect.left = trackList->Frame().right;
 	rect.right = rect.left + CSplitter::V_SPLITTER_WIDTH;
+	rect.bottom += 1.0;
 	CSplitter *splitter = new CSplitter(rect, trackList, stripFrame,
 										B_VERTICAL, B_FOLLOW_LEFT | B_FOLLOW_TOP_BOTTOM);
 	AddChild(splitter);
@@ -824,9 +825,9 @@ CAssemblyWindow::AddToolBar()
 {
 	BRect rect(Bounds());
 	if (menus)
-	{
 		rect.top = menus->Frame().bottom + 1.0;
-	}
+	rect.right += 1.0;
+
 	// add the tool bar
 	toolBar = new CToolBar(rect, "General");
 	CBitmapTool *tool;

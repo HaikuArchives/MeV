@@ -488,9 +488,9 @@ CLinearWindow::AddToolBar()
 
 	BRect rect(Bounds());
 	if (menus)
-	{
 		rect.top = menus->Frame().bottom + 1.0;
-	}
+	rect.right += 1.0;
+
 	m_toolBar = new CToolBar(rect, "General");
 	CBitmapTool *tool;
 	m_toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
