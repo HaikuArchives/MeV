@@ -77,8 +77,6 @@ public:						// Operations
 	void					WatchTrack(
 								CEventTrack *track);
 
-	void					Clear();
-	
 public:						// CAppWindow Implementation
 
 	virtual void			MessageReceived(
@@ -91,6 +89,10 @@ public:						// CAppWindow Implementation
 	/**	Update inspector info when we get an observer update message.	*/
 	virtual void			SubjectUpdated(
 								BMessage *message);
+
+private:					// Insternal Operations
+
+	void					_clear();
 
 private:					// Instance Data
 	

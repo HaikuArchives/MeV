@@ -24,6 +24,11 @@
 #include <Autolock.h>
 #include <Debug.h>
 
+// Debugging Macros
+#define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT(x)		// CAppWindow Implementation
+#define D_INTERNAL(x) //PRINT(x)	// Internal Operations
+
 // ---------------------------------------------------------------------------
 // Constants Initialization
 
@@ -93,31 +98,6 @@ public:
 	}
 };
 
-#if 0
-class CNoteNameTextHook : public CTextSlider::CTextHook {
-public:
-		/**	Return the width in pixels of the largest possible knob text. */
-	int32 Largest( BView *inView, int32 inMin, int32 inMax )
-	{
-		return inView->StringWidth( "C#00" );
-	}
-
-		/**	Format the text for the text slider knob */
-	void FormatText( char *outText, int32 inValue, int32 inMaxLen )
-	{
-		static char	notes[] = "CCDDEFFGGAAB",
-					accid[] = " # #  # # # ";
-					
-		int32		k = inValue % 12;
-	
-		*outText++ = notes[ k ];
-		if (accid[ k ] == '#') *outText++ = '#';
-		
-		sprintf( outText, "%d", inValue/12 - 4 );
-	}
-};
-#endif
-
 static CBeatSizeTextHook	bsHook;
 class CFixedPointHook		fpHook22( 3, 3 );
 /* static CNoteNameTextHook	nnHook; */
@@ -139,12 +119,14 @@ CInspectorWindow::CInspectorWindow(
 		m_track(NULL),
 		m_previousValue(-1)
 {
+	D_ALLOC(("CInspectorWindow::CInspectorWindow()\n"));
+
 	CBorderView *bgView = new CBorderView(Bounds(), "", B_FOLLOW_ALL_SIDES,
 										  B_WILL_DRAW, false, NULL,
 										  CBorderView::BEVEL_BORDER);
 	AddChild(bgView);
 
-	for(int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		static int32 ids[3] = { Slider1_ID, Slider2_ID, Slider3_ID };
 		float y = 8.0 + 18.0 * i;
@@ -167,7 +149,7 @@ CInspectorWindow::CInspectorWindow(
 	// 		preferences.
 	// REM: Also save the fact whether the inspector was open or closed.
 
-	Clear();
+	_clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -289,19 +271,6 @@ CInspectorWindow::WatchTrack(
 	}
 }
 
-void
-CInspectorWindow::Clear()
-{
-	// Set the event name
-	SetTitle("Inspector: (None)");
-	for (int i = 0; i < 3; i++)
-	{
-		m_vSlider[i]->SetRange(0.0, 0.0);
-		m_vSlider[i]->SetEnabled(false);
-		m_vLabel[i]->SetText("");
-	}
-}
-
 // ---------------------------------------------------------------------------
 // CAppWindow Implementation
 
@@ -309,10 +278,11 @@ bool
 CInspectorWindow::SubjectReleased(
 	CObservable *subject)
 {
-	D_OBSERVE(("CInspectorWindow<%p>::SubjectReleased()\n", this));
+	D_HOOK(("CInspectorWindow::SubjectReleased()\n", this));
 
 	if (subject == m_track)
 	{
+		_clear();
 		m_track->RemoveObserver(this);
 		m_track = NULL;
 		return true;
@@ -325,22 +295,26 @@ void
 CInspectorWindow::SubjectUpdated(
 	BMessage *message)
 {
+	D_HOOK(("CInspectorWindow::SubjectUpdated()\n", this));
+
 	if ((m_track == NULL)
 	 || (m_track->SelectionType() == CTrack::Select_None))
 	{
-		Clear();
+		_clear();
 	}
 	else
 	{
 		StSubjectLock trackLock(*m_track, Lock_Shared);
 		const CEvent *event = m_track->CurrentEvent();
-		if (!event)
+		if (event == NULL)
 		{
-			Clear();
+			_clear();
 			return;
 		}
-		StWindowLocker lck(this);
-	
+
+		D_HOOK((" -> valid selection, current event name: %s\n",
+				event->NameText()));
+
 		// Set the event name
 		BString title = "Inspector: ";
 		title << event->NameText();
@@ -403,6 +377,24 @@ CInspectorWindow::SubjectUpdated(
 				m_vSlider[i]->SetValue(m_baseValue[i]);
 			}
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CInspectorWindow::_clear()
+{
+	D_INTERNAL(("CInspectorWindow::_clear()\n"));
+
+	// Set the event name
+	SetTitle("Inspector: (None)");
+	for (int i = 0; i < 3; i++)
+	{
+		m_vSlider[i]->SetRange(0.0, 0.0);
+		m_vSlider[i]->SetEnabled(false);
+		m_vLabel[i]->SetText("");
 	}
 }
 

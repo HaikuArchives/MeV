@@ -502,7 +502,7 @@ CEventEditor::StartDrag(
 	ulong modifierKeys = modifiers();
 	int32 toolState = TrackWindow()->CurrentTool();
 
-	const CEvent	*ev;
+	const CEvent *ev;
 	EventMarker marker(Track()->Events());
 	short partCode;
 	if ((ev = PickEvent(marker, point, partCode)) != NULL)
