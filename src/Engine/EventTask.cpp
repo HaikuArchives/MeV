@@ -496,19 +496,11 @@ void CEventTask::Play()
 	if (locating)
 	{
 		targetTime = timeBase.seekTime;
-#if USE_SHARED_LOCKS
-		track->Lock( Lock_Shared );
-#else
-		track->Lock();
-#endif
+		track->Lock(Lock_Shared);
 	}
 	else
 	{
-#if USE_SHARED_LOCKS
-		if (track->Lock( Lock_Shared, 5000 ) == false)
-#else
-		if (track->Lock( 5000 ) == false)
-#endif
+		if (track->Lock(Lock_Shared, 5000) == false)
 		{
 				// Attempt to lock the track; if we fail, then just continue
 				// and play something else.
@@ -548,11 +540,7 @@ void CEventTask::Play()
 			{
 				ReQueue( timeBase.stack, nextRepeatTime + originTime - 1 );
 			}
-#if USE_SHARED_LOCKS
-			track->Unlock( Lock_Shared );
-#else
-			track->Unlock();
-#endif
+			track->Unlock(Lock_Shared);
 			return;
 		}
 
@@ -561,23 +549,19 @@ void CEventTask::Play()
 
 	for (const Event *ev = (const Event *)playPos; ev != NULL; )
 	{
-		long		t = ev->Start() + originTime;
+		long t = ev->Start() + originTime;
 
-		if (IsTimeGreater( actualEndTime, t ))
+		if (IsTimeGreater(actualEndTime, t))
 		{
 			// past end of task
 			break;
 		}
 
-		if (IsTimeGreater( targetTime, t ))
+		if (IsTimeGreater(targetTime, t))
 		{
 			// done with this chunk
 			ReQueue( timeBase.stack, locating ? t : t - trackAdvance );
-#if USE_SHARED_LOCKS
-			track->Unlock( Lock_Shared );
-#else
-			track->Unlock();
-#endif
+			track->Unlock(Lock_Shared);
 			return;
 		}
 
@@ -588,20 +572,12 @@ void CEventTask::Play()
 	if (repeatStack != NULL || currentTime < taskDuration)
 	{
 		ReQueue( timeBase.stack, nextRepeatTime + originTime );
-#if USE_SHARED_LOCKS
-		track->Unlock( Lock_Shared );
-#else
-		track->Unlock();
-#endif
+		track->Unlock(Lock_Shared);
 		return;
 	}
 	
 		// REM: Is this incorrect for the master track?
-#if USE_SHARED_LOCKS
-	track->Unlock( Lock_Shared );
-#else
-	track->Unlock();
-#endif
+	track->Unlock(Lock_Shared);
 	flags |= Task_Finished;
 	ReQueue( timeBase.stack, trackEndTime + originTime );
 }

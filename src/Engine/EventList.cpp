@@ -3,6 +3,8 @@
  * ===================================================================== */
 
 #include "EventList.h"
+
+#include "Observable.h"
 #include "Writer.h"
 #include "Reader.h"
 

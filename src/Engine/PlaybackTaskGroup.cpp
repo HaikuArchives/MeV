@@ -319,11 +319,7 @@ void CPlaybackTaskGroup::Locate()
 			
 				if (		tr == NULL) continue;
 				
-#if USE_SHARED_LOCKS
-				tr->Lock( Lock_Shared );
-#else
-				tr->Lock();
-#endif
+				tr->Lock(Lock_Shared);
 				
 					// REM: This use of "track duration" is incorrect if
 					// both the master sequences are playing.
@@ -350,11 +346,7 @@ void CPlaybackTaskGroup::Locate()
 							(pbOptions & PB_Loop) ? LONG_MAX : metered.end );
 					}
 				}
-#if USE_SHARED_LOCKS
-				tr->Unlock( Lock_Shared );
-#else
-				tr->Unlock();
-#endif
+				tr->Unlock(Lock_Shared);
 			}
 		}
 

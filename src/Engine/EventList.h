@@ -40,10 +40,10 @@
 
 #include "Event.h"
 #include "ItemList.h"
-#include "Observer.h"
 
 class CAbstractReader;
 class CAbstractWriter;
+class CObservableSubject;
 class EventListUndoAction;
 
 /* ============================================================================ *

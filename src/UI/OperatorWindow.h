@@ -38,11 +38,11 @@
 #ifndef __C_OperatorWindow_H__
 #define __C_OperatorWindow_H__
 
-#include "MeVDoc.h"
-#include "DocWindow.h"
-#include "WindowState.h"
-#include "DynamicMenu.h"
 #include "AppHelp.h"
+#include "DocWindow.h"
+#include "MeVDoc.h"
+#include "Observer.h"
+#include "WindowState.h"
 
 class CMultiColumnListView;
 class CEventTrack;

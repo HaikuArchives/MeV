@@ -29,6 +29,7 @@ CAssemblyRulerView::CAssemblyRulerView(
 	ulong flags)
 	:	CRulerView(frame, name, frameView, resizingMode, flags),
 		CObserver(looper, track),
+		m_track(track),
 		m_showMarkers(true),
 		m_markerBitmap(NULL)
 {
@@ -45,32 +46,28 @@ void
 CAssemblyRulerView::Draw(
 	BRect updateRect)
 {
-	CEventTrack	*track = (CEventTrack *)subject;
-	TClockType clockType = track->ClockType();
+	TClockType clockType = m_track->ClockType();
 	long startTime = m_frameView->ViewCoordsToTime(updateRect.left - 48.0,
 												   clockType );
 	if (startTime < 0)
 		startTime = 0;
 
-	CSignatureMap::Iterator timeIter(track->SigMap(), startTime);
+	CSignatureMap::Iterator timeIter(m_track->SigMap(), startTime);
 	long time;
 	BRect rect(Bounds());
 	bool major;
-	int32 majorTime = track->SigMap().entries->sigMajorUnitDur;
-	double majorXStep = m_frameView->TimeToViewCoords( majorTime, clockType );
+	int32 majorTime = m_track->SigMap().entries->sigMajorUnitDur;
+	double majorXStep = m_frameView->TimeToViewCoords(majorTime, clockType);
 	int32 steps = 1;
 
 	while (majorXStep < 24)
 	{
 		if (steps == 2)
-		{
 			steps = 5;
-		}
 		else
-		{
 			steps *= 2;
-		}
-		majorXStep = m_frameView->TimeToViewCoords(majorTime * steps, clockType);
+		majorXStep = m_frameView->TimeToViewCoords(majorTime * steps,
+												   clockType);
 	}
 
 	SetHighColor(255, 255, 220, 255);
@@ -86,16 +83,12 @@ CAssemblyRulerView::Draw(
 	{
 		double x = m_frameView->TimeToViewCoords( time, clockType );
 		if (x > updateRect.right)
-		{
 			break;
-		}
 
 		if (major)
 		{
 			if (timeIter.MajorCount() % steps)
-			{
 				continue;
-			}
 			SetHighColor(160, 160, 140, 255);
 		}
 		else if (steps > 1)
@@ -114,7 +107,7 @@ CAssemblyRulerView::Draw(
 		}
 	}
 
-	CSignatureMap::Iterator timeIter2(track->SigMap(), startTime);
+	CSignatureMap::Iterator timeIter2(m_track->SigMap(), startTime);
 	SetHighColor( 0, 0, 0 );
 
 	for (time = timeIter2.First(major) ; ; time = timeIter2.Next(major))
@@ -129,7 +122,7 @@ CAssemblyRulerView::Draw(
 		{
 			char str[16];
 
-			if (track->ClockType() == ClockType_Metered)
+			if (m_track->ClockType() == ClockType_Metered)
 			{
 				sprintf(str, "%02ld", timeIter2.MajorCount());
 			}
@@ -147,10 +140,10 @@ CAssemblyRulerView::Draw(
 		// Now, draw the track section markers...
 		BPoint offset(0.0, 0.0);
 		SetDrawingMode(B_OP_OVER);
-		offset.x = m_frameView->TimeToViewCoords(track->SectionStart(),
+		offset.x = m_frameView->TimeToViewCoords(m_track->SectionStart(),
 												 clockType) - 4.0;
 		DrawBitmapAsync(m_markerBitmap, offset);
-		offset.x = m_frameView->TimeToViewCoords(track->SectionEnd(),
+		offset.x = m_frameView->TimeToViewCoords(m_track->SectionEnd(),
 												 clockType) - 4.0;
 		DrawBitmapAsync(m_markerBitmap, offset);
 	}
@@ -174,11 +167,10 @@ CAssemblyRulerView::MouseDown(
 		SetMouseEventMask(B_POINTER_EVENTS, B_NO_POINTER_HISTORY | B_LOCK_WINDOW_FOCUS);
 
 		// Check if we hit a marker...
-		CEventTrack	*track = (CEventTrack *)subject;
-		int32 markers[] = {track->SectionStart(), track->SectionEnd()};
+		int32 markers[] = {m_track->SectionStart(), m_track->SectionEnd()};
 		for (int i = 0; i < 2; i++)
 		{
-			float x = m_frameView->TimeToViewCoords(markers[i], track->ClockType());
+			float x = m_frameView->TimeToViewCoords(markers[i], m_track->ClockType());
 			if ((point.x >= x - 4.0) && (point.x <= x + 4.0))
 			{
 				BMessage message(MARKER_MOVED);
@@ -212,13 +204,12 @@ CAssemblyRulerView::MouseMoved(
 					return;
 				}
 
-				CEventTrack	*track = (CEventTrack *)subject;
-				int32 time = m_frameView->ViewCoordsToTime(point.x, track->ClockType());
-				if (track->GridSnapEnabled())
+				int32 time = m_frameView->ViewCoordsToTime(point.x, m_track->ClockType());
+				if (m_track->GridSnapEnabled())
 				{
 					int32 majorUnit, extraTime;
-					track->SigMap().DecomposeTime(time, majorUnit, extraTime);
-					time += DataSnapNearest( extraTime, 0, track->TimeGridSize() ) - extraTime;
+					m_track->SigMap().DecomposeTime(time, majorUnit, extraTime);
+					time += DataSnapNearest( extraTime, 0, m_track->TimeGridSize() ) - extraTime;
 				}
 				
 				if (time < 0)
@@ -226,14 +217,14 @@ CAssemblyRulerView::MouseMoved(
 					time = 0;
 				}
 
-				int32 markers[] = {track->SectionStart(), track->SectionEnd()};
+				int32 markers[] = {m_track->SectionStart(), m_track->SectionEnd()};
 				if (time != markers[which])
 				{
-					float x = m_frameView->TimeToViewCoords(markers[which], track->ClockType());
+					float x = m_frameView->TimeToViewCoords(markers[which], m_track->ClockType());
 					Invalidate(BRect(x - 4.0, 0.0, x + 5.0, 10));
 					markers[which] = time;
-					track->SetSection(markers[0], markers[1]);
-					x = m_frameView->TimeToViewCoords(markers[which], track->ClockType());
+					m_track->SetSection(markers[0], markers[1]);
+					x = m_frameView->TimeToViewCoords(markers[which], m_track->ClockType());
 					Invalidate(BRect(x - 4.0, 0.0, x + 5.0, 10));
 				}
 
@@ -261,8 +252,7 @@ CAssemblyRulerView::MouseUp(
 {
 	D_HOOK(("CAssemblyView::MouseUp()\n"));
 
-	CEventTrack	*track = (CEventTrack *)subject;
-	track->NotifyUpdate(CTrack::Update_Section, this);
+	m_track->NotifyUpdate(CTrack::Update_Section, this);
 }
 
 // ---------------------------------------------------------------------------

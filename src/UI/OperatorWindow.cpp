@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * OperatorWindow.cpp (MeV/User Interface)
+ * OperatorWindow.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "OperatorWindow.h"

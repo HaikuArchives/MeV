@@ -34,7 +34,7 @@
 #ifndef __C_Document_H__
 #define __C_Document_H__
 
-#include "Observer.h"
+#include "Observable.h"
 
 // Storage Kit
 #include <Entry.h>

@@ -45,6 +45,7 @@
 #define __C_TrackWindow_H__
 
 #include "DocWindow.h"
+#include "Observer.h"
 #include "MeVDoc.h"
 
 class CScroller;

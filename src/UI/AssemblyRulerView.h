@@ -100,6 +100,8 @@ public:							// Operations
 
 private:						// Instance Data
 
+	CEventTrack *				m_track;
+
 	bool						m_showMarkers;
 
 	BBitmap *					m_markerBitmap;
