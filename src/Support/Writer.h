@@ -119,6 +119,11 @@ public:							// Operations
 
 public:							// Overloaded Operators
 
+	/**	Stream output operator to write a bool */
+	CWriter &					operator<<(
+									bool d)
+								{ MustWrite(&d, sizeof(d)); return *this; }
+
 	/**	Stream output operator to write an int8 */
 	CWriter &					operator<<(
 									int8 d)

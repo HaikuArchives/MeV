@@ -131,6 +131,11 @@ public:
 
 public:							// Overloaded Operators
 
+	/**	Stream read operator to read a bool */
+	CReader &					operator>>(
+									bool &d)
+								{ MustRead(&d, sizeof(d)); return *this; }
+
 	/**	Stream read operator to read an int8 */
 	CReader &					operator>>(
 									int8 &d)
