@@ -154,13 +154,13 @@ public:							// Device Management
 									int32 index) const
 								{ return (MIDIDeviceInfo *)deviceList.ItemAt(index); }
 
-	/** Return the MIDI device associated with this port and channel */
+	/** Return the MIDI device associated with this port and channel
+	 *	DEPRECATED
+	 */
 	MIDIDeviceInfo *			LookupInstrument(
 									uint32 port,
-									uint32 hChannel) const;
-
-	/** Add a new MIDI device to the device table. */
-	MIDIDeviceInfo *			NewDevice();
+									uint32 hChannel) const
+								{ return NULL; }
 
 public:							// Operator Management
 

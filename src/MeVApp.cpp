@@ -461,19 +461,6 @@ CMeVApp::RemoveModule(
 }
 
 // ---------------------------------------------------------------------------
-// Device Management
-
-MIDIDeviceInfo *
-CMeVApp::LookupInstrument(
-	uint32 port,
-	uint32 hChannel) const
-{
-	if (port >= Max_MidiPorts || hChannel >= 16)
-		return NULL;
-	return deviceTable[port][hChannel];
-}
-
-// ---------------------------------------------------------------------------
 // Window Management
 
 void
