@@ -65,9 +65,7 @@ class CMeVDoc
 public:							// Constants
 
 	enum EWindowTypes {
-		VChannel_Window	= 0,
-		DocPrefs_Window,
-		Assembly_Window,
+		Assembly_Window = 0,
 		Operator_Window,
 	};
 
@@ -178,6 +176,20 @@ public:							// Track Management
 									int32 index)
 								{ return (CTrack *)tracks.ItemAt(index); }
 	
+public:							// Window Management
+
+	/**	Show or hide the window of a particular type */
+	BWindow *					ShowWindow(
+									enum EWindowTypes type);
+
+	/**	Returns TRUE if a particular window type is open. */
+	bool						IsWindowOpen(
+									enum EWindowTypes type);
+
+	/**	Show or hide the window for a particular track */
+	void						ShowWindowFor(
+									CTrack *track);
+	
 public:							// Operations
 
 	/**	Get the value of a default attribute */
@@ -194,18 +206,12 @@ public:							// Operations
 		/**	Post an update message to all tracks. */
 	void PostUpdateAllTracks( CUpdateHint *inHint );
 
-		/**	Show or hide the window of a particular type */
-	BWindow *ShowWindow( enum EWindowTypes inType );
-	
-		/**	Returns TRUE if a particular window type is open. */
-	bool IsWindowOpen( enum EWindowTypes inType );
-	
 		/**	Notify all observers (including possibly observers of the document
 			as well) that some attributes of this document have changed. */
 	void NotifyUpdate( int32 inHintBits, CObserver *source );
 	
 		/** return which of the two master tracks is selected. */
-	CEventTrack *ActiveMaster() { return activeMaster; }
+	CEventTrack *ActiveMaster() { return m_activeMaster; }
 	
 		/** Set the selected master track. Call with any track, ignored if
 			not a master track.
@@ -221,17 +227,8 @@ public:							// Operations
 		/** Set the initial tempo of this document */
 	void SetInitialTempo( double inTempo ) { m_initialTempo = inTempo; }
 
-		/** Calculate the name of a virtual channel from the instrument table. */
-	void VirtualChannelName( int32 inChannelIndex, char *outBuf );
-
 		/** Export the document */
 	void Export( BMessage *msg );
-
-		/** Read the VCTable from a MeV file. */
-	void ReadVCTable( CIFFReader &reader );
-
-		/** Write the VCTable to a MeV file. */
-	void WriteVCTable( CIFFWriter &writer );
 
 		/** Read a single track */
 	void ReadTrack( uint32 inTrackType, CIFFReader &iffReader );
@@ -277,13 +274,13 @@ private:						// Instance Data
 	BList						activeOperators;
 
 	// Master track (real)
-	CEventTrack *				masterRealTrack;
+	CEventTrack *				m_masterRealTrack;
 
 	// Master track (metered)
-	CEventTrack *				masterMeterTrack;
+	CEventTrack *				m_masterMeterTrack;
 
 	// Which track is being edited
-	CEventTrack *				activeMaster;
+	CEventTrack *				m_activeMaster;
 	
 	CDestinationList *			m_destlist;
 
@@ -302,9 +299,7 @@ private:						// Instance Data
 	// everything...
 	CAssemblyWindow *			assemblyWindow;
 
-	CWindowState				vChannelWinState;
 	CWindowState 				operatorWinState;
-	CWindowState				docPrefsWinState;
 	CWindowState				assemblyWinState;
 };
 

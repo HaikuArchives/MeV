@@ -14,6 +14,7 @@
 #include "Idents.h"
 #include "IFFWriter.h"
 #include "IFFReader.h"
+#include "LinearWindow.h"
 #include "MeVDocIconBits.h"
 #include "MeVFileID.h"
 #include "MidiDeviceInfo.h"
@@ -21,6 +22,7 @@
 #include "PlayerControl.h"
 #include "ScreenUtils.h"
 #include "StdEventOps.h"
+#include "TrackWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -62,18 +64,16 @@ CMeVDoc::CMeVDoc(
 	:	CDocument(app),
 		m_newTrackID(2),
 		m_initialTempo(DEFAULT_TEMPO),
-		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
-		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
 		assemblyWinState( UScreenUtils::StackOnScreen( 620, 390 ) )
 {
 	Init();
 
 	AddDefaultOperators();
 
-	masterRealTrack = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
-	masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
-	activeMaster = masterMeterTrack;
+	m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
+	m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
+	m_activeMaster = m_masterMeterTrack;
 	NewTrack(TrackType_Event, ClockType_Metered);
 	SetValid();
 }
@@ -84,85 +84,102 @@ CMeVDoc::CMeVDoc(
 	:	CDocument(app, ref),
 		m_newTrackID(2),
 		m_initialTempo(DEFAULT_TEMPO),
-		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
-		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
 		assemblyWinState( BRect( 40, 40, 620, 390 ) )
 {
-		// REM: We want to be LOADING now...
-
 	Init();
-
 	AddDefaultOperators();
 
-	BFile		file;
-	status_t	error;
-	
-	error = file.SetTo( &ref, B_READ_ONLY );
-	if (error != B_NO_ERROR)
+	BFile file(&ref, B_READ_ONLY);
+	status_t error = file.InitCheck();
+	if (error)
 	{
-		char		*msg;
-	
-		switch (error) {
-		case B_BAD_VALUE: msg = "The directory or path name you specified was invalid."; break;
-		case B_ENTRY_NOT_FOUND: msg = "The file could not be found. Please check the spelling of the directory and file names."; break;
-		case B_PERMISSION_DENIED: msg = "You do not have permission to read that file."; break;
-		case B_NO_MEMORY: msg = "There was not enough memory to complete the operation."; break;
-		default: msg = "An error has been detected of a type...never before encountered, Captain."; break;
+		char *msg;
+		switch (error)
+		{
+			case B_BAD_VALUE:
+			{
+				msg = "The directory or path name you specified was invalid.";
+				break;
+			}
+			case B_ENTRY_NOT_FOUND:
+			{
+				msg = "The file could not be found. Please check the spelling of the directory and file names.";
+				break;
+			}
+			case B_PERMISSION_DENIED:
+			{
+				msg = "You do not have permission to read that file.";
+				break;
+			}
+			case B_NO_MEMORY:
+			{
+				msg = "There was not enough memory to complete the operation.";
+				break;
+			}
+			default:
+			{
+				msg = "An error has been detected of a type...never before encountered, Captain.";
+			}
 		}
 		
-		CDocApp::Error( msg );
+		CDocApp::Error(msg);
 		return;
 	}
 
-		// Create reader and IFF reader.
-	CBeFileReader	reader( file );
-	CIFFReader	iffReader( reader );
-	int32		formType;
-	
-	iffReader.ChunkID( 1, &formType );
-	
-	for (;;) {
-	
-		if (iffReader.NextChunk() == false) break;
+	// Create reader and IFF reader.
+	CBeFileReader reader(file);
+	CIFFReader iffReader(reader);
+	int32 formType;
 
-		switch (iffReader.ChunkID( 0, &formType )) {
-		case VCTable_ID:
-			ReadVCTable( iffReader );	// Virtual channel table
-			break;
+	iffReader.ChunkID(1, &formType);
 
-		case DocTempo_ID:
-			iffReader >> m_initialTempo;
-			break;
-
-		case Form_ID:
-			switch (formType) {
-			case TrackType_Event:
-			case FMasterRealTrack:
-			case FMasterMeteredTrack:
-				ReadTrack( formType, iffReader );
+	while (iffReader.NextChunk())
+	{
+		switch (iffReader.ChunkID(0, &formType))
+		{
+			case VCTable_ID:
+			{
+				m_destlist->ReadVCTable(iffReader);
+				break;
+			}
+			case DocTempo_ID:
+			{
+				iffReader >> m_initialTempo;
+				break;
+			}
+			case Form_ID:
+			{
+				ReadTrack(formType, iffReader);
 				break;
 			}
 		}
 	}
 
-	if (masterRealTrack == NULL)
-		masterRealTrack  = new CEventTrack( *this, ClockType_Real, 0, "Master Real" );
+	if (m_masterRealTrack == NULL)
+		m_masterRealTrack  = new CEventTrack(*this, ClockType_Real, 0,
+											 "Master Real");
 
-	if (masterMeterTrack == NULL)
-		masterMeterTrack = new CEventTrack( *this, ClockType_Metered, 1, "Master Metric" );
+	if (m_masterMeterTrack == NULL)
+		m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1,
+											 "Master Metric");
 
-	activeMaster = masterMeterTrack;
+	m_activeMaster = m_masterMeterTrack;
+
+	for (int32 i = 0; i < CountTracks(); i++)
+		if (TrackAt(i)->m_openWindow)
+			ShowWindowFor(TrackAt(i));
+
 	SetValid();
 }
 
 CMeVDoc::~CMeVDoc()
 {
 		// Delete the master track
-	masterRealTrack->RequestDelete();
-	masterMeterTrack->RequestDelete();
-	CRefCountObject::Release( masterRealTrack );
-	CRefCountObject::Release( masterMeterTrack );
+	m_masterRealTrack->RequestDelete();
+	m_masterMeterTrack->RequestDelete();
+	CRefCountObject::Release( m_masterRealTrack );
+	CRefCountObject::Release( m_masterMeterTrack );
 	
 		// Delete all tracks
 	for (int i = 0; i < tracks.CountItems(); i++)
@@ -248,6 +265,97 @@ CMeVDoc::OperatorAt(
 }
 	
 // ---------------------------------------------------------------------------
+// Window Management
+
+BWindow *
+CMeVDoc::ShowWindow(
+	enum EWindowTypes type)
+{
+	CWindowState *state;
+	
+	switch (type)
+	{
+		case Assembly_Window:
+			state = &assemblyWinState;
+			break;
+		case Operator_Window:
+			state = &operatorWinState;
+			break;
+		default:
+			return NULL;
+	}
+	
+	if (state->Activate() == false)
+	{
+		BWindow *bw;
+	
+		switch (type)
+		{
+			case Assembly_Window:
+			{
+				ShowWindowFor(m_masterMeterTrack);
+				break;
+			}
+			case Operator_Window:
+			{
+				bw = new COperatorWindow( *state, *this );
+				bw->Show();
+				break;
+			}
+		}
+	}
+	
+	return state->Window();
+}
+	
+bool
+CMeVDoc::IsWindowOpen(
+	enum EWindowTypes type)
+{
+	switch (type)
+	{
+		case Assembly_Window:
+			return assemblyWinState.IsOpen();
+			break;
+		case Operator_Window:
+			return operatorWinState.IsOpen();
+			break;
+		default:
+			return false;
+	}
+}
+
+void
+CMeVDoc::ShowWindowFor(
+	CTrack *track)
+{
+	CTrackWindow *window = track->Window();
+
+	if (window == NULL)
+	{
+		CEventTrack *eventTrack = dynamic_cast<CEventTrack *>(track);
+		BMessage *settings = eventTrack->GetWindowSettings();
+
+		if (track->GetID() < 2)
+		{
+			window = new CAssemblyWindow(UScreenUtils::StackOnScreen(540, 370),
+										 this, (bool)settings);
+		}
+		else if (track->TrackType() == TrackType_Event)
+		{
+			window = new CLinearWindow(UScreenUtils::StackOnScreen(540, 370),
+									   this, eventTrack, (bool)settings);
+		}
+		track->m_window = window;
+		if (settings)
+			window->ImportSettings(settings);
+	}
+
+	window->Show();
+	window->Activate();
+}
+
+// ---------------------------------------------------------------------------
 // Operations
 
 long CMeVDoc::GetUniqueTrackID()
@@ -297,8 +405,8 @@ CTrack *CMeVDoc::NewTrack( ulong inTrackType, TClockType inClockType )
 	// Locate a track by it's ID. (0,1 for master track)
 CTrack *CMeVDoc::FindTrack( long inTrackID )
 {
-	if (inTrackID == 0)		return (CTrack *)masterRealTrack->Acquire();
-	else if (inTrackID == 1)	return (CTrack *)masterMeterTrack->Acquire();
+	if (inTrackID == 0)		return (CTrack *)m_masterRealTrack->Acquire();
+	else if (inTrackID == 1)	return (CTrack *)m_masterMeterTrack->Acquire();
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
 		CTrack		*track = (CTrack *)tracks.ItemAt( i );
@@ -349,8 +457,8 @@ CTrack *CMeVDoc::FindNextHigherTrackID( int32 inID )
 
 void CMeVDoc::PostUpdateAllTracks( CUpdateHint *inHint )
 {
-	masterRealTrack->PostUpdate( inHint );
-	masterMeterTrack->PostUpdate( inHint );
+	m_masterRealTrack->PostUpdate( inHint );
+	m_masterMeterTrack->PostUpdate( inHint );
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
 		CTrack		*track = (CTrack *)tracks.ItemAt( i );
@@ -369,64 +477,6 @@ void CMeVDoc::ReplaceTempoMap( CTempoMapEntry *entries, int length )
 	validTempoMap = true;
 	
 	// REM: Deal with any playing tracks -- tell them about map change.
-}
-
-	/**	Show or hide the window of a particular type */
-BWindow *CMeVDoc::ShowWindow( enum EWindowTypes inType )
-{
-	CWindowState		*state;
-	
-	switch (inType) {
-	case VChannel_Window: state = &vChannelWinState; break;
-	case DocPrefs_Window: state = &docPrefsWinState; break;
-	case Assembly_Window: state = &assemblyWinState; break;
-	case Operator_Window: state = &operatorWinState; break;
-	default: return NULL;
-	}
-	
-	if (state->Activate() == false)
-	{
-		BWindow		*bw;
-	
-		switch (inType) {
-		case VChannel_Window:
-			//bw = new CVChannelWindow( *state, *this );
-			//bw->Show();
-			break;
-
-		case DocPrefs_Window:
-			break;
-
-		case Assembly_Window:
-			bw = new CAssemblyWindow(UScreenUtils::StackOnScreen(540, 300),
-									 this);
-			bw->Show();
-			break;
-
-		case Operator_Window:
-			bw = new COperatorWindow( *state, *this );
-			bw->Show();
-			break;
-		}
-	}
-	
-	return state->Window();
-}
-	
-	/**	Returns TRUE if a particular window type is open. */
-bool CMeVDoc::IsWindowOpen( enum EWindowTypes inType )
-{
-	CWindowState		*state;
-	
-	switch (inType) {
-	case VChannel_Window: state = &vChannelWinState; break;
-	case DocPrefs_Window: state = &docPrefsWinState; break;
-	case Assembly_Window: state = &assemblyWinState; break;
-	case Operator_Window: state = &operatorWinState; break;
-	default: return false;
-	}
-	
-	return state->IsOpen();
 }
 
 	/**	Add an operator to the document's list of operators. */
@@ -477,8 +527,8 @@ void CMeVDoc::SetOperatorActive( EventOp *inOp, bool enabled )
 					eTrack->CompileOperators();
 				}
 			}
-			masterRealTrack->CompileOperators();
-			masterMeterTrack->CompileOperators();
+			m_masterRealTrack->CompileOperators();
+			m_masterMeterTrack->CompileOperators();
 		}
 	}
 	else
@@ -497,8 +547,8 @@ void CMeVDoc::SetOperatorActive( EventOp *inOp, bool enabled )
 				
 				if (eTrack) eTrack->CompileOperators();
 			}
-			masterRealTrack->CompileOperators();
-			masterMeterTrack->CompileOperators();
+			m_masterRealTrack->CompileOperators();
+			m_masterMeterTrack->CompileOperators();
 		}
 	}
 }
@@ -535,10 +585,10 @@ void CMeVDoc::SetActiveMaster( CEventTrack *inTrack )
 {
 	if (inTrack->GetID() >= 2) return;
 	
-	if (activeMaster != inTrack)
+	if (m_activeMaster != inTrack)
 	{
-		activeMaster->DeselectAll( NULL );
-		activeMaster = inTrack;
+		m_activeMaster->DeselectAll( NULL );
+		m_activeMaster = inTrack;
 	}
 }
 
@@ -551,80 +601,78 @@ CMeVDoc::ChangeTrackOrder(
 	NotifyUpdate(Update_TrackOrder, NULL);
 }
 
-void CMeVDoc::VirtualChannelName( int32 inChannelIndex, char *outBuf )
+void
+CMeVDoc::SaveDocument()
 {
-	//Destination		*dest = &m_destlist[ inChannelIndex ];
-	//sprintf( outBuf, "%s: %d", dest->name,inChannelIndex );
-}
+	// Make a backup of the doc file.
+	char docName[B_FILE_NAME_LENGTH];
 
-void CMeVDoc::SaveDocument()
-{
-		// Make a backup of the doc file.
-	char		docName[ B_FILE_NAME_LENGTH ];
-
-		// REM: Do we need to ask for over-write check?
-	
-	if (GetName( docName ))
+	// REM: Do we need to ask for over-write check?
+	if (GetName(docName))
 	{
-		BEntry	backup( DocLocation() );
+		BEntry backup(DocLocation());
 
-			// Make sure there's enough room for the letters '.bak'
-		docName[ B_FILE_NAME_LENGTH - 5 ] = '\0';
-		strcat( docName, ".bak" );
-		
-			// This might fail if doc has never been created. So what?
-		backup.Rename( docName );
+		// Make sure there's enough room for the letters '.bak'
+		docName[B_FILE_NAME_LENGTH - 5] = '\0';
+		strcat(docName, ".bak");
+
+		// This might fail if doc has never been created. So what?
+		backup.Rename(docName);
 	}
 
-	BFile		file( &DocLocation(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE );
-	
+	BFile file(&DocLocation(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
+
 	//REM: Lock the doc. (read-only if possible)
 	
-		// Create reader and IFF reader.
-	CBeFileWriter	writer( file );
-	CIFFWriter	iffWriter( writer );
+	CBeFileWriter writer(file);
+	CIFFWriter iffWriter(writer);
 	
-	iffWriter.Push( Form_ID );
+	iffWriter.Push(Form_ID);
 	iffWriter << (long)MeV_ID;
-	
-	WriteVCTable( iffWriter );
-	
-	iffWriter.Push( DocTempo_ID );
+
+	iffWriter.Push(VCTable_ID);
+	m_destlist->WriteVCTable(iffWriter);
+	iffWriter.Pop();
+
+	iffWriter.Push(DocTempo_ID);
 	iffWriter << InitialTempo();
 	iffWriter.Pop();
 
-		// Write master real track
-	iffWriter.Push( Form_ID );
+	// Write master real track
+	iffWriter.Push(Form_ID);
 	iffWriter << (long)FMasterRealTrack;
-	masterRealTrack->WriteTrack( iffWriter );
+	m_masterRealTrack->WriteTrack(iffWriter);
 	iffWriter.Pop();
 
-		// Write master metered track
-	iffWriter.Push( Form_ID);
+	// Write master metered track
+	iffWriter.Push(Form_ID);
 	iffWriter << (long)FMasterMeteredTrack;
-	masterMeterTrack->WriteTrack( iffWriter );
+	m_masterMeterTrack->WriteTrack(iffWriter);
 	iffWriter.Pop();
 
-	for (int i = 0; i < tracks.CountItems(); i++)
-	{
-		CTrack		*track = (CTrack *)tracks.ItemAt( i );
-	
-		if (track->Deleted()) continue;
+	// REM: Save AssemblyWindow settings
 
-			// Push a seperate FORM per track	
-		iffWriter.Push( Form_ID );
+	for (int i = 0; i < CountTracks(); i++)
+	{
+		CTrack *track = TrackAt(i);
+	
+		if (track->Deleted())
+			continue;
+
+		// Push a seperate FORM per track	
+		iffWriter.Push(Form_ID);
 		iffWriter << (long)track->TrackType();
-		track->WriteTrack( iffWriter );
+		track->WriteTrack(iffWriter);
 		iffWriter.Pop();
 	}
+
+	SetModified(false);
 	
-	SetModified( false );
-	
-	BNode	node( &DocLocation() );
+	BNode node(&DocLocation());
 	if (node.InitCheck() == B_NO_ERROR)
 	{
-		BNodeInfo	ni( &node );
-		
+		BNodeInfo ni(&node);
+
 		if (ni.InitCheck() == B_NO_ERROR)
 		{
 			ni.SetType("application/x-vnd.BeUnited.MeV-Document");
@@ -633,7 +681,9 @@ void CMeVDoc::SaveDocument()
 	}
 }
 
-void CMeVDoc::Export( BMessage *msg )
+void
+CMeVDoc::Export(
+	BMessage *msg)
 {
 	BFilePanel	*fp = ((CMeVApp *)be_app)->GetExportPanel( &be_app_messenger );
 	if (fp != NULL)
@@ -655,51 +705,38 @@ void CMeVDoc::Export( BMessage *msg )
 	}
 }
 
-void CMeVDoc::ReadVCTable( CIFFReader &reader )
-{
-	m_destlist->ReadVCTable(reader);
-}
-
-void CMeVDoc::WriteVCTable( CIFFWriter &writer )
-{
-	writer.Push( VCTable_ID );
-	m_destlist->WriteVCTable(writer);
-	writer.Pop();
-}
-
 void
 CMeVDoc::ReadTrack(
 	uint32 inTrackType,
 	CIFFReader &reader )
 {
-	CTrack		*track;
+	CTrack *track;
 
 	if (inTrackType == FMasterRealTrack)
 	{
-		masterRealTrack  = new CEventTrack( *this, ClockType_Real, 0, "Master Real" );
-		track = masterRealTrack;
+		m_masterRealTrack  = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
+		track = m_masterRealTrack;
 	}
 	else if (inTrackType == FMasterMeteredTrack)
 	{
-		masterMeterTrack = new CEventTrack( *this, ClockType_Metered, 1, "Master Metric" );
-		track = masterMeterTrack;
+		m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
+		track = m_masterMeterTrack;
 	}
 	else
 	{
-		track = NewTrack( TrackType_Event, ClockType_Metered );
+		track = NewTrack(TrackType_Event, ClockType_Metered);
 	}
 
-	if (track == NULL) return;
+	if (track == NULL)
+		return;
 	
 	reader.Push();
-
-	for (;;) {
-		if (reader.NextChunk() == false) break;
-		track->ReadTrackChunk( reader );
+	while (reader.NextChunk())
+	{
+		track->ReadTrackChunk(reader);
 	}
-	
 	reader.Pop();
-	
+
 	if (inTrackType == TrackType_Event)
 		((CEventTrack *)track)->SummarizeSelection();
 }
@@ -740,8 +777,8 @@ CMeVDoc::AddDefaultOperators()
 void
 CMeVDoc::Init()
 {
-	masterRealTrack = NULL;
-	masterMeterTrack = NULL;
+	m_masterRealTrack = NULL;
+	m_masterMeterTrack = NULL;
 
 	// Initialize default attributes
 	defaultAttributes[EvAttr_Duration] = Ticks_Per_QtrNote;

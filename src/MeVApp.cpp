@@ -174,8 +174,8 @@ CMeVApp::CMeVApp()
 	gPrefs.lEditorPrefsPanel = 0;
 	
 	// Initialize import/export file panels
-	exportPanel = NULL;
-	importPanel = NULL;
+	m_exportPanel = NULL;
+	m_importPanel = NULL;
 
 	CMidiManager *mm = CMidiManager::Instance();
 	CPlayerControl::InitPlayer();
@@ -520,37 +520,41 @@ BFilePanel *
 CMeVApp::GetImportPanel(
 	BMessenger *msngr)
 {
-	if (importPanel == NULL)
+	if (m_importPanel == NULL)
 	{
 		// Create a new import panel
-		importPanel = new BFilePanel(B_OPEN_PANEL, msngr, NULL, B_FILE_NODE, false);
+		m_importPanel = new BFilePanel(B_OPEN_PANEL, msngr, NULL, B_FILE_NODE,
+									   false);
+		m_importPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Import");
+		m_importPanel->Window()->SetTitle("MeV: Import");
 	}
-	else if (importPanel->IsShowing())
+	else if (m_importPanel->IsShowing())
 		return NULL;
 
-	importPanel->SetMessage(new BMessage(B_REFS_RECEIVED));
-	importPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Import");
-	importPanel->SetTarget(*msngr);
-	importPanel->SetRefFilter(NULL);
-	return importPanel;
+	m_importPanel->SetMessage(new BMessage(B_REFS_RECEIVED));
+	m_importPanel->SetTarget(*msngr);
+	m_importPanel->SetRefFilter(NULL);
+	return m_importPanel;
 }
 
 BFilePanel *
 CMeVApp::GetExportPanel(
 	BMessenger *msngr)
 {
-	if (exportPanel == NULL)
+	if (m_exportPanel == NULL)
 	{
 		// Create a new export panel
-		exportPanel = new BFilePanel(B_SAVE_PANEL, msngr, NULL, B_FILE_NODE, false );
+		m_exportPanel = new BFilePanel(B_SAVE_PANEL, msngr, NULL, B_FILE_NODE,
+									   false);
+		m_exportPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Export");
+		m_exportPanel->Window()->SetTitle("MeV: Export");
 	}
-	else if (exportPanel->IsShowing())
+	else if (m_exportPanel->IsShowing())
 		return NULL;
 
-	exportPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Export");
-	exportPanel->SetTarget(*msngr);
-	exportPanel->SetRefFilter(NULL);
-	return exportPanel;
+	m_exportPanel->SetTarget(*msngr);
+	m_exportPanel->SetRefFilter(NULL);
+	return m_exportPanel;
 }
 
 void
@@ -657,6 +661,11 @@ CMeVApp::MessageReceived(
 			window->Show();
 			break;
 		}
+		case MENU_PROGRAM_SETTINGS:
+		{
+			ShowPrefs();
+			break;
+		}
 		case Player_ChangeTransportState:
 		{
 			// If there's a transport window, forward this message to it.
@@ -667,6 +676,21 @@ CMeVApp::MessageReceived(
 			transportState.Unlock();
 			break;
 		}		
+		case MENU_NEW:
+		{
+			NewDocument();
+			break;
+		}
+		case MENU_OPEN:
+		{
+			OpenDocument();
+			break;
+		}
+		case MENU_IMPORT:
+		{
+			ImportDocument();
+			break;
+		}
 		case 'impt':
 		{
 			int32 refCount;

@@ -257,8 +257,8 @@ private:						// Instance Data
 	BList						importerList,
 								exporterList;
 
-	BFilePanel *				exportPanel;
-	BFilePanel *				importPanel;
+	BFilePanel *				m_exportPanel;
+	BFilePanel *				m_importPanel;
 	
 	static CTrack *				activeTrack;
 	BRefFilter *				filter;
@@ -267,7 +267,7 @@ private:						// Instance Data
 	/** Turn looping on/off */
 	bool						loopFlag;
 
-	MIDIDeviceInfo	*deviceTable[16][16];
+	MIDIDeviceInfo *			deviceTable[16][16];
 };
 
 // ---------------------------------------------------------------------------
