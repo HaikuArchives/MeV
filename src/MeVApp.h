@@ -69,7 +69,7 @@ class CEventTrack;
 class EventOp;
 
 const float		Transport_Width = 277.0,
-				Transport_Height = 64.0;
+				Transport_Height = 69.0;
 
 class CMeVApp
 	:	public CDocApp

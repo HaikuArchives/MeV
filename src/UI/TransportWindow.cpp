@@ -138,10 +138,11 @@ CTransportWindow::CTransportWindow( BPoint pos, CWindowState &inState )
 	x = 17;
 	y += Btn_Height + 3;
 
-	bb = new CToggleButton(
+	recordButton = new CToggleButton(
 		BRect( x, y, x + 44, y + Btn_Height2 ), "Record", 
 		ResourceUtils::LoadImage("Rec"), NULL );
-	bg->AddChild( bb );
+	recordButton->SetEnabled(false);
+	bg->AddChild(recordButton);
 	x += 44 + 3;
 
 	loopButton = new CToggleButton(
@@ -149,15 +150,10 @@ CTransportWindow::CTransportWindow( BPoint pos, CWindowState &inState )
 		ResourceUtils::LoadImage("LoopOff"), new BMessage( 'loop' ) );
 	bg->AddChild( loopButton );
 	loopButton->SetValue( ((CMeVApp *)be_app)->GetLoopFlag() );
+	loopButton->SetEnabled(false);
 	x += 32 + 3;
 
-//	bb = new CToggleButton(
-//		BRect( x, y, x + 28, y + Btn_Height2 ), "Punch", NULL, NULL );
-//	bg->AddChild( bb );
-//	x += 28 + 3;
-	
 	// Also overlay...
-
 	meteredTimeDisplay = new CTimeEditControl( BRect( x, y, x + 86, y + Btn_Height2 ), new BMessage( 'strt' ) );
 	bg->AddChild( meteredTimeDisplay );
 	x += 86 + 3;
@@ -167,7 +163,7 @@ CTransportWindow::CTransportWindow( BPoint pos, CWindowState &inState )
 	realTimeDisplay->SetClockType( ClockType_Real );
 
 	x = 17;
-	y += Btn_Height2 + 2;
+	y += Btn_Height2 + 7;
 	
 	BStringView		*label;
 	label = new BStringView( BRect( x, y, x + 36, y + 13 ), NULL, "Tempo:" );

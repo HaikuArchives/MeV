@@ -105,14 +105,14 @@ void CTimeEditControl::Draw( BRect inUpdateRect )
 		FillRect( BRect( r.left + 2, r.top + 2, r.right - 2, r.top + 12 ) );
 
 		MovePenTo( r.left + 4, r.top + 13 );
-		SetHighColor( 0, 0, 255 );
+		SetHighColor( 0, 0, 0 );
 		DrawString( &text[ 0 ], 6, &ed );
 		SetHighColor( 0, 0, 0 );
 		DrawString( &text[ 6 ], 12 - 6, &ed );
 		SetFont( &font2 );
 		SetHighColor( Parent()->ViewColor() );
 		FillRect( BRect( r.left + 2, r.top + 13, r.right - 2, r.bottom - 2 ) );
-		SetHighColor( 0, 0, 0 );
+		SetHighColor( 96, 96, 96 );
 		MovePenTo( r.left + 6, r.top + 21 );
 		DrawString( "Meas.  Beat  Tick" );
 	}
@@ -136,14 +136,14 @@ void CTimeEditControl::Draw( BRect inUpdateRect )
 		FillRect( BRect( r.left + 2, r.top + 2, r.right - 2, r.top + 12 ) );
 
 		MovePenTo( r.left + 2, r.top + 13 );
-		SetHighColor( 0, 0, 255 );
+		SetHighColor( 0, 0, 0 );
 		DrawString( &text[ 0 ], 6, &ed );
 		SetHighColor( 0, 0, 0 );
 		DrawString( &text[ 6 ], 12 - 6, &ed );
 		SetFont( &font2 );
 		SetHighColor( Parent()->ViewColor() );
 		FillRect( BRect( r.left + 2, r.top + 13, r.right - 2, r.bottom - 2 ) );
-		SetHighColor( 0, 0, 0 );
+		SetHighColor( 96, 96, 96 );
 		MovePenTo( r.left + 5, r.top + 21 );
 		DrawString( "Hr.   Min.  Sec.   ms" );
 	}
