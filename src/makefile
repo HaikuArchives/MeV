@@ -64,10 +64,12 @@ SRCS= \
 	UI/InspectorWindow.cpp \
 	UI/LinearEditor.cpp \
 	UI/LinearWindow.cpp \
+	UI/LoopButton.cpp \
 	UI/MenuTool.cpp \
 	UI/MultiColumnListView.cpp \
 	UI/OperatorWindow.cpp \
 	UI/PitchBendEditor.cpp \
+	UI/PlayPauseButton.cpp \
 	UI/Polygon.cpp \
 	UI/PreferencesWindow.cpp \
 	UI/QuickKeyMenuItem.cpp \
@@ -94,6 +96,7 @@ SRCS= \
 	UI/TrackListView.cpp \
 	UI/TrackListWindow.cpp \
 	UI/TrackWindow.cpp \
+	UI/TransportButton.cpp \
 	UI/TransportWindow.cpp \
 	UI/VelocityEditor.cpp
 
