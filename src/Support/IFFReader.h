@@ -74,7 +74,7 @@ public:
 	int32 ChunkLength( int32 parentLevel = 0 );
 	
 		/**	Returns how many bytes of chunk data have been read so far. */
-	int32 ChunkPos( int32 parentLevel = 0 );
+	int32 ChunkPos( int32 parentLevel = 0 ) const;
 	
 		/**	Returns the ID of the current chunk being read. */
 	int32 ChunkID( int32 parentLevel = 0, int32 *subID = NULL );
@@ -110,7 +110,7 @@ public:
 	bool Seek( uint32 inChunkPos );
 
 		/**	Returns the current read position in the chunk. */
-	virtual uint32 Position() { return ChunkPos(); }
+	virtual uint32 Position() const { return ChunkPos(); }
 
 		/** Returns the number of bytes left in the current chunk. */
 	virtual uint32 BytesAvailable() { return ChunkLength() - ChunkPos(); }

@@ -41,7 +41,7 @@ int32 CIFFReader::ChunkLength( int32 parentLevel )
 	return cs->size;
 }
 
-int32 CIFFReader::ChunkPos( int32 parentLevel )
+int32 CIFFReader::ChunkPos( int32 parentLevel ) const
 {
 	ChunkState	*cs = stack;
 	while (parentLevel-- && cs != NULL)

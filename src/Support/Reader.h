@@ -141,7 +141,7 @@ public:
 	virtual uint32 BytesAvailable() = 0;
 	
 		/**	Returns the current read position. */
-	virtual uint32 Position() = 0;
+	virtual uint32 Position() const = 0;
 	
 		/**	Skip over data in the stream. Won't go past end of file. */
 	virtual uint32 Skip( uint32 inSkipBytes ) = 0;
