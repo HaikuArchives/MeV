@@ -97,7 +97,7 @@ CEventStack::Push(
 bool
 CEventStack::Push(
 	const CEvent &ev,
-	long time)
+	CTime time)
 {
 	D_OPERATION(("CEventStack::Push(time)\n"));
 
@@ -113,13 +113,13 @@ CEventStack::Push(
 	// element being displaced is earlier, then bubble old event up
 	// and continue searching.
 	CEvent *search = m_current;
-	while ((search > m_stack) && IsTimeGreater(search[-1].stack.start, time))
+	while ((search > m_stack) && (time > search[-1].Start()))
 		search--;
 
 	if (search < m_current)
 		CEvent::Relocate(search + 1, search, m_current - search);
 	CEvent::Construct(search, &ev, 1);
-	search->stack.start = time;
+	search->SetStart(time);
 	m_current++;
 
 	return true;
@@ -129,7 +129,7 @@ bool
 CEventStack::PushList(
 	CEvent *list,
 	int16 count,
-	long startTime)
+	CTime offset)
 {
 	D_OPERATION(("CEventStack::PushList()\n"));
 
@@ -142,7 +142,7 @@ CEventStack::PushList(
 	while (count--)
 	{
 		--list;
-		list->stack.start += startTime;
+		list->stack.start += offset.Milliseconds();
 		Push(*list);
 	}
 	return true;
@@ -170,7 +170,7 @@ CEventStack::Pop(
 bool
 CEventStack::Pop(
 	CEvent &ev,
-	long time)
+	CTime time)
 {
 	D_OPERATION(("CEventStack::Pop(time)\n"));
 
@@ -178,7 +178,7 @@ CEventStack::Pop(
 
 	// If stack has no items, or the top item is greater than the
 	// current time, then return nothing.
-	if ((m_current <= m_stack) || IsTimeGreater(time, m_current[-1].stack.start))
+	if ((m_current <= m_stack) || (time < m_current[-1].Start()))
 		return false;
 
 	// pop one item and return it.

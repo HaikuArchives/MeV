@@ -33,6 +33,7 @@
 #define __C_EventStack_H__
 
 #include "Event.h"
+#include "Time.h"
 
 /**
  *	A prioritized stack of events, sorted by time.
@@ -72,13 +73,13 @@ public:							// Operations
 	/** Add event to stack at a specfic time. */
 	bool						Push(
 									const CEvent &ev,
-									long time);
+									CTime time);
 
 	/** push a list of events (all or none). */
 	bool						PushList(
 									CEvent *eventList,
 									int16 count,
-									long startTime);
+									CTime offset);
 
 	/** Pop event from stack. */
 	bool						Pop(
@@ -87,7 +88,7 @@ public:							// Operations
 	/** Pop event to stack if time reached. */
 	bool						Pop(
 									CEvent &ev,
-									long time);
+									CTime time);
 
 private:						// Instance Data
 
