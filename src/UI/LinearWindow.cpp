@@ -358,6 +358,7 @@ CLinearWindow::AddMenuBar()
 	menu->AddItem(new BMenuItem("Paste", new BMessage(B_PASTE), 'V'));
 	menu->AddItem(new CQuickKeyMenuItem("Clear", new BMessage(MENU_CLEAR), 
 										B_DELETE, "Del"));
+	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Select All", new BMessage(B_SELECT_ALL), 'A'));
 	menuBar->AddItem(menu);
 
@@ -460,14 +461,14 @@ CLinearWindow::AddFrameView(
 {
 	// Create the frame for the strips, and the scroll bar
 	stripFrame = new CStripFrameView(BRect(frame.left,
-										   frame.top + DEFAULT_RULER_HEIGHT,
+										   frame.top + DEFAULT_RULER_HEIGHT + 1.0,
 										   frame.right, frame.bottom),
 									 (char *)NULL, track, B_FOLLOW_ALL);
 
 	CScrollerTarget	*ruler;
 	ruler = new CRulerView(BRect(frame.left + 21.0, frame.top,
 								 frame.right - 14.0,
-								 frame.top + DEFAULT_RULER_HEIGHT - 1.0),
+								 frame.top + DEFAULT_RULER_HEIGHT),
 						   NULL,
 						   *this, stripFrame, (CEventTrack *)track,
 						   B_FOLLOW_LEFT_RIGHT,
@@ -475,16 +476,16 @@ CLinearWindow::AddFrameView(
 
 	BView *pad;
 	rgb_color fill = ui_color(B_PANEL_BACKGROUND_COLOR);
-	pad = new CBorderView(BRect(frame.left - 1, frame.top - 1,
+	pad = new CBorderView(BRect(frame.left - 1, frame.top - 1.0,
 								frame.left + 20, 
-								frame.top + DEFAULT_RULER_HEIGHT - 1),
+								frame.top + DEFAULT_RULER_HEIGHT),
 						  "", B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW, 
 						  &fill);
 	AddChild(pad);
 
-	pad = new CBorderView(BRect(frame.right - 13, frame.top - 1,
+	pad = new CBorderView(BRect(frame.right - 13, frame.top - 1.0,
 								frame.right + 1, 
-								frame.top + DEFAULT_RULER_HEIGHT - 1),
+								frame.top + DEFAULT_RULER_HEIGHT),
 						  "", B_FOLLOW_RIGHT | B_FOLLOW_TOP, B_WILL_DRAW,
 						  &fill);
 	AddChild(pad);

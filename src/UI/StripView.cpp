@@ -151,19 +151,19 @@ CStripView::SetRulerView(
 		TopView()->RemoveChild(m_rulerView);
 		if (rightScroller)
 		{
-			rightScroller->MoveBy(0.0, - m_rulerView->Bounds().Height() - 1.0);
-			rightScroller->ResizeBy(0.0, m_rulerView->Bounds().Height() + 1.0);
+			rightScroller->MoveBy(0.0, - m_rulerView->Bounds().Height() - 2.0);
+			rightScroller->ResizeBy(0.0, m_rulerView->Bounds().Height() + 2.0);
 		}
-		MoveBy(0.0, - m_rulerView->Bounds().Height());
-		ResizeBy(0.0, m_rulerView->Bounds().Height());
+		MoveBy(0.0, - (m_rulerView->Bounds().Height() + 1.0));
+		ResizeBy(0.0, m_rulerView->Bounds().Height() + 1.0);
 		delete m_rulerView;
 		m_rulerView = NULL;
 	}
 
 	if (rulerView)
 	{
-		MoveBy(0.0, rulerView->Bounds().Height());
-		ResizeBy(0.0, - rulerView->Bounds().Height());
+		MoveBy(0.0, rulerView->Bounds().Height() + 1.0);
+		ResizeBy(0.0, - (rulerView->Bounds().Height() + 1.0));
 		TopView()->AddChild(rulerView);
 		m_rulerView = rulerView;
 		if (LabelView())
@@ -172,8 +172,8 @@ CStripView::SetRulerView(
 		}
 		if (rightScroller)
 		{
-			rightScroller->MoveBy(0.0, m_rulerView->Bounds().Height() + 1.0);
-			rightScroller->ResizeBy(0.0, - m_rulerView->Bounds().Height() - 1.0);
+			rightScroller->MoveBy(0.0, m_rulerView->Bounds().Height() + 2.0);
+			rightScroller->ResizeBy(0.0, - m_rulerView->Bounds().Height() - 2.0);
 		}
 	}
 }

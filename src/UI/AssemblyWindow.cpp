@@ -268,7 +268,7 @@ CAssemblyWindow::AddStrip(
 		strip = new CTrackCtlStrip(*stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack(1),
 								   "Metered");
-		ruler = new CRulerView(BRect(0.0, -1.0, rect.Width(),
+		ruler = new CRulerView(BRect(0.0, 0.0, rect.Width(),
 									 CTrackWindow::DEFAULT_RULER_HEIGHT),
 							   "", *this, stripFrame,
 							   (CEventTrack *)Document()->FindTrack(1),
@@ -280,7 +280,7 @@ CAssemblyWindow::AddStrip(
 		strip = new CTrackCtlStrip(*stripFrame, rect,
 								   (CEventTrack *)Document()->FindTrack((int32)0),
 								   "Real");
-		ruler = new CRulerView(BRect(0.0, -1.0, rect.Width(), 
+		ruler = new CRulerView(BRect(0.0, 0.0, rect.Width(), 
 									 CTrackWindow::DEFAULT_RULER_HEIGHT),
 							   NULL, *this, stripFrame,
 							   (CEventTrack *)Document()->FindTrack((int32)0),
@@ -368,6 +368,7 @@ CAssemblyWindow::AddMenuBar()
 	menu->AddItem(item = new BMenuItem("Paste", new BMessage(B_PASTE), 'V'));
 	item->SetEnabled(false);
 	menu->AddItem(new CQuickKeyMenuItem("Clear", new BMessage(MENU_CLEAR), B_DELETE, "Del"));
+	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Select All", new BMessage(B_SELECT_ALL), 'A'));
 	menuBar->AddItem(menu);
 

@@ -61,6 +61,13 @@ public:							// Constants
 								MARKER_MOVED = 'mARm'
 	};
 
+	enum markers
+	{
+								SECTION_START,
+
+								SECTION_END
+	};
+
 public:							// Constructor/Destructor
 
 								CRulerView(
@@ -118,7 +125,11 @@ protected:						// Instance Data
 
 	bool						m_showMarkers;
 
-	BBitmap *					m_markerBitmap;
+	BBitmap *					m_leftMarker;
+
+	BBitmap *					m_rightMarker;
+
+	float						m_markerWidth;
 };
 
 #endif /* __C_RulerView_H__ */
