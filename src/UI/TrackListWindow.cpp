@@ -56,7 +56,7 @@ CTrackListWindow::CTrackListWindow(
 
 	BRect rect;
 
-	AddMenuBar();
+	_addMenuBar();
 
 	rect = Bounds();
 	rect.top = KeyMenuBar()->Frame().bottom + 1.0;
@@ -234,15 +234,6 @@ CTrackListWindow::MessageReceived(
 			m_doc->SetModified();
 			break;
 		}
-		case MENU_CREATE_REAL_TRACK:
-		{
-			D_MESSAGE((" -> MENU_CREATE_REAL_TRACK\n"));
-
-			m_doc->NewTrack(TrackType_Event, ClockType_Real);
-			m_doc->NotifyUpdate(CMeVDoc::Update_AddTrack, NULL);
-			m_doc->SetModified();
-			break;
-		}
 		default:
 		{
 			CAppWindow::MessageReceived(message);
@@ -305,9 +296,9 @@ CTrackListWindow::Zoom(
 // Internal Operations
 
 void
-CTrackListWindow::AddMenuBar()
+CTrackListWindow::_addMenuBar()
 {
-	D_OPERATION(("CTrackListWindow::AddMenuBar()\n"));
+	D_OPERATION(("CTrackListWindow::_addMenuBar()\n"));
 
 	BMenuBar *menuBar;
 	BMenu *menu;
@@ -319,15 +310,9 @@ CTrackListWindow::AddMenuBar()
 	// Create the 'File' menu
 	menu = new BMenu("File");
 	menu->SetFont(be_plain_font);
-	BMenu *subMenu = new BMenu("New");
-	subMenu->SetFont(be_plain_font);
-	subMenu->AddItem(item = new BMenuItem("Metered Part",
-										  new BMessage(MENU_CREATE_METERED_TRACK),
-										  'N'));
-	subMenu->AddItem(item = new BMenuItem("Realtime Part",
-										  new BMessage(MENU_CREATE_REAL_TRACK),
-										  'N', B_SHIFT_KEY));
-	menu->AddItem(subMenu);
+	menu->AddItem(item = new BMenuItem("New Part",
+									   new BMessage(MENU_CREATE_METERED_TRACK),
+									   'N'));
 	menu->AddSeparatorItem();
 	menu->AddItem(item = new BMenuItem("Close", new BMessage(B_QUIT_REQUESTED), 'W'));
 	menuBar->AddItem(menu);

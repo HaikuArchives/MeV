@@ -87,7 +87,7 @@ public:							// CAppWindow Implementation
 
 protected:						// Internal Operations
 
-	void						AddMenuBar();
+	void						_addMenuBar();
 
 private:						// Instance Data
 
