@@ -1373,24 +1373,14 @@ CTrackCtlStrip::OnUpdate(
 		maxTime = ViewCoordsToTime(Bounds().right);
 	r.right = TimeToViewCoords(maxTime) + 1.0;
 
-	if (trackHint & CTrack::Update_Duration)
-		RecalcScrollRangeH();
-
-	uint8 channel;
-	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
+	int32 trackID;
+	if ((message->FindInt32("TrackID", 0, &trackID) == B_OK)
+	 && (trackID != Track()->GetID()))
 	{
-		// Invalidate everything if signature map changed
-		Invalidate();
-	}
-	else if (trackHint & CTrack::Update_Name)
-	{
-		int32 trackID;
-		if (message->FindInt32("TrackID", 0, &trackID) != B_OK)
-			return;
-
+		// change on some other track; dispatch change to every track
+		// instance in the current bounds
 		StSubjectLock trackLock(*Track(), Lock_Shared);
 		EventMarker	marker(Track()->Events());
-		// redraw every instance of the changed track
 		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
@@ -1401,6 +1391,19 @@ CTrackCtlStrip::OnUpdate(
 				Handler(*ev ).Invalidate(*this, *ev);
 			}
 		}
+
+		// nothing else to do with this update
+		return;
+	}
+
+	if (trackHint & CTrack::Update_Duration)
+		RecalcScrollRangeH();
+
+	uint8 channel;
+	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
+	{
+		// Invalidate everything if signature map changed
+		Invalidate();
 	}
 	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
 	{
@@ -1462,7 +1465,7 @@ CTrackCtlStrip::CalcZoom()
 void
 CTrackCtlStrip::AttachedToWindow()
 {
-	SetViewColor( B_TRANSPARENT_32_BIT );
+	SetViewColor(B_TRANSPARENT_32_BIT);
 	SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight, 0.0);
 
 	SetFont(be_plain_font);
@@ -1561,66 +1564,62 @@ CTrackCtlStrip::MouseMoved(
 	
 		// If there's a drag message, and we're not already doing another kind of
 		// dragging...
-	if (		dragMsg != NULL
-		&&	(m_dragType == DragType_None || m_dragType == DragType_DropTarget))
+	if ((dragMsg != NULL)
+	 &&	(m_dragType == DragType_None || m_dragType == DragType_DropTarget))
 	{
-		int32			msgType;
-
-			// Check the message type to see if the message is acceptable.
-
-		if (dragMsg->what == MeVDragMsg_ID
-			&&	dragMsg->FindInt32( "Type", 0, &msgType ) == B_OK)
+		// Check the message type to see if the message is acceptable.
+		int32 msgType;
+		if ((dragMsg->what == MeVDragMsg_ID)
+		 &&	(dragMsg->FindInt32("Type", 0, &msgType) == B_OK))
 		{
-			switch (msgType) {
-			case DragTrack_ID:
-				int32		trackID;
-				void			*dragDoc;
-				
-				if (		dragMsg->FindInt32( "TrackID", 0, &trackID ) == B_OK
-					&&	dragMsg->FindPointer( "Document", 0, &dragDoc ) == B_OK
-					&&	dragDoc == TrackWindow()->Document())
+			switch (msgType)
+			{
+				case DragTrack_ID:
 				{
-					int32		time;
-					Event		dragEv;
-					CTrack		*tk;
-		
-						// Initialize a new event.
-					dragEv.SetCommand( EvtType_Sequence );
-					time = Handler( dragEv ).QuantizeDragTime(
-						*this,
-						dragEv,
-						0,
-						BPoint( 16.0, 0.0 ),
-						point,
-						true );
-					if (time < 0) time = 0;
-					dragEv.SetStart( time );
-					dragEv.SetVChannel( 0 );
-					dragEv.sequence.vPos = static_cast<uint8>(point.y / BarHeight());
-							// Rem: Change this to the logical length of the track we are ADDING. */
-					dragEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
-					dragEv.sequence.sequence		= trackID;
-					tk = TrackWindow()->Document()->FindTrack(trackID);
-					if (tk == NULL) tk = Track();
-					dragEv.SetDuration( tk->LogicalLength() );
-					
-					if (		m_dragType != DragType_DropTarget
-						||	memcmp( &dragEv, &m_newEv, sizeof m_newEv ) != 0)
+					int32 trackID;
+					void *dragDoc;
+					if ((dragMsg->FindInt32("TrackID", 0, &trackID) == B_OK)
+					 && (dragMsg->FindPointer("Document", 0, &dragDoc) == B_OK)
+					 &&	(dragDoc == TrackWindow()->Document()))
 					{
-						if (m_dragType == DragType_DropTarget)
-							Handler( m_newEv ).Invalidate( *this, m_newEv );
-						m_newEv = dragEv;
-						Handler( m_newEv ).Invalidate( *this, m_newEv );
+						CTrack *track = TrackWindow()->Document()->FindTrack(trackID);
+						if ((track == NULL)
+						 || (track->GetID() == Track()->GetID()))
+							return;
 
-						TrackWindow()->DisplayMouseTime( Track(), time );
-						m_dragType = DragType_DropTarget;
+						// Initialize a new event.
+						Event dragEv;
+						dragEv.SetCommand(EvtType_Sequence);
+						int32 time = Handler(dragEv).QuantizeDragTime(*this, dragEv,
+																	  0, BPoint(16.0, 0.0),
+																	  point, true);
+						if (time < 0)
+							time = 0;
+						dragEv.SetStart(time);
+						dragEv.SetVChannel(0);
+						dragEv.sequence.vPos = static_cast<uint8>(point.y / BarHeight());
+						dragEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
+						dragEv.sequence.sequence = trackID;
+						// Rem: Change this to the logical length of the track we are ADDING. */
+						dragEv.SetDuration(track->LogicalLength());
+					
+						if ((m_dragType != DragType_DropTarget)
+						 || (memcmp(&dragEv, &m_newEv, sizeof(m_newEv)) != 0))
+						{
+							if (m_dragType == DragType_DropTarget)
+								Handler(m_newEv).Invalidate(*this, m_newEv);
+							m_newEv = dragEv;
+							Handler(m_newEv).Invalidate(*this, m_newEv);
+
+							TrackWindow()->DisplayMouseTime(Track(), time);
+							m_dragType = DragType_DropTarget;
+						}
+						return;
 					}
-					return;
+					break;
 				}
-				break;
 			}
 		}
-
 		newCursor = B_HAND_CURSOR;
 	}
 	else
@@ -1692,13 +1691,27 @@ CTrackCtlStrip::ConstructEvent(
 		}
 		case EvtType_Sequence:
 		{
+			CTrack *track = NULL;
+			int32 sequence = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_SequenceNumber);
+			if (sequence == Track()->GetID())
+			{
+				// can't nest the track within itself
+				// try the next higher track
+				track = TrackWindow()->Document()->FindNextHigherTrackID(sequence);
+				if ((track == NULL) || (track->GetID() == sequence))
+					return false;
+				sequence = track->GetID();
+				TrackWindow()->Document()->SetDefaultAttribute(EvAttr_SequenceNumber,
+															   sequence);
+			}
+			else
+			{
+				track = TrackWindow()->Document()->FindTrack(sequence);
+			}
 			m_newEv.sequence.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
 			m_newEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
-			m_newEv.sequence.sequence = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_SequenceNumber);
+			m_newEv.sequence.sequence = sequence;
 			m_newEv.sequence.flags = 0;
-			CTrack *track = TrackWindow()->Document()->FindTrack(m_newEv.sequence.sequence);
-			if (track == NULL)
-				track = Track();
 			m_newEv.SetDuration(track->LogicalLength());
 			break;
 		}
