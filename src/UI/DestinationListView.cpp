@@ -291,7 +291,7 @@ CDestinationListView::MessageReceived(
 			CDestination *dest = Document()->NewDestination();
 			int32 id = dest->ID();
 			Document()->SetDefaultAttribute(EvAttr_Channel, id);
-			BRect r(40, 40, 300, 220);
+			BRect r(120, 120, 260, 300);
 			m_modifierMap[id] = new CDestinationModifier(r, id, m_doc, this);
 			m_modifierMap[id]->Show();
 
