@@ -42,54 +42,66 @@
 #include <Point.h>
 #include <Rect.h>
 
-class CPolygon {
-public:
-	CPolygon(const BPoint *ptArray, int32 numPoints);
-	CPolygon();
-	CPolygon( const CPolygon *poly );
-	virtual ~CPolygon();	
+class CPolygon
+{
 
-	CPolygon	&operator=(const CPolygon &from)
-	{
-		delete fPts;
-		fPts = new uint8[ from.fCount * sizeof (BPoint) ];
-		memcpy( fPts, from.fPts, fCount * sizeof fPts[ 0 ] );
-		fCount = fAlloc = from.fCount;
-		fBounds = from.fBounds;
-		return *this;
-	}
+public:							// Constructor/Destructor
 
-	BRect Frame() const { return fBounds; }
-	void	 AddPoints(const BPoint *ptArray, int32 numPoints);
-	int32 CountPoints() const { return fCount; }
-	BPoint *Points() { return (BPoint *)fPts; }
-	bool PointInPoly( const BPoint &inPoint );
-	bool RectInPoly( const BRect &inRect, bool exlcude );
+								CPolygon(
+									const BPoint *ptArray,
+									int32 numPoints);
 
-private:
+								CPolygon();
 
-	BRect	fBounds;
-	int32	fCount, fAlloc;
-	uint8	*fPts;
+								CPolygon(
+									const CPolygon &other);
 
-	void SetFrame( BPoint inPoint )
-	{
-		fBounds.left = fBounds.right = inPoint.x;
-		fBounds.top = fBounds.bottom = inPoint.y;
-	}
+	virtual						~CPolygon();
 
-	void ExpandFrame( const BPoint *inPoints, int32 numPoints )
-	{
-		while (numPoints-- > 0)
-		{
-			if (inPoints->x < fBounds.left)	fBounds.left = inPoints->x;
-			if (inPoints->x > fBounds.right)	fBounds.right = inPoints->x;
-			if (inPoints->y < fBounds.top)	fBounds.top = inPoints->y;
-			if (inPoints->y > fBounds.bottom)	fBounds.bottom = inPoints->y;
-			inPoints++;
-		}
-	}
+public:							// Operators
 
+	CPolygon &					operator=(
+									const CPolygon &other);
+
+public:							// Accessors
+
+	BRect						Frame() const
+								{ return m_frame; }
+
+	void						AddPoints(
+									const BPoint *points,
+									int32 numPoints);
+
+	int32						CountPoints() const
+								{ return m_count; }
+
+	BPoint *					Points()
+								{ return (BPoint *)m_points; }
+
+	bool						Contains(
+									const BPoint &point);
+
+	bool						Contains(
+									const BRect &rect,
+									bool exlcude);
+
+private:						// Internal Operations
+
+	void						SetFrame(
+									BPoint point);
+
+	void						ExpandFrame(
+									const BPoint *points,
+									int32 numPoints);
+
+private:						// Instance Data
+
+	uint8 *						m_points;
+
+	BRect						m_frame;
+
+	int32						m_count;
+	int32						m_alloc;
 };
 
 #endif /* __C_Polygon_H__ */

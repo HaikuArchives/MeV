@@ -7,89 +7,126 @@
 // Support Kit
 #include <Debug.h>
 
-CPolygon::CPolygon(const BPoint *ptArray, int32 numPoints)
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
+CPolygon::CPolygon(
+	const BPoint *points,
+	int32 numPoints)
+	:	m_points(NULL),
+		m_count(numPoints),
+		m_alloc(numPoints)
 {
-	fPts = new uint8[ numPoints * sizeof (BPoint) ];
-	memcpy( fPts, ptArray, numPoints * sizeof (BPoint) );
-	fCount = fAlloc = numPoints;
-	SetFrame( ptArray[ 0 ] );
-	if (numPoints > 1) ExpandFrame( ptArray + 1, numPoints - 1 );
+	m_points = new uint8[numPoints * sizeof (BPoint)];
+	memcpy(m_points, points, numPoints * sizeof (BPoint));
+	SetFrame(points[0]);
+	if (numPoints > 1)
+		ExpandFrame(points + 1, numPoints - 1);
 }
 
 CPolygon::CPolygon()
+	:	m_points(NULL),
+		m_frame(0.0, 0.0, 0.0, 0.0),
+		m_count(0),
+		m_alloc(0)
 {
-	fPts = NULL;
-	fCount = fAlloc = 0;
-	fBounds.left = fBounds.right = fBounds.top = fBounds.bottom = 0;
 }
 
-CPolygon::CPolygon( const CPolygon *poly )
+CPolygon::CPolygon(
+	const CPolygon &other)
+	:	m_points(0),
+		m_frame(other.m_frame),
+		m_count(other.m_count),
+		m_alloc(other.m_alloc)
 {
-	fPts = new uint8[ poly->fCount  * sizeof (BPoint) ];
-	memcpy( fPts, poly->fPts, fCount * sizeof (BPoint) );
-	fCount = fAlloc = poly->fCount;
-	fBounds = poly->fBounds;
+	m_points = new uint8[m_count  * sizeof (BPoint)];
+	memcpy(m_points, other.m_points, m_count * sizeof (BPoint));
 }
 
 CPolygon::~CPolygon()
 {
-	delete fPts;
+	delete [] m_points;
 }
 
-void	 CPolygon::AddPoints(const BPoint *ptArray, int32 numPoints)
-{
-	ASSERT( numPoints > 0 );
+// ---------------------------------------------------------------------------
+// Operators
 
-	if (fCount + numPoints > fAlloc)
+CPolygon &
+CPolygon::operator=(
+	const CPolygon &other)
+{
+	delete m_points;
+	m_points = new uint8[other.m_count * sizeof (BPoint)];
+	memcpy(m_points, other.m_points, m_count * sizeof m_points[0]);
+	m_count = m_alloc = other.m_count;
+	m_frame = other.m_frame;
+	return *this;
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+void
+CPolygon::AddPoints(
+	const BPoint *points,
+	int32 numPoints)
+{
+	ASSERT(numPoints > 0);
+
+	if ((m_count + numPoints) > m_alloc)
 	{
-		int32		n;
-		uint8		*nPts;
-		
-		n = fCount + numPoints + 1 + fCount / 4;
-		nPts = new uint8[ n * sizeof (BPoint) ];
-		if (fPts)
+		int32 n;
+		uint8 *newPoints;
+	
+		n = m_count + numPoints + 1 + m_count / 4;
+		newPoints = new uint8[n * sizeof (BPoint)];
+		if (m_points)
 		{
-			memcpy( nPts, fPts, fCount * sizeof (BPoint) );
-			delete fPts;
+			memcpy(newPoints, m_points, m_count * sizeof (BPoint));
+			delete m_points;
 		}
-		fPts = nPts;
-		fAlloc = n;
+		m_points = newPoints;
+		m_alloc = n;
 	}
 	
-	ASSERT( fAlloc >= 0 );
-	ASSERT( fCount >= 0 );
-	ASSERT( fCount < fAlloc - numPoints );
+	ASSERT(m_alloc >= 0 );
+	ASSERT(m_count >= 0 );
+	ASSERT(m_count <= (m_alloc - numPoints));
 	
-	memcpy( &fPts[ fCount * sizeof (BPoint) ], ptArray, numPoints * sizeof (BPoint) );
+	memcpy(&m_points[m_count * sizeof (BPoint)], points,
+		   numPoints * sizeof (BPoint));
 
-	if (fCount == 0)
+	if (m_count == 0)
 	{
-		SetFrame( ptArray[ 0 ] );
-		if (numPoints > 1) ExpandFrame( ptArray + 1, numPoints - 1 );
+		SetFrame(points[0]);
+		if (numPoints > 1)
+			ExpandFrame(points + 1, numPoints - 1);
 	}
 	else
 	{
-		ExpandFrame( ptArray, numPoints );
+		ExpandFrame(points, numPoints);
 	}
-	
-	fCount += numPoints;
+
+	m_count += numPoints;
 }
 
-bool CPolygon::PointInPoly( const BPoint &inPoint )
+bool
+CPolygon::Contains(
+	const BPoint &point)
 {
 	int			winding = 0;
-	BPoint		*pts = (BPoint *)fPts;
+	BPoint		*pts = (BPoint *)m_points;
 	BPoint		pt,
 				prev;
 	int			i;
-	float		x = inPoint.x,
-				y = inPoint.y;
+	float x = point.x, y = point.y;
 
-	if (fPts == NULL || fCount < 3) return false;
+	if (m_points == NULL || m_count < 3)
+		return false;
 
 		// we need to know if the point is to the left of an even number of lines.
 	i = 0;										// start at last vertex
-	pt = pts[ fCount - 1 ];
+	pt = pts[ m_count - 1 ];
 
 	for (;;)
 	{
@@ -97,7 +134,7 @@ bool CPolygon::PointInPoly( const BPoint &inPoint )
 		{
 				// Skip over any lines that are above the intersection line.
 			do {
-				if (i >= fCount)
+				if (i >= m_count)
 					return (winding & 1) != false;	// Quit if done
 
 				prev = pt;						// set old point to current
@@ -126,7 +163,7 @@ bool CPolygon::PointInPoly( const BPoint &inPoint )
 		{
 				//	Skip over any lines which are below the intersection line
 			do {
-				if (i >= fCount)
+				if (i >= m_count)
 					return (winding & 1) != false;	// Quit if done
 
 				prev = pt;						// set old point to current
@@ -154,53 +191,57 @@ bool CPolygon::PointInPoly( const BPoint &inPoint )
 	}
 }
 
-bool CPolygon::RectInPoly( const BRect &inRect, bool include )
+bool
+CPolygon::Contains(
+	const BRect &rect,
+	bool include)
 {
 	int			winding = 0;
-	BPoint		*pts = (BPoint *)fPts;
+	BPoint		*pts = (BPoint *)m_points;
 	BPoint		pt,
 				prev,
 				top,
 				bottom;
 	float		x1, x2;
 	int			i;
-	float		y = inRect.top;
+	float		y = rect.top;
 
-	if (fPts == NULL || fCount < 3) return false;
+	if (m_points == NULL || m_count < 3) return false;
 
 		// we need to know if the point is to the left of an even number of lines.
 	i = 0;										// start at last vertex
-	pt = pts[ fCount - 1 ];
+	pt = pts[ m_count - 1 ];
 
 	for (;;)
 	{
-		if (i >= fCount) return (winding & 1) != false;	// Quit if done
+		if (i >= m_count) return (winding & 1) != false;	// Quit if done
 
 		prev = pt;								// set old point to current
 		pt = pts[ i++ ];							// get new vertex
 		
 			// Ignore line segments completely above or below the rect.
-		if (pt.y <= inRect.top && prev.y <= inRect.top) continue;
-		if (pt.y >= inRect.bottom && prev.y >= inRect.bottom) continue;
+		if (pt.y <= rect.top && prev.y <= rect.top) continue;
+		if (pt.y >= rect.bottom && prev.y >= rect.bottom) continue;
 		
 			// sort the two points by height.
 		if (pt.y < prev.y)	{ top = pt; bottom = prev; }
 		else				{ top = prev; bottom = pt; }
 	
 			// Get the x-intersect of the top point.
-		if (top.y >= inRect.top) x1 = top.x;
-		else x1 = bottom.x + (top.x - bottom.x) * (inRect.top - bottom.y) / (top.y - bottom.y);
+		if (top.y >= rect.top) x1 = top.x;
+		else x1 = bottom.x + (top.x - bottom.x) * (rect.top - bottom.y) / (top.y - bottom.y);
 
 			// Get the x-intersect of the bottom point.
-		if (bottom.y <= inRect.bottom) x2 = bottom.x;
-		else x2 = bottom.x + (top.x - bottom.x) * (inRect.bottom - bottom.y) / (top.y - bottom.y);
+		if (bottom.y <= rect.bottom) x2 = bottom.x;
+		else x2 = bottom.x + (top.x - bottom.x) * (rect.bottom - bottom.y) / (top.y - bottom.y);
 
 			// If there is a rect edge between the two intersects, then we intersected the rect.
-		if (		(x1 > inRect.left || x2 > inRect.left)
-			&&	(x1 < inRect.right || x2 < inRect.right)) return include;
+		if ((x1 > rect.left || x2 > rect.left)
+		 &&	(x1 < rect.right || x2 < rect.right))
+			return include;
 
 			// If there wasn't an intersect with the rect, then apply the winding rule.
-		if (x1 > inRect.right)
+		if (x1 > rect.right)
 		{
 				// If line crossed upper part of rect downward, increment winding;
 				// if it crossed upper part of rect upward, decrement winding
@@ -209,3 +250,35 @@ bool CPolygon::RectInPoly( const BRect &inRect, bool include )
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CPolygon::SetFrame(
+	BPoint point)
+{
+	m_frame.left = m_frame.right = point.x;
+	m_frame.top = m_frame.bottom = point.y;
+}
+
+void
+CPolygon::ExpandFrame(
+	const BPoint *points,
+	int32 numPoints)
+{
+	while (numPoints-- > 0)
+	{
+		if (points->x < m_frame.left)
+			m_frame.left = points->x;
+		if (points->x > m_frame.right)
+			m_frame.right = points->x;
+		if (points->y < m_frame.top)
+			m_frame.top = points->y;
+		if (points->y > m_frame.bottom)
+			m_frame.bottom = points->y;
+		points++;
+	}
+}
+
+// END - Polygon.cpp
