@@ -493,6 +493,7 @@ CLinearNoteEventRenderer::Draw(
 {
 	BRect r(Extent(ev));
 	CDestination *dest = Document()->FindDestination(ev.GetVChannel());
+	CReadLock lock(dest);
 
 	if (shadowed)
 		Editor()->SetDrawingMode(B_OP_BLEND);
