@@ -11,6 +11,7 @@ SRCS= \
 	Framework/DocWindow.cpp \
 	Framework/DynamicMenu.cpp \
 	Framework/ItemList.cpp \
+	Framework/Observable.cpp \
 	Framework/Observer.cpp \
 	Framework/RecentDocumentsMenu.cpp \
 	Framework/RefCount.cpp \
