@@ -295,16 +295,15 @@ CEventTask::PlayEvent(
 			CTrack			*tr = group.doc->FindTrack( ev.sequence.sequence );
 			CPlaybackTask	*p;
 	
-			if (tr == NULL) break;
-			tr->Lock(Lock_Shared);
+			if (tr == NULL)
+				break;
+
+			StSubjectLock(*tr, Lock_Shared);
 			for (p = this; p != NULL; p = p->Parent())
 			{
 				// Don't allow tracks to call each other recursively.
 				if (p->Track() == tr)
-				{
-					tr->Unlock(Lock_Shared);
 					return;
-				}
 			}
 			
 			CEventTrack	*tk = dynamic_cast<CEventTrack *>(tr);
@@ -348,7 +347,6 @@ CEventTask::PlayEvent(
 				}
 				th->transposition = ev.sequence.transposition;
 			}
-			tr->Unlock(Lock_Shared);
 			break;
 		}
 	}
@@ -557,8 +555,9 @@ void CEventTask::Play()
 
 		if (IsTimeGreater(actualEndTime, t))
 		{
-			flags |= Task_Finished;
 			// past end of task
+			flags |= Task_Finished;
+			track->Unlock(Lock_Shared);
 			return;
 		}
 

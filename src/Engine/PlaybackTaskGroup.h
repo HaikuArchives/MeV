@@ -193,7 +193,8 @@ public:
 	
 	bool ClockRunning() { return (flags & Clock_Halted) == 0; }
 	
-	int32 CurrentTempoPeriod();
+	/** Calculate the tempo period for the given clock time. */
+	int32 CurrentTempoPeriod() const;
 
 	CMeVDoc * Document()
 	{ return doc; }

@@ -55,12 +55,10 @@ CPlaybackTaskGroup::~CPlaybackTaskGroup()
 	Remove();							// Remove from list of playback contexts
 }
 
-// ---------------------------------------------------------------------------
-// Calculate the tempo period for the given clock time.
-
-int32 CPlaybackTaskGroup::CurrentTempoPeriod()
+int32
+CPlaybackTaskGroup::CurrentTempoPeriod() const
 {
-	return tempo.CalcPeriodAtTime( metered.time, ClockType_Metered );
+	return (int32)tempo.CalcPeriodAtTime(metered.time, ClockType_Metered);
 }
 
 // ---------------------------------------------------------------------------
@@ -315,16 +313,15 @@ void CPlaybackTaskGroup::Locate()
 			{
 				CEventTrack	*tr = (CEventTrack *)mainTracks[ i ];
 			
-				if (		tr == NULL) continue;
+				if (tr == NULL)
+					continue;
 				
-				tr->Lock(Lock_Shared);
-				
-					// REM: This use of "track duration" is incorrect if
-					// both the master sequences are playing.
-				
+				// REM: This use of "track duration" is incorrect if
+				// both the master sequences are playing.
+				StSubjectLock(*tr, Lock_Shared);
 				if (!tr->Events().IsEmpty())
 				{
-						// Start the new tasks at time 0 with no parent task.
+					// Start the new tasks at time 0 with no parent task.
 					if (tr->ClockType() == ClockType_Real)
 					{
 						th[ 0 ] = new CRealClockEventTask(
@@ -344,7 +341,6 @@ void CPlaybackTaskGroup::Locate()
 							(pbOptions & PB_Loop) ? LONG_MAX : metered.end );
 					}
 				}
-				tr->Unlock(Lock_Shared);
 			}
 		}
 
