@@ -269,7 +269,7 @@ CPlayerControl::SetTempo(
 
 	CPlaybackTaskGroup *group = thePlayer.FindGroup(document);
 	if (group)
-		group->ChangeTempo(period, group->metered.time, 0, ClockType_Metered);
+		group->_changeTempo(period, group->metered.time, 0, ClockType_Metered);
 }
 
 int32

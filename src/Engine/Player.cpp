@@ -445,7 +445,7 @@ CPlayer::ControlThread()
 			 group = (CPlaybackTaskGroup *)group->Next())
 		{
 			group->nextEventTime = LONG_MAX;
-			group->Update(m_internalTimerTick);
+			group->_update(m_internalTimerTick);
 
 			// Compute next event time as min of all track times
 			int32 nextGroupEvent = group->nextEventTime + group->origin;

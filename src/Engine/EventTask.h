@@ -22,17 +22,11 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
 #ifndef __C_EventTask_H__
@@ -41,18 +35,20 @@
 #include "PlaybackTask.h"
 #include "PlaybackTaskGroup.h"
 
-// ---------------------------------------------------------------------------
-// CEventTask -- subclass which is used for event-based tracks
-
 #define maxRepeatNest		4
 
 typedef CPlaybackTaskGroup::TimeState		TState;
 
-class CEventTask : public CPlaybackTask {
+/**
+ *	CPlaybackTask subclass which is used for event-based tracks.
+ *	@author	Talin, Christopher Lenz
+ */
+class CEventTask
+	:	public CPlaybackTask
+{
 
-// friend class CPlaybackTaskGroup;
-
-	struct RepeatState {
+	struct RepeatState
+	{
 		RepeatState		*next;				// next enclosing repeat
 		EventMarker		pos;					// where to jump back to
 		long				endTime,				// when to jump back
@@ -65,47 +61,85 @@ class CEventTask : public CPlaybackTask {
 		RepeatState( EventMarker &em ) : pos( em ) {}
 	};
 
-protected:
-	TState				&timeBase;
-	EventMarker			playPos;				// Playback position
-	int8					transposition;		// key transposition of task
-	uint8				clockType;			// clock type for this task
-	int32				trackAdvance,			// track playback buffering time
-						eventAdvance;			// event playback buffering time
-	int32				nextRepeatTime;		// time of next repeat
-	int32				trackEndTime;			// end time of track, compressed
-	int32				taskDuration;		// desired duration of task, expanded.
-	bool					interruptable;			// task can end at any time;
-											// false means ends only at the end.
+public:							// Constructor/Destructor
 
-		// Variables pertaining to Repeat events
-	RepeatState			*repeatStack;
-	
-	bool Repeat();
-	void Play();
+	/** Constructor. */
+								CEventTask(
+									CPlaybackTaskGroup &group,
+									CEventTrack *track,
+									TState &inTimeBase,
+									CPlaybackTask *parent,
+									int32 start,
+									int32 end);
 
-public:
-		// constructor
-	CEventTask(	CPlaybackTaskGroup	&group,
-					CEventTrack			*track,
-					TState				&inTimeBase,
-					CPlaybackTask		*parent,
-					int32				start,
-					int32				end );
+	/** Copy constructor. */
+								CEventTask(
+									CPlaybackTaskGroup &group,
+									CEventTask &task);
 
-		// copy constructor
-	CEventTask(	CPlaybackTaskGroup	&group,
-					CEventTask			&task );
+	/** Destructor. */
+								~CEventTask();
 
-		// destructor
-	~CEventTask();
+protected:						// CPlaybackTask Implementation
 
-		// Perform a single event
-	void PlayEvent( const Event &ev, CEventStack &stack, long time );
+	/**	Returns the current time of this track. */
+	int32						CurrentTime() const;
 
-	void BeginRepeat( int32 inRepeatStart, int32 inRepeatDuration, int32 inRepeatCount );
+	/** Playback routine. */
+	void						Play();
 
-	int32 CurrentTime();
+private:						// Internal Operations
+
+	/** Force a repeat event at the current point in the sequence. */
+	void						_beginRepeat(
+									int32 start,
+									int32 duration,
+									int32 count);
+
+	/** Handle repeats and other scheduled discontinuities. */
+	bool						_repeat();
+
+	/** Perform a single event. */
+	void						_stackEvent(
+									const Event &ev,
+									CEventStack &stack,
+									long time);
+
+protected:						// Instance Data
+
+	TState &					timeBase;
+
+	/** Playback position. */
+	EventMarker					playPos;
+
+	/** Key transposition of task. */
+	int8						transposition;
+
+	/** Clock type for this task. */
+	uint8						clockType;
+
+	/** Track playback buffering time. */
+	int32						trackAdvance;
+
+	/** Event playback buffering time. */
+	int32						eventAdvance;
+
+	/** Time of next repeat. */
+	int32						nextRepeatTime;
+
+	/** End time of track, compressed. */
+	int32						trackEndTime;
+
+	/** Desired duration of task, expanded. */
+	int32						taskDuration;
+
+	/** Whether task can end at any time.
+	 *	false means ends only at the end.
+	 */
+	bool						interruptable;
+
+	/** Variables pertaining to Repeat events. */
+	RepeatState *				repeatStack;
 };
 
 // ---------------------------------------------------------------------------

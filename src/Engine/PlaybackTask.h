@@ -96,7 +96,7 @@ public:							// Constructor/Destructor
 public:							// Hook Functions
 
 	/**	Returns the current time of this track. */
-	virtual int32				CurrentTime() = 0;
+	virtual int32				CurrentTime() const = 0;
 
 	/** Play next event if event is earlier than time 't'; either way,
 		return the time that the task wants to be woken up next.

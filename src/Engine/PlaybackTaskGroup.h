@@ -22,17 +22,11 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  Defines an instance of a track being played
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
 #ifndef __C_PlaybackTaskGroup_H__
@@ -44,12 +38,14 @@
 #include "EventStack.h"
 #include "PlayerControl.h"
 #include "TempoMap.h"
-//#include "DestinationList.h"
-// ---------------------------------------------------------------------------
-// A playback task group represents a set of related tasks, such as a song.
 
-class CPlaybackTaskGroup : public DNode {
-
+/**
+ *	A playback task group represents a set of related tasks, such as a song.
+ *	@author Talin, Christopher Lenz
+ */
+class CPlaybackTaskGroup
+	:	public DNode
+{
 	friend class	CPlayer;
 	friend class	CPlaybackTask;
 	friend class	CEventTask;
@@ -58,147 +54,200 @@ class CPlaybackTaskGroup : public DNode {
 	friend class	CMasterEventTask;
 	friend class	CPlayerControl;
 
-public:
+public:							// Types & Constants
 
-		// There is one of these for each clock type
-	struct TimeState {
-			// Stack of items pending to be played (real or metered)
-			// it's public (for now) because it has it's own protections.
-		CEventStack			stack;
+	/** There is one of these for each clock type. */
+	struct TimeState
+	{
+		/** Stack of items pending to be played (real or metered)
+		 *	it's public (for now) because it has it's own protections.
+		 */
+		CEventStack				stack;
 
-		int32				time,		// Current effective time (real or metered)
-							seekTime,	// Target time to seek to.
-							expansion,	// Expansion of time due to repeats
-							start,		// restart time if looping...
-							end;			// Time to stop (or -1 if no stop)
+		/** Current effective time (real or metered). */
+		long					time;
+
+		/** Target time to seek to. */
+		long					seekTime;
+
+		/** Expansion of time due to repeats. */
+		long					expansion;
+
+		/** Restart time if looping... */
+		long					start;
+
+		/** Time to stop (or -1 if no stop). */
+		long					end;
 	};
 
-	enum EGroupFlags {
-			// Clock states
-		Clock_Stopped		= (1<<0),	// Clock halted because group is stopped
-		Clock_Paused			= (1<<1),	// Clock halted because group is paused
-		Clock_AwaitingSync	= (1<<2),	// Clock halted because awaiting sync
-		Clock_Locating		= (1<<3),	// Clock halted because still locating
+	enum EGroupFlags
+	{
+		/** Clock halted because group is stopped. */
+		Clock_Stopped			= (1<<0),
 
-			// tells player to relocate sequence
+		/** Clock halted because group is paused. */
+		Clock_Paused			= (1<<1),
+
+		/** Clock halted because awaiting sync. */
+		Clock_AwaitingSync		= (1<<2),
+
+		/** Clock halted because still locating. */
+		Clock_Locating			= (1<<3),
+
+		/** Tells player to relocate sequence. */
 		Locator_Find			= (1<<4),
 
-			// tells player to relocate from time zero
-		Locator_Reset		= (1<<5),
+		/** Tells player to relocate from time zero. */
+		Locator_Reset			= (1<<5),
 
-			// This sequence never stops
+		// This sequence never stops
 		Clock_Continuous		= (1<<6),
 		
-			// Other clock attributes
-// 	externalSync	= (1<<4),
-
 		Clock_Halted =
 			(Clock_Stopped | Clock_Paused | Clock_AwaitingSync | Clock_Locating)
 	};
 
-private:
+public:							// Constructor/Destructor
 
-		// list of active tasks for this musical set
-	DList			tasks;
-
-		// Pointer to document (only one document per context, or NULL)
-	CMeVDoc			*doc;
-
-
-		// The start time of this group, in absolute real time
-	int32			origin;
-
-		// The relative start and end time of this group (in locate-type terms). Mainly used for repeating
-//	int32			sectionStart,
-//					sectionEnd;
-
-		// Real time of next event, relative to the origin
-	int32			nextEventTime;
-
-		// Clock variables
-	TimeState		real,					// Real-time clock vars
-					metered;					// Metered-time clock vars
-
-	uint16			flags;					// various clock flags
-	uint16			pbOptions;				// playback options
-
-		// Sync variables
-	enum ESyncType	syncType;				// what type of external sync
-	enum ELocateTarget locateType;			// what type of locate
-	CTrack			*mainTracks[ 2 ];		// the source tracks from which
-	thread_id		locatorThread;			// Seperate thread for locating
-
-	CTempoMapEntry	tempo;					// current tempo state
-
-/*	long				nextMidiClock,			// time of next midi clock out
-					nextMetronomeTick,		// time of next metronome out
-					metronomeTickSize;		// size of a metronome tick
-*/
-		// Velocity contours
-// VelocityState	vstates[ MAX_VCONTOURS ];// velocity contour tables
-
-// external synchronization variables
-// long				lastExternalTimeVal,		// time value of last external tick
-// 				lastExternalTimeTick,		// timer value at time of external tick
-// 				externalTickRate,		// timer ticks between external tick
-// 				externalOrigin;			// origin of external time
+	/** Constructor. */
+								CPlaybackTaskGroup(
+									CMeVDoc *document = NULL);
 
 private:
-		// Note that nonoe of the private functions have any locking,
-		// since it is assumed that the caller will locks them.
 
-		// Tempo management
-	void ChangeTempo( long newRate, long start, long duration, long clockType );
+	/** Private destructor for playback context.
+	 *	Only friends can delete.
+	 */
+	virtual 					~CPlaybackTaskGroup();
 
-		// Update the local time of the playback context
-	void Update( long internalTicks );
-	void FlushTasks();
-	void FlushNotes( CEventStack &stack );
-	void KillChildTasks( CPlaybackTask *parent );
-	void LocateNextChunk( TimeState &tState );
-	void Locate();
-	void Restart();
-	static int32 LocatorTaskFunc( void *data );
+public:							// Accessors
 
-		// Takes a MeV event sends it out to the MIDI stream
-	void ExecuteEvent( Event &ev, TimeState & );
-
-		// Note: Private destructor; only friends can delete.
-	~CPlaybackTaskGroup();
-
-public:
-	CPlaybackTaskGroup(	CMeVDoc *inDocument = NULL );
-
-		// Start playing
-	void Start(	CTrack				*inTrack1,
-				CTrack				*inTrack2,
-				int32				inLocTime,
-				enum ELocateTarget	inLocTarget = LocateTarget_Real,
-				int32				inDuration = -1,
-				enum ESyncType		inSyncType = SyncType_SongInternal,
-				int32				inOptionFlags = 0 );
-
-		// Halt playing and flush all pending note-offs.
-	void Stop();
-
-		// Pause the sequence
-	void Pause( bool inPause )
-	{
-		if (inPause) flags |= Clock_Paused;
-		else flags &= ~Clock_Paused;
-	}
-
-	void FlushEvents();
-	void FlushNotes();
-	
-	bool ClockRunning() { return (flags & Clock_Halted) == 0; }
+	bool						ClockRunning()
+								{ return (flags & Clock_Halted) == 0; }
 	
 	/** Calculate the tempo period for the given clock time. */
-	int32 CurrentTempoPeriod() const;
+	int32						CurrentTempoPeriod() const;
 
-	CMeVDoc * Document()
-	{ return doc; }
+	CMeVDoc *					Document()
+								{ return doc; }
+
+public:							// Operations
+
+	/** Kill all events in progress. */
+	void						FlushEvents();
+
+	/** Kill all notes on the stack. */
+	void						FlushNotes();
 	
+	/** Pause the sequence. */
+	void						Pause(
+									bool pause);
+
+	/** Start playing. */
+	void						Start(
+									CTrack *track1,
+									CTrack *track2,
+									int32 locTime,
+									enum ELocateTarget locTarget = LocateTarget_Real,
+									int32 duration = -1,
+									enum ESyncType syncType = SyncType_SongInternal,
+									int32 optionFlags = 0);
+
+	/** Halt playing and flush all pending note-offs. */
+	void						Stop();
+
+private:						// Internal Operations
+
+	// Note that nonoe of the private functions have any locking,
+	// since it is assumed that the caller will locks them.
+
+	/** Execute a tempo change. */
+	void						_changeTempo(
+									long newRate,
+									long start,
+									long duration,
+									long clockType);
+
+	/** Takes a MeV event sends it out to the MIDI stream.
+	 *	Handles the actual playing of an event. This is where events
+	 *	are sent to AFTER they have been pulled of the player stack, 
+	 *	i.e. events do not get here until after they have been remapped 
+	 *	and are absolutely ready to go.
+	 */
+	void						_executeEvent(
+									Event &ev,
+									TimeState &);
+								
+	/**	Kill all tasks. */
+	void						_flushTasks();
+
+	void						_flushNotes(
+									CEventStack &stack);
+
+	/** Set all tasks belonging to a particular parent as
+	 *	having expired.
+	 */
+	void						_killChildTasks(
+									CPlaybackTask *parent);
+
+	/** Called by player task to do the locate chores. */
+	void						_locate();
+
+	/** Locate a small batch of events. */
+	void						_locateNextChunk(
+									TimeState &tState);
+
+	/** Hook function for spawned task for locator task. */
+	static int32				_locatorTaskFunc(
+									void *data);
+
+	/** Restarts the track when an auto-loop happens. */
+	void						_restart();
+
+	/** Update the local time of the playback context. */
+	void						_update(
+									long internalTicks);
+
+private:						// Instance Data
+
+	/** List of active tasks for this musical set. */
+	DList						tasks;
+
+	/** Pointer to document (only one document per context, or NULL). */
+	CMeVDoc *					doc;
+
+	/** The start time of this group, in absolute real time. */
+	int32						origin;
+
+	/** Real time of next event, relative to the origin. */
+	int32						nextEventTime;
+
+	/** Real-time clock state. */
+	TimeState					real;
+
+	/** Metered-time clock state. */
+	TimeState					metered;
+
+	/** Various clock flags. */
+	uint16						flags;
+
+	/** Playback options. */
+	uint16						pbOptions;
+
+	/** Type of external sync. */
+	enum ESyncType				syncType;
+
+	/** Type of locate. */
+	enum ELocateTarget 			locateType;
+
+	/** The source tracks from which. */
+	CTrack *					mainTracks[2];
+
+	/** Seperate thread for locating. */
+	thread_id					locatorThread;
+
+	/** Current tempo state. */
+	CTempoMapEntry				tempo;
 };
 
 #endif /* __C_PlaybackTaskGroup_H__ */

@@ -118,16 +118,16 @@ typedef enum E_EventType {
 	EvtType_ChannelVolume,						// VChannel velocity contour
 	EvtType_Reserved5,
 	
-		// Track property events
+	// Track property events
 	EvtType_MuteTrack,							// mute a track
 	EvtType_Reserved6,
 
-		// Clock control events
+	// Clock control events
 	EvtType_Tempo,								// change tempo event
 	EvtType_TimeSig,							// change time signature event
 
-		// Only used on playback stack -- never saved in a file
-	EvtType_TaskMarker,						// indicates task is ready
+	// Only used on playback stack -- never saved in a file
+	EvtType_TaskMarker,							// indicates task is ready
 	EvtType_StartInterpolate,					// Start an interpolation
 	EvtType_Interpolate,						// Continue an interpolation
 

@@ -7,6 +7,12 @@
 #include "PlaybackTaskGroup.h"
 #include "Player.h"
 
+// Support Kit
+#include <Debug.h>
+
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
+#define D_OPERATION(x) //PRINT(x)		// Operations
+
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
@@ -94,6 +100,8 @@ CPlaybackTask::ReQueue(
 	CEventStack &stack,
 	long time)
 {
+	D_OPERATION(("CPlaybackTask::ReQueue()\n"));
+
 	Event ev;
 	ev.task.start = time;
 	ev.task.taskPtr	= this;

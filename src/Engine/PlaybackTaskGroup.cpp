@@ -8,49 +8,60 @@
 #include "EventTask.h"
 #include "Idents.h"
 
-#include <stdio.h>
+//#include <stdio.h>
+// Support Kit
 #include <Debug.h>
 
-#define D_EXECUTE(x) //PRINT (x)
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
+#define D_EXECUTE(x) //PRINT(x)
+#define D_INTERNAL(x) //PRINT(x)		// Internal Operations
+
+#define LOCATE_MAX 200
 
 // ---------------------------------------------------------------------------
-// Constructor for playback context
+// Constructor/Destructor
 
-CPlaybackTaskGroup::CPlaybackTaskGroup( CMeVDoc *inDocument )
+CPlaybackTaskGroup::CPlaybackTaskGroup(
+	CMeVDoc *inDocument)
 {
 	LOCK_PLAYER;
 	
-		// Initialize what fields need it
-	doc			= inDocument;
-	//m_destlist	= inDocument ? inDocument->GetDestinationList(  ) : NULL;
-	flags			= Clock_Stopped;
-	origin		= thePlayer.m_internalTimerTick; // +++++ REMOVE THIS DEPENDANCY +++++
-	real.time		= real.start = 0;
-	metered.time	= metered.start = 0;
-	syncType		= SyncType_FreeRunning;
-	locateType	= LocateTarget_Continue;
-	locatorThread	= -1;
-	mainTracks[ 0 ] = mainTracks[ 1 ] = NULL;
-	pbOptions		= 0;
+	// Initialize what fields need it
+	doc = inDocument;
+	flags = Clock_Stopped;
+	origin = thePlayer.m_internalTimerTick; // +++++ REMOVE THIS DEPENDANCY +++++
+	real.time = real.start = 0;
+	metered.time = metered.start = 0;
+	syncType = SyncType_FreeRunning;
+	locateType = LocateTarget_Continue;
+	locatorThread = -1;
+	mainTracks[0] = mainTracks[ 1 ] = NULL;
+	pbOptions = 0;
 
-		// Setup the initial tempo variables
-	tempo.SetInitialTempo( RateToPeriod( doc ? doc->InitialTempo() : 100.0 ) );
+	// Setup the initial tempo variables
+	tempo.SetInitialTempo(RateToPeriod(doc ? doc->InitialTempo()
+										   : CMeVDoc::DEFAULT_TEMPO));
 
-		// Add ourselves to the list of playback contexts
-	thePlayer.m_groupList.AddTail( this );
+	// Add ourselves to the list of playback contexts
+	thePlayer.m_groupList.AddTail(this);
 }
-
-// ---------------------------------------------------------------------------
-// Destructor for playback context
 
 CPlaybackTaskGroup::~CPlaybackTaskGroup()
 {
 	LOCK_PLAYER;
 
-	if (locatorThread >= B_NO_ERROR) kill_thread( locatorThread );
-	FlushTasks();						// delete all active tasks
-	Remove();							// Remove from list of playback contexts
+	if (locatorThread >= B_NO_ERROR)
+		kill_thread(locatorThread);
+
+	// delete all active tasks
+	_flushTasks();
+
+	// Remove from list of playback contexts
+	Remove();
 }
+
+// ---------------------------------------------------------------------------
+// Accessors
 
 int32
 CPlaybackTaskGroup::CurrentTempoPeriod() const
@@ -58,388 +69,45 @@ CPlaybackTaskGroup::CurrentTempoPeriod() const
 	return (int32)tempo.CalcPeriodAtTime(metered.time, ClockType_Metered);
 }
 
-// ---------------------------------------------------------------------------
-// Set up a tempo change
-
-void CPlaybackTaskGroup::ChangeTempo(
-	long			newRate,
-	long			start,
-	long			duration,
-	long			clockType )
+void
+CPlaybackTaskGroup::FlushEvents()
 {
-	tempo.SetTempo( tempo, newRate, start, duration, (TClockType)clockType );
-}
-
-// ---------------------------------------------------------------------------
-// Update the time of this
-
-void CPlaybackTaskGroup::Update( long internalTicks )
-{
-	Event	ev;
-
-	switch (syncType) {
-	case SyncType_FreeRunning:
-	case SyncType_SongInternal:
-
-		if (flags & Clock_Halted)
-		{	
-				// Push back origin so that real.time stays the same
-			origin = internalTicks - real.time;
-			return;
-		}
-		else
-		{
-				// Compute new values for real and metered time.
-			real.time	= internalTicks - origin;
-			metered.time	= tempo.ConvertRealToMetered( real.time );
-		}
-		break;
-
-	case SyncType_SongMTC:
-		// I think this is where the external sync code would go...
-		break;
-
-	case SyncType_SongMidiClocks:
-		// I think this is where the external sync code would go...
-		break;
-	}
-
-	// If we are not in the middle of locating, then go ahead and
-	// play some events.
-	if (ClockRunning())
-	{
-		// Record what time our track is positioned to.
-		real.seekTime = real.time;
-		metered.seekTime = metered.time;
-
-		// Pop events off of the stack which are ready to go
-		while (real.stack.Pop(ev, real.seekTime))
-			ExecuteEvent(ev, real);
-		while (metered.stack.Pop(ev, metered.seekTime))
-			ExecuteEvent(ev, metered);
-
-		long next;
-		bool done = true;
-
-		// Compute next event time as min of all track times
-		if (real.stack.NextTime(&next))
-		{
-			done = false;
-			if (IsTimeGreater(next, nextEventTime))
-				nextEventTime = next;
-		}
-
-		// Same computation for metered stack, but with a conversion
-		// to real time
-		if (metered.stack.NextTime(&next))
-		{
-			done = false;
-			next = tempo.ConvertMeteredToReal(next);
-			if (IsTimeGreater(next, nextEventTime))
-				nextEventTime = next;
-		}
-		
-		// Looping options for entire task!
-		if (pbOptions & PB_Loop)
-		{
-			if (done)
-			{
-				if (real.end < 0)
-					real.end = real.seekTime;
-				Restart();
-				nextEventTime = real.time;
-			}
-		}
-		else
-		{
-			// If both stacks are empty, then stop
-			if (done && !(flags & Clock_Continuous))
-			{
-				flags |= Clock_Stopped;
-
-				// Notify the UI that we've changed state.
-				BMessage message(Player_ChangeTransportState);
-				be_app->PostMessage(&message);
-			}
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------
-// flushStacks -- kill all notes in progress
-
-void CPlaybackTaskGroup::FlushEvents()
-{
-	Event	ev;
 	LOCK_PLAYER;
 
-		// Pop all events off of the stack!
-		// But only execute the note-offs.
-
-	while (real.stack.Pop ( ev ))
+	// Pop all events off of the stack!
+	// But only execute the note-offs.
+	Event ev;
+	while (real.stack.Pop(ev))
 	{
-		if (ev.Command() == EvtType_NoteOff)	ExecuteEvent( ev, real );
+		if (ev.Command() == EvtType_NoteOff)
+			_executeEvent(ev, real);
 	}
-
-	while (metered.stack.Pop( ev ))
+	while (metered.stack.Pop(ev))
 	{
-		if (ev.Command() == EvtType_NoteOff)	ExecuteEvent( ev, metered );
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Kill all notes on one stack
-
-void CPlaybackTaskGroup::FlushNotes( CEventStack &stack )
-{
-	class CEventStackIterator		iter( stack );
-	Event						*ev;
-	
-	for (;;)
-	{
-		ev = iter.Current();
-		if (ev == NULL) break;
-		
-		if (ev->Command() == EvtType_NoteOff) ExecuteEvent( *ev, real );
-
-		iter.Next();
+		if (ev.Command() == EvtType_NoteOff)
+			_executeEvent(ev, metered);
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Kill all notes on both stacks
-
-void CPlaybackTaskGroup::FlushNotes()
+void
+CPlaybackTaskGroup::FlushNotes()
 {
-	Event	ev;
 	LOCK_PLAYER;
 	
-	FlushNotes( real.stack );
-	FlushNotes( metered.stack );
+	_flushNotes(real.stack);
+	_flushNotes(metered.stack);
 }
-
-// ---------------------------------------------------------------------------
-// flushTasks -- kill all tasks
-
-void CPlaybackTaskGroup::FlushTasks()
-{
-	CPlaybackTask		*th;
-
-		// Delete all tasks belonging to this context.
-	while ((th = (CPlaybackTask *)tasks.First()) != NULL)
-		delete th;
-}
-
-// ---------------------------------------------------------------------------
-// flushTasks -- set all tasks belonging to a particular parent as
-// having expired.
-
-void CPlaybackTaskGroup::KillChildTasks( CPlaybackTask *parent )
-{
-	CPlaybackTask		*th;
-
-		// Delete all tasks belonging to this context.
-	for (	th = (CPlaybackTask *)tasks.First();
-			th != NULL;
-			th = (CPlaybackTask *)th->Next())
-	{
-		if (th->parent == parent)
-		{
-			KillChildTasks( th );
-			delete th;
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Hook function for spawned task for locator task.
-
-int32 CPlaybackTaskGroup::LocatorTaskFunc( void *data )
-{
-	((CPlaybackTaskGroup *)data)->Locate();
-	return 0;
-}
-
-// ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::LocateNextChunk -- locate a small batch of events
-
-	// Only locate 200 events in a batch -- after that, go listen for more messages
-const int maxLocate = 200;
-
-void CPlaybackTaskGroup::LocateNextChunk( TimeState &tState )
-{
-	int32		count = 0;
-	Event		ev;
-
-		// Pop events off of the stack which are ready to go. Note that even
-		// though the player will push events onto the stack in advance of when
-		// they are needed, this code will not pop them until they are ready.
-		// this means that when we start the piece, there may be stuff already
-		// waiting on the stack. That's OK.
-	while (tState.stack.Pop( ev, tState.seekTime ) && count < maxLocate)
-	{
-		ExecuteEvent( ev, tState );
-		count++;
-	}
-}
-
-// ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::Locate -- called by player task to do the locate chores
-
-void CPlaybackTaskGroup::Locate()
-{
-	CPlaybackTask	*th[ 2 ];
-	
-	th[ 0 ] = th[ 1 ] = NULL;
-
-		// If the locator has to seek around in the sequence, then
-		// kill all of the stuff that's playing now and re-launch
-		// the master track.
-	if (flags & (Locator_Reset|Locator_Find))
-	{
-		LOCK_PLAYER;
-
-			// Stop all notes for this song.
-		FlushEvents();
-
-		if (flags & Locator_Reset)
-		{
-				// Stop all playback tasks for this song.
-			FlushTasks();
-
-			real.seekTime = metered.seekTime = 0;
-
-				// Launch each of the two main tracks
-			for (int i = 0; i < 2; i++)
-			{
-				CEventTrack	*tr = (CEventTrack *)mainTracks[ i ];
-			
-				if (tr == NULL)
-					continue;
-				
-				// REM: This use of "track duration" is incorrect if
-				// both the master sequences are playing.
-				StSubjectLock lock(*tr, Lock_Shared);
-				if (!tr->Events().IsEmpty())
-				{
-					// Start the new tasks at time 0 with no parent task.
-					if (tr->ClockType() == ClockType_Real)
-					{
-						th[ 0 ] = new CRealClockEventTask(
-							*this,
-							(CEventTrack *)tr,
-							NULL,
-							0,
-							(pbOptions & PB_Loop) ? LONG_MAX : real.end );
-					}
-					else
-					{
-						th[ 1 ] = new CMeteredClockEventTask(
-							*this,
-							(CEventTrack *)tr,
-							NULL,
-							0,
-							(pbOptions & PB_Loop) ? LONG_MAX : metered.end );
-					}
-				}
-			}
-		}
-
-		flags &= ~(Locator_Reset|Locator_Find);
-	}
-
-	if (locateType == LocateTarget_Real)
-	{
-		// While seek time has not caught up to actual time,
-		// locate through some number of events, except
-		// if we're near the start of the song there's no need
-		// to do any locating.
-		while ((real.seekTime < real.time) && (real.time > 100))
-		{
-			// Check once in a while to see if we have spent too much
-			// time locating and didn't give other tasks a chance to run.
-			// Also, check to see if the locate should be abandoned.
-			if (flags & (Locator_Reset|Locator_Find))
-				return;
-
-			LOCK_PLAYER;
-
-			// Pop events off of the stack which are ready to go
-			LocateNextChunk(real);
-			metered.seekTime = tempo.ConvertRealToMetered(real.seekTime);
-			LocateNextChunk(metered);
-
-			if (!real.stack.NextTime(&real.seekTime))
-				real.seekTime = real.time;
-		}
-	}
-	else
-	{
-		int32 target = metered.time;
-
-		// While seek time has not caught up to actual time,
-		// locate through some number of events, except
-		// if we're near the start of the song there's no need
-		// to do any locating.
-		if (metered.time > 10)
-		{
-			while (metered.seekTime < target)
-			{
-				// Check once in a while to see if we have spent too much
-				// time locating and didn't give other tasks a chance to run.
-				// Also, check to see if the locate should be abandoned.
-				if (flags & (Locator_Reset|Locator_Find))
-					return;
-
-				// Lock the player for another batch of events we are seeking.
-				LOCK_PLAYER;
-	
-				LocateNextChunk(metered);
-				real.seekTime = tempo.ConvertMeteredToReal(metered.seekTime);
-				LocateNextChunk(real);
-	
-				if (pbOptions & PB_Folded)
-					target = metered.time + metered.expansion;
-				else
-					target = metered.time;
-
-				int32 nextTime;
-				if (metered.stack.NextTime(&nextTime))
-					metered.seekTime = MIN(nextTime + cTrackAdvance_Metered,
-										   target );
-				else
-					metered.seekTime = target;
-			}
-		}
-
-		// REM: I'm not sure this is right, but it works for now...
-		real.time = tempo.ConvertMeteredToReal(metered.seekTime);
-	}
-
-	// Push back task origin so that lTime is correct.
-	// REM: Is this correct for synced sequences???
-	origin = thePlayer.m_internalTimerTick - real.time; // +++++ REMOVE THIS DEPENDANCY +++++
-	flags &= ~Clock_Locating;
-
-	// Poke the main player task to make sure it handles the first
-	// event promptly. It doesn't have to actually do anything with
-	// this command.
-	write_port(thePlayer.Port(), Command_Attention, "", 0);
-}
-
-// ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::Start -- starts the music for a playback context
 
 void CPlaybackTaskGroup::Start(
-	CTrack				*inTrack1,
-	CTrack				*inTrack2,
-	int32				inLocTime,
-	enum ELocateTarget	inLocTarget,
-	int32				inDuration,
-	enum ESyncType		inSyncType,
-	int32				inOptionFlags )
+	CTrack *inTrack1,
+	CTrack *inTrack2,
+	int32 inLocTime,
+	enum ELocateTarget inLocTarget,
+	int32 inDuration,
+	enum ESyncType inSyncType,
+	int32 inOptionFlags )
 {
-	int16				prevFlags = flags;
+	int16 prevFlags = flags;
 
 	if (inLocTarget == LocateTarget_Continue)
 	{
@@ -549,7 +217,7 @@ void CPlaybackTaskGroup::Start(
 		// Set the default tempo
 	tempo.SetInitialTempo( RateToPeriod( doc ? doc->InitialTempo() : 100.0 ) ); 
 
-	if (flags & (Locator_Reset|Locator_Find))
+	if (flags & (Locator_Reset | Locator_Find))
 	{
 		if (locatorThread >= B_NO_ERROR)
 		{
@@ -557,15 +225,382 @@ void CPlaybackTaskGroup::Start(
 
 			wait_for_thread( locatorThread, &result );
 		}
-		locatorThread = spawn_thread(	LocatorTaskFunc, "LocatorTask", B_LOW_PRIORITY, this );
-		if (locatorThread >= 0) resume_thread( locatorThread );
+		locatorThread = spawn_thread(_locatorTaskFunc, "LocatorTask",
+									 B_LOW_PRIORITY, this);
+		if (locatorThread >= 0)
+			resume_thread(locatorThread);
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Restarts the track when an auto-loop happens
+void
+CPlaybackTaskGroup::Pause(
+	bool pause)
+{
+	if (pause)
+		flags |= Clock_Paused;
+	else
+		flags &= ~Clock_Paused;
+}
 
-void CPlaybackTaskGroup::Restart()
+void
+CPlaybackTaskGroup::Stop()
+{
+	flags |= Clock_Stopped;
+	FlushNotes();
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CPlaybackTaskGroup::_changeTempo(
+	long newRate,
+	long start,
+	long duration,
+	long clockType)
+{
+	D_INTERNAL(("CPlaybackTaskGroup::_changeTempo(%ld, %ld, %ld)\n",
+				newRate, start, duration));
+
+	tempo.SetTempo(tempo, newRate, start, duration, (TClockType)clockType);
+}
+
+void
+CPlaybackTaskGroup::_executeEvent(
+	Event &ev,
+	TimeState &tState)
+{
+	D_INTERNAL(("CPlaybackTaskGroup::_executeEvent(%s)\n",
+				ev.NameText()));
+
+	uint8 cmd = ev.Command();
+	if (ev.HasProperty( Event::Prop_MIDI ))
+	{
+		if ((cmd == EvtType_Note) && (flags & Clock_Locating))
+			// no notes while locating
+			return;
+
+		thePlayer.SendEvent(ev, ev.stack.actualPort, ev.stack.actualChannel,
+							system_time());
+	}
+	else
+	{
+		CPlayer::ChannelState *chState;
+		switch (cmd)
+		{
+			case EvtType_TaskMarker:
+			{
+				if (ev.task.taskPtr->flags & CPlaybackTask::Task_Finished)
+				{
+					delete ev.task.taskPtr;
+					if (tasks.Empty())
+					{
+						BMessage message(Player_ChangeTransportState);
+						be_app->PostMessage(&message);
+					}
+				}
+				else
+				{
+					ev.task.taskPtr->Play();
+				}
+
+				break;
+			}		
+			case EvtType_StartInterpolate:
+			{	
+				chState = &thePlayer.m_portInfo[0].channelStates[ev.stack.actualChannel];
+				
+				switch (ev.startInterpolate.interpolationType)
+				{
+					case Interpolation_PitchBend:
+					{
+						// You know, one thing we COULD do is to search through the playback
+						// stack looking for interpolations to kill....do that at the time of the
+						// push I think.
+		
+						chState->pitchBendTarget = ev.startInterpolate.targetValue;
+		
+						ev.pitchBend.command = EvtType_PitchBend;
+						ev.pitchBend.targetBend = ev.startInterpolate.startValue;
+						thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
+					}
+				}
+				break;
+			}
+			case EvtType_Interpolate:
+			{
+				chState = &thePlayer.m_portInfo[0].channelStates[ev.stack.actualChannel];
+				
+				switch (ev.startInterpolate.interpolationType)
+				{
+					case Interpolation_PitchBend:
+					{
+						int32		elapsed;
+						int32		delta;
+						int32		newValue;
+		
+						// I was originally supposed to have executed at ev.Start() + timeStep,
+						// but I may be a bit later than that -- take the difference into account.
+						// Here's how much time has elapsed since I was dispatched...
+						elapsed = tState.time - ev.Start() + ev.interpolate.timeStep;
+		
+						// If we went past the end, then clip the time.
+						if ((unsigned long)elapsed > ev.interpolate.duration)
+							elapsed = ev.interpolate.duration;
+		
+						// Here's the amount by which the value would have changed in that time.
+						delta = ((int32)chState->pitchBendTarget - (int32)chState->pitchBendState)
+							* elapsed / (int32)ev.interpolate.duration;
+							
+						// If pitch bend has never been set, then center it.
+						if (chState->pitchBendState > 0x3fff)
+							chState->pitchBendState = 0x2000;
+		
+						// Calculate the current state
+						newValue = (int32)chState->pitchBendState + (int32)delta;
+							
+						// Now, we're going to modify the interpolation event so that it
+						// is shorter, and later... and we're going to push that back onto
+						// the execution stack so that it gets sent back to us later.
+						ev.interpolate.start += elapsed;
+						ev.interpolate.duration -= elapsed;
+		
+						// If there's more left to do in this interpolation, then push the event
+						// on the stack for the next iteration
+						if ((unsigned long)elapsed < ev.interpolate.duration)
+							tState.stack.Push(ev);
+						else
+							newValue = chState->pitchBendTarget;
+		
+						// Now, we need to construct a pitch bend event...
+						if (newValue != chState->pitchBendState)
+						{
+							ev.pitchBend.command = EvtType_PitchBend;
+							ev.pitchBend.targetBend = newValue;
+							thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+void
+CPlaybackTaskGroup::_flushNotes(
+	CEventStack &stack)
+{
+	CEventStackIterator iter(stack);
+	for (;;)
+	{
+		Event *ev = iter.Current();
+		if (ev == NULL)
+			break;
+		if (ev->Command() == EvtType_NoteOff)
+			_executeEvent(*ev, real);
+		iter.Next();
+	}
+}
+
+void
+CPlaybackTaskGroup::_flushTasks()
+{
+	// Delete all tasks belonging to this context.
+	CPlaybackTask *th;
+	while ((th = (CPlaybackTask *)tasks.First()) != NULL)
+		delete th;
+}
+
+void
+CPlaybackTaskGroup::_killChildTasks(
+	CPlaybackTask *parent)
+{
+	// Delete all tasks belonging to this context.
+	CPlaybackTask *th;
+	for (th = (CPlaybackTask *)tasks.First();
+		 th != NULL;
+		 th = (CPlaybackTask *)th->Next())
+	{
+		if (th->parent == parent)
+		{
+			_killChildTasks(th);
+			delete th;
+		}
+	}
+}
+
+void
+CPlaybackTaskGroup::_locate()
+{
+	D_INTERNAL(("CPlaybackTaskGroup::_locate()\n"));
+
+	CPlaybackTask *th[2];
+	th[0] = th[1] = NULL;
+
+	// If the locator has to seek around in the sequence, then
+	// kill all of the stuff that's playing now and re-launch
+	// the master track.
+	if (flags & (Locator_Reset | Locator_Find))
+	{
+		LOCK_PLAYER;
+
+		// Stop all notes for this song.
+		FlushEvents();
+
+		if (flags & Locator_Reset)
+		{
+			// Stop all playback tasks for this song.
+			_flushTasks();
+
+			real.seekTime = metered.seekTime = 0;
+
+			// Launch each of the two main tracks
+			for (int i = 0; i < 2; i++)
+			{
+				CEventTrack	*tr = (CEventTrack *)mainTracks[i];
+				if (tr == NULL)
+					continue;
+				
+				// REM: This use of "track duration" is incorrect if
+				// both the master sequences are playing.
+				CReadLock lock(tr);
+				if (!tr->Events().IsEmpty())
+				{
+					// Start the new tasks at time 0 with no parent task.
+					if (tr->ClockType() == ClockType_Real)
+					{
+						int32 endTime = pbOptions & PB_Loop ? LONG_MAX
+															: real.end;
+						th[0] = new CRealClockEventTask(*this,
+														(CEventTrack *)tr,
+														NULL, 0, endTime);
+					}
+					else
+					{
+						int32 endTime = pbOptions & PB_Loop ? LONG_MAX
+															: metered.end;
+						th[ 1 ] = new CMeteredClockEventTask(*this,
+															 (CEventTrack *)tr,
+															 NULL, 0,
+															 endTime);
+					}
+				}
+			}
+		}
+
+		flags &= ~(Locator_Reset | Locator_Find);
+	}
+
+	if (locateType == LocateTarget_Real)
+	{
+		// While seek time has not caught up to actual time,
+		// locate through some number of events, except
+		// if we're near the start of the song there's no need
+		// to do any locating.
+		while ((real.seekTime < real.time) && (real.time > 100))
+		{
+			// Check once in a while to see if we have spent too much
+			// time locating and didn't give other tasks a chance to run.
+			// Also, check to see if the locate should be abandoned.
+			if (flags & (Locator_Reset | Locator_Find))
+				return;
+
+			LOCK_PLAYER;
+
+			// Pop events off of the stack which are ready to go
+			_locateNextChunk(real);
+			metered.seekTime = tempo.ConvertRealToMetered(real.seekTime);
+			_locateNextChunk(metered);
+
+			if (!real.stack.NextTime(&real.seekTime))
+				real.seekTime = real.time;
+		}
+	}
+	else
+	{
+		// While seek time has not caught up to actual time,
+		// locate through some number of events, except
+		// if we're near the start of the song there's no need
+		// to do any locating.
+		if (metered.time > 10)
+		{
+			while (metered.seekTime < metered.time)
+			{
+				// Check once in a while to see if we have spent too much
+				// time locating and didn't give other tasks a chance to run.
+				// Also, check to see if the locate should be abandoned.
+				if (flags & (Locator_Reset | Locator_Find))
+					return;
+
+				// Lock the player for another batch of events we are seeking.
+				LOCK_PLAYER;
+	
+				_locateNextChunk(metered);
+				real.seekTime = tempo.ConvertMeteredToReal(metered.seekTime);
+				_locateNextChunk(real);
+	
+				int32 target = metered.time;
+				if (pbOptions & PB_Folded)
+					target = metered.time + metered.expansion;
+				else
+					target = metered.time;
+
+				int32 nextTime;
+				if (metered.stack.NextTime(&nextTime))
+					metered.seekTime = MIN(nextTime + cTrackAdvance_Metered,
+										   target);
+				else
+					metered.seekTime = target;
+			}
+		}
+
+		// REM: I'm not sure this is right, but it works for now...
+		real.time = tempo.ConvertMeteredToReal(metered.seekTime);
+	}
+
+	// Push back task origin so that lTime is correct.
+	// REM: Is this correct for synced sequences???
+	// +++++ REMOVE THIS DEPENDANCY +++++
+	origin = thePlayer.m_internalTimerTick - real.time;
+	flags &= ~Clock_Locating;
+
+	// Poke the main player task to make sure it handles the first
+	// event promptly. It doesn't have to actually do anything with
+	// this command.
+	write_port(thePlayer.Port(), Command_Attention, "", 0);
+}
+
+void
+CPlaybackTaskGroup::_locateNextChunk(
+	TimeState &tState)
+{
+	D_INTERNAL(("CPlaybackTaskGroup::_locateNextChunk()\n"));
+
+	// Pop events off of the stack which are ready to go. Note that even
+	// though the player will push events onto the stack in advance of when
+	// they are needed, this code will not pop them until they are ready.
+	// this means that when we start the piece, there may be stuff already
+	// waiting on the stack. That's OK.
+	Event ev;
+	int32 count = 0;
+	while (tState.stack.Pop(ev, tState.seekTime) && (count < LOCATE_MAX))
+	{
+		_executeEvent(ev, tState);
+		count++;
+	}
+}
+
+int32
+CPlaybackTaskGroup::_locatorTaskFunc(
+	void *data)
+{
+	((CPlaybackTaskGroup *)data)->_locate();
+	return 0;
+}
+
+void
+CPlaybackTaskGroup::_restart()
 {
 		// Cannot restart if not internally sync'd
 	if (syncType > SyncType_SongInternal) return;
@@ -581,160 +616,114 @@ void CPlaybackTaskGroup::Restart()
 	origin += real.end - real.start + real.expansion;
 	real.expansion = metered.expansion = 0;
 
-	if (locatorThread >= B_NO_ERROR)
+	if (locatorThread >= 0)
 	{
-		status_t		result;
-
-		wait_for_thread( locatorThread, &result );
+		status_t result;
+		wait_for_thread(locatorThread, &result);
 	}
-	locatorThread = spawn_thread(	LocatorTaskFunc, "LocatorTask", B_LOW_PRIORITY, this );
-	if (locatorThread >= 0) resume_thread( locatorThread );
+
+	locatorThread = spawn_thread(_locatorTaskFunc, "LocatorTask",
+								 B_LOW_PRIORITY, this);
+	if (locatorThread >= 0)
+		resume_thread(locatorThread);
 }
 
-// ---------------------------------------------------------------------------
-// CPlaybackTaskGroup::Stop -- Halt playing and flush all pending note-offs.
-
-void CPlaybackTaskGroup::Stop( void )
+void
+CPlaybackTaskGroup::_update(
+	long internalTicks)
 {
-	flags |= Clock_Stopped;
-	FlushNotes();
-}
+	Event ev;
 
-#if 0
-
-// context->Pause
-// context->Sync
-
-#endif
-
-// ---------------------------------------------------------------------------
-// executeEvent -- handles the actual playing of an event. This is where events
-// are sent to AFTER they have been pulled of the player stack, i.e. events do
-// not get here until after they have been remapped and are absolutely ready to go.
-
-void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
-{
-	uint8		cmd = ev.Command();
-
-	if (ev.HasProperty( Event::Prop_MIDI )) 			// MIDI events
+	switch (syncType)
 	{
-		if (cmd == EvtType_Note)
+		case SyncType_FreeRunning:
+		case SyncType_SongInternal:
 		{
-			if (flags & Clock_Locating) return;		// no notes while locating
+			if (flags & Clock_Halted)
+			{	
+				// Push back origin so that real.time stays the same
+				origin = internalTicks - real.time;
+				return;
+			}
+			else
+			{
+				// Compute new values for real and metered time.
+				real.time = internalTicks - origin;
+				metered.time = tempo.ConvertRealToMetered(real.time);
+			}
+			break;
+		}
+		case SyncType_SongMTC:
+		{
+			// I think this is where the external sync code would go...
+			break;
+		}
+		case SyncType_SongMidiClocks:
+		{
+			// I think this is where the external sync code would go...
+			break;
+		}
+	}
+
+	// If we are not in the middle of locating, then go ahead and
+	// play some events.
+	if (ClockRunning())
+	{
+		// Record what time our track is positioned to.
+		real.seekTime = real.time;
+		metered.seekTime = metered.time;
+
+		// Pop events off of the stack which are ready to go
+		while (real.stack.Pop(ev, real.seekTime))
+			_executeEvent(ev, real);
+		while (metered.stack.Pop(ev, metered.seekTime))
+			_executeEvent(ev, metered);
+
+		long next;
+		bool done = true;
+
+		// Compute next event time as min of all track times
+		if (real.stack.NextTime(&next))
+		{
+			done = false;
+			if (IsTimeGreater(next, nextEventTime))
+				nextEventTime = next;
 		}
 
-//		D_EXECUTE(("MIDI: %ld %ld %d %d %d %d\n",
-//			ev.common.start,
-//			ev.common.duration,
-//			ev.common.command,
-//			ev.common.vChannel,
-//			ev.common.data1,
-//			ev.common.data2));
-		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time() );
-	}
-	else
-	{
-		CPlayer::ChannelState		*chState;
-	
-		switch (cmd) {
-		case EvtType_TaskMarker:
-
-			if (ev.task.taskPtr->flags & CPlaybackTask::Task_Finished)
+		// Same computation for metered stack, but with a conversion
+		// to real time
+		if (metered.stack.NextTime(&next))
+		{
+			done = false;
+			next = tempo.ConvertMeteredToReal(next);
+			if (IsTimeGreater(next, nextEventTime))
+				nextEventTime = next;
+		}
+		
+		// Looping options for entire task!
+		if (pbOptions & PB_Loop)
+		{
+			if (done)
 			{
-// 			KillChildTasks( ev.task.taskPtr );
-				delete ev.task.taskPtr;
-				
-				if (tasks.Empty())
-				{
-					BMessage		msg( Player_ChangeTransportState );
-					be_app->PostMessage( &msg );
-				}
+				if (real.end < 0)
+					real.end = real.seekTime;
+				_restart();
+				nextEventTime = real.time;
 			}
-			else ev.task.taskPtr->Play();
+		}
+		else
+		{
+			// If both stacks are empty, then stop
+			if (done && !(flags & Clock_Continuous))
+			{
+				flags |= Clock_Stopped;
 
-			break;
-			
-		case EvtType_StartInterpolate:
-
-//			chState = &thePlayer.m_portInfo[ ev.stack.actualPort ].channelStates[ ev.stack.actualChannel ];
-			chState = &thePlayer.m_portInfo[ 0 ].channelStates[ ev.stack.actualChannel ];
-			
-			switch (ev.startInterpolate.interpolationType) {
-			case Interpolation_PitchBend:
-			
-				// You know, one thing we COULD do is to search through the playback
-				// stack looking for interpolations to kill....do that at the time of the
-				// push I think.
-
-				chState->pitchBendTarget = ev.startInterpolate.targetValue;
-
-				ev.pitchBend.command = EvtType_PitchBend;
-				ev.pitchBend.targetBend = ev.startInterpolate.startValue;
-				thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
-				break;
-
-			default:
-				break;
+				// Notify the UI that we've changed state.
+				BMessage message(Player_ChangeTransportState);
+				be_app->PostMessage(&message);
 			}
-			
-			break;
-
-		case EvtType_Interpolate:
-
-			//chState = &thePlayer.m_portInfo[ ev.stack.actualPort ].channelStates[ ev.stack.actualChannel ];
-			chState = &thePlayer.m_portInfo[ 0 ].channelStates[ ev.stack.actualChannel ];
-			
-			switch (ev.startInterpolate.interpolationType) {
-			case Interpolation_PitchBend:
-				int32		elapsed;
-				int32		delta;
-				int32		newValue;
-
-					// I was originally supposed to have executed at ev.Start() + timeStep,
-					// but I may be a bit later than that -- take the difference into account.
-					// Here's how much time has elapsed since I was dispatched...
-				elapsed = tState.time - ev.Start() + ev.interpolate.timeStep;
-
-					// If we went past the end, then clip the time.
-				if (elapsed > ev.interpolate.duration) elapsed = ev.interpolate.duration;
-
-					// Here's the amount by which the value would have changed in that time.
-				delta = ((int32)chState->pitchBendTarget - (int32)chState->pitchBendState)
-					* elapsed / (int32)ev.interpolate.duration;
-					
-					// If pitch bend has never been set, then center it.
-				if (chState->pitchBendState > 0x3fff) chState->pitchBendState = 0x2000;
-
-					// Calculate the current state
-				newValue = (int32)chState->pitchBendState + (int32)delta;
-					
-					// Now, we're going to modify the interpolation event so that it
-					// is shorter, and later... and we're going to push that back onto
-					// the execution stack so that it gets sent back to us later.
-				ev.interpolate.start += elapsed;
-				ev.interpolate.duration -= elapsed;
-
-					// If there's more left to do in this interpolation, then push the event
-					// on the stack for the next iteration
-				if (elapsed < ev.interpolate.duration)	tState.stack.Push( ev );
-				else								newValue = chState->pitchBendTarget;
-
-					// Now, we need to construct a pitch bend event...
-				if (newValue != chState->pitchBendState)
-				{
-					ev.pitchBend.command = EvtType_PitchBend;
-					ev.pitchBend.targetBend = newValue;
-					thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
-				}
-
-				break;
-
-			default:
-				break;
-			}
-			
-			break;
 		}
 	}
 }
 
+// END -- PlaybackTaskGroup.cpp

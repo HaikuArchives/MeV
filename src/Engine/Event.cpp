@@ -35,27 +35,28 @@ inline void Event::DefineEvent( enum E_EventType type, const char *name, int32 p
 
 void Event::InitTables()
 {
-	DefineEvent( EvtType_Note, "Note", MIDI_DURATION_FLAGS );
-	DefineEvent( EvtType_NoteOff, "Note Off", MIDI_FLAGS );
-	DefineEvent( EvtType_ChannelATouch, "Channel Aftertouch", MIDI_DURATION_FLAGS );
-	DefineEvent( EvtType_PolyATouch, "Polyphonic Aftertouch", MIDI_FLAGS );
-	DefineEvent( EvtType_Controller,	 "Control Change", MIDI_DURATION_FLAGS );
-	DefineEvent( EvtType_ProgramChange, "Program Change", MIDI_FLAGS | Event::Prop_VertPos );
-	DefineEvent( EvtType_PitchBend,	 "Pitch Bend", MIDI_DURATION_FLAGS );
-	DefineEvent( EvtType_SysEx, "System Exclusive", 
+	DefineEvent(EvtType_Note, "Note", MIDI_DURATION_FLAGS );
+	DefineEvent(EvtType_NoteOff, "Note Off", MIDI_FLAGS );
+	DefineEvent(EvtType_ChannelATouch, "Channel Aftertouch", MIDI_DURATION_FLAGS );
+	DefineEvent(EvtType_PolyATouch, "Polyphonic Aftertouch", MIDI_FLAGS );
+	DefineEvent(EvtType_Controller,	 "Control Change", MIDI_DURATION_FLAGS );
+	DefineEvent(EvtType_ProgramChange, "Program Change", MIDI_FLAGS | Event::Prop_VertPos );
+	DefineEvent(EvtType_PitchBend,	 "Pitch Bend", MIDI_DURATION_FLAGS );
+	DefineEvent(EvtType_SysEx, "System Exclusive", 
 		Event::Prop_ExtraData	| Event::Prop_MIDI	| Event::Prop_VertPos );
-	DefineEvent( EvtType_End, "End", 0 );
-	DefineEvent( EvtType_Text, "Text", Event::Prop_ExtraData | Event::Prop_VertPos );
-	DefineEvent( EvtType_UserEvent, "User Event", Event::Prop_ExtraData );
-	DefineEvent( EvtType_Repeat, "Repeat", Event::Prop_Duration );
-	DefineEvent( EvtType_Sequence, "Part", Event::Prop_Duration | Event::Prop_VertPos );
-	DefineEvent( EvtType_Branch, "Conditional Branch", Event::Prop_VertPos );
-	DefineEvent( EvtType_ChannelMute, "Channel Mute", Event::Prop_Duration );
-	DefineEvent( EvtType_ChannelTranspose, "Channel Tranpose", 0 );
-	DefineEvent( EvtType_ChannelVolume, 	"Channel Volume", Event::Prop_VertPos );
-	DefineEvent( EvtType_MuteTrack, 	"Mute Part", Event::Prop_Duration );
-	DefineEvent( EvtType_Tempo, "Tempo", Event::Prop_Duration | Event::Prop_VertPos );
-	DefineEvent( EvtType_TimeSig, "Time Signature", 0 );
+	DefineEvent(EvtType_End, "End", 0 );
+	DefineEvent(EvtType_Text, "Text", Event::Prop_ExtraData | Event::Prop_VertPos );
+	DefineEvent(EvtType_UserEvent, "User Event", Event::Prop_ExtraData );
+	DefineEvent(EvtType_Repeat, "Repeat", Event::Prop_Duration );
+	DefineEvent(EvtType_Sequence, "Part", Event::Prop_Duration | Event::Prop_VertPos );
+	DefineEvent(EvtType_Branch, "Conditional Branch", Event::Prop_VertPos );
+	DefineEvent(EvtType_ChannelMute, "Channel Mute", Event::Prop_Duration );
+	DefineEvent(EvtType_ChannelTranspose, "Channel Tranpose", 0 );
+	DefineEvent(EvtType_ChannelVolume, 	"Channel Volume", Event::Prop_VertPos );
+	DefineEvent(EvtType_MuteTrack, 	"Mute Part", Event::Prop_Duration );
+	DefineEvent(EvtType_Tempo, "Tempo", Event::Prop_Duration | Event::Prop_VertPos );
+	DefineEvent(EvtType_TimeSig, "Time Signature", 0 );
+	DefineEvent(EvtType_TaskMarker, "Task Marker", 0);
 };
 
 // ---------------------------------------------------------------------------
