@@ -33,7 +33,7 @@ const float CToolBar::V_TOOL_BAR_SEPARATOR_HEIGHT = 6.0;
 
 const float CToolBar::H_TOOL_BAR_BORDER = 3.0;
 
-const float CToolBar::V_TOOL_BAR_BORDER = 4.0;
+const float CToolBar::V_TOOL_BAR_BORDER = 3.0;
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor

@@ -3,7 +3,7 @@
  * ===================================================================== */
 
 #include "BitmapTool.h"
-// User Interface
+
 #include "ToolBar.h"
 #include "StdBevels.h"
 
@@ -111,12 +111,16 @@ CBitmapTool::DrawTool(
 	if (IsEnabled())
 	{
 		owner->SetDrawingMode(B_OP_OVER);
-		owner->DrawBitmapAsync(m_bitmap, toolRect.LeftTop() + BPoint(4.0, 4.0));
+		owner->DrawBitmapAsync(m_bitmap, toolRect.LeftTop()
+										 + BPoint(BORDER_WIDTH,
+										 		  BORDER_HEIGHT));
 	}
 	else
 	{
 		owner->SetDrawingMode(B_OP_OVER);
-		owner->DrawBitmapAsync(m_disabledBitmap, toolRect.LeftTop() + BPoint(4.0, 4.0));
+		owner->DrawBitmapAsync(m_disabledBitmap, toolRect.LeftTop()
+												 + BPoint(BORDER_WIDTH,
+										 				  BORDER_HEIGHT));
 	}
 }
 
@@ -125,8 +129,8 @@ CBitmapTool::GetContentSize(
 	float *width,
 	float *height) const
 {
-	*width = m_bitmap->Bounds().Width() + 8.0;
-	*height = m_bitmap->Bounds().Height() + 8.0;
+	*width = m_bitmap->Bounds().Width() + 2 * BORDER_WIDTH;
+	*height = m_bitmap->Bounds().Height() + 2 * BORDER_HEIGHT;
 }
 
 void

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * Tool.h (MeV/User Interface)
+ * Tool.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -176,6 +176,12 @@ private:								// Instance Data
 	bool								m_enabled;
 
 	bool								m_selected;
+
+protected:								// Class Data
+
+	static float						BORDER_HEIGHT;
+
+	static float						BORDER_WIDTH;
 };
 
 #endif /* __C_Tool_H__ */

@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * Tool.cpp (MeV/User Interface)
+ * Tool.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "Tool.h"
@@ -18,7 +18,14 @@
 // ---------------------------------------------------------------------------
 // Class Data Initialization
 
-const size_t CTool::TOOL_NAME_LENGTH = 64;
+float
+CTool::BORDER_WIDTH = 3.0;
+
+float
+CTool::BORDER_HEIGHT = 3.0;
+
+const size_t
+CTool::TOOL_NAME_LENGTH = 64;
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor

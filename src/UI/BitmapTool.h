@@ -43,8 +43,9 @@
 
 #include "Tool.h"
 
-class CBitmapTool :
-	public CTool {
+class CBitmapTool
+	:	public CTool
+{
 
 public:									// Constructor/Destructor
 

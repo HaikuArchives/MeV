@@ -75,9 +75,7 @@ public:									// Accessors
 
 	// return the number of tools and seperators
 	int32								CountTools()
-										{
-											return m_toolList.CountItems();
-										}
+										{ return m_toolList.CountItems(); }
 	
 	CTool *								FindTool(
 											const char *name) const;
