@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * InspectorWindow.h (MeV/User Interface)
+ * ChannelSelectorView.h (MeV/User Interface)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -31,76 +31,15 @@
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
  *  05/10/2000  dwalton
- *		Separated ChannelSelector View.
+ *		Separated from Inspector Window.
  * ---------------------------------------------------------------------
  * To Do:
  *
  * ===================================================================== */
-
-#ifndef __C_InspectorWindow_H__
-#define __C_InspectorWindow_H__
-
+#ifndef __C_ChannelSelectorView_H__
+#define __C_ChannelSelectorView_H__
+#include "EventTrack.h"
 #include "TextDisplay.h"
-#include "WindowState.h"
-#include "Observer.h"
-#include "EventEditor.h"
-#include "MeVApp.h"
-
-class CTextDisplay;
-class CChannelSelectorView;
-class CMeVDoc;
-class CTextSlider;
-
-class CInspectorWindow :
-	public CAppWindow,
-	public CObserver
-{
-
-public:						// Constants
-
-	static const BRect		DEFAULT_DIMENSIONS;
-
-public:						// Constructor/Destructor
-
-							CInspectorWindow(
-								BPoint position,
-								CWindowState &state);
-
-public:						// CObserver Implementation
-
-	virtual void			MessageReceived(
-								BMessage *message);
-
-	// If the app wants us to stop looking at the track, then oblige it.
-	virtual void			OnDeleteRequested(
-								BMessage *message);
-
-	// Update inspector info when we get an observer update message.
-	virtual void			OnUpdate(
-								BMessage *message);
-
-public:						// Operations
-
-	// Inspect the current event of the track
-	void					WatchTrack(
-								CEventTrack *track);
-
-	void					Clear();
-
-private:					// Instance Data
-
-	CMeVDoc					*m_doc;
-	CEventTrack				*m_track;
-
-	CTextDisplay			*m_eventTypeView;
-	CTextDisplay			*m_channelNameView;
-	CChannelSelectorView	*m_channelControl;
-	BStringView				*m_vLabel[3];
-	CTextSlider				*m_vSlider[3];			// Three sliders
-	int32					m_baseValue[3];
-	int32					m_previousValue;
-	E_EventAttribute		m_editedAttr[3];
-};
 
 class CChannelSelectorView : 
 	public BControl {
@@ -149,5 +88,5 @@ public:
 		/**	Set which channel is selected. */
 	void SetChannel( uint8 inChannel );
 };
+#endif /* __C_ChannelSelectorView_H__ */
 
-#endif /* __C_InspectorWindow_H__ */
