@@ -82,7 +82,6 @@ CDestinationConfigView::CDestinationConfigView(
 			item->SetMarked(true);
 	}
 	fieldRect.OffsetTo(fieldRect.left, fieldRect.bottom + 2.0);
-	fieldRect.right = fieldRect.left + fieldRect.Width() / 2.0;
 	menuField = new BMenuField(fieldRect, "Channel", "Channel: ",
 							   m_channelMenu);
 	menuField->SetHighColor(tint_color(HighColor(), B_LIGHTEN_1_TINT));
