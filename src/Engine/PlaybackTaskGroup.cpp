@@ -656,8 +656,7 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 //			ev.common.vChannel,
 //			ev.common.data1,
 //			ev.common.data2));
-		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
-//		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time() );
+		thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time() );
 	}
 	else
 	{
@@ -697,7 +696,7 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 
 				ev.pitchBend.command = EvtType_PitchBend;
 				ev.pitchBend.targetBend = ev.startInterpolate.startValue;
-				thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
+				thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
 				break;
 
 			default:
@@ -751,7 +750,7 @@ void CPlaybackTaskGroup::ExecuteEvent( Event &ev, TimeState &tState )
 				{
 					ev.pitchBend.command = EvtType_PitchBend;
 					ev.pitchBend.targetBend = newValue;
-					thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, uint32(system_time()/1000LL) );
+					thePlayer.SendEvent( ev, ev.stack.actualPort, ev.stack.actualChannel, system_time());
 				}
 
 				break;
