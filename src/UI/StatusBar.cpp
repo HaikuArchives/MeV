@@ -137,7 +137,7 @@ CStatusBar::AttachedToWindow()
 {
 	D_HOOK(("CStatusBar::AttachedToWindow()\n"));
 
-	AllocBackBitmap(Bounds().Width(), Bounds().Height());
+	FrameResized(Bounds().Width(), Bounds().Height());
 }
 
 void
@@ -193,7 +193,7 @@ CStatusBar::FrameResized(
 	{
 		float minWidth, maxWidth, minHeight, maxHeight;
 		Window()->GetSizeLimits(&minWidth, &maxWidth, &minHeight, &maxHeight);
-		minWidth = width + 6 * B_V_SCROLL_BAR_WIDTH;
+		minWidth = width + 6 * B_V_SCROLL_BAR_WIDTH + 2.0;
 		Window()->SetSizeLimits(minWidth, maxWidth, minHeight, maxHeight);
 	}
 }
@@ -242,10 +242,10 @@ CStatusBar::MouseMoved(
 		if ((Bounds().Width() + x) <= 16.0)
 			return;
 		if (m_scrollBar
-		 && ((m_scrollBar->Bounds().Width() - x) <= (6 * B_V_SCROLL_BAR_WIDTH)))
-			return;
+		 && ((m_scrollBar->Bounds().Width() - x) < (3 * B_V_SCROLL_BAR_WIDTH + 3)))
+			x = m_scrollBar->Bounds().Width() - (3 * B_V_SCROLL_BAR_WIDTH + 3);
 		if ((Bounds().Width() + x) < m_minWidth)
-			return;
+			x = m_minWidth - Bounds().Width();
 		ResizeBy(x, 0.0);
 		BRect rect(Bounds());
 		rect.left = rect.right - 10.0;

@@ -90,7 +90,8 @@ CPositionInfoBar::DrawInto(
 	BRect rect(Bounds());
 	BPoint iconOffset;
 	BPoint textOffset;
-
+	BString text;
+	
 	v->SetFont(be_fixed_font);
 	v->SetFontSize(10.0);
 	v->SetHighColor(64, 64, 64, 255);
@@ -98,17 +99,19 @@ CPositionInfoBar::DrawInto(
 	font_height fh;
 	v->GetFontHeight(&fh);
 
-	iconOffset = Bounds().LeftTop() + BPoint(2.0, 2.0);
+	iconOffset = rect.LeftTop() + BPoint(2.0, 2.0);
 	if (m_verticalText == "")
 		v->SetDrawingMode(B_OP_BLEND);
 	v->DrawBitmapAsync(m_verticalIcon, iconOffset);
 	if (m_verticalText == "")
 		v->SetDrawingMode(B_OP_OVER);
-	textOffset = Bounds().LeftBottom();
+	textOffset = rect.LeftBottom();
 	textOffset.x += 6.0;
 	textOffset.y = (rect.Height() / 2.0) + (fh.ascent / 2.0);
 	textOffset.x += m_verticalIcon->Bounds().Width();
-	v->DrawString(m_verticalText.String(), textOffset);
+	text = m_verticalText;
+	v->TruncateString(&text, B_TRUNCATE_END, rect.Width() / 2.0 - textOffset.x - 6.0);
+	v->DrawString(text.String(), textOffset);
 
 	iconOffset.x += rect.Width() / 2.0;
 	textOffset.x += rect.Width() / 2.0;
@@ -117,7 +120,9 @@ CPositionInfoBar::DrawInto(
 	v->DrawBitmapAsync(m_horizontalIcon, iconOffset);
 	if (m_horizontalText == "")
 		v->SetDrawingMode(B_OP_OVER);
-	v->DrawString(m_horizontalText.String(), textOffset);
+	text = m_horizontalText;
+	v->TruncateString(&text, B_TRUNCATE_END, rect.Width() - textOffset.x - 6.0);
+	v->DrawString(text.String(), textOffset);
 }
 
 // END -- PositionInfoBar.cpp --
