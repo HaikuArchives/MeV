@@ -1128,8 +1128,6 @@ CEventEditor::UpdatePBMarkers()
 	count = CPlayerControl::GetPlaybackMarkerTimes(Track(),
 												   newPBMarkers,
 												   MAX_PLAYBACK_MARKERS);
-	
-	
 	if (m_pbMarkers[0]<0)
 	{
 		m_pbMarkers[0]=0;

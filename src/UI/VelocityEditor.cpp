@@ -169,6 +169,8 @@ CVelocityEditor::Draw(
 
 		RendererFor(*ev)->Draw(*ev, false);
 	}
+
+	DrawPlaybackMarkers(m_pbMarkers, m_pbCount, updateRect, false);
 }
 
 void
@@ -212,6 +214,12 @@ CVelocityEditor::MouseMoved(
 			TrackWindow()->SetVerticalPositionInfo(text);
 		}
 	}
+}
+
+void
+CVelocityEditor::Pulse()
+{
+	UpdatePBMarkers();
 }
 
 void

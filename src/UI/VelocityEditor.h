@@ -88,6 +88,8 @@ public:							// CEventEditor Implementation
 									uint32 transit,
 									const BMessage *message);
 
+	virtual void				Pulse();
+
 	void						StartDrag(
 									BPoint point,
 									ulong buttons);
