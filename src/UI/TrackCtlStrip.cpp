@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * TrackCtlStrip.cpp (MeV/User Interface)
+ * TrackCtlStrip.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "TrackCtlStrip.h"
@@ -111,7 +111,7 @@ void CTrackEventHandler::Invalidate(
 	r.left		= editor.TimeToViewCoords( ev.Start() ) - 1.0;
 	r.right	= editor.TimeToViewCoords( ev.Stop()  ) + 1.0;
 	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 
 	rEditor.Invalidate( r );
 }
@@ -127,7 +127,7 @@ BRect CTrackEventHandler::Extent(
 	r.left		= editor.TimeToViewCoords( ev.Start() );
 	r.right	= editor.TimeToViewCoords( ev.Stop()  );
 	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 
 	return r;
 }
@@ -144,7 +144,7 @@ long CTrackEventHandler::Pick(
 	BRect			r;
 
 	r.top	= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 
 	return editor.PickDurationEvent( ev, r.top, r.bottom, pickPt, partCode );
 }
@@ -183,7 +183,7 @@ long CTrackEventHandler::QuantizeDragValue(
 	long			newPos;
 
 	newPos = tEditor.ViewCoordsToVPos(
-		oldYPos + inDragPos.y - inClickPos.y + tEditor.barHeight / 2, false );
+		oldYPos + inDragPos.y - inClickPos.y + tEditor.BarHeight() / 2, false );
 
 	return newPos - oldPos;
 }
@@ -240,7 +240,7 @@ CRepeatEventHandler::Draw(
 	r.left = editor.TimeToViewCoords(ev.Start());
 	r.right = editor.TimeToViewCoords(ev.Stop());
 	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
-	r.bottom = r.top + rEditor.barHeight - 2.0;
+	r.bottom = r.top + rEditor.BarHeight() - 2.0;
 
 	rgb_color *color;
 	if (shadowed && (editor.DragOperation() != NULL))
@@ -284,8 +284,6 @@ CRepeatEventHandler::Draw(
 		else
 			repeatText << ev.repeat.repeatCount;
 	
-		editor.SetFont(be_plain_font);
-
 		editor.SetDrawingMode(B_OP_OVER);
 		if (shadowed)
 			editor.SetHighColor(128, 128, 128, 255);
@@ -348,7 +346,7 @@ CSequenceEventHandler::Draw(
 	r.left = editor.TimeToViewCoords(ev.Start());
 	r.right = editor.TimeToViewCoords(ev.Stop());
 	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
-	r.bottom = r.top + rEditor.barHeight - 2.0;
+	r.bottom = r.top + rEditor.BarHeight() - 2.0;
 
 	rgb_color *color;
 	if (shadowed && (editor.DragOperation() != NULL))
@@ -392,7 +390,6 @@ CSequenceEventHandler::Draw(
 		else
 			trackName = "(None)";
 	
-		editor.SetFont(be_plain_font);
 		be_plain_font->TruncateString(&trackName, B_TRUNCATE_END,
 									  r.Width() - 8.0);
 
@@ -464,51 +461,45 @@ void CTimeSigEventHandler::Invalidate(
 	((CTrackCtlStrip &)editor).Invalidate( Extent( editor, ev ) );
 }
 
-	// Draw the event (or an echo)
-void CTimeSigEventHandler::Draw(
-	CEventEditor	&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
+void
+CTimeSigEventHandler::Draw(
+	CEventEditor &editor,
+	const Event &ev,
+	bool shadowed) const
 {
-	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
-	BRect			r;
-	rgb_color		*grad = GREY_PALETTE;
-	float			pWidth;
-	char				text[ 32 ];
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
 
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
+	BString sigText;
+	sigText << ev.sigChange.numerator << "/" << (1 << ev.sigChange.denominator);
+	float textWidth = editor.StringWidth(sigText.String());
 
-	sprintf( text, "%d/%d", ev.sigChange.numerator, 1 << (ev.sigChange.denominator) );
-	pWidth = rEditor.StringWidth( text );
-
-	r.left	= editor.TimeToViewCoords( ev.Start() );
-	r.right	= r.left + pWidth + 2;
-	r.top	= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
-
-	rEditor.SetDrawingMode( B_OP_OVER );
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.right	= r.left + textWidth + 2.0;
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	r.bottom = r.top + rEditor.BarHeight() - 2.0;
 
 	if (shadowed)
 	{
-		rEditor.SetHighColor( 128, 0, 128 );
-		rEditor.SetDrawingMode( B_OP_BLEND );
-		grad = BLUE_PALETTE;
+		editor.SetDrawingMode(B_OP_BLEND);
+		editor.SetHighColor(128, 0, 128, 255);
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
-		rEditor.SetHighColor( 64, 64, 255 );
-		grad = BLUE_PALETTE;
+		editor.SetDrawingMode(B_OP_OVER);
+		editor.SetHighColor(64, 64, 255, 255);
 	}
 	else
 	{
-		rEditor.SetHighColor( 0, 0, 0 );
+		editor.SetDrawingMode(B_OP_OVER);
+		editor.SetHighColor(0, 0, 0, 255);
 	}
-	
 
-	rEditor.MovePenTo(	r.left + 1,
-						(r.top + r.bottom - rEditor.fontSpec.descent + rEditor.fontSpec.ascent) / 2 );
-	rEditor.DrawString( text );
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
+	editor.MovePenTo(r.left + 1.0,
+					 (r.top + r.bottom - fh.descent + fh.ascent) / 2.0);
+	editor.DrawString(sigText.String());
 }
 
 	// Compute the extent of the event.
@@ -521,16 +512,13 @@ BRect CTimeSigEventHandler::Extent(
 	float			pWidth;
 	char				text[ 32 ];
 
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
-
 	sprintf( text, "%d/%d", ev.sigChange.numerator, 1 << (ev.sigChange.denominator) );
 	pWidth = rEditor.StringWidth( text );
 
 	r.left	= editor.TimeToViewCoords( ev.Start() );
 	r.right	= r.left + pWidth + 2;
 	r.top	= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 
 	return r;
 }
@@ -577,7 +565,7 @@ long CTimeSigEventHandler::QuantizeDragValue(
 	long			newPos;
 
 	newPos = tEditor.ViewCoordsToVPos(
-		oldYPos + inDragPos.y - inClickPos.y + tEditor.barHeight / 2, false );
+		oldYPos + inDragPos.y - inClickPos.y + tEditor.BarHeight() / 2, false );
 
 	return newPos - oldPos;
 }
@@ -651,41 +639,37 @@ void CProgramChangeEventHandler::Invalidate(
 	rEditor.Invalidate( Extent( editor, ev ) );
 }
 
-	// Draw the event (or an echo)
-void CProgramChangeEventHandler::Draw(
-	CEventEditor		&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
+void
+CProgramChangeEventHandler::Draw(
+	CEventEditor &editor,
+	const Event &ev,
+	bool shadowed) const
 {
-	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
-	bool				locked = 	editor.Track()->IsChannelLocked( ev.GetVChannel() );
-	char				patchNameBuf[ 64 ];
-	const char		*patchName;
-	float			x, y;
-	BBitmap			*horn;
-	BRect			hornRect;
-	
-	horn = ResourceUtils::LoadImage("ProgramTool");
-	hornRect = horn->Bounds();
-	
-	patchName = GetPatchName( editor, ev, patchNameBuf );
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
+	VChannelEntry *vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	bool locked = editor.Track()->IsChannelLocked(ev.GetVChannel());
 
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
+	// get bitmap
+	// !!! this MUST be cached somewhere
+	BBitmap *horn = ResourceUtils::LoadImage("ProgramTool");
+	BRect hornRect = horn->Bounds();
 
-	BRect			r;
-	r.left		= editor.TimeToViewCoords( ev.Start() );
-	r.right	= r.left + rEditor.StringWidth( patchName ) + 9.0 + hornRect.Width();
-	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	// acquire patch name
+	char patchNameBuf[64];
+	const char *patchName;
+	patchName = GetPatchName(editor, ev, patchNameBuf);
+
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.right	= r.left + rEditor.StringWidth(patchName) + 9.0 + hornRect.Width();
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	r.bottom = r.top + rEditor.BarHeight() - 2.0;
 	
-		// Reduce size of rectangle a bit.
-	if (r.Height() > rEditor.fontSpec.ascent + rEditor.fontSpec.descent + 2)
-	{
-		r.top += 1.0;
-		r.bottom -= 1.0;
-	}
+	// Reduce size of rectangle a bit.
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
+	if (r.Height() > fh.ascent + fh.descent + 2.0)
+		r.InsetBy(0.0, 1.0);
 
 	if (shadowed && rEditor.m_dragOp != NULL)
 		rEditor.SetDrawingMode(B_OP_BLEND);
@@ -696,36 +680,37 @@ void CProgramChangeEventHandler::Draw(
 	if (!shadowed && rEditor.PendingOperation() != NULL)
 		return;
 
-	rEditor.DrawBitmapAsync( horn, BPoint( r.left, (r.top + r.bottom - hornRect.Height())/2 ) );
-	
+	BPoint offset(r.left, (r.top + r.bottom - hornRect.Height()) / 2);
+	editor.DrawBitmap(horn, offset);
 	r.left += hornRect.Width() + 3.0;
 
-	x	= r.left + 3.0;
-	y	= (r.top + r.bottom - rEditor.fontSpec.descent + rEditor.fontSpec.ascent + 1.0) / 2;
+	offset.x = r.left + 3.0;
+	offset.y = (r.top + r.bottom - fh.descent + fh.ascent + 1.0) / 2;
 	
 	if (locked)
 	{
-		rEditor.SetHighColor( 128, 128, 128 );
-		rEditor.StrokeRect( r );
-		r.InsetBy( 1, 1 );
-		rEditor.SetHighColor( 192, 192, 192 );
-		rEditor.FillRect( r );
+		editor.SetHighColor(128, 128, 128, 255);
+		editor.StrokeRect(r);
+		r.InsetBy(1.0, 1.0);
+		rEditor.SetHighColor(192, 192, 192, 255);
+		rEditor.FillRect(r);
 	}
 	else
 	{
-		rEditor.SetHighColor( vce->fillColor );
-		rEditor.FillRect( r );
-
 		if (ev.IsSelected() && editor.IsSelectionVisible())
 		{
-			rEditor.SetHighColor( 0, 0, 255 );
-			rEditor.StrokeRect( r );
+			editor.SetHighColor(0, 0, 255, 255);
+			editor.StrokeRect(r);
+			r.InsetBy(1.0, 1.0);
 		}
+		editor.SetHighColor(vce->fillColor);
+		editor.FillRect(r);
 	}
 
-	rEditor.SetHighColor( 0, 0, 0 );
-	rEditor.DrawString( patchName, BPoint( x, y ) );
-	rEditor.SetDrawingMode( B_OP_COPY );
+	editor.SetHighColor(0, 0, 0, 255);
+	editor.DrawString(patchName, offset);
+
+	delete horn;
 }
 
 	// Compute the extent of the event.
@@ -748,9 +733,6 @@ BRect CProgramChangeEventHandler::Extent(
 	float			pWidth;
 	static float	maxPWidth = 0.0;
 
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
-
 	pWidth = rEditor.StringWidth(patchName);
 	if (pWidth > maxPWidth)
 		maxPWidth = pWidth;
@@ -758,7 +740,7 @@ BRect CProgramChangeEventHandler::Extent(
 	r.left		= editor.TimeToViewCoords( ev.Start() );
 	r.right	= r.left + maxPWidth + 9.0 + hornRect.Width();
 	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 	
 	if (r.Height() < hornRect.Height())
 	{
@@ -810,7 +792,7 @@ long CProgramChangeEventHandler::QuantizeDragValue(
 	long			newPos;
 
 	newPos = tEditor.ViewCoordsToVPos(
-		oldYPos + inDragPos.y - inClickPos.y + tEditor.barHeight / 2, false );
+		oldYPos + inDragPos.y - inClickPos.y + tEditor.BarHeight() / 2, false );
 
 	return newPos - oldPos;
 }
@@ -925,8 +907,8 @@ CTempoEventHandler::Draw(
 	
 	icon = ResourceUtils::LoadImage("SmallClock");
 	
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
+	font_height fh;
+	be_plain_font->GetHeight(&fh);
 	
 	sprintf( tempoText, "Tempo: %.2f", (float)ev.tempo.newTempo / 1000.0 );
 
@@ -934,7 +916,7 @@ CTempoEventHandler::Draw(
 	r.left		= editor.TimeToViewCoords( ev.Start() );
 	r.right	= editor.TimeToViewCoords( ev.Stop()  ) - 1.0;
 	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 
 	if (shadowed && rEditor.m_dragOp != NULL)
 		rEditor.SetDrawingMode(B_OP_BLEND);
@@ -960,11 +942,10 @@ CTempoEventHandler::Draw(
 	rEditor.DrawBitmapAsync( icon, BPoint( r.left, (r.top + r.bottom - 7.0)/2.0 ) );
 
 	x = r.left + 11.0;
-	y = (r.top + 3.0 + r.bottom - rEditor.fontSpec.descent + rEditor.fontSpec.ascent + 1.0) / 2;
+	y = (r.top + 3.0 + r.bottom - fh.descent + fh.ascent + 1.0) / 2;
 	
 	rEditor.SetHighColor( 0, 0, 0 );
 	rEditor.DrawString( tempoText, BPoint( x, y ) );
-	rEditor.SetDrawingMode( B_OP_COPY );
 }
 
 	// Compute the extent of the event.
@@ -981,13 +962,10 @@ BRect CTempoEventHandler::Extent(
 	metro = ResourceUtils::LoadImage("MetroTool");
 	metroRect = metro->Bounds();
 	
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
-
 	r.left		= editor.TimeToViewCoords( ev.Start() );
 	r.right	= editor.TimeToViewCoords( ev.Stop()  ) + 1.0;
 	r.top		= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 	
 		// REM: This constant, 80.0, is based on string width and should be precomputed
 	float	tr = r.left + 80.0;
@@ -1015,7 +993,7 @@ long CTempoEventHandler::Pick(
 	int32			result;
 
 	r.top	= rEditor.VPosToViewCoords( ev.tempo.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	r.bottom	= r.top + rEditor.BarHeight() - 2;
 
 	result = editor.PickDurationEvent( ev, r.top, r.bottom, pickPt, partCode );
 	if (result == LONG_MAX)
@@ -1069,7 +1047,7 @@ long CTempoEventHandler::QuantizeDragValue(
 	long			newPos;
 
 	newPos = tEditor.ViewCoordsToVPos(
-		oldYPos + inDragPos.y - inClickPos.y + tEditor.barHeight / 2, false );
+		oldYPos + inDragPos.y - inClickPos.y + tEditor.BarHeight() / 2, false );
 
 	return newPos - oldPos;
 }
@@ -1113,12 +1091,13 @@ CTempoEventHandler 		tempoEventHandler;
 	// ---------- Constructor
 
 CTrackCtlStrip::CTrackCtlStrip(
-	BLooper			&inLooper,
-	CTrackEditFrame	&inFrame,
-	BRect			rect,
-	CEventTrack		*inTrack,
-	char				*inName )
-	:	CEventEditor(	inLooper, inFrame, rect, inTrack, inName, true, true )
+	BLooper	&looper,
+	CTrackEditFrame	&frame,
+	BRect rect,
+	CEventTrack *track,
+	char *name)
+	:	CEventEditor(looper, frame, rect, track, name, true, true),
+		m_barHeight(16)
 {
 	SetHandlerFor(EvtType_End, &gEndEventHandler);
 	SetHandlerFor(EvtType_ProgramChange, &programChangeEventHandler);
@@ -1127,42 +1106,43 @@ CTrackCtlStrip::CTrackCtlStrip(
 	SetHandlerFor(EvtType_TimeSig, &timeSigEventHandler);
 	SetHandlerFor(EvtType_Tempo, &tempoEventHandler);
 
-	barHeight		= 16;
 	CalcZoom();
-	SetZoomTarget( (CObserver *)this );
+	SetZoomTarget((CObserver *)this);
 
 		// Make the label view on the left-hand side
 	SetLabelView(new CStripLabelView(BRect(-1.0, 0.0, 20.0, rect.Height()),
-									 inName, B_FOLLOW_TOP_BOTTOM,
+									 name, B_FOLLOW_TOP_BOTTOM,
 									 B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 
 	SetFlags(Flags() | B_PULSE_NEEDED);
 }
 
-// ---------------------------------------------------------------------------
-// Convert a position-value to a y-coordinate
-
-long CTrackCtlStrip::VPosToViewCoords( int pos )
+float
+CTrackCtlStrip::VPosToViewCoords(
+	int32 pos) const
 {
-	return barHeight * pos;
+	return BarHeight() * pos;
 }
 
-// ---------------------------------------------------------------------------
-// Convert a y-coordinate to a position value
-
-long CTrackCtlStrip::ViewCoordsToVPos( int yPos, bool limit )
+int32
+CTrackCtlStrip::ViewCoordsToVPos(
+	float y,
+	bool limit) const
 {
-	int				pos = yPos / barHeight;
-	
+	int32 pos = static_cast<int32>(y / BarHeight());
+
 	if (limit)
 	{
-		if (pos < 0) return 0;
-		if (pos > 127) return 127;
+		if (pos < 0)
+			return 0;
+		if (pos > 127)
+			return 127;
 	}
 	return pos;
 }
 
-void CTrackCtlStrip::Draw( BRect updateRect )
+void
+CTrackCtlStrip::Draw( BRect updateRect )
 {
 	long				startTime = ViewCoordsToTime( updateRect.left - 128.0 ),
 					stopTime  = ViewCoordsToTime( updateRect.right + 1.0 );
@@ -1225,201 +1205,223 @@ void CTrackCtlStrip::Pulse()
 	UpdatePBMarkers();
 }
 
-// ---------------------------------------------------------------------------
-// Update message from another observer
-
-void CTrackCtlStrip::OnUpdate( BMessage *inMsg )
+void
+CTrackCtlStrip::OnUpdate(
+	BMessage *message)
 {
-	int32		minTime = 0,
-				maxTime = LONG_MAX;
-	int32		trackHint;
-	bool			flag;
-	bool			selChange = false;
-	int8			channel = -1;
-	BRect		r( Bounds() );
+	PRINT(("CTrackCtlStrip::OnUpdate()\n"));
+	message->PrintToStream();
+
+	BRect r(Bounds());
+	bounds = r;
+
+	bool selChange = false;
+	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
+	{
+		if (!IsSelectionVisible())
+			return;
+	}
+
+	int32 trackHint = 0;
+	if (message->FindInt32("TrackAttrs", 0, &trackHint) == B_OK)
+	{
+		if (!(trackHint & (CTrack::Update_Duration | CTrack::Update_SigMap |
+						   CTrack::Update_TempoMap | CTrack::Update_Name)))
+			return;
+	}
+
+	int32 minTime = 0;
+	if (message->FindInt32("MinTime", 0, &minTime) == B_OK)
+	{
+		r.left = TimeToViewCoords(minTime) - 1.0;
+	}
+
+	int32 maxTime = LONG_MAX;
+	if (message->FindInt32("MaxTime", 0, &maxTime) == B_OK)
+	{
+		r.right = TimeToViewCoords(maxTime) + 1.0;
+	}
 	
-	bounds = Bounds();
+	if (trackHint & CTrack::Update_Duration)
+		RecalcScrollRangeH();
 
-	if (inMsg->FindBool( "SelChange", 0, &flag ) == B_OK)
+	uint8 channel;
+	if (trackHint & (CTrack::Update_SigMap | CTrack::Update_TempoMap))
 	{
-		if (!IsSelectionVisible()) return;
-		selChange = flag;
+		// Invalidate everything if signature map changed
+		Invalidate();
 	}
-
-	if (inMsg->FindInt32( "TrackAttrs", 0, &trackHint ) == B_OK)
+	else if (trackHint & CTrack::Update_Name)
 	{
-			// REM: what do we do if track changes name?
-	
-		if (!(trackHint &
-			(CTrack::Update_Duration|CTrack::Update_SigMap|CTrack::Update_TempoMap)))
-				return;
-	}
-	else trackHint = 0;
+		int32 trackID;
+		if (message->FindInt32("TrackID", 0, &trackID) != B_OK)
+			return;
 
-	if (inMsg->FindInt32( "MinTime", 0, &minTime ) == B_OK)
-	{
-		r.left = TimeToViewCoords( minTime ) - 1.0;
-	}
-	else minTime = 0;
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker	marker(Track()->Events());
 
-	if (inMsg->FindInt32( "MaxTime", 0, &maxTime ) == B_OK)
-	{
-		r.right = TimeToViewCoords( maxTime ) + 1.0;
-	}
-	else maxTime = LONG_MAX;
-	
-	if (inMsg->FindInt8( "channel", 0, &channel ) != B_OK) channel = -1;
-
-	if (trackHint & CTrack::Update_Duration) RecalcScrollRangeH();
-
-	if (trackHint & (CTrack::Update_SigMap|CTrack::Update_TempoMap))
-	{
-// 	TrackWindow()->InvalidateRuler();
-		Invalidate();			// Invalidate everything if signature map changed
-	}
-	else if (channel >= 0)
-	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
-
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// redraw every instance of the changed track
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			if (ev->HasProperty( Event::Prop_Channel ) && ev->GetVChannel() == channel)
-				Handler( *ev ).Invalidate( *this, *ev );
+			if ((ev->Command() == EvtType_Sequence)
+			 && (ev->sequence.sequence == trackID))
+			{
+				Handler(*ev ).Invalidate(*this, *ev);
+			}
+		}
+	}
+	else if (message->FindInt8("channel", 0, (int8 *)&channel) == B_OK)
+	{
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker	marker(Track()->Events());
+
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
+		{
+			if ((ev->HasProperty(Event::Prop_Channel))
+			 && (ev->GetVChannel() == channel))
+			{
+				Handler(*ev ).Invalidate(*this, *ev);
+			}
 		}
 	}
 	else if (selChange)
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
 
-			// For each event that overlaps the current view, draw it.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// For each event that overlaps the current view, draw it.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			Handler( *ev ).Invalidate( *this, *ev );
+			Handler(*ev).Invalidate(*this, *ev);
 		}
 	}
 	else
 	{
-		StSubjectLock		trackLock( *Track(), Lock_Shared );
-		EventMarker		marker( Track()->Events() );
+		StSubjectLock trackLock(*Track(), Lock_Shared);
+		EventMarker marker(Track()->Events());
 
-			// Funny bit of code here. Because of the fact that track control
-			// strips have a lot of funky event types who's graphical size bears
-			// little relation to their duration, we need to insure that the entirety
-			// of these events get included in the damage region. This is in addition
-			// to invalidating the entire damage region, since there are also cases
-			// where simply invalidating the events isn't enough.
-		for (	const Event *ev = marker.FirstItemInRange( minTime, maxTime );
-				ev;
-				ev = marker.NextItemInRange( minTime, maxTime ) )
+		// Funny bit of code here. Because of the fact that track control
+		// strips have a lot of funky event types who's graphical size bears
+		// little relation to their duration, we need to insure that the entirety
+		// of these events get included in the damage region. This is in addition
+		// to invalidating the entire damage region, since there are also cases
+		// where simply invalidating the events isn't enough.
+		for (const Event *ev = marker.FirstItemInRange(minTime, maxTime);
+			 ev;
+			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			Handler( *ev ).Invalidate( *this, *ev );
+			Handler(*ev).Invalidate(*this, *ev);
 		}
-
-		Invalidate( r );
+		Invalidate(r);
 	}
 }
 
-void CTrackCtlStrip::CalcZoom()
+void
+CTrackCtlStrip::CalcZoom()
 {
-	stripLogicalHeight = barHeight * 64 - 1;
+	m_stripLogicalHeight = static_cast<int32>(BarHeight()) * 64 - 1;
 }
 
 void
 CTrackCtlStrip::AttachedToWindow()
 {
 	SetViewColor( B_TRANSPARENT_32_BIT );
-	SetScrollRange(	scrollRange.x, scrollValue.x, stripLogicalHeight, 0.0 );
+	SetScrollRange(scrollRange.x, scrollValue.x, m_stripLogicalHeight, 0.0);
 
-	SetFont( be_plain_font );
-	SetFontSize( 10 );
-	GetFontHeight( &fontSpec );
+	SetFont(be_plain_font);
 }
 
-void CTrackCtlStrip::MessageReceived( BMessage *msg )
+void
+CTrackCtlStrip::MessageReceived(
+	BMessage *message)
 {
-	switch (msg->what) {
-	case ZoomOut_ID:
-
-		if (barHeight < 32)
-		{
-			barHeight++;
-			CalcZoom();
-			Hide();
-			SetScrollRange(	scrollRange.x, scrollValue.x,
-							stripLogicalHeight, scrollValue.y );
-			Show();
+	switch (message->what)
+	{
+		case ZoomOut_ID:
+		{	
+			if (BarHeight() < 32)
+			{
+				m_barHeight++;
+				CalcZoom();
+				Hide();
+				SetScrollRange(scrollRange.x, scrollValue.x,
+							   m_stripLogicalHeight, scrollValue.y);
+				Show();
+			}
+			break;
 		}
-		break;
-
-	case ZoomIn_ID:
-
-		if (barHeight > 10)
+		case ZoomIn_ID:
 		{
-			barHeight--;
-			CalcZoom();
-			Hide();
-			SetScrollRange(	scrollRange.x, scrollValue.x,
-							stripLogicalHeight, scrollValue.y );
-			Show();
-		}
-		break;
-		
-	case MeVDragMsg_ID:
-	
-		if (m_dragType == DragType_DropTarget)
+			if (BarHeight() > 10)
+			{
+				m_barHeight--;
+				CalcZoom();
+				Hide();
+				SetScrollRange(scrollRange.x, scrollValue.x,
+							   m_stripLogicalHeight, scrollValue.y);
+				Show();
+			}
+			break;
+		}	
+		case MeVDragMsg_ID:
 		{
+			if (m_dragType == DragType_DropTarget)
+			{
 				// Initialize an event marker for this track.
-			StSubjectLock		trackLock( *Track(), Lock_Exclusive );
-			long				prevTrackDuration = Track()->LastEventTime();
-				
+				StSubjectLock trackLock(*Track(), Lock_Exclusive);
+				long prevTrackDuration = Track()->LastEventTime();
+					
 				// Creating a new event
-			Track()->DeselectAll( this );
-			Handler(m_newEv).Invalidate(*this, m_newEv);
-			Track()->CreateEvent( this, m_newEv, "Create Event" );
+				Track()->DeselectAll(this);
+				Handler(m_newEv).Invalidate(*this, m_newEv);
+				Track()->CreateEvent(this, m_newEv, "Create Event");
+	
+				if (prevTrackDuration != Track()->LastEventTime())
+					RecalcScrollRangeH();
+			}
+			else
+			{
+				BPoint point;
+				ulong buttons;
+				int32 evtType;
 
-			if (prevTrackDuration != Track()->LastEventTime())
-				RecalcScrollRangeH();
-		}
-		else
-		{
-			BPoint		point;
-			ulong		buttons;
-			int32		evtType;
+				if (message->FindInt32("EventType", 0, &evtType) != B_OK)
+					break;
+				GetMouse(&point, &buttons, true);
 
-			if (msg->FindInt32( "EventType", 0, &evtType ) != B_OK) break;
-			GetMouse( &point, &buttons, TRUE );
-			
-			if (ConstructEvent( point, (TEventType)evtType ) == false) return;
-			
+				if (ConstructEvent(point, (TEventType)evtType) == false)
+					return;
+				
 				// Initialize an event marker for this track.
-			StSubjectLock		trackLock( *Track(), Lock_Exclusive );
+				StSubjectLock trackLock(*Track(), Lock_Exclusive);
 
 				// Invalidate the new event and insert it into the track.
-			Track()->DeselectAll( this );
-			Handler( m_newEv ).Invalidate( *this, m_newEv );
-			Track()->CreateEvent( this, m_newEv, "Create Event" );
+				Track()->DeselectAll(this);
+				Handler(m_newEv).Invalidate(*this, m_newEv);
+				Track()->CreateEvent(this, m_newEv, "Create Event");
+			}
+
+			m_dragType = DragType_None;
+			Window()->Activate();
+			break;
+		}	
+		case Update_ID:
+		case Delete_ID:
+		{
+			CObserver::MessageReceived(message);
+			break;
 		}
-
-		m_dragType = DragType_None;
-//		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
-		Window()->Activate();
-		break;
-
-	case Update_ID:
-	case Delete_ID:
-		CObserver::MessageReceived( msg );
-		break;
-
-	default:
-		CStripView::MessageReceived( msg );
-		break;
+		default:
+		{
+			CStripView::MessageReceived(message);
+		}
 	}
 }
 
@@ -1493,7 +1495,7 @@ void CTrackCtlStrip::MouseMoved(
 					if (time < 0) time = 0;
 					dragEv.SetStart( time );
 					dragEv.SetVChannel( 0 );
-					dragEv.sequence.vPos = static_cast<uint8>(point.y / barHeight);
+					dragEv.sequence.vPos = static_cast<uint8>(point.y / BarHeight());
 							// Rem: Change this to the logical length of the track we are ADDING. */
 					dragEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
 					dragEv.sequence.sequence		= trackID;
@@ -1539,68 +1541,66 @@ void CTrackCtlStrip::MouseMoved(
 			newCursor = crossCursor;
 		}
 	}
-	
-//	be_app->SetCursor( newCursor );
 }
 
-bool CTrackCtlStrip::ConstructEvent( BPoint point )
+bool
+CTrackCtlStrip::ConstructEvent(
+	BPoint point)
 {
-	return ConstructEvent(	point,
-						TrackWindow()->GetNewEventType( EvtType_ProgramChange ) );
+	return ConstructEvent(point,
+						  TrackWindow()->GetNewEventType(EvtType_ProgramChange));
 }
 
-bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
+bool
+CTrackCtlStrip::ConstructEvent(
+	BPoint point,
+	TEventType type)
 {
-	int32		time;
-	CTrack		*tk;
+	int32 time;
 
-		// Initialize a new event.
-	m_newEv.SetCommand( inType );
-	
+	// Initialize a new event.
+	m_newEv.SetCommand(type);
+
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
-	time = Handler( m_newEv ).QuantizeDragTime(
-		*this,
-		m_newEv,
-		0,
-		BPoint( 0.0, 0.0 ),
-		point,
-		true );
+	time = Handler(m_newEv).QuantizeDragTime(*this, m_newEv, 0,
+											 BPoint(0.0, 0.0), point, true);
 
-	TrackWindow()->DisplayMouseTime( Track(), time );
-	m_newEv.SetStart( time );
-	m_newEv.SetDuration( TrackWindow()->NewEventDuration() );
-	m_newEv.SetVChannel( 0 );
+	TrackWindow()->DisplayMouseTime(Track(), time);
+	m_newEv.SetStart(time);
+	m_newEv.SetDuration(TrackWindow()->NewEventDuration());
+	m_newEv.SetVChannel(0);
 
 	switch (m_newEv.Command())
 	{
 		case EvtType_End:
 		{
-			m_newEv.SetDuration( 0 );
+			m_newEv.SetDuration(0);
 			break;
 		}
 		case EvtType_Sequence:
 		{
-			m_newEv.sequence.vPos = static_cast<uint8>(point.y / barHeight);
-			m_newEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
-			m_newEv.sequence.sequence		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_SequenceNumber );
-			m_newEv.sequence.flags			= 0;
-			tk = TrackWindow()->Document()->FindTrack( m_newEv.sequence.sequence );
-			if (tk == NULL) tk = Track();
-			m_newEv.SetDuration( tk->LogicalLength() );
+			m_newEv.sequence.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
+			m_newEv.sequence.transposition = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Transposition);
+			m_newEv.sequence.sequence = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_SequenceNumber);
+			m_newEv.sequence.flags = 0;
+			CTrack *track = TrackWindow()->Document()->FindTrack(m_newEv.sequence.sequence);
+			if (track == NULL)
+				track = Track();
+			m_newEv.SetDuration(track->LogicalLength());
 			break;
 		}
 		case EvtType_TimeSig:
 		{
-			m_newEv.sigChange.vPos = static_cast<uint8>(point.y / barHeight);
-			m_newEv.sigChange.numerator		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatCount );
-			m_newEv.sigChange.denominator	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatSize );
+			m_newEv.sigChange.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
+			m_newEv.sigChange.numerator = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_TSigBeatCount);
+			m_newEv.sigChange.denominator = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_TSigBeatSize);
 			break;
 		}
 		case EvtType_Repeat:
 		{
-			m_newEv.repeat.vPos = static_cast<uint8>(point.y / barHeight);
-			m_newEv.repeat.repeatCount		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_RepeatCount );
+			m_newEv.repeat.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
+			m_newEv.repeat.repeatCount = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_RepeatCount);
 			break;
 		}
 		case EvtType_ProgramChange:
@@ -1609,18 +1609,17 @@ bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
 			int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
 			if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
 				return false;
-	
-			m_newEv.SetVChannel( TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Channel ) );
-			m_newEv.programChange.vPos		= static_cast<uint8>(point.y / barHeight);
-			m_newEv.programChange.program	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Program );
-			m_newEv.SetAttribute( EvAttr_ProgramBank, TrackWindow()->Document()->GetDefaultAttribute( EvAttr_ProgramBank ) );
+			m_newEv.SetVChannel(TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Channel ) );
+			m_newEv.programChange.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
+			m_newEv.programChange.program = TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Program );
+			m_newEv.SetAttribute(EvAttr_ProgramBank, TrackWindow()->Document()->GetDefaultAttribute( EvAttr_ProgramBank ) );
 			break;
 		}
 		case EvtType_Tempo:
 		{
-			m_newEv.SetVChannel( 0 );
-			m_newEv.tempo.vPos		= static_cast<uint8>(point.y / barHeight);
-			m_newEv.tempo.newTempo	= static_cast<uint32>(CPlayerControl::Tempo(TrackWindow()->Document()) * 1000.0);
+			m_newEv.SetVChannel(0);
+			m_newEv.tempo.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
+			m_newEv.tempo.newTempo = static_cast<uint32>(CPlayerControl::Tempo(TrackWindow()->Document()) * 1000.0);
 			break;
 		}
 		default:

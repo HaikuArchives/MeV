@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * TrackCtlStrip.h (MeV/User Interface)
+ * TrackCtlStrip.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -45,9 +45,9 @@
 // ---------------------------------------------------------------------------
 // Linear editor strip view
 
-class CTrackCtlStrip : public CEventEditor {
-protected:
-
+class CTrackCtlStrip
+	:	public CEventEditor
+{
 	friend class	CTrackEventHandler;
 	friend class	CRepeatEventHandler;
 	friend class	CSequenceEventHandler;
@@ -55,71 +55,86 @@ protected:
 	friend class	CProgramChangeEventHandler;
 	friend class	CTempoEventHandler;
 
-	int32			barHeight;
-	short			stripLogicalHeight;		// logical height of strip.
-	font_height		fontSpec;
+public:							// Constructor/Destructor
 
-	void MouseMoved(
-		BPoint		point,
-		ulong		transit,
-		const BMessage	* );
+								CTrackCtlStrip(
+									BLooper &looper,
+									CTrackEditFrame &frame,
+									BRect rect,
+									CEventTrack *track,
+									char *name = "Track");
 
-	void AttachedToWindow();
-	void MessageReceived( BMessage *msg );
-	void Pulse();
-	void CalcZoom();
+public:							// Accessors
 
-public:
-		// ---------- Constructor
+	float						BarHeight() const
+								{ return m_barHeight; }
 
-	CTrackCtlStrip(	BLooper			&inLooper,
-					CTrackEditFrame &frame,
-					BRect			rect,
-					CEventTrack		*track,
-					char				*inStripName = "Track" );
-					
-		// ---------- Hooks
+public:							// Operations
 
-	void Draw( BRect updateRect );
+	void						DeselectAll();
 
-/*	void StartDrag( BPoint point, ulong buttons );
-	bool DoDrag( BPoint point, ulong buttons );
-	void FinishDrag( BPoint point, ulong buttons, bool commit ); */
+	/** returns y-pos for pitch */
+	float						VPosToViewCoords(
+									int32 pos) const;
 
-		// Construct a new event of the current selected type
-	bool ConstructEvent( BPoint point );
+	/** returns pitch for y-pos and optionally clamp to legal values */
+	int32						ViewCoordsToVPos(
+									float y,
+									bool limit = true) const;
 
-		// Construct a new event of the given type
-	bool ConstructEvent( BPoint point, TEventType inType );
+public:							// CEventEditor Implementation
 
-		// Update message from another observer
-	void OnUpdate( BMessage *inMsg );
+	virtual void				AttachedToWindow();
 
-		// ---------- Conversion funcs
+	/** Construct a new event of the current selected type */
+	virtual bool				ConstructEvent(
+									BPoint point);
 
-		// returns y-pos for pitch
-	long VPosToViewCoords( int pos );
+	virtual void				Draw(
+									BRect updateRect);
 
-		// returns pitch for y-pos and optionally clamp to legal values
-	long ViewCoordsToVPos( int yPos, bool limit = true );
+	virtual void				MessageReceived(
+									BMessage *message);
 
-		// ---------- Getters
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
 
-	bool SupportsShadowing() { return true; }
-
-		// ---------- General operations
-
-	void DeselectAll();
+	/**	Called when the window activates to tell this view
+		to make the selection visible. */
+	virtual void				OnGainSelection()
+								{ InvalidateSelection(); }
 	
-		/**	Called when the window activates to tell this view
-			to make the selection visible.
-		*/
-	virtual void OnGainSelection() { InvalidateSelection(); }
-	
-		/**	Called when some other window activates to tell this view
-			to hide the selection.
-		*/
-	virtual void OnLoseSelection() { InvalidateSelection(); }
+	/**	Called when some other window activates to tell this view
+		to hide the selection. */
+	virtual void				OnLoseSelection()
+								{ InvalidateSelection(); }
+
+	/** Update message from another observer */
+	virtual void				OnUpdate(
+									BMessage *message);
+
+	virtual void				Pulse();
+
+	virtual bool				SupportsShadowing()
+								{ return true; }
+
+public:							// Internal Operations
+
+	/** Construct a new event of the given type */
+	bool						ConstructEvent(
+									BPoint point,
+									TEventType type);
+
+	void						CalcZoom();
+
+private:
+
+	int32						m_barHeight;
+
+	// logical height of strip.
+	short						m_stripLogicalHeight;
 };
 
 #endif /* __C_TrackCtlStrip_H__ */
