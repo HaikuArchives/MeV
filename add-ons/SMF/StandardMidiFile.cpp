@@ -258,19 +258,25 @@ void CStandardMidiFile::CreateDestinations(MeVDocHandle doc, const char* filenam
 // ---------------------------------------------------------------------------
 // Function to read a track
 
-bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, const smf_time_base& timeBase )
+bool
+CStandardMidiFile::ReadTrack(
+	MeVDocHandle doc,
+	uint8 *ptr,
+	long length,
+	const smf_time_base& timeBase)
 {
-	CEvent			event;
-	MeVTrackHandle	track = NULL;
-	TClockType		clockType = (timeBase.format == smf_time_base::METERED) ? ClockType_Metered : ClockType_Real;
-	vector<CEvent>	notesInProgress;
-					
+	CEvent event;
+	MeVTrackHandle track = NULL;
+	TClockType clockType = (timeBase.format == smf_time_base::METERED)
+						   ? ClockType_Metered
+						   : ClockType_Real;
+	vector<CEvent> notesInProgress;
+
 	try
 	{
-		SMFTrackReader fileTrack(*this, ptr, length, m_destinationID, timeBase);
-
+		SMFTrackReader fileTrack(*this, ptr, length, m_destinationID,
+								 timeBase);
 		track = doc->NewEventTrack(clockType);
-		
 		PRINT(("\tNew %s track: ID=%ld\n",
 		       (clockType == ClockType_Metered) ? "metered" : "real-time",
 		       track->GetID()));
@@ -278,7 +284,7 @@ bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, co
 		while (fileTrack.GetNextEvent(event))
 		{
 			if (event.Command() == EvtType_Text && event.text.textType == 0x03)
-				track->SetName(reinterpret_cast<char*>(event.ExtendedData()));
+				track->SetName(reinterpret_cast<char *>(event.ExtendedData()));
 
 			if (event.Command() == EvtType_Note)
 			{
@@ -288,21 +294,21 @@ bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, co
 			{
 				// find matching noteon
 				vector<CEvent>::iterator noteOn = find_if(notesInProgress.begin(),
-				                                         notesInProgress.end(),
-				                                         NoteEq(event));
+														  notesInProgress.end(),
+														  NoteEq(event));
 				if (noteOn != notesInProgress.end())
 				{
 					noteOn->SetDuration(event.Start() - noteOn->Start());
-					noteOn->SetAttribute(EvAttr_ReleaseVelocity,  event.GetAttribute(EvAttr_ReleaseVelocity));
-					
+					noteOn->SetAttribute(EvAttr_ReleaseVelocity,
+										 event.GetAttribute(EvAttr_ReleaseVelocity));
 					track->Merge(&(*noteOn), 1);
-
 					notesInProgress.erase(noteOn);
 				}
 				else
 				{
 					PRINT(("\tUnmatched note-off at %ld: vChannel = %d, pitch = %ld\n",
-					       event.Start(), event.GetVChannel(), event.GetAttribute(EvAttr_Pitch)));
+					       event.Start(), event.GetVChannel(),
+					       event.GetAttribute(EvAttr_Pitch)));
 				}
 			}
 			else
@@ -313,6 +319,23 @@ bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, co
 		
 		// shut off any hung notes
 		for_each(notesInProgress.begin(), notesInProgress.end(), HandleHungNote(track));
+
+		// create an instance of the track
+		MeVTrackHandle master = doc->ActiveMasterTrack();
+		CEvent trackEv;
+		trackEv.SetCommand(EvtType_Sequence);
+		trackEv.SetStart(0);
+		trackEv.SetDuration(track->Duration());
+		trackEv.sequence.sequence = track->GetID();
+		trackEv.sequence.transposition = 0;
+		trackEv.sequence.transposition = 0;
+		trackEv.sequence.flags = 0;
+		trackEv.sequence.vPos = track->GetID() - 2;
+		master->Merge(&trackEv, 1);
+		doc->ReleaseTrack(master);
+
+		doc->ReleaseTrack(track);
+		return true;
 	}
 	catch (IError& e)
 	{
@@ -321,10 +344,6 @@ bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, co
 			doc->ReleaseTrack(track);
 			return false;
 	}
-		
-	if (track)
-		doc->ReleaseTrack( track );
-	return true;
 }
 
 // ---------------------------------------------------------------------------
