@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -37,6 +38,9 @@
  *  05/13/2000	dwalton
  *		extended CPortAttrsDialog to add support for midi kit2.
  *		including menubeginning midi consumer search.
+ *	06/05/2000	malouin
+ *		Changed CMeVRefFilter and CImportRefFilter so that
+ *		directories are visible in open file panels.
  * ---------------------------------------------------------------------
  * To Do:
  *

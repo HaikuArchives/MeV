@@ -105,7 +105,7 @@ static void WriteWindowState( BMessage &msg, char *prefsName, CWindowState &wSta
 class CMeVRefFilter : public BRefFilter {
 	bool Filter( const entry_ref *ref, BNode *node, struct stat *st, const char *filetype )
 	{
-		return (strstr( filetype, "MeV" ) != NULL);
+		return (strstr( filetype, "MeV" ) != NULL || node->IsDirectory());
 	}
 };
 
@@ -118,7 +118,8 @@ class CImportRefFilter : public BRefFilter {
 		{
 			MeVPlugIn	*pi = (MeVPlugIn *)list.ItemAt( i );
 
-			if (pi->DetectFileType( ref, node, st, filetype ) >= 0) return true;
+			if (node->IsDirectory() || pi->DetectFileType(ref, node, st, filetype) >= 0)
+				return true;
 		}
 		return false;
 	}
