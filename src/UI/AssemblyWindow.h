@@ -41,16 +41,9 @@
 #include "TrackWindow.h"
 #include "MeVDoc.h"
 
-// ---------------------------------------------------------------------------
-// Assembly editor window
-
-//class CTimeIntervalEditor;
-class CTextDisplay;
+//class CTextDisplay;
 class CToolBar;
-class CMultiColumnListView;
-//class CStripFrameView;
-class CColumnField;
-//class CDragPalette;
+//class CColumnField;
 
 class CAssemblyWindow : 
 	public CTrackWindow 
@@ -69,15 +62,11 @@ public:							// CTrackWindow Implementation
 	// For windows which edit dual tracks, select which one
 	// has selected events
 	CEventTrack *				ActiveTrack()
-								{
-									return Document().ActiveMaster();
-								}
+								{ return Document().ActiveMaster(); }
 
 	// Returns current toolbar setting
 	int32						CurrentTool()
-								{
-									return toolStates[0];
-								}
+								{ return m_toolStates[0]; }
 
 	virtual void				MessageReceived(
 									BMessage *message);
@@ -85,37 +74,17 @@ public:							// CTrackWindow Implementation
 	virtual void				OnUpdate(
 									BMessage *message);
 
-protected:						// Internal Methods
+protected:						// Internal Operations
 
 	void						AddMenuBar();
 
 	void						AddToolBar();
 
-	void						BuildTrackList();
-
-	void						ShowTrackInfo();
-
 private:						// Instance Data
 
-	CToolBar *					toolBar;
+	CToolBar *					m_toolBar;
 
-	uint8						toolStates[1];
-
-	CMultiColumnListView *		trackList;
-
-	CColumnField *				typeColumn;
-
-	CColumnField *				nameColumn;
-
-//	CTextDisplay *				eventCount;
-//
-//	CTextDisplay *				channelsUsed;
-//
-//	CDragPalette *				eventPalette;
-	
-	enum {
-		TrackEdit_ID = 'tkEd',
-	};
+	uint8						m_toolStates[1];
 };
 
 #endif /* __C_AssemblyWindow_H__ */
