@@ -128,6 +128,14 @@ CEventTask::PlayEvent(
 			// REM: Here we would apply velocity contour.
 			// REM: Here we would do the VU meter code...
 			
+			// +++ move this to CEventTrack::FilterEvent ?
+			stackedEvent.note.pitch += transposition;
+	
+			// If pitch went out of bounds, then don't play the note.
+			// +++++ CLIPPING WOULD BE MUCH NICER!
+			if (stackedEvent.note.pitch & 0x80)
+				break;
+
 			// If there was room on the stack to push the note-off, then
 			// play the note-on
 			stackedEvent.stack.start		+= duration;
