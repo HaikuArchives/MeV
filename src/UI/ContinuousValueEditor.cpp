@@ -24,7 +24,29 @@ CContinuousValueEditor::CContinuousValueEditor(
 }
 
 // ---------------------------------------------------------------------------
-// General drawing routine
+// Operations
+
+void
+CContinuousValueEditor::CalcZoom()
+{
+	stripLogicalHeight = (long)(16.0 * pow( 1.4, verticalZoom ));
+	pixelsPerValue = (double)stripLogicalHeight / (maxValue - minValue);
+	stripLogicalHeight += eventAscent + eventDescent;
+}
+
+// ---------------------------------------------------------------------------
+// CEventEditor Implementation
+
+void
+CContinuousValueEditor::AttachedToWindow()
+{
+	BRect r(Frame());
+
+	SetViewColor(B_TRANSPARENT_32_BIT);
+	SetScrollRange(scrollRange.x, scrollValue.x,
+				   stripLogicalHeight, 
+				   (stripLogicalHeight - r.Height() / 2) / 2 );
+}
 
 void
 CContinuousValueEditor::Draw(
@@ -35,18 +57,21 @@ CContinuousValueEditor::Draw(
 	SetHighColor(255, 255, 255);
 	FillRect(updateRect);
 
-	SetHighColor(220, 220, 220);
+	if (updateRect.bottom >= stripLogicalHeight)
+	{
+		SetHighColor(220, 220, 220);
+		FillRect(BRect(updateRect.left, stripLogicalHeight,
+					   updateRect.right, stripLogicalHeight),
+				 B_MIXED_COLORS);
+	}
 
-	FillRect(BRect(updateRect.left, stripLogicalHeight,
-				   updateRect.right, stripLogicalHeight));
-
+	updateRect.bottom = stripLogicalHeight;
 	DrawGridLines(updateRect);
+	DrawHorizontalGrid(updateRect);
 
 	// Initialize an event marker for this track.
 	StSubjectLock trackLock(*Track(), Lock_Shared);
 	EventMarker marker(Track()->Events());
-
-	bounds = Bounds();
 
 	// For each event that overlaps the current view, draw it. (locked channels first)
 	for (const Event *ev = marker.FirstItemInRange(startTime, stopTime);
@@ -87,26 +112,11 @@ CContinuousValueEditor::Draw(
 	DrawPlaybackMarkers(m_pbMarkers, m_pbCount, updateRect, false);
 }
 
-// ---------------------------------------------------------------------------
-// Periodic update time tick -- used to update playback markers
-
-void
-CContinuousValueEditor::Pulse()
-{
-	UpdatePBMarkers();
-	// REM: Add code to process newly recorded events
-	// REM: Add code to edit events via MIDI.
-}
-
-// ---------------------------------------------------------------------------
-// Update message from another observer
-
 void
 CContinuousValueEditor::OnUpdate(
 	BMessage *message)
 {
 	BRect r(Bounds());
-	bounds = r;
 
 	bool selChange = false;
 	if (message->FindBool("SelChange", 0, &selChange) == B_OK)
@@ -178,51 +188,22 @@ CContinuousValueEditor::OnUpdate(
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Calculate factors relating to zoom
-
 void
-CContinuousValueEditor::CalcZoom()
+CContinuousValueEditor::Pulse()
 {
-	stripLogicalHeight = (long)(16.0 * pow( 1.4, verticalZoom ));
-	pixelsPerValue = (double)stripLogicalHeight / (maxValue - minValue);
-	stripLogicalHeight += eventAscent + eventDescent;
+	UpdatePBMarkers();
+	// REM: Add code to process newly recorded events
+	// REM: Add code to edit events via MIDI.
 }
 
-// ---------------------------------------------------------------------------
-// When attached to window, set scroll range based on strip's logical height
-
-void CContinuousValueEditor::AttachedToWindow()
-{
-	BRect		r( Frame() );
-
-	SetViewColor( B_TRANSPARENT_32_BIT );
-	SetScrollRange(	scrollRange.x, scrollValue.x,
-					stripLogicalHeight,
-					(stripLogicalHeight - r.Height()/2) / 2 );
-}
-
-// ---------------------------------------------------------------------------
-// Continuous value editor mouse movement handler
-
 void
-CContinuousValueEditor::MouseMoved(
-	BPoint point,
-	uint32 transit,
-	const BMessage *message)
+CContinuousValueEditor::SetScrollValue(
+	float value,
+	orientation posture)
 {
-	CEventEditor::MouseMoved(point, transit, message);
+	CStripView::SetScrollValue(value, posture);
 
-	if (transit == B_EXITED_VIEW)
-	{
-		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
-		TrackWindow()->SetVerticalPositionInfo("");
-		return;
-	}
-	
-	TrackWindow()->SetHorizontalPositionInfo(Track(),
-											 ViewCoordsToTime(point.x));
-	bounds = Bounds();
+	LabelView()->ScrollTo(0.0, scrollValue.y);
 }
 
 // END - ContinuousValueEditor.cpp

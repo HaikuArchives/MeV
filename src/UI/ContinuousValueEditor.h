@@ -43,67 +43,94 @@
 // ---------------------------------------------------------------------------
 // Continuous Value editor strip view
 
-class CContinuousValueEditor : public CEventEditor {
-protected:
+class CContinuousValueEditor
+	:	public CEventEditor
+{
+	// ++++++ this class shouldn't need to now about a descendant-related
+	//		  class !
+	friend class CPitchBendEventHandler;
 
-	friend class	CPitchBendEventHandler;
+public:							// Constructor/Destructor
 
-	float			pixelsPerValue;		// Pixels per control value
-	short			verticalZoom,			// Zoom amount in vertical direction
-					stripLogicalHeight;		// logical height of strip.
-	long				minValue,				// minimum value of event value
-					maxValue,			// maxuimum event value
-					eventAscent,			// max pixel ascent of events
-					eventDescent;			// min pixel ascent of events
+								CContinuousValueEditor(
+									BLooper &looper,
+									CStripFrameView &frameView,
+									BRect rect,
+									const char *name);
 
-	void SetScrollValue( float inScrollValue, orientation inOrient )
-	{
-		CStripView::SetScrollValue( inScrollValue, inOrient );
-		LabelView()->ScrollTo( 0.0, scrollValue.y );
-	}
+public:							// Hook Functions
 
-	void MouseMoved(
-		BPoint		point,
-		ulong		transit,
-		const BMessage	* );
+	/**	Derived classes implement this to optionally draw 
+		horizontal grid lines.
+	*/
+	virtual void				DrawHorizontalGrid(
+									BRect updateRect)
+								{ }
 
-	void AttachedToWindow();
-	void Pulse();
+public:							// Operations
 
-	void CalcZoom();
-	
-public:
-		// ---------- Constructor
+	/** Calculate factors relating to zoom. */
+	void						CalcZoom();
 
-	CContinuousValueEditor(	BLooper			&inLooper,
-						CStripFrameView 	&frame,
-						BRect			rect,
-						const char		*name );
+	void						DeselectAll();
 
-		// ---------- Hooks
+public:							// CEventEditor Implementation
 
-	void Draw( BRect updateRect );
+	/** When attached to window, set scroll range based on strip's 
+		logical height. */
+	virtual void				AttachedToWindow();
 
-		// Update message from another observer
-	void OnUpdate( BMessage *inMsg );
+	virtual void				Draw(
+									BRect updateRect);
 
-		// ---------- Getters
+	// Update message from another observer
+	virtual void				OnUpdate(
+									BMessage *message);
 
-	bool SupportsShadowing() { return true; }
+	virtual bool				SupportsShadowing()
+								{ return true; }
 
-		// ---------- General operations
+	/**	Called when the window activates to tell this view
+		to make the selection visible.
+	*/
+	virtual void				OnGainSelection()
+								{ InvalidateSelection(); }
 
-	void DeselectAll();
-	
-		/**	Called when the window activates to tell this view
-			to make the selection visible.
-		*/
-	virtual void OnGainSelection() { InvalidateSelection(); }
-	
-		/**	Called when some other window activates to tell this view
-			to hide the selection.
-		*/
-	virtual void OnLoseSelection() { InvalidateSelection(); }
+	/**	Called when some other window activates to tell this view
+		to hide the selection.
+	*/
+	virtual void				OnLoseSelection()
+								{ InvalidateSelection(); }
+
+	/** Periodic update time tick -- used to update playback markers. */
+	virtual void				Pulse();
+
+	virtual void				SetScrollValue(
+									float value,
+									orientation posture);
+
+protected:						// Instance Data
+
+	/** Pixels per control value. */
+	float						pixelsPerValue;
+
+	/** Zoom amount in vertical direction. */
+	short						verticalZoom;
+
+	/** Logical height of strip. */
+	short						stripLogicalHeight;
+
+	/** Mminimum event value. */
+	long						minValue;
+
+	/** Maximum event value. */
+	long						maxValue;
+
+	/** Max pixel ascent of events. */
+	long						eventAscent;
+
+	/** Min pixel ascent of events. */
+	long						eventDescent;
 };
 
 #endif /* __C_ContinuousValueEditor_H__ */
