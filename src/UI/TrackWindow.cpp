@@ -5,16 +5,18 @@
 #include "TrackWindow.h"
 #include "MeVApp.h"
 #include "Idents.h"
-#include "StripView.h"
-#include "EventEditor.h"
 #include "PlayerControl.h"
 #include "StdEventOps.h"
-#include "OperatorWindow.h"
 #include "MeVDoc.h"
-#include "BorderButton.h"
-#include "QuickKeyMenuItem.h"
-#include "AssemblyRulerView.h"
 #include "ResourceUtils.h"
+// UI
+#include "BorderButton.h"
+#include "AssemblyRulerView.h"
+#include "EventEditor.h"
+#include "OperatorWindow.h"
+#include "TrackListWindow.h"
+#include "QuickKeyMenuItem.h"
+#include "StripView.h"
 
 #include "Junk.h"
 
@@ -130,20 +132,23 @@ CTrackWindow::MenusBeginning()
 	}
 	
 	// Set up Clear menu
-	item = KeyMenuBar()->FindItem("Clear");
-	if (item)
-	{
-		item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
+	item = KeyMenuBar()->FindItem(MENU_CLEAR);
+	item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
 
 	// Set up Window menu
-		item = KeyMenuBar()->FindItem("Show Event Inspector");
-		item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->Inspector());
-		item = KeyMenuBar()->FindItem("Show Grid Window");
-		item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->GridWindow());
-		item = KeyMenuBar()->FindItem("Show Transport Controls");
-		item->SetMarked(dynamic_cast<CMeVApp *>(be_app)->TransportWindow());
-	}
-//	plugInMenuInstance.CheckMenusChanged();
+	CMeVApp *app = dynamic_cast<CMeVApp *>(be_app);
+	item = KeyMenuBar()->FindItem(MENU_TRACKLIST);
+	if (item)
+		item->SetMarked(app->TrackList());
+	item = KeyMenuBar()->FindItem(MENU_INSPECTOR);
+	if (item)
+		item->SetMarked(app->Inspector());
+	item = KeyMenuBar()->FindItem(MENU_GRIDWINDOW);
+	if (item)
+		item->SetMarked(app->GridWindow());
+	item = KeyMenuBar()->FindItem(MENU_TRANSPORT);
+	if (item)
+		item->SetMarked(app->TransportWindow());
 
 	CDocWindow::MenusBeginning();
 }
@@ -192,6 +197,12 @@ CTrackWindow::MessageReceived(
 		case MENU_EXPORT:
 		{
 			Document().Export( message );
+			break;
+		}
+		case MENU_TRACKLIST:
+		{
+			((CMeVApp *)be_app)->ShowTrackList(((CMeVApp *)be_app)->TrackList() == NULL);
+			Activate();				// In case window was deactivated
 			break;
 		}
 		case MENU_INSPECTOR:
