@@ -37,6 +37,7 @@ SRCS= \
 	Engine/Track.cpp \
 	Midi/GeneralMidi.cpp \
 	Midi/InternalSynth.cpp \
+	Midi/MidiDestination.cpp \
 	Midi/MidiDeviceInfo.cpp \
 	Midi/MidiManager.cpp \
 	Midi/PortNameMap.cpp \
