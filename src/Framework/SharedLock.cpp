@@ -14,7 +14,7 @@
 // ---------------------------------------------------------------------------
 // Constants
 
-const int32			Max_Shared_Locks = 10000;
+const int32			MAX_READER_COUNT = 10000;
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -29,7 +29,7 @@ CSharedLock::CSharedLock(
 {
 	D_ALLOC(("CSharedLock::CSharedLock(%s)\n", Name() ? Name() : "NULL"));
 
-	m_sem = create_sem(Max_Shared_Locks, Name());
+	m_sem = create_sem(MAX_READER_COUNT, Name());
 }
 
 CSharedLock::~CSharedLock()
@@ -41,6 +41,7 @@ CSharedLock::~CSharedLock()
 		WriteLock();
 
 	delete_sem(m_sem);
+	m_sem = -1;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,14 +128,11 @@ CSharedLock::ReadLock(
 	}
 	else
 	{
-		// increment and retrieve the current count of readers
-		int32 currentCount = atomic_add(&m_readerCount, 1);
-		if (currentCount < 0)
-			// a writer holds the lock so wait for sem to be released
-			locked = (acquire_sem_etc(m_sem, 1, B_DO_NOT_RESCHEDULE,
-									  timeout) == B_OK);
-		else
-			locked = true;
+		// acquire sem and increment reader count
+		locked = (acquire_sem_etc(m_sem, 1, B_DO_NOT_RESCHEDULE,
+								  timeout) == B_OK);
+		if (locked)
+			m_readerCount++;
 	}
 
 	return locked;
@@ -156,14 +154,11 @@ CSharedLock::ReadUnlock()
 	}
 	else
 	{
-		// decrement and retrieve the read counter
-		int32 currentCount = atomic_add(&m_readerCount, -1);
-		if (currentCount < 0)
-			// a writer is waiting for the lock so release sem
-			unlocked = (release_sem_etc(m_sem, 1,
-										B_DO_NOT_RESCHEDULE) == B_OK);
-		else
-			unlocked = true;
+		// release sem and decrement reader count
+		unlocked = (release_sem_etc(m_sem, 1,
+									B_DO_NOT_RESCHEDULE) == B_OK);
+		if (unlocked)
+			m_readerCount--;
 	}
 	
 	return unlocked;	
@@ -190,7 +185,7 @@ CSharedLock::WriteLock(
 	else
 	{
 		// another writer in the lock - acquire the semaphore
-		locked = (acquire_sem_etc(m_sem, Max_Shared_Locks,
+		locked = (acquire_sem_etc(m_sem, MAX_READER_COUNT,
 								  B_DO_NOT_RESCHEDULE, timeout) == B_OK);
 		if (locked)
 		{
@@ -219,7 +214,7 @@ CSharedLock::WriteUnlock()
 		}
 		else
 		{
-			unlocked = (release_sem_etc(m_sem, Max_Shared_Locks,
+			unlocked = (release_sem_etc(m_sem, MAX_READER_COUNT,
 										B_DO_NOT_RESCHEDULE) == B_OK);
 			if (unlocked)
 			{
