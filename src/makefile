@@ -27,6 +27,7 @@ SRCS= \
 	Engine/PlaybackTask.cpp \
 	Engine/PlaybackTaskGroup.cpp \
 	Engine/Player.cpp \
+	Engine/PlayerControl.cpp \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
