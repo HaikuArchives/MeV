@@ -66,7 +66,7 @@ CStripView::CStripView(
 			magRect.top = magRect.bottom - B_H_SCROLL_BAR_HEIGHT;
 			magDecButton = new CBorderButton(magRect, NULL,
 											 ResourceUtils::LoadImage("SmallMinus"),
-											 new BMessage(ZoomOut_ID),
+											 new BMessage(ZoomOut_ID), true,
 											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 											 B_WILL_DRAW);
 			m_container->AddChild(magDecButton);
@@ -74,12 +74,12 @@ CStripView::CStripView(
 			magRect.OffsetBy(0.0, - B_H_SCROLL_BAR_HEIGHT);
 			magIncButton = new CBorderButton(magRect, NULL, 
 											 ResourceUtils::LoadImage("SmallPlus"),
-											 new BMessage(ZoomIn_ID),
+											 new BMessage(ZoomIn_ID), true,
 											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 											 B_WILL_DRAW);
 			m_container->AddChild(magIncButton);
 			
-			scrollerRect.bottom = magRect.top - 1.0;
+			scrollerRect.bottom = magRect.top;
 		}
 
 		rightScroller = new CScroller(scrollerRect, NULL, this,
