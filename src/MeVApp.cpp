@@ -24,6 +24,7 @@
 #include "MidiDeviceInfo.h"
 // User Interface
 #include "AboutWindow.h"
+#include "TrackListWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -43,6 +44,8 @@
 #include <MidiRoster.h>
 #include <MidiProducer.h>
 #include <MidiConsumer.h>
+
+#define TRACKLIST_NAME		"Track List"
 #define INSPECTOR_NAME		"Inspector"
 #define GRID_NAME			"Grid"
 #define TRANSPORT_NAME		"Transport"
@@ -50,6 +53,7 @@
 #define MIDI_CONFIG_NAME	"Midi Config"
 #define ABOUT_NAME			"About Box"
 #define ABOUT_PI_NAME		"About Plug-ins"
+
 CGlobalPrefs				gPrefs;
 char						gPlugInName[ B_FILE_NAME_LENGTH ];
 
@@ -147,6 +151,10 @@ CMeVApp::CMeVApp()
 		editSettings( prefs, "settings/edit", true ),
 		midiSettings( prefs, "settings/midi", true ),
 		vtableSettings( prefs, "settings/vtable", true ),
+		trackListState(BRect(0.0,
+							 100.0,
+							 CTrackListWindow::DEFAULT_DIMENSIONS.Width(),
+							 CTrackListWindow::DEFAULT_DIMENSIONS.Height())),
 		inspectorState(BRect(0.0,
 							 406.0,
 							 CInspectorWindow::DEFAULT_DIMENSIONS.Width(),
@@ -163,7 +171,8 @@ CMeVApp::CMeVApp()
 {
 		// Iterate through all the plugins...
 	BDirectory			addOnDir( "/boot/home/config/add-ons/MeV" );
-	bool					inspectorOpen = true,
+	bool				trackListOpen = true,
+						inspectorOpen = true,
 						gridWindowOpen = false,
 						transportOpen = false,
 						appPrefsOpen = false,
@@ -272,6 +281,7 @@ CMeVApp::CMeVApp()
 	{
 		BMessage		&prefMessage = winSettings.GetMessage();
 
+		trackListOpen		= ReadWindowState( prefMessage, TRACKLIST_NAME, trackListState, true );
 		inspectorOpen		= ReadWindowState( prefMessage, INSPECTOR_NAME, inspectorState, true );
 		gridWindowOpen	= ReadWindowState( prefMessage, GRID_NAME,		  gridWinState, false );
 		transportOpen		= ReadWindowState( prefMessage, TRANSPORT_NAME, transportState, false );
@@ -365,6 +375,7 @@ CMeVApp::CMeVApp()
 
 	CSplashWindow::HideSplash();
 
+	if (trackListOpen) ShowTrackList( true );
 	if (inspectorOpen) ShowInspector( true );
 	if (gridWindowOpen) ShowGridWindow( true );
 	if (transportOpen) ShowTransportWindow( true );
@@ -450,7 +461,10 @@ CDocument *CMeVApp::NewDocument( bool inShowWindow, entry_ref *inRef )
 		return NULL;
 	}
 
-	if (inShowWindow) doc->ShowWindow( CMeVDoc::Assembly_Window );
+	if (inShowWindow)
+	{
+		doc->ShowWindow(CMeVDoc::Assembly_Window);
+	}
 	return doc;
 }
 
@@ -462,6 +476,32 @@ void CMeVApp::ImportDocument()
 	fp->SetMessage( new BMessage( 'impt' ) );
 	fp->SetRefFilter( importFilter );
 	fp->Show();
+}
+
+void CMeVApp::ShowTrackList( bool inShow )
+{
+	trackListState.Lock();
+
+	if (inShow)
+	{
+		if (!trackListState.Activate())
+		{
+			CTrackListWindow *window;
+			window = new CTrackListWindow(trackListState.Rect().LeftTop(),
+										  trackListState);
+			window->Show();
+			if (activeTrack)
+			{
+				window->WatchDocument(&(activeTrack->Document()));
+			}
+		}
+	}
+	else
+	{
+		trackListState.Close();
+	}
+
+	trackListState.Unlock();
 }
 
 void CMeVApp::ShowInspector( bool inShow )
@@ -566,6 +606,14 @@ void CMeVApp::WatchTrack( CEventTrack *inTrack )
 	if (activeTrack) CRefCountObject::Release( activeTrack );
 	activeTrack = inTrack;
 	if (activeTrack) activeTrack->Acquire();
+
+	mApp->trackListState.Lock();
+	w = mApp->trackListState.Window();
+	if (w)
+	{
+		((CTrackListWindow *)w)->WatchDocument(&(inTrack->Document()));
+	}
+	mApp->trackListState.Unlock();
 
 	mApp->inspectorState.Lock();
 	w = mApp->inspectorState.Window();
@@ -722,6 +770,7 @@ bool CMeVApp::QuitRequested()
 	{
 		BMessage		&prefMessage = winSettings.GetMessage();
 
+		WriteWindowState( prefMessage, TRACKLIST_NAME, trackListState );
 		WriteWindowState( prefMessage, INSPECTOR_NAME,	inspectorState );
 		WriteWindowState( prefMessage, GRID_NAME,		gridWinState );
 		WriteWindowState( prefMessage, TRANSPORT_NAME,	transportState );

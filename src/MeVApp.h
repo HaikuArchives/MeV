@@ -61,6 +61,7 @@ class CStripFrameView;
 class CScroller;
 class CStripView;
 class CInspectorWindow;
+class CTrackListWindow;
 class CTransportWindow;
 class CGridWindow;
 class CEventTrack;
@@ -101,7 +102,8 @@ class CMeVApp : public CDocApp {
 				 		midiSettings,
 				 		vtableSettings;
 
-	CWindowState		inspectorState,
+	CWindowState		trackListState,
+						inspectorState,
 						gridWinState,
 						transportState,
 						midiConfigWinState,
@@ -149,6 +151,12 @@ public:
 		/** Import a new document */
 	void ImportDocument();
 
+		/** return the address of the tracks list window. */
+	CTrackListWindow *TrackList() { return (CTrackListWindow *)trackListState.Window(); }
+
+		/**	Show or hide the tracks list window. */
+	void ShowTrackList( bool inShow );
+	
 		/**	Return the address of the inspector window. */
 	CInspectorWindow *Inspector() { return (CInspectorWindow *)inspectorState.Window(); }
 	
