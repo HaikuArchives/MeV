@@ -49,17 +49,11 @@ CDestination::CDestination (
 			char *name,
 			bool notify)
 			:	
-				CObservableSubject (),
-				m_VUMeter(0),
-				m_pad(0),
-				m_transpose(0),
-				m_initialTranspose(0),
 				m_latency(0)
 				
 {
 	
 	m_doc=&inDoc;
-	m_velocityContour=0;
 	m_flags=0;
 	m_channel=0;
 	m_id=id;
@@ -87,14 +81,6 @@ CDestination::CDestination (
 CDestination::~CDestination()
 {
 	m_producer->Release();
-	PRINT(("Delete!\n"));
-		//while we are running we shouldn't be deleted.
-		//inDoc.NotifyUpdate(CMeVDoc::Update_DelDest,NULL);
-
-		//tell all the tracks that we are deleted.
-		//the lag might be a problem.		
-	
-		//inDoc.PostUpdateAllTrack();
 }
 
 // serialization
@@ -114,7 +100,7 @@ CDestination::WriteDestination (CIFFWriter &writer)
 {
 	char buff[255];
 	writer << (int32)GetID(); 
-	writer << m_channel << m_flags << m_velocityContour << m_initialTranspose;
+	writer << m_channel << m_flags;
 	writer << m_fillColor.red;
 	writer << m_fillColor.green;
 	writer << m_fillColor.blue;
@@ -127,18 +113,20 @@ CDestination::WriteDestination (CIFFWriter &writer)
 	WriteStr255 (writer,buff,prod.Length());
 	
 	
-	//write connections
-	BList *connections=m_producer->Connections();
-	int c=connections->CountItems()-1;
-	while (c>=0)
+	//write name of consumer
+	BString cons;
+	if (m_producer->Connections()->CountItems() > 0)
 	{
-		BString name;
-		BMidiProducer *prod=(BMidiProducer *)connections->ItemAt(c--);
-		name=prod->Name();
-		name.CopyInto(buff,0,name.Length());
-		WriteStr255( writer,buff,name.Length() );
+		cons << ((BMidiConsumer *)m_producer->Connections()->ItemAt(0))->Name();
+		cons.CopyInto(buff,0,cons.Length());
+		WriteStr255 (writer,buff,cons.Length());
 	}
-	WriteStr255 (writer,"connection list end",20);	
+	else
+	{
+		cons << "MEV NO PORT";
+		cons.CopyInto(buff,0,cons.Length());
+		WriteStr255 (writer,buff,cons.Length());
+	}
 }
 
 // Accessors
@@ -185,6 +173,7 @@ CDestination::CreateIcon (BRect r)
 	delete (icon_view);
 	return icon;
 }
+
 void CDestination::_addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const
 {
 	if (! msg->HasData("be:large_icon", 'ICON')) {
@@ -336,55 +325,41 @@ CDestination::SetChannel (uint8 channel)
 void
 CDestination::SetConnect (BMidiConsumer *sink,bool connect)
 {
-	BMessage props;
-	bool flag;
-	sink->GetProperties(&props);
-	if (props.FindBool("mev:internalSynth",&flag)==B_OK)
+	if (sink)
 	{
-		((CInternalSynth *)sink)->Init();
+		CMidiManager *mm=CMidiManager::Instance();
+		if (m_producer->IsConnected(mm->FindConsumer(m_consumer_id)))
+		{
+			m_producer->Disconnect(mm->FindConsumer(m_consumer_id));
+		}
+		m_consumer_id=sink->ID();
+		BMessage props;
+		bool flag;
+		sink->GetProperties(&props);
+		if (props.FindBool("mev:internalSynth",&flag)==B_OK)
+		{
+			((CInternalSynth *)sink)->Init();
+		}
+		if (connect)
+		{
+			m_producer->Connect(sink);
+		}
+		else
+		{
+			m_producer->Disconnect(sink);
+		}
+		//updates ?
 	}
-	if (connect)
-	{
-		m_producer->Connect(sink);
-	}
-	else
-	{
-		m_producer->Disconnect(sink);
-	}
-	//updates ?
 }
 
-void
-CDestination::ToggleConnect (BMidiConsumer *sink)
-{
-	BMessage props;
-	bool flag;
-	sink->GetProperties(&props);
-	if (props.FindBool("mev:internalSynth",&flag)==B_OK)
-	{
-		((CInternalSynth *)sink)->Init();
-	}
-	if (m_producer->IsConnected(sink))
-	{
-		m_producer->Disconnect(sink);
-	}
-	else
-	{
-		cout << sink->Latency() << endl;
-		if (sink->Latency()>Latency(ClockType_Real))
-		{
-			SetLatency(sink->Latency());
-		}
-		Document().SetDestinationLatency(GetID(),m_latency);
-		//printf ("latency %d\n",sink->Latency());
-		m_producer->Connect(sink);
-	}
-	//updates ?
-}
 bool
 CDestination::IsConnected (BMidiConsumer *sink) const
 {
-	return (m_producer->IsConnected(sink));
+	if ((sink->ID()==m_consumer_id) && (m_producer->IsConnected(sink)))
+	{
+		return true;
+	}
+	return false;
 }
 
 void
@@ -467,7 +442,21 @@ CDestination::_removeFlag (int32 flag)
 	//unset
 	}
 }
-
+// debug
+void
+CDestination::PrintSelf()
+{
+	printf ("\n");
+	printf ("Name=%s\n",Name());
+	printf ("ID=%d\n",m_id);
+	printf ("IndexOf=%d\n",Document().m_destinations.IndexOf(this));
+	printf ("Muted=%d\n",Muted());
+	printf ("Solod=%d\n",Solo());
+	printf ("Deleted=%d\n",Deleted());
+	printf ("Disabled=%d\n",Disabled());
+	printf ("Valid=%d\n",IsValid());
+	printf ("Producer=%s\n",m_producer->Name());	
+}
 CDestinationDeleteUndoAction::CDestinationDeleteUndoAction(
 	CDestination *dest)
 	:	m_dest(dest),
@@ -495,4 +484,3 @@ CDestinationDeleteUndoAction::Undo()
 	D_HOOK(("CDestinationDeleteUndoAction::Undo()\n"));
 	m_dest->Undelete(m_index);
 }
-
