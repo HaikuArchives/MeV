@@ -52,7 +52,6 @@
 #include "AppWindow.h"
 #include "DocApp.h"
 #include "WindowState.h"
-#include "DynamicMenu.h"
 #include "Preferences.h"
 #include "Destination.h"
 

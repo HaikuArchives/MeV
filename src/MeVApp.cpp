@@ -35,6 +35,7 @@
 #include <Alert.h>
 #include <Box.h>
 #include <MenuField.h>
+#include <MenuItem.h>
 #include <PopUpMenu.h>
 #include <ScrollView.h>
 //#include <StringView.h>

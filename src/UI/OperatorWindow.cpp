@@ -15,6 +15,7 @@
 // Interface Kit
 #include <Button.h>
 #include <MenuBar.h>
+#include <MenuItem.h>
 
 class COperatorListItem : public CMultiColumnListItem {
 	friend class		COperatorWindow;

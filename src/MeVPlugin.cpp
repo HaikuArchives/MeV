@@ -28,7 +28,6 @@ MeVPlugIn::MeVPlugIn()
 void MeVPlugIn::AddMenuItem( char *inMenuText, int32 inWhichMenu, BMessage *inMsg )
 {
 	CMeVApp		&app = *(CMeVApp *)be_app;
-	CDynamicMenuDef	*def = NULL;
 
 	switch (inWhichMenu) {
 	case Assembly_Menu:
@@ -58,16 +57,6 @@ void MeVPlugIn::AddMenuItem( char *inMenuText, int32 inWhichMenu, BMessage *inMs
 		ei->menuText = inMenuText;
 		app.exporterList.AddItem( ei );
 		return;
-	}
-	
-	if (def)
-	{
-			// REM: We need to give that item some extra information I think...
-			// but only on a per-item basis...
-			
-			// How does the item know which window it's coming from?
-	
-//		def->AddItem( inMenuText, inMsg, this );
 	}
 }
 
