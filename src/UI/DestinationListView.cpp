@@ -132,7 +132,6 @@ CDestinationListView::OnUpdate(BMessage *message)
 void
 CDestinationListView::Update()
 {
-	PRINT(("UPDATE CALLED\n"));
 	int n=m_destMenu->CountItems()-1;
 	while (n>=2)
 	{
