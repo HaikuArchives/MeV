@@ -20,7 +20,7 @@ const int32			MAX_READER_COUNT = 10000;
 // Constructor/Destructor
 
 CLockable::CLockable(
-	const char *name = NULL)
+	const char *name)
 	:	m_sem(-1),
 		m_writerStackBase(0),
 		m_writerThread(-1),

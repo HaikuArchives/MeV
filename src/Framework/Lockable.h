@@ -50,7 +50,7 @@ class CLockable
 public:							// Constructor/Destructor
 
 								CLockable(
-									const char *name = NULL);
+									const char *name = "CLockable");
 
 								~CLockable();
 
@@ -119,20 +119,23 @@ public:							// Constructor/Destructor
 								CReadLock(
 									CLockable *object,
 									bigtime_t timeout = B_INFINITE_TIMEOUT)
-									:	m_lockable(object)
-								{ m_lockable->ReadLock(timeout); }
+									:	m_lockable(object),
+										m_locked(false)
+								{ m_locked = m_lockable->ReadLock(timeout); }
 
 								~CReadLock()
-								{ m_lockable->ReadUnlock();	}
+								{ if (m_locked) m_lockable->ReadUnlock(); }
 
 public:							// Accessors
 
 	status_t					InitCheck() const
-								{ return m_lockable->InitCheck(); }
+								{ return !m_locked ? B_ERROR : m_lockable->InitCheck(); }
 
 private:						// Instance Data
 
 	CLockable *					m_lockable;
+
+	bool						m_locked;
 };
 
 /**
@@ -147,20 +150,23 @@ public:							// Constructor/Destructor
 								CWriteLock(
 									CLockable *object,
 									bigtime_t timeout = B_INFINITE_TIMEOUT)
-									:	m_lockable(object)
-								{ m_lockable->WriteLock(timeout); }
+									:	m_lockable(object),
+										m_locked(false)
+								{ m_locked = m_lockable->WriteLock(timeout); }
 
 								~CWriteLock()
-								{ m_lockable->WriteUnlock(); }
+								{ if (m_locked) m_lockable->WriteUnlock(); }
 
 public:							// Accessors
 
 	status_t					InitCheck() const
-								{ return m_lockable->InitCheck(); }
+								{ return !m_locked ? B_ERROR : m_lockable->InitCheck(); }
 
 private:						// Instance Data
 
 	CLockable *					m_lockable;
+
+	bool						m_locked;
 };
 
 #endif /* __C_Lockable_H__ */
