@@ -681,6 +681,19 @@ CMeVDoc::ReadChunk(
 			_readEnvironment(reader);
 			break;
 		}
+		case MIX_WINDOW_CHUNK:
+		{
+			bool visible = false;
+			BRect rect = m_windowState[MIX_WINDOW].Rect();
+			reader >> visible;
+			reader >> rect.left;
+			reader >> rect.top;
+			reader >> rect.right;
+			reader >> rect.bottom;
+			m_windowState[MIX_WINDOW].SetPos(rect);
+			ShowWindow(MIX_WINDOW, visible);
+			break;
+		}
 		case Form_ID:
 		{
 			_readTrack(formType, reader);
@@ -742,6 +755,16 @@ CMeVDoc::Serialize(
 		track->Serialize(writer);
 		writer.Pop();
 	}
+
+	// write mix window state
+	writer.Push(MIX_WINDOW_CHUNK);
+	writer << m_windowState[MIX_WINDOW].IsOpen();
+	BRect rect = m_windowState[MIX_WINDOW].Rect();
+	writer << rect.left;
+	writer << rect.top;
+	writer << rect.right;
+	writer << rect.bottom;
+	writer.Pop();
 }
 
 void

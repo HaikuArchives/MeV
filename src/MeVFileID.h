@@ -59,7 +59,6 @@ enum MeVFileIDs
 	TRACK_NAME_CHUNK			= 'name',		// Track name chunk
 	TRACK_SECTION_CHUNK 		= 'sect',		// Section markers chunk
 	TRACK_GRID_CHUNK			= 'grid',		// Gridsnap chunk
-	TRACK_WINDOW_CHUNK			= 'tkwd',		// Track window chunk
 
 	// Environment chunk headers
 	DESTINATION_CHUNK			= 'dst ',		// Destination
@@ -68,6 +67,10 @@ enum MeVFileIDs
 	// Destination chunks header
 	DESTINATION_HEADER_CHUNK 	= 'dsth',
 	DESTINATION_NAME_CHUNK 		= 'dstn',
+
+	// UI chunk headers
+	TRACK_WINDOW_CHUNK			= 'tkwd',
+	MIX_WINDOW_CHUNK			= 'mxwd'
 };
 
 #endif /* __MeVFileID_H__ */
