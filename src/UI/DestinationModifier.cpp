@@ -15,6 +15,8 @@
 #include <MenuField.h>
 // Midi Kit
 #include <MidiConsumer.h>
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -268,39 +270,56 @@ CDestinationModifier::_buildUI()
 void
 CDestinationModifier::_populatePortsMenu()
 {
-	BMidiConsumer *con = NULL;
+	BMidiConsumer *consumer = NULL;
+
+	consumer = m_midiManager->InternalSynth();
+	if (consumer)
+	{
+		BMessage *msg = new BMessage(PORT_SELECTED);
+		msg->AddInt32("port_id", consumer->ID());
+	
+		BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
+										  B_MINI_ICON - 1.0), B_CMAP8);
+		if (m_midiManager->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
+		{
+			delete icon;
+			icon = NULL;
+		}
+	
+		CIconMenuItem *item = new CIconMenuItem(consumer->Name(), msg, 
+												icon);
+		m_midiPorts->AddItem(item);
+		StSubjectLock lock(*m_dest, Lock_Shared);
+		if (m_dest->GetProducer()->IsConnected(consumer))
+			item->SetMarked(true);
+	}
 
 	int32 id = 0;
-	while ((con = m_midiManager->NextConsumer(&id)) != NULL)
+	while ((consumer = m_midiManager->GetNextConsumer(&id)) != NULL)
 	{
-		if (con->IsValid())
+		if (consumer->IsValid())
 		{
 			BMessage *msg = new BMessage(PORT_SELECTED);
 			msg->AddInt32("port_id", id);
-			BBitmap *icon = m_midiManager->ConsumerIcon(id, B_MINI_ICON);
-			CIconMenuItem *item = new CIconMenuItem(con->Name(), msg, icon);
+
+			BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
+											  B_MINI_ICON - 1.0), B_CMAP8);
+			if (m_midiManager->GetIconFor(consumer, B_MINI_ICON, icon) != B_OK)
+			{
+				delete icon;
+				icon = NULL;
+			}
+
+			CIconMenuItem *item = new CIconMenuItem(consumer->Name(), msg,
+													icon);
 			m_midiPorts->AddItem(item);
 
 			StSubjectLock lock(*m_dest, Lock_Shared);
-			if (m_dest->IsConnected(con))
-			{
+			if (m_dest->IsConnected(consumer))
 				item->SetMarked(true);
-			}
-			con->Release();
+			consumer->Release();
 		}
 	}
-
-	Midi::CInternalSynth *internalSynth = m_midiManager->InternalSynth();
-	BMessage *msg = new BMessage(PORT_SELECTED);
-	msg->AddInt32("port_id", internalSynth->ID());
-	CIconMenuItem *item = new CIconMenuItem(internalSynth->Name(), msg,
-											m_midiManager->ConsumerIcon(internalSynth->ID(),
-											B_MINI_ICON));
-	m_midiPorts->AddItem(item);
-
-	StSubjectLock lock(*m_dest, Lock_Shared);
-	if (m_dest->GetProducer()->IsConnected(internalSynth))
-		item->SetMarked(true);
 }
 
 // END - DestinationModifier.cpp

@@ -17,8 +17,8 @@
 #include <stdio.h>
 
 // Debugging Macros
-#define D_ALLOC(x) PRINT(x)	// Constructor/Destructor
-#define D_ACCESS(x) PRINT(x)	// Accessors
+#define D_ALLOC(x) //PRINT(x)	// Constructor/Destructor
+#define D_ACCESS(x) //PRINT(x)	// Accessors
 #define D_MESSAGE(x) //PRINT(x)	// MessageReceived()
 #define D_ROSTER(x) //PRINT(x)	// BMidiRoster Interaction
 

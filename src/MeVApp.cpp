@@ -268,8 +268,6 @@ CMeVApp::CMeVApp()
 
 CMeVApp::~CMeVApp()
 {
-	Midi::CMidiManager::Instance()->Die();
-
 	delete filter;
 	delete m_importFilter;
 
@@ -321,6 +319,9 @@ CMeVApp::~CMeVApp()
 	for (int i = 0; i < deviceList.CountItems(); i++)
 	{
 	}
+
+	Midi::CMidiManager::Instance()->Lock();
+	Midi::CMidiManager::Instance()->Quit();
 }
 
 // ---------------------------------------------------------------------------

@@ -245,7 +245,7 @@ bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_
 	ASSERT(outName);
 	ASSERT(nameLength > 0);
 
-	BMidiConsumer* consumer = Midi::CMidiManager::Instance()->NextConsumer(cookie);
+	BMidiConsumer* consumer = Midi::CMidiManager::Instance()->GetNextConsumer(cookie);
 	if (consumer)
 	{
 		*outConsumerID = consumer->ID();
