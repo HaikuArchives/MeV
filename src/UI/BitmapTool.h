@@ -52,6 +52,7 @@ public:									// Constructor/Destructor
 											const char *name,
 											BBitmap *bitmap,
 											BMessage *message,
+											int32 mode = TOGGLE_MODE,
 											uint32 flags = 0);
 
 										~CBitmapTool();

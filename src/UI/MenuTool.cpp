@@ -28,8 +28,9 @@ CMenuTool::CMenuTool(
 	BBitmap *bitmap,
 	BPopUpMenu *menu,
 	BMessage *message,
+	int32 mode,
 	uint32 flags)
-	:	CTool(name, message, flags),
+	:	CTool(name, message, mode, flags),
 		m_bitmap(NULL),
 		m_disabledBitmap(NULL),
 		m_menu(menu)

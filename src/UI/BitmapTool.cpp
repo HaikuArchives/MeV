@@ -25,8 +25,9 @@ CBitmapTool::CBitmapTool(
 	const char *name,
 	BBitmap *bitmap,
 	BMessage *message,
+	int32 mode,
 	uint32 flags)
-	:	CTool(name, message, flags),
+	:	CTool(name, message, mode, flags),
 		m_bitmap(bitmap),
 		m_disabledBitmap(NULL)
 {

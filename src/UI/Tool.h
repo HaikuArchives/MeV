@@ -47,11 +47,24 @@
 #include <Archivable.h>
 
 class CTool :
-	public BArchivable {
+	public BArchivable
+{
 
 	friend class CToolBar;
 
 public:									// Constants
+
+	enum tool_mode {
+										TOGGLE_MODE = 0,
+
+										TRIGGER_MODE,
+
+										RADIO_MODE
+	};
+
+	enum tool_flags {
+										FORCE_SELECTION = 0x1
+	};										
 
 	static const size_t					TOOL_NAME_LENGTH;
 
@@ -60,6 +73,7 @@ public:									// Constructor/Destructor
 										CTool(
 											const char *name,
 											BMessage *message,
+											int32 mode = TOGGLE_MODE,
 											uint32 flags = 0);
 
 										~CTool();
@@ -85,45 +99,38 @@ public:									// Hook Functions
 
 public:									// Accessors
 
-	// Returns the tools name
-	const char *						Name() const
-										{
-											return m_name;
-										}
-
-	BMessage *							Message() const
-										{
-											return m_message;
-										}
-
-	CToolBar *							ToolBar() const
-										{
-											return m_toolBar;
-										}
-
-	int32								Value() const
-										{
-											return m_value;
-										}
-
-	// Returns whether the tool is currently selected or not
-	bool								IsSelected() const
-										{
-											return m_selected;
-										}
-
-	// Returns whether the tool is currently enabled or not
-	bool								IsEnabled() const
-										{
-											return m_enabled;
-										}
-
 	// Returns the position of this tool in the tool bar
 	BPoint								ContentLocation() const;
+
+	uint32								Flags() const
+										{ return m_flags; }
 
 	// Returns the tools frame rectangle
 	BRect								Frame() const;
 
+	// Returns whether the tool is currently selected or not
+	bool								IsSelected() const
+										{ return m_selected; }
+
+	// Returns whether the tool is currently enabled or not
+	bool								IsEnabled() const
+										{ return m_enabled;	}
+
+	BMessage *							Message() const
+										{ return m_message; }
+
+	int32								Mode() const
+										{ return m_mode; }
+
+	// Returns the tools name
+	const char *						Name() const
+										{ return m_name; }
+
+	CToolBar *							ToolBar() const
+										{ return m_toolBar;	}
+
+	int32								Value() const
+										{ return m_value; }
 
 	CTool *								NextTool() const;
 
@@ -134,24 +141,20 @@ public:									// Operations
 	// Select/deselect the tool
 	void								Select(
 											bool selected = true)
-										{
-											m_selected = selected;
-										}
+										{ m_selected = selected; }
 
 	// Enable or disable the tool
 	void								SetEnabled(
 											bool enabled = true)
-										{
-											m_enabled = enabled;
-										}
+										{ m_enabled = enabled; }
 	
-	void								SetRadioMode(
-											bool radioMode = true,
-											bool forceSelection = true)
-										{
-											m_radioMode = radioMode;
-											m_forceSelection = forceSelection;
-										}
+	void								SetFlags(
+											uint32 flags)
+										{ m_flags = flags; }
+
+	void								SetMode(
+											int32 mode)
+										{ m_mode = mode; }
 
 	void								SetValue(
 											int32 value);
@@ -164,15 +167,15 @@ private:								// Instance Data
 
 	CToolBar *							m_toolBar;
 
+	uint32								m_flags;
+
+	int32								m_mode;
+
 	int32								m_value;
 
 	bool								m_enabled;
 
 	bool								m_selected;
-
-	bool								m_radioMode;
-
-	bool								m_forceSelection;
 };
 
 #endif /* __C_Tool_H__ */

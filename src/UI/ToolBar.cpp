@@ -181,11 +181,12 @@ CToolBar::MakeRadioGroup(
 	CTool *tool = ToolAt(index);
 	while (tool)
 	{
-		tool->SetRadioMode(true, forceSelection);
+		tool->SetMode(CTool::RADIO_MODE);
+		tool->SetFlags(tool->Flags() | forceSelection ?
+									   CTool::FORCE_SELECTION :
+									   ~CTool::FORCE_SELECTION);
 		if (strcmp(tool->Name(), toItem) == 0)
-		{
 			break;
-		}
 		tool = tool->NextTool();
 	}
 }

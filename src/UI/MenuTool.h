@@ -53,6 +53,7 @@ public:									// Constructor/Destructor
 											BBitmap *bitmap,
 											BPopUpMenu *menu,
 											BMessage *message,
+											int32 mode = TOGGLE_MODE,
 											uint32 flags = 0);
 
 										~CMenuTool();

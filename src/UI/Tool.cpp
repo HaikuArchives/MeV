@@ -26,15 +26,17 @@ const size_t CTool::TOOL_NAME_LENGTH = 64;
 CTool::CTool(
 	const char *name,
 	BMessage *message,
+	int32 mode,
 	uint32 flags)
 	:	BArchivable(),
 		m_name(NULL),
 		m_message(message),
 		m_toolBar(NULL),
+		m_flags(flags),
+		m_mode(mode),
 		m_value(B_CONTROL_OFF),
 		m_enabled(true),
-		m_selected(false),
-		m_radioMode(false)
+		m_selected(false)
 {
 	D_ALLOC(("CTool::CTool()\n"));
 
@@ -120,16 +122,25 @@ CTool::SetValue(
 
 	if (value != m_value)
 	{
-		if (m_radioMode && m_forceSelection && (m_value == B_CONTROL_ON))
+		if (Mode() == TRIGGER_MODE)
 		{
+			// trigger tools don't change their value
+			return;
+		}
+
+		if ((Mode() == RADIO_MODE) && (Flags() & FORCE_SELECTION)
+		 && (Value() == B_CONTROL_ON))
+		{
+			// radio mode with the force-selection flag set does not
+			// allow 'turning off' the tool directly
 			return;
 		}
 
 		m_value = value;
 
-		if (m_radioMode && (m_value == B_CONTROL_ON))
+		if ((Mode() == RADIO_MODE) && (Value() == B_CONTROL_ON))
 		{
-			D_OPERATION((" -> radio mode: turn off other tools in radio group\n"));
+			// turn off other tools in radio group
 			CTool *tool;
 			tool = PreviousTool();
 			while (tool)

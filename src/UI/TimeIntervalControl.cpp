@@ -25,9 +25,9 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT (x)			// Constructor/Destructor
-#define D_HOOK(x) PRINT (x)			// BControl Implementation
-#define D_MESSAGE(x) PRINT (x)		// Messaging
-#define D_OPERATION(x) PRINT (x)	// Operations
+#define D_HOOK(x) //PRINT (x)			// BControl Implementation
+#define D_MESSAGE(x) //PRINT (x)		// Messaging
+#define D_OPERATION(x) //PRINT (x)		// Operations
 
 // ---------------------------------------------------------------------------
 // Class Data Initialization
@@ -89,7 +89,7 @@ CTimeIntervalControl::CTimeIntervalControl(
 
 	m_toolBar = new CToolBar(Bounds(), "Time Interval");
 	m_toolBar->AddTool(new CMenuTool("Base Duration", ResourceUtils::LoadImage("EighthNote"),
-									 notesMenu, NULL));
+									 notesMenu, NULL, CTool::TRIGGER_MODE));
 	m_toolBar->AddSeparator();
 	message = new BMessage(MODIFIERS_CHANGED);
 	message->AddBool("tuplet", true);
