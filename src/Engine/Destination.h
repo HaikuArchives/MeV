@@ -45,8 +45,7 @@
 #include "BitSet.h"
 #include "MeV.h"
 #include "Observable.h"
-#include "IFFWriter.h"
-#include "IFFReader.h"
+#include "Serializable.h"
 #include "ReconnectingMidiProducer.h"
 
 // Midi Kit
@@ -62,6 +61,7 @@ class CMeVDoc;
 
 #define NOTE_NAME_LENGTH 128
 #define PROGRAM_NAME_LENGTH 128
+#define DESTINATION_NAME_LENGTH 128
 
 /**	Destinations, allow routing and remapping of MIDI data
 	upon playback.
@@ -69,7 +69,8 @@ class CMeVDoc;
 	@package	Engine
  */
 class CDestination
-	:	public CObservable
+	:	public CObservable,
+		public CSerializable
 {
 	friend class CDestinationDeleteUndoAction;
 
@@ -90,52 +91,33 @@ public:							// Constants
 								Update_Latency = (1<<5)
 	};
 
-	enum destinationFlags
-	{		
-								// channel is muted
-								muted			= (1<<0),
-
-								// channel muted because of solo
-								mutedFromSolo	= (1<<1),
-
-								// channel is solo'd
-								solo			= (1<<2),
-
-								// channel disabled because of vanished midi port.
-								disabled		= (1<<3),
-
-								// only one channel should be in this catagory.
-								deleted			= (1<<4)
-	};
-
 public:							//Constructor/Destructor
 
 								CDestination(
-									int32 id,
-									CMeVDoc *document,
-									const char *name);
+									unsigned long type,
+									long id,
+									const char *name,
+									CMeVDoc *document);
 
 								CDestination(
-									CIFFReader &reader,
 									CMeVDoc *document);
 
 	virtual						~CDestination();
 
-public: 		  				// Serialization
-
-	virtual void				WriteDestination(
-									CIFFWriter &writer);
-
 public:							// Accessors
 	
+	/** Returns the type of destination. */
+	unsigned long				Type() const;
+
+	/** Returns the ID of the destination. */
+	long						ID() const;
+
 	virtual status_t			GetIcon(
 									icon_size which,
 									BBitmap *outIcon);
-	int32 						GetID() const
-								{ return m_id; }
 
 	/** Returns true if not disabled or deleted. */
-	bool 						IsValid () const;
+	bool 						IsValid() const;
 
 	virtual void 				SetMuted(
 									bool muted);
@@ -144,18 +126,17 @@ public:							// Accessors
 	 *	destination is muted because another destination is currently
 	 *	soloed.
 	 */
-	bool						Muted(
+	bool						IsMuted(
 									bool *fromSolo = NULL) const;
 
 	virtual void 				SetSolo(
 									bool solo);
-	bool 						Solo() const
-								{ return m_flags & solo; }
+	bool 						IsSolo() const;
 						
 	virtual void 				SetName(
-									const BString &name);
+									const char *name);
 	const char *				Name() const
-								{ return m_name.String(); }
+								{ return m_name; }
 
 	virtual void				SetLatency(
 									bigtime_t microseconds);
@@ -164,31 +145,30 @@ public:							// Accessors
 
 	void						SetColor(
 									rgb_color color);
-	rgb_color					GetFillColor() const
-								{ return m_fillColor; }
-	rgb_color					GetHighlightColor() const
-								{ return m_highlightColor; }
+	rgb_color					Color() const
+								{ return m_color; }
 
 	virtual void				SetDisabled(
 									bool disabled);
-	bool			 			Disabled()const
-								{ return m_flags & disabled; }
+	bool			 			IsDisabled() const;
 
 	CMeVDoc *					Document() const
 								{ return m_doc; } 
 	
 public:							// Operations
 
+	bool						IsDeleted() const;
 	void						Delete();
 	void						Undelete(
 									int32 originalIndex);
-	bool						Deleted() const
-								{ return m_flags & deleted; }
 
-public:							//Hook Functions
+public:							// CSerializable Implementation
 
-	virtual int32				Bytes()
-								{ return sizeof(*this); }
+	virtual void				ReadChunk(
+									CIFFReader &reader);
+
+	virtual void				Serialize(
+									CIFFWriter &writer);
 
 public:							// Midi specific functionality
 								// +++ move to Midi::CMidiDestination
@@ -245,17 +225,18 @@ private:						// Instance Data
 
 	CMeVDoc *					m_doc;
 
-	int32						m_id;
+	unsigned long				m_type;
 
-	BString 					m_name;
+	long						m_id;
+
+	char						m_name[DESTINATION_NAME_LENGTH];
 
 	bigtime_t					m_latency;
 
 	// various flags
 	uint8						m_flags;
 
-	rgb_color					m_fillColor;
-	rgb_color					m_highlightColor;
+	rgb_color					m_color;
 
 	// +++ move these to CMidiDestination in the future
 
@@ -268,10 +249,6 @@ private:						// Instance Data
 	Midi::CReconnectingMidiProducer *	m_producer;					
 
 	bool						m_generalMidi;
-
-private:						// Class Data
-
-	static const rgb_color		s_defaultColorTable[16];
 };
 
 class CDestinationDeleteUndoAction
@@ -293,7 +270,7 @@ public:
 	void						Redo();
 	
 	int32						Size()
-								{ return m_dest->Bytes(); }
+								{ return sizeof(m_dest); }
 	
 	void						Undo();
 	

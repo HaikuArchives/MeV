@@ -42,30 +42,32 @@
 enum MeVFileIDs
 {
 	// General IFF headers
-	Form_ID				= 'FORM',
-	Body_ID				= 'BODY',
+	Form_ID						= 'FORM',
+	Body_ID						= 'BODY',
 
 	// MeV Document type
-	MeV_ID				= 'MeV ',		// Idenfies a MeV file
+	MeV_ID						= 'MeV ',		// Idenfies a MeV file
 
 	// Document chunk headers
-	ENVIRONMENT_CHUNK	= 'envi',		// Environment chunk
-	FMasterRealTrack	= 'mrTk',		// Master real track embedded form
-	FMasterMeteredTrack	= 'mmTk',		// Master metered track embedded form
-	DocTempo_ID			= 'dTem',		// Overall document tempo
+	DOC_HEADER_CHUNK			= 'dTem',		// Document header
+	ENVIRONMENT_CHUNK			= 'envi',		// Environment
+	FMasterRealTrack			= 'mrTk',		// Master real track embedded form
+	FMasterMeteredTrack			= 'mmTk',		// Master metered track embedded form
 
 	// Track chunk headers
-	Track_Header_ID		= 'head',		// Track header chunk
-	Track_Name_ID		= 'name',		// Track name chunk
-	Track_Section_ID	= 'sect',		// Section markers chunk
-	Track_Grid_ID		= 'grid',		// Gridsnap chunk
+	TRACK_HEADER_CHUNK			= 'head',		// Track header chunk
+	TRACK_NAME_CHUNK			= 'name',		// Track name chunk
+	TRACK_SECTION_CHUNK 		= 'sect',		// Section markers chunk
+	TRACK_GRID_CHUNK			= 'grid',		// Gridsnap chunk
+	TRACK_WINDOW_CHUNK			= 'tkwd',		// Track window chunk
 
 	// Environment chunk headers
-	DESTINATION_CHUNK	= 'dest',		// Destination
-	SOURCE_CHUNK		= 'sorc',		// Source
+	DESTINATION_CHUNK			= 'dst ',		// Destination
+	SOURCE_CHUNK				= 'src ',		// Source
 
-	// UI chunk headers
-	TRACK_WINDOW_CHUNK	= 'tkwd'		// Track window chunk
+	// Destination chunks header
+	DESTINATION_HEADER_CHUNK 	= 'dsth',
+	DESTINATION_NAME_CHUNK 		= 'dstn',
 };
 
 #endif /* __MeVFileID_H__ */

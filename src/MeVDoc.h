@@ -105,11 +105,15 @@ public:							// Constructor/Destructor
 									CMeVApp *app,
 									entry_ref &ref);
 
+								CMeVDoc(
+									CMeVApp *app,
+									entry_ref &ref,
+									CIFFReader &reader);
+
 	virtual						~CMeVDoc();
 	
 public:							// Accessors
 
-	
 	static BMimeType *			MimeType();
 
 public:							// Operator Management
@@ -193,7 +197,6 @@ public:							// Track Management
 									int32 index)
 								{ return (CTrack *)tracks.ItemAt(index); }
 
-								
 public :						//Destination Management
 
 	CDestination *				NewDestination();
@@ -328,22 +331,26 @@ public:							// CDocument Implementation
 	/** Save the document to it's current location */
 	virtual void				SaveDocument();
 
-private:						// Serialization
+	virtual void				ReadChunk(
+									CIFFReader &reader);
+
+	virtual void				Serialize(
+									CIFFWriter &writer);
+
+private:						// Internal Operations
+
+	void						_addDefaultOperators();
+
+	void						_init();
 
 	/** Read a single track. */
-	void						ReadTrack(
+	void						_readTrack(
 									uint32 inTrackType,
 									CIFFReader &iffReader);
 
 	/** Read environment chunk. */
-	void						ReadEnvironment(
+	void						_readEnvironment(
 									CIFFReader &iffReader);
-
-private:						// Internal Operations
-
-	void						AddDefaultOperators();
-
-	void						Init();
 
 private:						// Instance Data
 
@@ -380,8 +387,6 @@ private:						// Instance Data
 
 	bool						validTempoMap;
 
-	CMeVDoc *					_me;
-	
 	// Master editing window -- we close this, we close
 	// everything...
 	CAssemblyWindow *			assemblyWindow;

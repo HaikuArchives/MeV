@@ -61,41 +61,15 @@ class CEventTrack :
 {
 	friend class MeVTrackRef;
 
-private:
-	EventList		events;					// List of events for this class
-	EventMarker		currentEvent;			// for single-event selection
-	long				selectionCount;			// number of selected events
+public:							// Constructor/Destructor
 
-	long				minSelectTime,			// start time of selection
-					maxSelectTime;			// end time of selection
-					
-	long				timeGridSize;			// gridsnap size for time
-	bool				gridSnapEnabled;			// grid snap is enabled.
+								CEventTrack(
+									CMeVDoc &doc,
+									TClockType clockType,
+									int32 id,
+									char *name);
 
-		// "Aggregate" actions are when multiple indpendent events are
-		// aggregated into a single UNDO. (arrow-key editing, for example)
-	UndoAction		*prevAggregateUndo;		// previous aggregate undo action
-	int32			prevAggregateAction;		// previous aggregate action code
-					
-	BList			operators;				// Operators specific to this track
-
-	EventOp			*filters[ Max_Track_Filters ];
-	int32			filterCount;
-	
-	bool				validSigMap;
-	
-	VBitTable		usedChannels,
-					selectedChannels,
-					lockedChannels;
-	
-	void RecalcSigMap();
-
-		// For operations on master tracks... 
-	CEventTrack *Sibling();
-	int32 Bytes() { return sizeof *this + events.TotalItems() * sizeof(Event); }
-
-public:
-	CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *inName );
+public:							// Operations
 
 	void SummarizeSelection();
 	
@@ -260,12 +234,6 @@ public:
 			master track issues. */
 	void AddUndoAction( UndoAction *inAction );
 
-		/**	Write the track to the MeV file. */
-	void WriteTrack( CIFFWriter &writer );
-	
-		/** Read one chunk from the MeV file. */
-	void ReadTrackChunk( CIFFReader &reader );
-	
 	/** Test if a channel is locked... */
 	bool						IsChannelLocked(
 									int32 channel) const
@@ -286,6 +254,51 @@ public:
 	bool						IsChannelUsed(
 									int32 channel) const
 								{ return usedChannels[channel]; }
+
+public:							// CSerializable Implementation
+
+	/**	Write the track to the MeV file. */
+	virtual void				Serialize(
+									CIFFWriter &writer);
+
+	/** Read one chunk from the MeV file. */
+	virtual void				ReadChunk(
+									CIFFReader &reader);
+	
+private:						// Instance Data
+
+	EventList		events;					// List of events for this class
+	EventMarker		currentEvent;			// for single-event selection
+	long				selectionCount;			// number of selected events
+
+	long				minSelectTime,			// start time of selection
+					maxSelectTime;			// end time of selection
+					
+	long				timeGridSize;			// gridsnap size for time
+	bool				gridSnapEnabled;			// grid snap is enabled.
+
+		// "Aggregate" actions are when multiple indpendent events are
+		// aggregated into a single UNDO. (arrow-key editing, for example)
+	UndoAction		*prevAggregateUndo;		// previous aggregate undo action
+	int32			prevAggregateAction;		// previous aggregate action code
+					
+	BList			operators;				// Operators specific to this track
+
+	EventOp			*filters[ Max_Track_Filters ];
+	int32			filterCount;
+	
+	bool				validSigMap;
+	
+	VBitTable		usedChannels,
+					selectedChannels,
+					lockedChannels;
+	
+	void RecalcSigMap();
+
+		// For operations on master tracks... 
+	CEventTrack *Sibling();
+	int32 Bytes() { return sizeof *this + events.TotalItems() * sizeof(Event); }
+
 };
 
 	/**	A hint which takes it's parameters from the current selection. */

@@ -232,10 +232,9 @@ CDestinationModifier::_buildUI()
 	rect.right = Bounds().Width() * 0.75;
 	m_muted = new BCheckBox(rect, "Mute", "Mute", new BMessage(MUTED));
 	m_background->AddChild(m_muted);
-	if (m_dest->Muted())
-	{
+	if (m_dest->IsMuted())
 		m_muted->SetEnabled(false);
-	}
+
 	// add "Solo" check-box
 	rect.left = rect.right;
 	rect.right = Bounds().Width() - 5.0;
@@ -250,7 +249,7 @@ CDestinationModifier::_buildUI()
 	m_colors = new BColorControl(rect.LeftTop(), B_CELLS_32x8, 4.0,
 								 "Destination Color",
 								 new BMessage(COLOR_CHANGED));
-	m_colors->SetValue(m_dest->GetFillColor());
+	m_colors->SetValue(m_dest->Color());
 	m_background->AddChild(m_colors);
 
 	// resize the window to fit the color control

@@ -40,20 +40,20 @@
 
 #include "MeV.h"
 #include "Observable.h"
+#include "Serializable.h"
 #include "SignatureMap.h"
 
 // Support Kit
 #include <String.h>
 
 class CMeVDoc;
-class CIFFReader;
-class CIFFWriter;
 class CTrackWindow;
 
-#define TRACK_NAME_LENGTH 64
+#define TRACK_NAME_LENGTH 128
 
 class CTrack
-	:	public CObservable
+	:	public CObservable,
+		public CSerializable
 {
 	friend class CMeVDoc;
 	friend class CTrackDeleteUndoAction;
@@ -79,19 +79,20 @@ public:							// Constants
 		Update_TempoMap	= (1<<7)			// Tempo map changed
 	};
 
+	enum flags {
+		MUTED 			= (1 << 0),
+		SOLO			= (1 << 1),
+		RECORDING		= (1 << 2)
+	};
+	
 public:							// Constructor/Destructor
 
 	/** New track constructor */
 								CTrack(
-									CMeVDoc &inDoc,
+									CMeVDoc &doc,
 									TClockType &cType,
 									int32 inID = -1,
 									char *inName = NULL);
-
-	/** Deserialization constructor */
-								CTrack(
-									CMeVDoc &inDoc,
-									CIFFReader &inReader);
 
 	/** Destructor */
 								~CTrack();
@@ -109,14 +110,14 @@ public:							// Hook Functions
 
 	virtual uint32				TrackType() const = 0;
 	
-public:							// Serialization
+public:							// CSerializable Implementation
 
 	/** Read track data from MeV file. */
-	virtual void				ReadTrackChunk(
+	virtual void				ReadChunk(
 									CIFFReader &reader);
 
 	/** Write track data to MeV file. */
-	virtual void				WriteTrack(
+	virtual void				Serialize(
 									CIFFWriter &writer);
 
 public:							// Accessors

@@ -8,11 +8,12 @@
 #include "EventOp.h"
 #include "EventEditor.h"
 #include "MeVFileID.h"
-#include "IFFWriter.h"
-#include "IFFReader.h"
+
+// Support Kit
 #include <Debug.h>
+
 // ---------------------------------------------------------------------------
-// Event track constructor
+// Constructor/Destructor
 
 CEventTrack::CEventTrack(
 	CMeVDoc &inDoc,
@@ -1032,57 +1033,6 @@ CEventUpdateHint::CEventUpdateHint(
 	AddInt32("MaxTime", event.Stop());
 }
 
-		/** Write the VCTable to a MeV file. */
-void CEventTrack::WriteTrack( CIFFWriter &writer )
-{
-	uint8			gsnap = gridSnapEnabled ? 1 : 0;
-
-	CTrack::WriteTrack( writer );
-
-	writer.Push( Track_Grid_ID );
-	writer << timeGridSize << gsnap;
-	writer.Pop();
-	
-	// REM: We need to write the operators to the track. We need IDs and keys...
-
-	StSubjectLock		trackLock( *this, Lock_Shared );
-
-	if (events.TotalItems() > 0)
-	{
-		writer.Push( Body_ID );
-		WriteEventList( writer, events );
-		writer.Pop();
-	}
-}
-
-void
-CEventTrack::ReadTrackChunk(
-	CIFFReader &reader)
-{
-	switch (reader.ChunkID())
-	{
-		case Track_Grid_ID:
-		{
-			uint8 gsnap;
-			reader >> timeGridSize >> gsnap;
-			gridSnapEnabled = gsnap ? 1 : 0;
-			break;
-		}
-		case Body_ID:
-		{
-			StSubjectLock trackLock(*this, Lock_Exclusive);
-			ReadEventList(reader, events);
-			SummarizeSelection();
-			break;
-		}
-		default:
-		{
-			CTrack::ReadTrackChunk(reader);
-			break;
-		}
-	}
-}
-
 void CEventTrack::LockChannel( int32 inChannel, bool inLocked )
 {
 	if (IsChannelLocked( inChannel ) != inLocked)
@@ -1119,6 +1069,60 @@ CEventTrack::IsChannelLocked(
 	const Event &ev) const
 {
 	return (ev.HasProperty(Event::Prop_Channel) && IsChannelLocked(ev.GetVChannel()));
+}
+
+// ---------------------------------------------------------------------------
+// CSerializable Implementation
+
+void
+CEventTrack::ReadChunk(
+	CIFFReader &reader)
+{
+	switch (reader.ChunkID())
+	{
+		case TRACK_GRID_CHUNK:
+		{
+			CWriteLock lock(this);
+			reader >> timeGridSize;
+			reader >> gridSnapEnabled;
+			break;
+		}
+		case Body_ID:
+		{
+			CWriteLock lock(this);
+			ReadEventList(reader, events);
+			SummarizeSelection();
+			break;
+		}
+		default:
+		{
+			CTrack::ReadChunk(reader);
+			break;
+		}
+	}
+}
+
+void
+CEventTrack::Serialize(
+	CIFFWriter &writer)
+{
+	CTrack::Serialize(writer);
+
+	CReadLock lock(this);
+
+	writer.Push(TRACK_GRID_CHUNK);
+	writer << timeGridSize;
+	writer << gridSnapEnabled;
+	writer.Pop();
+	
+	if (events.TotalItems() > 0)
+	{
+		writer.Push(Body_ID);
+		WriteEventList(writer, events);
+		writer.Pop();
+	}
+
+	// +++ we need to write the operators to the track. We need IDs and keys...
 }
 
 // END - EventTrack.cpp

@@ -42,6 +42,8 @@ CTrack::CTrack(
 		m_sectionStart(0),
 		m_sectionEnd(0)
 {
+	D_ALLOC(("CTrack::CTrack()\n"));
+
 	// REM: Calculate a unique track ID.
 	if (inID < 0)
 		m_trackID = Document().GetUniqueTrackID();
@@ -266,41 +268,40 @@ CTrack::AddUpdateHintBits(
 // ---------------------------------------------------------------------------
 // Serialization
 
-enum ETrackFlags {
-	Track_Muted = (1<<0),
-	Track_Solo = (1<<1),
-	Track_Recording = (1<<2)
-};
-
 void
-CTrack::ReadTrackChunk(
+CTrack::ReadChunk(
 	CIFFReader &reader)
 {
-	uint8 flags, clock;
-
 	switch (reader.ChunkID())
 	{
-		case Track_Header_ID:
+		case TRACK_HEADER_CHUNK:
 		{
 			reader >> m_trackID;
-			reader >> flags >> clock;
-			clockType = (TClockType)clock;
-			if (flags & Track_Muted)
+
+			uint8 flags;
+			reader >> flags;
+			if (flags & MUTED)
 				m_muted = true;
-			if (flags & Track_Solo)
+			if (flags & SOLO)
 				m_solo = true;
-			if (flags & Track_Recording)
+			if (flags & RECORDING)
 				m_recording = true;
+
+			uint8 clock;
+			reader >> clock;
+			clockType = (TClockType)clock;
 			break;
 		}
-		case Track_Name_ID:
+		case TRACK_NAME_CHUNK:
 		{
-			reader.MustRead(m_name, MIN(reader.ChunkLength(), TRACK_NAME_LENGTH));
+			reader.MustRead(m_name, MIN(reader.ChunkLength(),
+										TRACK_NAME_LENGTH));
 			break;
 		}
-		case Track_Section_ID:
+		case TRACK_SECTION_CHUNK:
 		{
-			reader >> m_sectionStart >> m_sectionEnd;
+			reader >> m_sectionStart;
+			reader >> m_sectionEnd;
 			break;
 		}
 		case TRACK_WINDOW_CHUNK:
@@ -317,41 +318,44 @@ CTrack::ReadTrackChunk(
 }
 
 void
-CTrack::WriteTrack(
+CTrack::Serialize(
 	CIFFWriter &writer)
 {
-	D_SERIALIZE(("CTrack<%s>::WriteTrack()\n", Name()));	
+	D_SERIALIZE(("CTrack<%s>::Serialize()\n", Name()));	
 
-	uint8 flags = 0;
-	uint8 clock = clockType;
+	CReadLock lock(this);
 
 	if (m_trackID == 0)
 		// master real track doesn't have window settings!
+		// +++ why not ?
 		return;
 
-	StSubjectLock lock(*this, Lock_Shared);
-
-	writer.Push(Track_Header_ID);
+	// write track header
+	writer.Push(TRACK_HEADER_CHUNK);
 	writer << m_trackID;
+
+	uint8 flags = 0;
 	if (Muted())
-		flags |= Track_Muted;
+		flags |= MUTED;
 	if (Solo())
-		flags |= Track_Solo;
+		flags |= SOLO;
 	if (Recording())
-		flags |= Track_Recording;
-	writer << flags << clock;
+		flags |= RECORDING;
+	writer << flags;
+
+	uint8 clock = clockType;
+	writer << clock;
 	writer.Pop();
 
 	// write track name
-	writer.WriteChunk(Track_Name_ID, m_name, TRACK_NAME_LENGTH);
+	writer.WriteChunk(TRACK_NAME_CHUNK, m_name,
+					  MIN(strlen(m_name) + 1, TRACK_NAME_LENGTH));
 
-	// write section markers if non-default.
-	if ((SectionStart() != 0) || (SectionEnd() != 0))
-	{
-		writer.Push( Track_Section_ID );
-		writer << SectionStart() << SectionEnd();
-		writer.Pop();
-	}
+	// write section markers
+	writer.Push(TRACK_SECTION_CHUNK);
+	writer << SectionStart();
+	writer << SectionEnd();
+	writer.Pop();
 
 	// write window settings
 	if (m_window)

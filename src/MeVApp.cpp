@@ -5,6 +5,7 @@
 #include "MeVApp.h"
 
 #include "AssemblyWindow.h"
+#include "BeFileReader.h"
 #include "CursorCache.h"
 #include "DocWindow.h"
 #include "EventOp.h"
@@ -804,9 +805,52 @@ CMeVApp::NewDocument(
 	CMeVDoc *doc;
 
 	if (ref)
-		doc = new CMeVDoc(this, *ref);
+	{
+		BFile file(ref, B_READ_ONLY);
+		status_t error = file.InitCheck();
+		if (error)
+		{
+			char *msg;
+			switch (error)
+			{
+				case B_BAD_VALUE:
+				{
+					msg = "The directory or path name you specified was invalid.";
+					break;
+				}
+				case B_ENTRY_NOT_FOUND:
+				{
+					msg = "The file could not be found. Please check the spelling of the directory and file names.";
+					break;
+				}
+				case B_PERMISSION_DENIED:
+				{
+					msg = "You do not have permission to read that file.";
+					break;
+				}
+				case B_NO_MEMORY:
+				{
+					msg = "There was not enough memory to complete the operation.";
+					break;
+				}
+				default:
+				{
+					msg = "An error has been detected of a type never before encountered, Captain.";
+				}
+			}		
+			CDocApp::Error(msg);
+			return NULL;
+		}
+
+		// Create reader and IFF reader.
+		CBeFileReader reader(file);
+		CIFFReader iffReader(reader);
+		doc = new CMeVDoc(this, *ref, iffReader);
+	}
 	else
+	{
 		doc = new CMeVDoc(this);
+	}
 
 	// If document did not initialize OK, then fail.
 	if (!doc->InitCheck())

@@ -215,7 +215,7 @@ CPitchBendEventHandler::Draw(
 	if (locked)
 		Editor()->SetHighColor(192, 192, 192);
 	else
-		Editor()->SetHighColor(dest->GetFillColor());
+		Editor()->SetHighColor(dest->Color());
 		
 	if ((ev.Duration() > 0) && (ev.pitchBend.updatePeriod > 0))
 	{
@@ -256,7 +256,7 @@ CPitchBendEventHandler::Draw(
 	if (locked)
 		Editor()->SetHighColor(192, 192, 192);
 	else
-		Editor()->SetHighColor(dest->GetFillColor());
+		Editor()->SetHighColor(dest->Color());
 	Editor()->FillEllipse(r);
 	
 	if (locked)

@@ -71,6 +71,15 @@ class CMeVDoc;
 namespace Midi
 {
 
+enum chunk_ids
+{
+	// Midi destination chunk ids
+	CONNECTION_NAME_CHUNK		= 'Mcon',		// Midi consumer name
+	DESTINATION_SETTINGS_CHUNK	= 'Mset'		// Midi destination settings
+};
+
+const size_t CONNECTION_NAME_LENGTH = 256;
+
 class CMidiManager
 	: 	public BLooper,
 		public CObserver

@@ -475,13 +475,13 @@ CVelocityNoteEventHandler::Draw(
 		
 		Editor()->StrokeRect(rect);
 		rect.InsetBy(1.0, 1.0);
-		Editor()->SetHighColor(dest->GetFillColor());
+		Editor()->SetHighColor(dest->Color());
 		Editor()->SetDrawingMode(B_OP_BLEND);
 		Editor()->FillRect(rect);
 	}
 	else
 	{
-		Editor()->SetHighColor(dest->GetFillColor());
+		Editor()->SetHighColor(dest->Color());
 		Editor()->SetDrawingMode(B_OP_BLEND);
 		Editor()->FillPolygon(points, 4, rect);
 

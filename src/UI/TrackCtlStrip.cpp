@@ -758,7 +758,7 @@ CProgramChangeEventHandler::Draw(
 	frameRect.right -= 1.0;
 
 	CDestination *dest = Document()->FindDestination(ev.GetVChannel());
-	rgb_color fillColor = dest->GetFillColor();
+	rgb_color fillColor = dest->Color();
 	if (ev.IsSelected())
 		fillColor = tint_color(fillColor, B_DARKEN_2_TINT);
 	rgb_color textColor = {0, 0, 0, 255};

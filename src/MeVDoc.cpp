@@ -58,100 +58,41 @@ CMeVDoc::CMeVDoc(
 		m_newTrackID(2),
 		m_initialTempo(DEFAULT_TEMPO)
 {
-	Init();
-
+	_init();
+	_addDefaultOperators();
 	m_windowState[ASSEMBLY_WINDOW] = BRect(40, 40, 480, 280);
 	m_windowState[ENVIRONMENT_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 	m_windowState[OPERATORS_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 
-	AddDefaultOperators();
-
-	m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
-	m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
+	m_masterRealTrack = new CEventTrack(*this, ClockType_Real, 0,
+										"Master Real");
+	m_masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1,
+										 "Master Metric");
 	m_activeMaster = m_masterMeterTrack;
+
 	SetValid(); 
+
 	NewDestination();
 }
 
 CMeVDoc::CMeVDoc(
 	CMeVApp *app,
-	entry_ref &ref)
+	entry_ref &ref,
+	CIFFReader &reader)
 	:	CDocument(app, ref),
 		m_newTrackID(2),
 		m_initialTempo(DEFAULT_TEMPO)
 {
-	Init();
+	CWriteLock lock(this);
 
+	_init();
+	_addDefaultOperators();
 	m_windowState[ASSEMBLY_WINDOW] = BRect(40, 40, 480, 280);
 	m_windowState[ENVIRONMENT_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 	m_windowState[OPERATORS_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 
-	AddDefaultOperators();
-
-	BFile file(&ref, B_READ_ONLY);
-	status_t error = file.InitCheck();
-	if (error)
-	{
-		char *msg;
-		switch (error)
-		{
-			case B_BAD_VALUE:
-			{
-				msg = "The directory or path name you specified was invalid.";
-				break;
-			}
-			case B_ENTRY_NOT_FOUND:
-			{
-				msg = "The file could not be found. Please check the spelling of the directory and file names.";
-				break;
-			}
-			case B_PERMISSION_DENIED:
-			{
-				msg = "You do not have permission to read that file.";
-				break;
-			}
-			case B_NO_MEMORY:
-			{
-				msg = "There was not enough memory to complete the operation.";
-				break;
-			}
-			default:
-			{
-				msg = "An error has been detected of a type...never before encountered, Captain.";
-			}
-		}
-		
-		CDocApp::Error(msg);
-		return;
-	}
-
-	// Create reader and IFF reader.
-	CBeFileReader reader(file);
-	CIFFReader iffReader(reader);
-	int32 formType;
-
-	iffReader.ChunkID(1, &formType);
-	while (iffReader.NextChunk())
-	{
-		switch (iffReader.ChunkID(0, &formType))
-		{
-			case ENVIRONMENT_CHUNK:
-			{
-				ReadEnvironment(iffReader);
-				break;
-			}
-			case DocTempo_ID:
-			{
-				iffReader >> m_initialTempo;
-				break;
-			}
-			case Form_ID:
-			{
-				ReadTrack(formType, iffReader);
-				break;
-			}
-		}
-	}
+	while (reader.NextChunk())
+		ReadChunk(reader);
 
 	if (m_masterRealTrack == NULL)
 		m_masterRealTrack  = new CEventTrack(*this, ClockType_Real, 0,
@@ -378,24 +319,29 @@ long CMeVDoc::GetUniqueTrackID()
 	return trialID;
 }
 
-	// Create a new track (refcount = 1)
-CTrack *CMeVDoc::NewTrack( ulong inTrackType, TClockType inClockType )
+CTrack *
+CMeVDoc::NewTrack(
+	ulong type,
+	TClockType clockType)
 {
-	switch (inTrackType) {
-	case TrackType_Event:
-		CEventTrack		*etk;
-
-		etk = new CEventTrack( *this, inClockType, m_newTrackID++, NULL );
-		if (etk)
+	switch (type)
+	{
+		case TrackType_Event:
 		{
-			BString name = etk->Name();
-			name << " " << etk->GetID() - 1;
-			etk->SetName(name.String());
-			tracks.AddItem( etk );
-			return etk;
+			CEventTrack *track = new CEventTrack(*this, clockType,
+												 m_newTrackID++, NULL);
+			if (track)
+			{
+				BString name = track->Name();
+				name << " " << track->GetID() - 1;
+				track->SetName(name.String());
+				tracks.AddItem(track);
+				return track;
+			}
+			break;
 		}
-		break;
 	}
+
 	return NULL;
 }
 
@@ -491,7 +437,7 @@ CMeVDoc::GetNextDestination(
 		{
 			(*index)++;
 			CDestination *next = FindDestination(*index);
-			if (next && !next->Deleted())
+			if (next && !next->IsDeleted())
 				break;
 		} while (*index < count);
 	}
@@ -525,13 +471,13 @@ CMeVDoc::IsDefinedDest(
 CDestination *
 CMeVDoc::NewDestination()
 {
-	CDestination *dest = new CDestination(m_destinations.CountItems(),
-										  this, "Untitled Destination");
+	CDestination *dest = new CDestination('MIDI', m_destinations.CountItems(),
+										  "Untitled Destination", this);
 	m_destinations.AddItem(dest);
 
 	CUpdateHint hint;
 	hint.AddInt32("DocAttrs", Update_AddDest);
-	hint.AddInt32("DestID", dest->GetID());
+	hint.AddInt32("DestID", dest->ID());
 	PostUpdate(&hint);
 
 	return dest;
@@ -700,6 +646,9 @@ CMeVDoc::ChangeTrackOrder(
 	NotifyUpdate(Update_TrackOrder, NULL);
 }
 
+// ---------------------------------------------------------------------------
+// CDocument Implementation
+
 void
 CMeVDoc::SaveDocument()
 {
@@ -707,85 +656,103 @@ CMeVDoc::SaveDocument()
 
 	StSubjectLock lock(*this, Lock_Shared);
 
-	// Make a backup of the doc file.
-	char docName[B_FILE_NAME_LENGTH];
-
-	// REM: Do we need to ask for over-write check?
-	if (GetName(docName))
-	{
-		BEntry backup(DocLocation());
-
-		// Make sure there's enough room for the letters '.bak'
-		docName[B_FILE_NAME_LENGTH - 5] = '\0';
-		strcat(docName, ".bak");
-
-		// This might fail if doc has never been created. So what?
-		backup.Rename(docName);
-	}
-
 	BFile file(&DocLocation(), B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE);
-
-	//REM: Lock the doc. (read-only if possible)
-	
 	CBeFileWriter writer(file);
 	CIFFWriter iffWriter(writer);
-	
-	iffWriter.Push(Form_ID);
-	iffWriter << (long)MeV_ID;
-
-	// write environment chunk
-	iffWriter.Push(ENVIRONMENT_CHUNK);
-	// write destinations
-	CDestination *destination = NULL;
-	int32 index = 0;
-	while ((destination = GetNextDestination(&index)) != NULL)
-		destination->WriteDestination(iffWriter);
-	// write sources
-	// +++ nyi
-	iffWriter.Pop();
-	
-	iffWriter.Push(DocTempo_ID);
-	iffWriter << InitialTempo();
-	iffWriter.Pop();
-
-	// Write master real track
-	iffWriter.Push(Form_ID);
-	iffWriter << (long)FMasterRealTrack;
-	m_masterRealTrack->WriteTrack(iffWriter);
-	iffWriter.Pop();
-
-	// Write master metered track
-	iffWriter.Push(Form_ID);
-	iffWriter << (long)FMasterMeteredTrack;
-	m_masterMeterTrack->WriteTrack(iffWriter);
-	iffWriter.Pop();
-
-	for (int i = 0; i < CountTracks(); i++)
-	{
-		CTrack *track = TrackAt(i);
-	
-		if (track->Deleted())
-			continue;
-
-		// Push a seperate FORM per track	
-		iffWriter.Push(Form_ID);
-		iffWriter << (long)track->TrackType();
-		track->WriteTrack(iffWriter);
-		iffWriter.Pop();
-	}
-
+	Serialize(iffWriter);
 	SetModified(false);
 	
 	BNode node(&DocLocation());
 	if (node.InitCheck() == B_NO_ERROR)
 	{
-		BNodeInfo ni(&node);
-
-		if (ni.InitCheck() == B_NO_ERROR)
+		BNodeInfo nodeInfo(&node);
+		if (nodeInfo.InitCheck() == B_NO_ERROR)
 		{
-			ni.SetType("application/x-vnd.BeUnited.MeV-Document");
-			ni.SetPreferredApp("application/x-vnd.BeUnited.MeV");
+			nodeInfo.SetType("application/x-vnd.BeUnited.MeV-Document");
+			nodeInfo.SetPreferredApp("application/x-vnd.BeUnited.MeV");
 		}
+	}
+}
+
+void
+CMeVDoc::ReadChunk(
+	CIFFReader &reader)
+{
+	D_SERIALIZE(("CMeVDoc::ReadChunk()\n"));
+	ASSERT(IsWriteLocked());
+
+	int32 formType;
+	switch (reader.ChunkID(0, &formType))
+	{
+		case DOC_HEADER_CHUNK:
+		{
+			reader >> m_initialTempo;
+			break;
+		}
+		case ENVIRONMENT_CHUNK:
+		{
+			_readEnvironment(reader);
+			break;
+		}
+		case Form_ID:
+		{
+			_readTrack(formType, reader);
+			break;
+		}
+	}
+}
+
+void
+CMeVDoc::Serialize(
+	CIFFWriter &writer)
+{
+	D_SERIALIZE(("CMeVDoc::Serialize()\n"));
+	ASSERT(IsReadLocked());
+
+	writer.Push(Form_ID);
+	writer << (long)MeV_ID;
+
+	// write header chunk
+	writer.Push(DOC_HEADER_CHUNK);
+	writer << InitialTempo();
+	writer.Pop();
+
+	// write environment chunk
+	writer.Push(ENVIRONMENT_CHUNK);
+	CDestination *dest = NULL;
+	int32 index = 0;
+	while ((dest = GetNextDestination(&index)) != NULL)
+	{
+		writer.Push(DESTINATION_CHUNK);
+		writer << dest->Type();
+		dest->Serialize(writer);
+		writer.Pop();
+	}
+	writer.Pop();
+
+	// Write master real track
+	writer.Push(Form_ID);
+	writer << (long)FMasterRealTrack;
+	m_masterRealTrack->Serialize(writer);
+	writer.Pop();
+
+	// Write master metered track
+	writer.Push(Form_ID);
+	writer << (long)FMasterMeteredTrack;
+	m_masterMeterTrack->Serialize(writer);
+	writer.Pop();
+
+	for (int i = 0; i < CountTracks(); i++)
+	{
+		CTrack *track = TrackAt(i);
+		if (track->Deleted())
+			continue;
+
+		// Push a seperate FORM per track	
+		writer.Push(Form_ID);
+		writer << (long)track->TrackType();
+		track->Serialize(writer);
+		writer.Pop();
 	}
 }
 
@@ -793,13 +760,13 @@ void
 CMeVDoc::Export(
 	BMessage *msg)
 {
-	BFilePanel	*fp = ((CMeVApp *)be_app)->GetExportPanel( &be_app_messenger );
-	if (fp != NULL)
+	BFilePanel *filePanel = Application()->GetExportPanel(&be_app_messenger);
+	if (filePanel != NULL)
 	{
-		BMessage	exportMsg(CMeVApp::EXPORT_REQUESTED);
-		BMessage	pluginMsg;
-		void		*pluginPtr;
-		
+		BMessage exportMsg(CMeVApp::EXPORT_REQUESTED);
+		BMessage pluginMsg;
+		void *pluginPtr;
+
 		msg->FindPointer("plugin", &pluginPtr);
 		msg->FindMessage("msg", &pluginMsg);
 
@@ -807,20 +774,20 @@ CMeVDoc::Export(
 		exportMsg.AddPointer("plugin", pluginPtr);
 		exportMsg.AddMessage("msg", &pluginMsg);
 
-		fp->SetMessage(&exportMsg);
-		fp->Show();
+		filePanel->SetMessage(&exportMsg);
+		filePanel->Show();
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Serialization
+// Internal Operations
 
 void
-CMeVDoc::ReadTrack(
+CMeVDoc::_readTrack(
 	uint32 type,
 	CIFFReader &reader)
 {
-	D_SERIALIZE(("CMeVDoc::ReadEnvironment()\n"));
+	D_SERIALIZE(("CMeVDoc::_readEnvironment()\n"));
 
 	CTrack *track;
 	if (type == FMasterRealTrack)
@@ -845,9 +812,7 @@ CMeVDoc::ReadTrack(
 	
 	reader.Push();
 	while (reader.NextChunk())
-	{
-		track->ReadTrackChunk(reader);
-	}
+		track->ReadChunk(reader);
 	reader.Pop();
 
 	if (type == TrackType_Event)
@@ -855,30 +820,31 @@ CMeVDoc::ReadTrack(
 }
 
 void
-CMeVDoc::ReadEnvironment(
-	CIFFReader &iffReader)
+CMeVDoc::_readEnvironment(
+	CIFFReader &reader)
 {
-	D_SERIALIZE(("CMeVDoc::ReadEnvironment()\n"));
+	D_SERIALIZE(("CMeVDoc::_readEnvironment()\n"));
 
-	iffReader.Push();
-	while (iffReader.NextChunk())
+	reader.Push();
+	while (reader.NextChunk())
 	{	
-		D_SERIALIZE((" -> reading next chunk\n"));
-		
 		int32 formType;
-		switch (iffReader.ChunkID(0, &formType))
+		switch (reader.ChunkID(0, &formType))
 		{
 			case DESTINATION_CHUNK:
 			{
 				D_SERIALIZE((" -> DESTINATION_CHUNK\n"));
 
-				char buffer[255];
-				iffReader.ReadStr255(buffer, 255);
-				if (strcmp(buffer, "MIDI") == 0)
+				uint32 type;
+				reader >> type;
+				if (type == 'MIDI')
 				{
-					D_SERIALIZE((" -> %s destination\n", buffer));
-					CDestination *dest = new CDestination(iffReader, this);
-					m_destinations.AddItem(dest, dest->GetID());
+					CDestination *dest = new CDestination(this);
+					reader.Push();
+					while (reader.NextChunk())
+						dest->ReadChunk(reader);
+					reader.Pop();
+					m_destinations.AddItem(dest, dest->ID());
 				}
 				break;
 			}
@@ -886,25 +852,24 @@ CMeVDoc::ReadEnvironment(
 			{
 				D_SERIALIZE((" -> SOURCE_CHUNK\n"));
 
-				char buffer[255];
-				iffReader.ReadStr255(buffer, 255);
-				if (strcmp(buffer, "MIDI") == 0)
+				uint32 type;
+				reader >> type;			
+				if (type == 'MIDI')
 				{
-					D_SERIALIZE((" -> %s source\n", buffer));
-					// nyi
+					// +++ nyi
 				}
 				break;
 			}
 		}
 	}
-	iffReader.Pop();
+	reader.Pop();
 }
 
 // ---------------------------------------------------------------------------
 // Internal Operations
 
 void
-CMeVDoc::AddDefaultOperators()
+CMeVDoc::_addDefaultOperators()
 {
 	// Add active operarators associated with document to this list.
 	for (int32 i = 0; i < Application()->CountOperators(); i++)
@@ -934,7 +899,7 @@ CMeVDoc::AddDefaultOperators()
 }
 
 void
-CMeVDoc::Init()
+CMeVDoc::_init()
 {
 	m_masterRealTrack = NULL;
 	m_masterMeterTrack = NULL;

@@ -262,7 +262,7 @@ int MeVDocRef::NewDestination(const char* name, int consumerID, int channel)
 	BMidiConsumer *consumer = Midi::CMidiManager::Instance()->FindConsumer(consumerID);
 	if (consumer)
 		dest->SetConnect(consumer,true);
-	return dest->GetID();
+	return dest->ID();
 
 }
 

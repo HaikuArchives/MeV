@@ -512,17 +512,17 @@ CLinearNoteEventHandler::Draw(
 	if (shadowed)
 		Editor()->SetDrawingMode(B_OP_BLEND);
 
-	rgb_color fill = dest->GetFillColor();
+	rgb_color fill = dest->Color();
 	rgb_color shadow = {168, 168, 168, 255};
 	rgb_color outline = ev.IsSelected() ? SELECTED_BORDER_COLOR
 										: DEFAULT_BORDER_COLOR;
 	pattern fillPattern = B_SOLID_HIGH;
 
-	if (dest->Muted() || dest->Disabled())
+	if (dest->IsMuted() || dest->IsDisabled())
 	{
 		fillPattern = MIXED_COLORS;
 		Editor()->SetLowColor(shadow);
-		if (dest->Disabled())
+		if (dest->IsDisabled())
 		{
 			fill = tint_color(fill, B_LIGHTEN_1_TINT);
 			outline = DISABLED_BORDER_COLOR;

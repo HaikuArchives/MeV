@@ -35,6 +35,7 @@
 #define __C_Document_H__
 
 #include "Observable.h"
+#include "Serializable.h"
 
 // Storage Kit
 #include <Entry.h>
@@ -42,12 +43,13 @@
 class CDocApp;
 class CDocWindow;
 
-/**	Document framework class.
- *		@author		Talin, Christopher Lenz
- *		@package	Framework
+/**
+ *	Document framework class.
+ *	@author		Talin, Christopher Lenz
  */
 class CDocument
-	:	public CObservable
+	:	public CObservable,
+		public CSerializable
 {
 	friend class CDocApp;
 								

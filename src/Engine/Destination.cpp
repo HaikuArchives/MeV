@@ -36,8 +36,7 @@
 // ---------------------------------------------------------------------------
 // Constants Initialization
 
-const rgb_color
-CDestination::s_defaultColorTable[] = 
+const rgb_color DEFAULT_COLORS[16] = 
 {
 	{ 255,  64,  64 },
 	{  64, 128,  64 },
@@ -57,106 +56,84 @@ CDestination::s_defaultColorTable[] =
 	{ 128, 128,   0 }
 };
 
-const char *NOTE_NAMES[12] =
+enum destinationFlags
+{		
+	MUTED			= (1<<0),
+
+	MUTED_FROM_SOLO	= (1<<1),
+
+	SOLO			= (1<<2),
+
+	DISABLED		= (1<<3),
+
+	DELETED			= (1<<4)
+};
+
+// +++ move this to CMidiDestination
+const char *NOTE_NAMES[] =
 { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
 CDestination::CDestination(
-	int32 id,
-	CMeVDoc *document,
-	const char *name)
+	unsigned long type,
+	long id,
+	const char *name,
+	CMeVDoc *document)
 	:	m_doc(document),
+		m_type(type),
 		m_id(id),
-		m_name(name),
 		m_latency(0),
 		m_flags(0),
-		m_channel(0)
+		m_color(DEFAULT_COLORS[id % 15]),
+		m_channel(0),
+		m_generalMidi(false)
 {
-	m_name.SetTo(name);
-	m_name << " " << m_id + 1;
-	m_producer = new Midi::CReconnectingMidiProducer(m_name.String());
-	m_producer->Register();
+	D_ALLOC(("CDestination::CDestination()\n"));
 
-	SetColor(s_defaultColorTable[id % 15]);
+	snprintf(m_name, DESTINATION_NAME_LENGTH, "%s %ld", name, id + 1);
+
+	m_producer = new Midi::CReconnectingMidiProducer(m_name);
+	m_producer->Register();
 }
 
 CDestination::CDestination(
-	CIFFReader &reader,
 	CMeVDoc *document)
 	:	m_doc(document),
+		m_type('MIDI'),
 		m_id(0),
 		m_latency(0),
 		m_flags(0),
-		m_channel(0)
+		m_channel(0),
+		m_generalMidi(false)
 {
+	D_ALLOC(("CDestination::CDestination(deserialize)\n"));
+
 	m_producer = new Midi::CReconnectingMidiProducer("");
-
-	char buffer[255];
-	rgb_color color;
-
-	reader >> m_id;
-	reader.ReadStr255(buffer, 255);
-	SetName(buffer);
-	reader >> m_latency;
-	reader >> m_flags;
-	reader >> color;
-
-	// connect with name
-	if (reader.ReadStr255(buffer, 255) > 0)
-		SetConnect(Midi::CMidiManager::Instance()->FindConsumer(buffer), true);
-	reader >> m_channel;
-
-	// need the icons first, so...
-	SetColor(color);
 }
 
 CDestination::~CDestination()
 {
+	D_ALLOC(("CDestination::~CDestination()\n"));
+
 	m_producer->Release();
 }
 
 // ---------------------------------------------------------------------------
-// Serialization
+// Accessors
 
-void
-CDestination::WriteDestination(
-	CIFFWriter &writer)
+unsigned long
+CDestination::Type() const
 {
-	char buffer[255];
-
-	writer.Push(DESTINATION_CHUNK);
-
-	writer.WriteStr255("MIDI", 4);
-
-	writer << m_id;
-	m_name.CopyInto(buffer, 0, m_name.Length());
-	writer.WriteStr255(buffer, m_name.Length());
-	writer << m_latency;
-	writer << m_flags;
-	writer << m_fillColor;
-
-	// MIDI specific stuff
-	// +++ move to CMidiDestination
-	if (m_producer->Connections()->CountItems() > 0)
-	{
-		BString cons;
-		cons << ((BMidiConsumer *)m_producer->Connections()->ItemAt(0))->Name();
-		cons.CopyInto(buffer, 0, cons.Length());
-		writer.WriteStr255(buffer, cons.Length());
-	}
-	else
-	{
-		writer.WriteStr255(buffer, 0);
-	}
-	writer << m_channel;
-
-	writer.Pop();
+	return m_type;
 }
 
-// ---------------------------------------------------------------------------
-// Accessors
+long
+CDestination::ID() const
+{
+	return m_id;
+}
 
 status_t
 CDestination::GetIcon(
@@ -197,19 +174,18 @@ CDestination::GetIcon(
 bool
 CDestination::IsValid() const
 {
-	return ((m_flags & CDestination::disabled)
-		 || (m_flags & CDestination::deleted));
+	return ((m_flags & DISABLED) || (m_flags & DELETED));
 }
 
 bool
-CDestination::Muted(
+CDestination::IsMuted(
 	bool *fromSolo) const {
 
 	if (fromSolo) {
-		*fromSolo = m_flags & mutedFromSolo;
+		*fromSolo = m_flags & MUTED_FROM_SOLO;
 	}
 
-	return m_flags & muted;
+	return m_flags & MUTED;
 }
 
 void
@@ -218,9 +194,9 @@ CDestination::SetMuted(
 {
 	bool changed = false;
 	if (muted)
-		changed = _addFlag(CDestination::muted);
+		changed = _addFlag(MUTED);
 	else
-		changed = _removeFlag(CDestination::muted);
+		changed = _removeFlag(MUTED);
 
 	if (changed)
 	{
@@ -228,10 +204,16 @@ CDestination::SetMuted(
 		Document()->SetModified();
 
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs", Update_Flags);
 		PostUpdate(&hint);
 	}
+}
+
+bool
+CDestination::IsSolo() const
+{
+	return m_flags & SOLO;
 }
 
 void
@@ -239,10 +221,10 @@ CDestination::SetSolo(
 	bool solo)
 {
 	bool changed = false;
-	if (muted)
-		changed = _addFlag(CDestination::solo);
+	if (solo)
+		changed = _addFlag(SOLO);
 	else
-		changed = _removeFlag(CDestination::solo);
+		changed = _removeFlag(SOLO);
 
 	if (changed)
 	{
@@ -250,7 +232,7 @@ CDestination::SetSolo(
 		Document()->SetModified();
 
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs", Update_Flags);
 		PostUpdate(&hint);
 	}
@@ -258,18 +240,20 @@ CDestination::SetSolo(
 
 void
 CDestination::SetName(
-	const BString &name)
+	const char *name)
 {
-	if (name != m_name)
+	if (strcmp(m_name, name) != 0)
 	{
-		m_name = name;
+		strncpy(m_name, name, DESTINATION_NAME_LENGTH);
+
 		BString producerName = "MeV: ";
 		producerName << m_name;
 		m_producer->SetName(producerName.String());
+
 		Document()->SetModified();
 		
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs", Update_Name);
 		PostUpdate(&hint);
 	}
@@ -287,7 +271,7 @@ CDestination::SetLatency(
 		Document()->SetModified();
 	
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs", Update_Latency);
 		PostUpdate(&hint);
 	}
@@ -297,25 +281,26 @@ void
 CDestination::SetColor(
 	rgb_color color)
 {
-	if ((color.red != m_fillColor.red)
-	 || (color.green != m_fillColor.green)
-	 || (color.blue != m_fillColor.blue))
+	if ((color.red != m_color.red)
+	 || (color.green != m_color.green)
+	 || (color.blue != m_color.blue))
 	{
-		m_fillColor = color;
+		m_color = color;
 		
-		if ((color.red + color.green + color.blue) < 384)
-			m_highlightColor = tint_color(color, B_LIGHTEN_2_TINT);
-		else
-			m_highlightColor = tint_color(color, B_DARKEN_2_TINT);
-	
 		_updateIcons();
 		Document()->SetModified();
 	
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs", Update_Color);
 		PostUpdate(&hint);
 	}
+}
+
+bool
+CDestination::IsDisabled() const
+{
+	return m_flags & DISABLED;
 }
 
 void
@@ -324,14 +309,14 @@ CDestination::SetDisabled(
 {
 	bool changed = false;
 	if (disabled)
-		changed = _addFlag(CDestination::disabled);
+		changed = _addFlag(DISABLED);
 	else
-		changed = _removeFlag(CDestination::disabled);
+		changed = _removeFlag(DISABLED);
 
 	if (changed)
 	{
 		CUpdateHint hint;
-		hint.AddInt32("DestID",GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs",Update_Flags);
 		PostUpdate(&hint);
 	}
@@ -340,22 +325,28 @@ CDestination::SetDisabled(
 // ---------------------------------------------------------------------------
 // Operations
 
+bool
+CDestination::IsDeleted() const
+{
+	return m_flags & DELETED;
+}
+
 void
 CDestination::Delete ()
 {
 	StSubjectLock lock(*Document(), Lock_Shared);
 	int32 originalIndex = Document()->IndexOf(this);
-	if (_addFlag(CDestination::deleted))
+	if (_addFlag(DELETED))
 	{
 		int32 index = 0;
 		CDestination *next = Document()->GetNextDestination(&index);
 		if (next)
-			Document()->SetDefaultAttribute(EvAttr_Channel, next->GetID());
+			Document()->SetDefaultAttribute(EvAttr_Channel, next->m_id);
 
 		Document()->SetModified();
 		
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DocAttrs", CMeVDoc::Update_DelDest);
 		hint.AddInt32("original_index", originalIndex);
 		Document()->PostUpdate(&hint);
@@ -366,19 +357,92 @@ void
 CDestination::Undelete(
 	int32 originalIndex)
 {
-	if (_removeFlag(CDestination::deleted))
+	if (_removeFlag(DELETED))
 	{
 		Document()->SetModified();
 		
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DocAttrs", CMeVDoc::Update_AddDest);
 		Document()->PostUpdate(&hint);
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Operations
+// CSerializable Implementation
+
+void
+CDestination::ReadChunk(
+	CIFFReader &reader)
+{
+	switch (reader.ChunkID())
+	{
+		case DESTINATION_HEADER_CHUNK:
+		{
+			reader >> m_id;
+			reader >> m_latency;
+			reader >> m_flags;
+			reader >> m_color;
+
+			break;
+		}
+		case DESTINATION_NAME_CHUNK:
+		{
+			reader.MustRead(m_name, MIN((size_t)reader.ChunkLength(),
+										DESTINATION_NAME_LENGTH));
+			break;
+		}
+		case Midi::CONNECTION_NAME_CHUNK:
+		{
+			// +++ move to CMidiDestination
+			char buffer[Midi::CONNECTION_NAME_LENGTH];
+			reader.MustRead(buffer, MIN((size_t)reader.ChunkLength(),
+										Midi::CONNECTION_NAME_LENGTH));
+			SetConnect(Midi::CMidiManager::Instance()->FindConsumer(buffer),
+					   true);
+			break;
+		}
+		case Midi::DESTINATION_SETTINGS_CHUNK:
+		{
+			reader >> m_channel;
+			break;
+		}
+		default:
+		{
+			CSerializable::ReadChunk(reader);
+		}
+	}
+}
+
+void
+CDestination::Serialize(
+	CIFFWriter &writer)
+{
+	writer.Push(DESTINATION_HEADER_CHUNK);
+	writer << m_id;
+	writer << m_latency;
+	writer << m_flags;
+	writer << m_color;
+	writer.Pop();
+
+	writer.WriteChunk(DESTINATION_NAME_CHUNK, m_name,
+					  MIN(strlen(m_name) + 1, DESTINATION_NAME_LENGTH));
+
+	// MIDI specific stuff
+	// +++ move to CMidiDestination
+	BMidiConsumer *consumer = (BMidiConsumer *)m_producer->Connections()->ItemAt(0);
+	const char *consumerName = consumer->Name();
+	writer.WriteChunk(Midi::CONNECTION_NAME_CHUNK, consumerName,
+					  MIN(strlen(consumerName) + 1,
+					  	  Midi::CONNECTION_NAME_LENGTH));
+
+	writer.Push(Midi::DESTINATION_SETTINGS_CHUNK);
+	writer << m_channel;
+	writer.Pop();
+}
+
+// ---------------------------------------------------------------------------
+// +++ move these to CMidiDestination
 
 bool
 CDestination::GetNoteName(
@@ -432,7 +496,7 @@ CDestination::SetChannel(
 		Document()->SetModified();
 
 		CUpdateHint hint;
-		hint.AddInt32("DestID", GetID());
+		hint.AddInt32("DestID", m_id);
 		hint.AddInt32("DestAttrs", Update_Channel);
 		PostUpdate(&hint);
 	}
@@ -523,16 +587,16 @@ CDestination::_createIcon(
 	icon->AddChild(iconView);
 	iconView->SetHighColor(B_TRANSPARENT_COLOR);
 	iconView->FillRect(r, B_SOLID_HIGH);
-	iconView->SetHighColor(m_fillColor);
-	if ((m_flags & CDestination::disabled) || (m_flags & CDestination::muted))
+	iconView->SetHighColor(m_color);
+	if (IsDisabled() || IsMuted())
 	{
 		rgb_color contrast;
-		contrast.red = (m_fillColor.red+128) % 255;
-		contrast.green = (m_fillColor.green+128) % 255;
-		contrast.blue = (m_fillColor.blue+128) % 255;
+		contrast.red = (m_color.red + 128) % 255;
+		contrast.green = (m_color.green + 128) % 255;
+		contrast.blue = (m_color.blue + 128) % 255;
 		iconView->SetLowColor(contrast);
 		pattern mixedColors = { 0xf0, 0xf0, 0xf0, 0xf0,
-								 0x0f, 0x0f, 0x0f, 0x0f };
+								0x0f, 0x0f, 0x0f, 0x0f };
 		iconView->FillEllipse(r, mixedColors);
 	}
 	else

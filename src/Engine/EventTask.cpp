@@ -118,19 +118,8 @@ CEventTask::PlayEvent(
 			// Ignore the note event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
 			
-			if (dest->Muted()) 
-			{
+			if (dest->IsMuted()) 
 				break;
-			}
-			// Apply task-specific transposition.
-			/*if (transposition != 0 && dest->Transposable())
-			{
-				stackedEvent.note.pitch += transposition;
-	
-					// If pitch went out of bounds, then don't play the note.
-					// +++++ CLIPPING WOULD BE MUCH NICER!
-				if (stackedEvent.note.pitch & 0x80) break;
-			}*/
 			
 			// REM: Here we would apply velocity contour.
 			// REM: Here we would do the VU meter code...
@@ -150,8 +139,9 @@ CEventTask::PlayEvent(
 		}
 		case EvtType_PitchBend:						// pitch bend
 		{
-				// Play nothing if muted
-			if (dest->Muted()) break;
+			// Play nothing if muted
+			if (dest->IsMuted())
+				break;
 			
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -162,7 +152,7 @@ CEventTask::PlayEvent(
 	
 			if (duration > 0 && ev.pitchBend.updatePeriod > 0)
 			{
-					// Push a "start interpolating" event
+				// Push a "start interpolating" event
 				stackedEvent.startInterpolate.command = EvtType_StartInterpolate;
 				stackedEvent.startInterpolate.interpolationType = Interpolation_PitchBend;
 				stackedEvent.startInterpolate.startValue = ev.pitchBend.startBend;
@@ -187,8 +177,9 @@ CEventTask::PlayEvent(
 		}
 		case EvtType_ProgramChange:					// program change
 		{
-				// Play nothing if muted
-			if (dest->Muted()) break;
+			// Play nothing if muted
+			if (dest->IsMuted())
+				break;
 	
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -216,8 +207,9 @@ CEventTask::PlayEvent(
 		}
 		case EvtType_ChannelATouch:					// channel aftertouch
 		{
-				// Play nothing if muted
-			if (dest->Muted()) break;
+			// Play nothing if muted
+			if (dest->IsMuted())
+				break;
 	
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -231,8 +223,9 @@ CEventTask::PlayEvent(
 		}
 		case EvtType_Controller:						// controller change
 		{
-				// Play nothing if muted
-			if (dest->Muted()) break;
+			// Play nothing if muted
+			if (dest->IsMuted())
+				break;
 			
 				// REM: Data entry controls should probably be passed through, since they
 				// can't be summarized in a simple way.
@@ -273,9 +266,13 @@ CEventTask::PlayEvent(
 		}
 		case EvtType_PolyATouch:						// polyphonic aftertouch
 		{
-				// Ignore the event if locating
-			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
-			if (dest->Muted()) break;
+			// Ignore the event if locating
+			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
+				break;
+
+			// Play nothing if muted
+			if (dest->IsMuted())
+				break;
 	
 			stack.Push( stackedEvent );
 			break;

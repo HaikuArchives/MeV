@@ -118,7 +118,7 @@ CDestinationListView::SetDocument(
 			CDestination *dest = NULL;
 			int32 index = 0;
 			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
-				DestinationAdded(dest->GetID());
+				DestinationAdded(dest->ID());
 		}
 	}
 }
@@ -285,7 +285,7 @@ CDestinationListView::MessageReceived(
 			StSubjectLock lock(*m_doc, Lock_Exclusive);
 
 			CDestination *dest = Document()->NewDestination();
-			int32 id = dest->GetID();
+			int32 id = dest->ID();
 			Document()->SetDefaultAttribute(EvAttr_Channel, id);
 			BRect r(40, 40, 300, 220);
 			m_modifierMap[id] = new CDestinationModifier(r, id, m_doc, this);
@@ -413,7 +413,7 @@ CDestinationListView::DestinationAdded(
 
 		BMessage *message = new BMessage(DESTINATION_SELECTED);
 		dest->ReadLock();
-		message->AddInt32("destination_id", dest->GetID());
+		message->AddInt32("destination_id", dest->ID());
 		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
 		CIconMenuItem *item = new CIconMenuItem(dest->Name(),
 												message, icon);
@@ -443,7 +443,7 @@ CDestinationListView::DestinationChanged(
 
 		BMessage *message = new BMessage(DESTINATION_SELECTED);
 		dest->ReadLock();
-		message->AddInt32("destination_id", dest->GetID());
+		message->AddInt32("destination_id", dest->ID());
 		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
 		item = new CIconMenuItem(dest->Name(), message, icon);
 		dest->ReadUnlock();
@@ -465,7 +465,7 @@ CDestinationListView::DestinationRemoved(
 	StSubjectLock lock(*m_doc, Lock_Shared);
 	int32 current = m_doc->GetDefaultAttribute(EvAttr_Channel);
 	CDestination *dest = m_doc->FindDestination(current);
-	if (dest && !dest->Deleted())
+	if (dest && !dest->IsDeleted())
 	{
 		int32 index = m_doc->IndexOf(dest);
 		item = m_destMenu->ItemAt(index + 2);
