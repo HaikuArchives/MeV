@@ -96,7 +96,7 @@ public:							// Hook Functions
 									icon_size which,
 									BBitmap *outIcon) = 0;
 
-protected:						// Hook Functions
+protected:
 
 	virtual void				ColorChanged(
 									rgb_color color)

@@ -121,7 +121,7 @@ CDestinationModifier::MessageReceived(
 			int32 portID;
 			if (message->FindInt32("port_id", &portID) != B_OK)
 				return;
-			m_dest->SetConnect(m_midiManager->FindConsumer(portID),1);
+			m_dest->ConnectTo(portID);
 			break;
 		}
 		case MUTED:
@@ -295,7 +295,7 @@ CDestinationModifier::_populatePortsMenu()
 												icon);
 		m_midiPorts->AddItem(item);
 		StSubjectLock lock(*m_dest, Lock_Shared);
-		if (m_dest->IsConnected(consumer))
+		if (m_dest->IsConnectedTo(consumer))
 			item->SetMarked(true);
 	}
 
@@ -320,7 +320,7 @@ CDestinationModifier::_populatePortsMenu()
 			m_midiPorts->AddItem(item);
 
 			StSubjectLock lock(*m_dest, Lock_Shared);
-			if (m_dest->IsConnected(consumer))
+			if (m_dest->IsConnectedTo(consumer))
 				item->SetMarked(true);
 			consumer->Release();
 		}

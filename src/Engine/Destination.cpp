@@ -266,14 +266,14 @@ CDestination::IsDeleted() const
 void
 CDestination::Delete ()
 {
-	StSubjectLock lock(*Document(), Lock_Shared);
+	CWriteLock lock(Document());
 	int32 originalIndex = Document()->IndexOf(this);
 	if (_addFlag(DELETED))
 	{
 		int32 index = 0;
-		CDestination *next = Document()->GetNextDestination(&index);
-		if (next)
-			Document()->SetDefaultAttribute(EvAttr_Channel, next->m_id);
+		CDestination *first = Document()->GetNextDestination(&index);
+		if (first)
+			Document()->SetDefaultAttribute(EvAttr_Channel, first->m_id);
 
 		Document()->SetModified();
 		
