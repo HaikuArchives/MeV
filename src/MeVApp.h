@@ -206,6 +206,8 @@ public:							// File Import/Export
 
 	/** Import a new document */
 	void						ImportDocument();
+	void						HandleImport(
+									entry_ref *ref);
 
 public:							// CDocApp Implementation
 
@@ -222,6 +224,9 @@ public:							// CDocApp Implementation
 									bool showWindow = true,
 									entry_ref *ref = NULL);
 	
+	virtual void				RefsReceived(
+									BMessage *message);
+
 	virtual bool				QuitRequested();
 
 private:						// Internal Operations

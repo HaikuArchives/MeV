@@ -601,6 +601,40 @@ CMeVApp::ImportDocument()
 	fp->Show();
 }
 
+void
+CMeVApp::HandleImport(
+	entry_ref *ref)
+{
+	// See if there's a plug-in which can identify it...
+	for (int i = 0; i < importerList.CountItems(); i++)
+	{
+		MeVPlugIn *plugin = (MeVPlugIn *)importerList.ItemAt(i);
+		int32 kind;
+		struct stat	st;
+		char filetype[B_MIME_TYPE_LENGTH];
+
+		BNode node(ref);
+		if (node.InitCheck() != B_NO_ERROR)
+			continue;
+
+		BNodeInfo ni(&node);
+		if (ni.InitCheck() != B_NO_ERROR)
+			continue;
+		if (ni.GetType(filetype) != B_NO_ERROR)
+			continue;
+		if (node.GetStat(&st) != B_NO_ERROR)
+			continue;
+	
+		kind = plugin->DetectFileType(ref, &node, &st, 
+									  filetype);
+		if (kind < 0)
+			continue;
+
+		plugin->OnImport(NULL, ref, kind);
+		break;
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Operator Management
 
@@ -743,34 +777,7 @@ CMeVApp::MessageReceived(
 					entry_ref ref;
 					if (message->FindRef("refs", j, &ref) == B_NO_ERROR)
 					{
-						// See if there's a plug-in which can identify it...
-						for (int i = 0; i < importerList.CountItems(); i++)
-						{
-							MeVPlugIn *plugin = (MeVPlugIn *)importerList.ItemAt(i);
-							int32 kind;
-							struct stat	st;
-							char filetype[B_MIME_TYPE_LENGTH];
-						
-							BNode node(&ref);
-							if (node.InitCheck() != B_NO_ERROR)
-								continue;
-						
-							BNodeInfo ni(&node);
-							if (ni.InitCheck() != B_NO_ERROR)
-								continue;
-							if (ni.GetType(filetype) != B_NO_ERROR)
-								continue;
-							if (node.GetStat(&st) != B_NO_ERROR)
-								continue;
-						
-							kind = plugin->DetectFileType(&ref, &node, &st, 
-														  filetype);
-							if (kind < 0)
-								continue;
-
-							plugin->OnImport(NULL, &ref, kind);
-							break;
-						}
+						HandleImport(&ref);
 					}
 				}
 			}
@@ -827,6 +834,47 @@ CMeVApp::NewDocument(
 		doc->ShowWindow(CMeVDoc::Assembly_Window);
 
 	return doc;
+}
+
+void
+CMeVApp::RefsReceived(
+	BMessage *message)
+{ 
+	uint32 type;
+	int32 count;
+	message->GetInfo("refs", &type, &count);
+	if (type == B_REF_TYPE)
+	{
+		for (int32 i = 0; i < count; i++)
+		{
+			entry_ref ref;
+			if (message->FindRef("refs", i, &ref) == B_OK)
+			{
+				BEntry entry(&ref, true);
+				entry.GetRef(&ref);
+
+				BNode node(&ref);
+				if (node.InitCheck() != B_OK)
+					return;
+				BNodeInfo nodeInfo(&node);
+				if (nodeInfo.InitCheck() != B_OK)
+					return;
+				char mimeString[B_MIME_TYPE_LENGTH];
+				if (nodeInfo.GetType(mimeString) == B_OK)
+				{
+					BMimeType mimeType(mimeString);
+					if (mimeType == *CMeVDoc::MimeType())
+					{
+						CDocApp::RefsReceived(message);
+					}
+					else
+					{
+						HandleImport(&ref);
+					}
+				}
+			}
+		}
+	}
 }
 
 bool

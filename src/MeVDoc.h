@@ -46,7 +46,6 @@
 #include "MeVApp.h"
 #include "Document.h"
 #include "Event.h"
-//#include "EventOp.h"
 #include "WindowState.h"
 #include "TempoMap.h"
 
@@ -70,19 +69,19 @@ class CMeVDoc
 public:							// Constants
 
 	enum EWindowTypes {
-		Assembly_Window = 0,
+		Assembly_Window 	= 0,
 		Operator_Window,
 	};
 
 	enum EDocUpdateHintBits {
 
-		Update_Name		= (1<<0),			// Document name changed
-		Update_AddTrack	= (1<<1),			// Track added
-		Update_DelTrack	= (1<<2),			// Track deleted
+		Update_Name			= (1<<0),			// Document name changed
+		Update_AddTrack		= (1<<1),			// Track added
+		Update_DelTrack		= (1<<2),			// Track deleted
 		Update_TrackOrder	= (1<<3),			// Track order changed
-		Update_Operator	= (1<<4),			// Operators changed
-		Update_OperList	= (1<<5),			// list of operators changed
-		Update_TempoMap	= (1<<6),			// list of operators changed
+		Update_Operator		= (1<<4),			// Operators changed
+		Update_OperList		= (1<<5),			// list of operators changed
+		Update_TempoMap		= (1<<6),			// list of operators changed
 	};
 
 	static const double			DEFAULT_TEMPO;
@@ -136,30 +135,37 @@ public:							// Operator Management
 									EventOp *op) const
 								{ return operators.IndexOf(op); }
 
-		/**	Add an operator to the document's list of operators. */
-	void AddOperator( EventOp *inOp );
+	/**	Add an operator to the document's list of operators. */
+	void						AddOperator(
+									EventOp *op);
 
-		/**	Delete an operator to the document's list of operators. */
-	void RemoveOperator( EventOp *inOp );
+	/**	Delete an operator to the document's list of operators. */
+	void						RemoveOperator(
+									EventOp *op);
 	
-		/**	Set an operator active / inactive. */
-	void SetOperatorActive( EventOp *inOp, bool enabled );
+	/**	Set an operator active / inactive. */
+	void						SetOperatorActive(
+									EventOp *op,
+									bool enabled);
 
-		/**	Does a notification to all windows viewing the operator. */
-	void NotifyOperatorChanged( EventOp *inOp );
+	/**	Does a notification to all windows viewing the operator. */
+	void						NotifyOperatorChanged(
+									EventOp *op);
 
 public:							// Track Management
 
 	/**	Change the ordering of the tracks... */
-	void ChangeTrackOrder( int32 oldIndex, int32 newIndex );
+	void						ChangeTrackOrder(
+									int32 oldIndex,
+									int32 newIndex);
 
 	/** Create a new track (refcount = 1) */
 	CTrack *					NewTrack(
 									ulong inTrackType,
 									TClockType inClockType);
-	
+
 	long						GetUniqueTrackID();
-	
+
 	/**	Locate a track by it's ID, and Acquire it. (-1 for master track) */
 	CTrack *					FindTrack(
 									long inTrackID);
@@ -167,20 +173,20 @@ public:							// Track Management
 	/**	Locate a track by it's name, and Acquire it. */
 	CTrack *					FindTrack(
 									char *inTrackName);
-	
+
 	/**	Get the first track. */
 	CTrack *					FindNextHigherTrackID(
 									int32 inID);
-	
+
 	/**	For iterating through tracks in list order. */
 	int32						CountTracks() const
 								{ return tracks.CountItems(); }
-	
+
 	/**	For iterating through tracks in list order. */
 	CTrack *					TrackAt(
 									int32 index)
 								{ return (CTrack *)tracks.ItemAt(index); }
-	
+
 public:							// Window Management
 
 	/**	Show or hide the window of a particular type */
@@ -194,7 +200,7 @@ public:							// Window Management
 	/**	Show or hide the window for a particular track */
 	void						ShowWindowFor(
 									CTrack *track);
-	
+
 public:							// Operations
 
 	/**	Get the value of a default attribute */
@@ -208,49 +214,66 @@ public:							// Operations
 									int32 value)
 								{ defaultAttributes[type] = value; }
 
-		/**	Post an update message to all tracks. */
-	void PostUpdateAllTracks( CUpdateHint *inHint );
+	/**	Post an update message to all tracks. */
+	void						PostUpdateAllTracks(
+									CUpdateHint *hint);
 
-		/**	Notify all observers (including possibly observers of the document
-			as well) that some attributes of this document have changed. */
-	void NotifyUpdate( int32 inHintBits, CObserver *source );
-	
-		/** return which of the two master tracks is selected. */
-	CEventTrack *ActiveMaster() { return m_activeMaster; }
-	
-		/** Set the selected master track. Call with any track, ignored if
-			not a master track.
-		*/
-	void SetActiveMaster( CEventTrack *inTrack );
-	
-		/**	Return a pointer to the tempo map. */
-	const CTempoMap &TempoMap() { return tempoMap; }
-	
-		/** Get the initial tempo of this document */
-	double InitialTempo() { return m_initialTempo; }
-	
-		/** Set the initial tempo of this document */
-	void SetInitialTempo( double inTempo ) { m_initialTempo = inTempo; }
+	/**	Notify all observers (including possibly observers of the document
+		as well) that some attributes of this document have changed.
+	*/
+	void						NotifyUpdate(
+									int32 inHintBits,
+									CObserver *source);
 
-		/** Export the document */
-	void Export( BMessage *msg );
+	/** return which of the two master tracks is selected. */
+	CEventTrack *				ActiveMaster() const
+								{ return m_activeMaster; }
+	
+	/** Set the selected master track. Call with any track, ignored if
+		not a master track.
+	*/
+	void						SetActiveMaster(
+									CEventTrack *inTrack);
 
-		/** Read a single track */
-	void ReadTrack( uint32 inTrackType, CIFFReader &iffReader );
-	
-		/**	Sets a flag indicating that the tempo map needs to be recompiled.
-			This is called by the track editing code whenever a tempo change
-			event is modified.
-		*/
-	void InvalidateTempoMap() { validTempoMap = false; }
-	
-		/**	Returns true if the tempo map is valid, i.e. it correctly represents the
-			compilation of all tempo events in the master tracks.
-		*/
-	bool ValidTempoMap() { return validTempoMap; }
-	
-		/**	Replace the current tempo map. */
-	void ReplaceTempoMap( CTempoMapEntry *entries, int length );
+	/**	Return a pointer to the tempo map. */
+	const CTempoMap &			TempoMap()
+								{ return tempoMap; }
+
+	/** Get the initial tempo of this document */
+	double						InitialTempo()
+								{ return m_initialTempo; }
+
+	/** Set the initial tempo of this document */
+	void						SetInitialTempo(
+									double inTempo)
+								{ m_initialTempo = inTempo; }
+
+	/** Export the document */
+	void						Export(
+									BMessage *msg);
+
+	/** Read a single track */
+	void						ReadTrack(
+									uint32 inTrackType,
+									CIFFReader &iffReader);
+
+	/**	Sets a flag indicating that the tempo map needs to be recompiled.
+		This is called by the track editing code whenever a tempo change
+		event is modified.
+	*/
+	void						InvalidateTempoMap()
+								{ validTempoMap = false; }
+
+	/**	Returns true if the tempo map is valid, i.e. it correctly represents the
+		compilation of all tempo events in the master tracks.
+	*/
+	bool						ValidTempoMap()
+								{ return validTempoMap; }
+
+	/**	Replace the current tempo map. */
+	void						ReplaceTempoMap(
+									CTempoMapEntry *entries,
+									int length);
 
 public:							// CDocument Implementation
 
