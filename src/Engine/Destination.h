@@ -40,16 +40,20 @@
 
 #ifndef __C_Destination_H__
 #define __C_Destination_H__
-
+#include "MeV.h"
 #include "BitSet.h"
 #include <MidiProducer.h>
+#include "ReconnectingMidiProducer.h"
 //Support Kit.
 #include <String.h>
 // Interface Kit
 #include <InterfaceDefs.h>
-
-const int			Max_Destinations = 64;			
-
+#include "IFFWriter.h"
+#include "IFFReader.h"
+#include "Observer.h"
+#include <Rect.h>
+#include <Bitmap.h>
+class CMeVDoc;
 /* ============================================================================ *
                                 Destination
 
@@ -57,61 +61,164 @@ const int			Max_Destinations = 64;
 	upon playback. There are up to 128 channels supported.
  * ============================================================================ */
 
-class Destination {
-public:
+class CDestination
+	: public CObservableSubject
+{
 
-	enum destinationFlags {
-		transposable	= (1<<0),				// channel is transposable
-		mute			= (1<<1),				// channel is muted
-		muteFromSolo	= (1<<2),				// channel muted because of solo
-		solo			= (1<<3),				// channel is solo'd
-		disabled		= (1<<4),				// channel disabled because
+		friend class CMeVDoc; //only for saving
+		friend class CDestinationDeleteUndoAction;
+public :
+
+				//Constants
+		enum EDestUpdateHintBits {
+		Update_Name = (1<<0),
+		Update_Color = (1<<1),
+		Update_Channel = (1<<2),
+		Update_Connections = (1<<3),
+		Update_Flags= (1<<4),   //mute solo ect.
+		Update_Latency = (1<<5)
+		};
+
+		enum destinationFlags {		
+		muted			= (1<<0),				// channel is muted
+		mutedFromSolo	= (1<<1),				// channel muted because of solo
+		solo			= (1<<2),				// channel is solo'd
+		disabled		= (1<<3),				// channel disabled because
 												// of vanished midi port.
-		deleted			= (1<<5)				// only one channel should be in this catagory.
+		deleted			= (1<<4)				// only one channel should be in this catagory.
 	};
+		
+	
+public:					//Constructor/Destructor
 
+	CDestination(int32 id,CMeVDoc &inDoc,char *name,bool notify);
+														//the notify is a tempary soloution
+														//to a Segfault in the initial observer on load
+	~CDestination();
+
+public:   				// Serialization
+	
+	virtual void WriteDestination (CIFFWriter &writer);
+
+public:					// Accessors
+	
+	bool 				IsValid () const;   //if not disabled or deleted.
+	
+
+	
+	void 				SetMuted (bool muted);
+	bool				Muted () const;
+						
+	bool 				MutedFromSolo () const;
+						
+	void 				SetSolo (bool solo);
+	bool 				Solo () const;
+						
+	void 				SetName (const char *name);	
+	const char *		Name() const
+						{return m_name.String();}
+
+	void				SetLatency(int32 microseconds);
+	int32				Latency(uint8 clockType);
+						
+	
+	int32 				GetID() const
+						{return m_id;}
+						
+	void				SetColor (rgb_color color);
+	rgb_color			GetFillColor();
+	rgb_color			GetHighlightColor();
+						
+	void 				SetChannel (uint8 channel);
+	uint8				Channel () const
+						{return m_channel;}
+	
+	void SetConnect (BMidiConsumer *sink, bool connect);
+	void ToggleConnect (BMidiConsumer *sink);
+	bool IsConnected (BMidiConsumer *sink) const;
+	CReconnectingMidiProducer * GetProducer() const
+	{ return m_producer; }
+	
+	void SetDisable (bool disable);
+	
+	void Delete ();
+	
+	void Undelete(int32 originalIndex);
+	
+	
+	bool			 Deleted() const;
+
+	bool 			 Disabled() const;
+	CMeVDoc & Document()
+			{ return *m_doc; } 
+	
+public:							//Hook Functions
+	virtual int32				Bytes()
+								{ return sizeof *this; }
+
+
+private:
+	bool _addFlag (int32 flag);
+	bool _removeFlag(int32 flag);	
+	
+	
+private:   	
+	void _addIcons(BMessage* msg, BBitmap* largeIcon, BBitmap* miniIcon) const;
+	BBitmap * 			CreateIcon (BRect r);
+	static const rgb_color m_defaultColorTable[ 16 ] ;
+	
 	// REM: Replace with string class
 	//char				name[ 24 ];				// channel name
-	
+	int32				m_id;
 	//uint8				port;					// midi port number
-	uint8				channel,				// real midi channel
-						flags,					// various flags
-						velocityContour,		// which envelope to use
-						VUMeter,				// Vu-like meter bar height
-						pad;					// not used
-						
+	uint8				m_channel,				// real midi channel
+						m_flags,					// various flags
+						m_velocityContour,		// which envelope to use
+						m_VUMeter,				// Vu-like meter bar height
+						m_pad;					// not used
+	bigtime_t			m_latency;
 						//defined;				// pad replaced with defined,
 												// so the manager knows what is
 												// defined.
-	
-	BString 			name;					// in the future we may not need this.
-	BMidiLocalProducer *m_producer;	
-	BString				producer_name;			//for reconnections.				
-	int8				transpose,				// transposition for channel
-						initialTranspose;		// initial transposition value
+	CMeVDoc 			*m_doc;
+	BString 			m_name;					// in the future we may not need this.
+	CReconnectingMidiProducer *m_producer;					
+	int8				m_transpose,				// transposition for channel
+						m_initialTranspose;		// initial transposition value
 
-	rgb_color			fillColor,				// fill color
-						highlightColor;			// hightlight color
+	rgb_color			m_fillColor,				// fill color
+						m_highlightColor;			// hightlight color
 };
 
 
-/* ============================================================================ *
-   VBitTable -- array of bits, one for each possible virtual channel.
- * ============================================================================ */
+class CDestinationDeleteUndoAction
+	:	public UndoAction
+{
 
+public:
+						CDestinationDeleteUndoAction(
+							CDestination *dest);
+					
+						~CDestinationDeleteUndoAction();
+						
+public:
+
+	
+	const char *		Description() const
+						{ return "Delete Destination"; }
+	
+	void				Redo();
+	
+	int32				Size()
+						{return m_dest->Bytes();}
+	
+	void				Undo();
+	
+private:
+	
+	CDestination *		m_dest;
+	
+	int32				m_index;
+};
 typedef BitSet<Max_Destinations> VBitTable;
-
-/* ============================================================================ *
-                               VelocityContour
-
-	Up to 8 "Velocity Contours" are supported. Each contour is an envelope which
-	can scale or compress the velocity information being processed through
-	a virtual channel. (I could have decided to have a seperate velocity
-	contour for each virtual channel, however I realized that in most situations,
-	you would want to control the velocyt scaling of many Destinations in
-	parallel.
- * ============================================================================ */
-
-//#define maxVContours	8
-
 #endif /* __C_Destination_H__ */
