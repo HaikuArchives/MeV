@@ -12,12 +12,12 @@ SRCS= \
 	Framework/DocWindow.cpp \
 	Framework/DynamicMenu.cpp \
 	Framework/ItemList.cpp \
+	Framework/Lockable.cpp \
 	Framework/Observable.cpp \
 	Framework/Observer.cpp \
 	Framework/RecentDocumentsMenu.cpp \
 	Framework/RefCount.cpp \
 	Framework/ScreenUtils.cpp \
-	Framework/SharedLock.cpp \
 	Framework/Undo.cpp \
 	Framework/WindowState.cpp \
 	Engine/Destination.cpp \

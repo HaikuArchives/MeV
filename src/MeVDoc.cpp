@@ -481,7 +481,7 @@ CDestination *
 CMeVDoc::GetNextDestination(
 	int32 *index) const
 {
-	ASSERT(IsLocked());
+	ASSERT(IsReadLocked());
 
 	CDestination *dest = FindDestination(*index);
 	if (dest != NULL)
@@ -503,7 +503,7 @@ int32
 CMeVDoc::IndexOf(
 	const CDestination *destination) const
 {
-	ASSERT(IsLocked());
+	ASSERT(IsReadLocked());
 
 	int32 index = -1;
 	int32 destID = 0;

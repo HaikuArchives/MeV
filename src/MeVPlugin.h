@@ -181,9 +181,6 @@ public:
 		/**	Returns a handle to the first track. */
 	MeVDocHandle FirstDocument();
 
-		/**	Function to release a document handle */
-//	void ReleaseDocument( MeVDocHandle );
-
 		/** Return text of error */
 	char *LookupErrorText( status_t error );
 };

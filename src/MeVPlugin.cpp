@@ -190,14 +190,6 @@ MeVDocHandle MeVPlugIn::FirstDocument()
 	return NULL;
 }
 
-/*void MeVPlugIn::ReleaseDocument( MeVDocHandle inHandle )
-{
-	CMeVDoc		*doc = (CMeVDoc *)inHandle->data;
-	
-	CRefCountObject::Release( doc );
-	delete inHandle;
-}*/
-
 char *MeVPlugIn::LookupErrorText( status_t error )
 {
 	return strerror( error );
@@ -411,12 +403,12 @@ MeVTrackRef::MeVTrackRef(void* doc, void* track)
 	:	trackData(track), docData(doc), undo(0)
 {
 	CTrack* theTrack = reinterpret_cast<CTrack *>(track);
-	theTrack->Lock(Lock_Exclusive);
+	theTrack->WriteLock();
 }
 
 MeVTrackRef::~MeVTrackRef()
 {
-	((CTrack *)trackData)->Unlock( Lock_Exclusive );
+	((CTrack *)trackData)->WriteUnlock();
 }
 
 	/**	Repositions this handle to point to the next track. */
@@ -432,9 +424,9 @@ bool MeVTrackRef::NextTrack()
 	int32 index = doc->tracks.IndexOf(track);
 	if (index >= 0 && doc->tracks.CountItems() > index + 1)
 	{
-		track->Unlock(Lock_Exclusive);
+		track->WriteUnlock();
 		track = reinterpret_cast<CTrack*>(doc->tracks.ItemAt(index + 1));
-		track->Lock(Lock_Exclusive);
+		track->WriteLock();
 		trackData = track;
 		return true;
 	}
