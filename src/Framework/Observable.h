@@ -34,8 +34,8 @@
 #ifndef __C_Observable_H__
 #define __C_Observable_H__
 
+#include "Lockable.h"
 #include "Undo.h"
-#include "SharedLock.h"
 
 // Application Kit
 #include <Message.h>
@@ -52,9 +52,9 @@ class UndoHistory;
  *	@package	Framework
 */
 class CObservable
+	:	public CLockable
 {
 	friend class		CObserver;
-	friend class		StSubjectLock;
 
 public:							// Constants
 
@@ -68,7 +68,8 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 	/**	Constructor. */
-								CObservable();
+								CObservable(
+									const char *name = NULL);
 
 	/**	Destructor. */
 	virtual						~CObservable();
@@ -103,26 +104,6 @@ public:							// Operations
 	void						PostUpdate(
 									CUpdateHint *hint,
 									CObserver *excludeObserver = NULL);
-
-	/**	Lock this observable subject in order to make changes to it */
-	bool						Lock(
-									TLockType lockType)
-								{ return m_lock.Acquire(lockType); }
-
-	/**	Lock this observable subject with a timeout in microseconds */
-	bool						Lock(
-									TLockType lockType,
-									bigtime_t timeout)
-								{ return m_lock.Acquire(lockType, timeout); }
-
-	/**	Unlock this observable object after making changes */
-	void						Unlock(
-									TLockType lockType)
-								{ m_lock.Release(lockType); }
-
-	/**	Returns true if the onservable is currently locked. */
-	bool						IsLocked() const
-								{ return m_lock.IsLocked(); }
 
 	/**	Return true if there is an undoable action. */
 	bool						CanUndo()
@@ -175,17 +156,24 @@ private:						// Instance Data
 
 	BList						m_observers;
 
-	CSharedLock					m_lock;
-
 	/** Undo history for this subject. */
 	UndoHistory					m_undoHistory;
 };
+
+typedef enum
+{
+	//	A shared lock that waits if there is an exclusive lock waiting.
+	Lock_Shared,
+
+	//	An exclusive lock.
+	Lock_Exclusive,
+} TLockType;
 
 /**
  *	Stack-based locker for subjects.
  *	@author		Talin, Christopher Lenz
  *	@package	Framework
-*/
+ */
 class StSubjectLock
 {
 
@@ -194,9 +182,10 @@ public:							// Constructor/Destructor
 								StSubjectLock(
 									CObservable &subject,
 									TLockType lockType = Lock_Exclusive)
-									:	m_lock(subject.m_lock),
-										m_type(lockType)
-								{ m_locked = false; Acquire(); }
+									:	m_subject(&subject),
+										m_type(lockType),
+										m_locked(false)
+								{ Acquire(); }
 
 								~StSubjectLock()
 								{ Release(); }
@@ -204,17 +193,33 @@ public:							// Constructor/Destructor
 public:							// Operations
 
 	void						Acquire()
-								{ if (!m_locked) m_locked = m_lock.Acquire(m_type); }
+								{
+									if (!m_locked)
+									{
+										if (m_type == Lock_Exclusive)
+											m_locked = m_subject->WriteLock();
+										else
+											m_locked = m_subject->ReadLock();
+									}
+								}
 
 	void						Release()
-								{ if (m_locked) m_locked = !m_lock.Release(m_type); }
+								{
+									if (m_locked)
+									{
+										if (m_type == Lock_Exclusive)
+											m_locked = !m_subject->WriteUnlock();
+										else
+											m_locked = !m_subject->ReadUnlock();
+									}
+								}
 
 	bool						LockValid()
 								{ return m_locked; }
 
 private:						// Instance Data
 
-	CSharedLock &				m_lock;
+	CObservable *				m_subject;
 
 	TLockType					m_type;
 

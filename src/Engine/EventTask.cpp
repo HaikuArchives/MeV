@@ -489,24 +489,25 @@ bool CEventTask::Repeat()
 // ---------------------------------------------------------------------------
 // playback routine
 
-void CEventTask::Play()
+void
+CEventTask::Play()
 {
-	int32		targetTime;
-	bool			locating = (group.flags & CPlaybackTaskGroup::Clock_Locating) != false;
+	int32 targetTime;
+	bool locating = (group.flags & CPlaybackTaskGroup::Clock_Locating);
 
-		// If we're locating, then we want to lock for certain
+	// If we're locating, then we want to lock for certain
 	if (locating)
 	{
 		targetTime = timeBase.seekTime;
-		track->Lock(Lock_Shared);
+		track->ReadLock();
 	}
 	else
 	{
-		if (track->Lock(Lock_Shared, 5000) == false)
+		if (!track->ReadLock(500))
 		{
-				// Attempt to lock the track; if we fail, then just continue
-				// and play something else.
-			ReQueue( timeBase.stack, timeBase.seekTime + 10 );
+			// Attempt to lock the track; if we fail, then just continue
+			// and play something else.
+			ReQueue(timeBase.stack, timeBase.seekTime + 10);
 			return;
 		}
 		targetTime = timeBase.seekTime + eventAdvance;
@@ -515,34 +516,36 @@ void CEventTask::Play()
 	int32 actualEndTime = originTime + taskDuration - 1;	
 	currentTime = targetTime - originTime;
 
-		// If there's a repeat scheduled before the playback time.
+	// If there's a repeat scheduled before the playback time.
 	while (nextRepeatTime <= currentTime)
 	{
-			// Play all of the events before the repeat.
+		// Play all of the events before the repeat.
 		for (const Event *ev = (const Event *)playPos; ev != NULL; )
 		{
-			if (ev->Start() >= nextRepeatTime) break;
-			if (IsTimeGreater( taskDuration-1, ev->Start())) break;
+			if (ev->Start() >= nextRepeatTime)
+				break;
+			if (IsTimeGreater(taskDuration-1, ev->Start()))
+				break;
 
-			PlayEvent( *ev, timeBase.stack, originTime );
-			ev = playPos.Seek( 1 );
+			PlayEvent(*ev, timeBase.stack, originTime);
+			ev = playPos.Seek(1);
 		}
-		
-			// Process the repeat. If there was no repeat to process, then...
-		if (Repeat() == false)
+
+		// Process the repeat. If there was no repeat to process, then...
+		if (!Repeat())
 		{
-				// Check to see if we've run out of track
+			// Check to see if we've run out of track
 			if (currentTime >= trackEndTime || (flags & Task_Finished))
 			{
-					// If we've reached the end, then exit this routine...
+				// If we've reached the end, then exit this routine...
 				flags |= Task_Finished;
-				ReQueue( timeBase.stack, trackEndTime + originTime - 1 );
+				ReQueue(timeBase.stack, trackEndTime + originTime - 1);
 			}
 			else
 			{
-				ReQueue( timeBase.stack, nextRepeatTime + originTime - 1 );
+				ReQueue(timeBase.stack, nextRepeatTime + originTime - 1);
 			}
-			track->Unlock(Lock_Shared);
+			track->ReadUnlock();
 			return;
 		}
 
@@ -557,33 +560,33 @@ void CEventTask::Play()
 		{
 			// past end of task
 			flags |= Task_Finished;
-			track->Unlock(Lock_Shared);
+			track->ReadUnlock();
 			return;
 		}
 
 		if (IsTimeGreater(targetTime, t))
 		{
 			// done with this chunk
-			ReQueue( timeBase.stack, locating ? t : t - trackAdvance );
-			track->Unlock(Lock_Shared);
+			ReQueue(timeBase.stack, locating ? t : t - trackAdvance);
+			track->ReadUnlock();
 			return;
 		}
 
-		PlayEvent( *ev, timeBase.stack, originTime );
-		ev = playPos.Seek( 1 );
+		PlayEvent(*ev, timeBase.stack, originTime);
+		ev = playPos.Seek(1);
 	}
 
-	if (repeatStack != NULL || currentTime < taskDuration)
+	if ((repeatStack != NULL) || (currentTime < taskDuration))
 	{
-		ReQueue( timeBase.stack, nextRepeatTime + originTime );
-		track->Unlock(Lock_Shared);
+		ReQueue(timeBase.stack, nextRepeatTime + originTime);
+		track->ReadUnlock();
 		return;
 	}
-	
+
 	// REM: Is this incorrect for the master track?
-	track->Unlock(Lock_Shared);
+	track->ReadUnlock();
 	flags |= Task_Finished;
-	ReQueue( timeBase.stack, trackEndTime + originTime );
+	ReQueue(timeBase.stack, trackEndTime + originTime);
 }
 
 // ---------------------------------------------------------------------------

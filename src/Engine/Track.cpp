@@ -128,7 +128,7 @@ CTrack::SetSection(
 	int32 begin,
 	int32 end)
 {
-	ASSERT(IsLocked());
+	ASSERT(IsWriteLocked());
 
 	if (begin > end)
 	{

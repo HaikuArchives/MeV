@@ -1,8 +1,8 @@
 /* ===================================================================== *
- * SharedLock.cpp (MeV/Framework)
+ * Lockable.cpp (MeV/Framework)
  * ===================================================================== */
 
-#include "SharedLock.h"
+#include "Lockable.h"
 
 // Support Kit
 #include <Debug.h>
@@ -19,7 +19,7 @@ const int32			MAX_READER_COUNT = 10000;
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
-CSharedLock::CSharedLock(
+CLockable::CLockable(
 	const char *name = NULL)
 	:	m_sem(-1),
 		m_writerStackBase(0),
@@ -27,14 +27,14 @@ CSharedLock::CSharedLock(
 		m_writerNest(0),
 		m_readerCount(0)
 {
-	D_ALLOC(("CSharedLock::CSharedLock(%s)\n", Name() ? Name() : "NULL"));
+	D_ALLOC(("CLockable::CLockable(%s)\n", name ? name : "NULL"));
 
-	m_sem = create_sem(MAX_READER_COUNT, Name());
+	m_sem = create_sem(MAX_READER_COUNT, name);
 }
 
-CSharedLock::~CSharedLock()
+CLockable::~CLockable()
 {
-	D_ALLOC(("CSharedLock<%s>::~CSharedLock()\n", Name() ? Name() : "NULL"));
+	D_ALLOC(("CLockable::~CLockable()\n"));
 
 	//become the writer
 	if (!IsWriteLocked())
@@ -48,7 +48,7 @@ CSharedLock::~CSharedLock()
 // Accessors
 
 status_t
-CSharedLock::InitCheck() const
+CLockable::InitCheck() const
 {
 	if (m_sem > 0)
 		return B_OK;
@@ -57,21 +57,19 @@ CSharedLock::InitCheck() const
 }
 
 bool 
-CSharedLock::IsReadLocked() const
+CLockable::IsReadLocked() const
 {
-	D_ACCESS(("CSharedLock<%s>::IsReadLocked()\n",
-			  Name() ? Name() : "NULL"));
+	D_ACCESS(("CLockable::IsReadLocked()\n"));
 
 	return ((m_readerCount > 0) || IsWriteLocked());
 }
 
 bool 
-CSharedLock::IsWriteLocked(
+CLockable::IsWriteLocked(
 	uint32 *outStackBase,
 	thread_id *outThread) const
 {
-	D_ACCESS(("CSharedLock<%s>::IsWriteLocked()\n",
-			  Name() ? Name() : "NULL"));
+	D_ACCESS(("CLockable::IsWriteLocked()\n"));
 
 	bool locked = false;
 	uint32 stackBase;
@@ -104,26 +102,14 @@ CSharedLock::IsWriteLocked(
 	return locked;
 }
 
-const char *
-CSharedLock::Name() const
-{
-	D_ACCESS(("CSharedLock::Name()\n"));
-
-	sem_info info;
-	if (get_sem_info(m_sem, &info) != B_OK)
-		return NULL;
-
-	return info.name;
-}
-
 // ---------------------------------------------------------------------------
 // Operations
 
 bool
-CSharedLock::ReadLock(
+CLockable::ReadLock(
 	bigtime_t timeout)
 {
-	D_OPERATION(("CSharedLock<%ld>::ReadLock(%Ld)\n", m_sem, timeout));
+	D_OPERATION(("CLockable::ReadLock(%Ld)\n", timeout));
 
 	bool locked = false;
 
@@ -146,9 +132,9 @@ CSharedLock::ReadLock(
 }
 
 bool
-CSharedLock::ReadUnlock()
+CLockable::ReadUnlock()
 {
-	D_OPERATION(("CSharedLock<%ld>::ReadUnlock()\n", m_sem));
+	D_OPERATION(("CLockable::ReadUnlock()\n"));
 
 	bool unlocked = false;
 
@@ -171,10 +157,10 @@ CSharedLock::ReadUnlock()
 }
 
 bool 
-CSharedLock::WriteLock(
+CLockable::WriteLock(
 	bigtime_t timeout)
 {
-	D_OPERATION(("CSharedLock<%ld>::WriteLock(%Ld)\n", m_sem, timeout));
+	D_OPERATION(("CLockable::WriteLock(%Ld)\n", timeout));
 
 	bool locked = false;
 	uint32 stackBase = 0;
@@ -204,9 +190,9 @@ CSharedLock::WriteLock(
 }
 
 bool 
-CSharedLock::WriteUnlock()
+CLockable::WriteUnlock()
 {
-	D_OPERATION(("CSharedLock<%ld>::WriteUnlock()\n", m_sem));
+	D_OPERATION(("CLockable::WriteUnlock()\n", m_sem));
 
 	bool unlocked = false;
 
@@ -239,4 +225,4 @@ CSharedLock::WriteUnlock()
 	return unlocked;
 }
 
-// END - SharedLock.cpp
+// END - Lockable.cpp

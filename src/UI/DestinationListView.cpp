@@ -406,18 +406,18 @@ CDestinationListView::DestinationAdded(
 	{
 		dest->AddObserver(this);
 
-		m_doc->Lock(Lock_Shared);
+		m_doc->ReadLock();
 		int32 index = m_doc->IndexOf(dest);
 		int32 current = m_doc->GetDefaultAttribute(EvAttr_Channel);
-		m_doc->Unlock(Lock_Shared);
+		m_doc->ReadUnlock();
 
 		BMessage *message = new BMessage(DESTINATION_SELECTED);
-		dest->Lock(Lock_Shared);
+		dest->ReadLock();
 		message->AddInt32("destination_id", dest->GetID());
 		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
 		CIconMenuItem *item = new CIconMenuItem(dest->Name(),
 												message, icon);
-		dest->Unlock(Lock_Shared);
+		dest->ReadUnlock();
 		item->SetTarget(this);
 		m_destMenu->AddItem(item, index + 2);
 		if (index == current)
@@ -432,9 +432,9 @@ CDestinationListView::DestinationChanged(
 	CDestination *dest = Document()->FindDestination(id);
 	if (dest)
 	{
-		m_doc->Lock(Lock_Shared);
+		m_doc->ReadLock();
 		int32 index = m_doc->IndexOf(dest) + 2;
-		m_doc->Unlock(Lock_Shared);
+		m_doc->ReadUnlock();
 
 		CIconMenuItem *item = (CIconMenuItem *)m_destMenu->RemoveItem(index);
 		bool marked = item->IsMarked();
@@ -442,11 +442,11 @@ CDestinationListView::DestinationChanged(
 			delete item;
 
 		BMessage *message = new BMessage(DESTINATION_SELECTED);
-		dest->Lock(Lock_Shared);
+		dest->ReadLock();
 		message->AddInt32("destination_id", dest->GetID());
 		BBitmap	*icon = dest->GetProducer()->GetSmallIcon();
 		item = new CIconMenuItem(dest->Name(), message, icon);
-		dest->Unlock(Lock_Shared);
+		dest->ReadUnlock();
 		item->SetTarget(this);
 		m_destMenu->AddItem(item, index);
 		if (marked)

@@ -15,21 +15,17 @@
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
-CObservable::CObservable()
+CObservable::CObservable(
+	const char *name)
+	:	CLockable(name)
 {
+	D_OBSERVE(("CObservable::CObservable(%s)\n", name ? name : "NULL"));
+
 }
 
 CObservable::~CObservable()
 {
 	D_OBSERVE(("CObservable::~CObservable()\n"));
-
-#if DEBUG
-	if (m_observers.CountItems() > 0)
-	{
-		D_OBSERVE((" -> %ld observers still listening!\n",
-			   m_observers.CountItems()));
-	}
-#endif
 
 	RequestDelete();
 }
@@ -41,7 +37,7 @@ bool
 CObservable::AddObserver(
 	CObserver *observer)
 {
-	StSubjectLock lock(*this, Lock_Exclusive);
+	CWriteLock lock(this);
 	return m_observers.AddItem(observer);
 }
 
@@ -49,7 +45,7 @@ bool
 CObservable::RemoveObserver(
 	CObserver *observer)
 {
-	StSubjectLock lock(*this, Lock_Exclusive);
+	CWriteLock lock(this);
 	return m_observers.RemoveItem(observer);
 }
 
@@ -63,7 +59,7 @@ CObservable::PostUpdate(
 {
 	D_OBSERVE(("CObservable::PostUpdate()\n"));
 
-	StSubjectLock myLock(*this, Lock_Shared);
+	CReadLock lock(this);
 
 	//	For each observer, send them a copy of the message.
 	int32 count = m_observers.CountItems();
@@ -82,19 +78,19 @@ CObservable::RequestDelete()
 	D_OBSERVE(("CObservable<%p>::RequestDelete()\n", this));
 
 	int32 count = 0;
-	if (Lock(Lock_Shared))
+	if (ReadLock())
 	{
 		count = m_observers.CountItems();
-		Unlock(Lock_Shared);
+		ReadUnlock();
 	}
 
 	while (count > 0)
 	{
 		D_OBSERVE((" -> %ld observers hanging on\n", count));
 
-		Lock(Lock_Shared);
+		ReadLock();
 		CObserver *ob = (CObserver *)m_observers.ItemAt(count - 1);
-		Unlock(Lock_Shared);
+		ReadUnlock();
 
 		D_OBSERVE((" -> releasing observer at %p\n", ob));
 		if (ob->Released(this) == false)
@@ -103,9 +99,9 @@ CObservable::RequestDelete()
 			RemoveObserver(ob);
 		}
 
-		Lock(Lock_Shared);
+		ReadLock();
 		count = m_observers.CountItems();
-		Unlock(Lock_Shared);
+		ReadUnlock();
 	}
 }
 
