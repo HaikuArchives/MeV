@@ -1201,6 +1201,8 @@ CEventEditor::MouseDown(
 					  B_NO_POINTER_HISTORY | B_LOCK_WINDOW_FOCUS);
 	StartDrag(point, buttons);
 	m_dragging = true;
+	
+	MakeFocus();
 }
 
 void
@@ -1463,7 +1465,7 @@ CEndEventRenderer::Invalidate(
 	Editor()->Invalidate(Extent(ev));
 }
 
-static pattern endPt = { 0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff };
+static const pattern endPt = { { 0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff } };
 
 void
 CEndEventRenderer::Draw(
