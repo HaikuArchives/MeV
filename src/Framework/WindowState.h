@@ -129,9 +129,10 @@ public:
 		/**	Call this to get the rectangle of the window when it was last open. */
 	BRect Rect();
 	BPoint Pos();
-	
-		/**	Returns a pointer to the window. You should lock before calling this. */
-	CAppWindow *Window() { return w; }
+
+	/**	Returns a pointer to the window. You should lock before calling this. */
+	CAppWindow *				Window() const
+								{ return w; }
 	
 		/**	Lock the window state. */
 	void Lock() { lock.Lock(); }

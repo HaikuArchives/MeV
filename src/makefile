@@ -30,6 +30,7 @@ SRCS= \
 	Engine/SignatureMap.cpp \
 	Engine/TempoMap.cpp \
 	Engine/Track.cpp \
+	Midi/GeneralMidi.cpp \
 	Midi/InternalSynth.cpp \
 	Midi/MidiDeviceInfo.cpp \
 	Midi/MidiManager.cpp \
