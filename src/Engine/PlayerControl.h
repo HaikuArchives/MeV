@@ -43,6 +43,7 @@
 #include "MeV.h"
 
 class CMeVDoc;
+class CTrack;
 
 // ---------------------------------------------------------------------------
 // Commands sent to player
