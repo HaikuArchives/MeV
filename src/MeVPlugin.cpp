@@ -7,7 +7,7 @@
 #include "MeVDoc.h"
 #include "EventTrack.h"
 #include "Event.h"
-#include "DestinationList.h"
+#include "Destination.h"
 #include "InternalSynth.h"
 #include "MidiManager.h"
 
@@ -282,7 +282,6 @@ int MeVDocRef::NewDestination(const char* name, int consumerID, int channel)
 int MeVDocRef::GetChannelForDestination(int destinationID)
 {
 	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
-	//CDestinationList* list = doc->GetDestinationList();
 	if (doc->IsDefinedDest(destinationID))
 	{
 		CDestination *dest=doc->FindDestination(destinationID);
