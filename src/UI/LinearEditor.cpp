@@ -53,10 +53,10 @@ private:						// Instance Data
 };
 
 // ---------------------------------------------------------------------------
-// Note handler class for linear editor
+// Note renderer class for linear editor
 
-class CLinearNoteEventHandler
-	:	public CEventHandler
+class CLinearNoteEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constants
@@ -70,12 +70,12 @@ public:							// Constants
 
 public:							// Constructor
 
-								CLinearNoteEventHandler(
+								CLinearNoteEventRenderer(
 									CEventEditor * const editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CAbstractEventHandler Implementation
+public:							// CAbstractEventRenderer Implementation
 
 	// Invalidate the event
 	virtual void				Invalidate(
@@ -128,7 +128,7 @@ public:							// CAbstractEventHandler Implementation
 protected:						// Accessors
 
 	CLinearEditor * const		Editor() const
-								{ return (CLinearEditor *)CEventHandler::Editor(); }
+								{ return (CLinearEditor *)CEventRenderer::Editor(); }
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +152,7 @@ CLinearEditor::CLinearEditor(
 	:	CEventEditor(frame, rect, "Piano Roll", true, true),
 		m_whiteKeyStep(8)
 {
-	SetHandlerFor(EvtType_Note, new CLinearNoteEventHandler(this));
+	SetRendererFor(EvtType_Note, new CLinearNoteEventRenderer(this));
 
 	CalcZoom();
 
@@ -192,7 +192,7 @@ CLinearEditor::ConstructEvent(
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
 	int32 time;
-	time = HandlerFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
+	time = RendererFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
 												 BPoint(0.0, 0.0), point,
 												 true);
 	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
@@ -297,7 +297,7 @@ CLinearEditor::Draw(
 			continue;
 
 		if (Track()->IsChannelLocked(*ev))
-			HandlerFor(*ev)->Draw(*ev, false);
+			RendererFor(*ev)->Draw(*ev, false);
 	}
 
 	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
@@ -310,7 +310,7 @@ CLinearEditor::Draw(
 		 	continue;
 
 		if (!Track()->IsChannelLocked(*ev))
-			HandlerFor(*ev)->Draw(*ev, false);
+			RendererFor(*ev)->Draw(*ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();
@@ -479,31 +479,31 @@ CLinearEditor::ViewCoordsToPitch(
 // Class Data Initialization
 
 const rgb_color
-CLinearNoteEventHandler::DEFAULT_BORDER_COLOR = {0, 0, 0, 255};
+CLinearNoteEventRenderer::DEFAULT_BORDER_COLOR = {0, 0, 0, 255};
 const rgb_color
-CLinearNoteEventHandler::DEFAULT_HIGHLIGHT_COLOR = {224, 224, 224, 255};
+CLinearNoteEventRenderer::DEFAULT_HIGHLIGHT_COLOR = {224, 224, 224, 255};
 const rgb_color
-CLinearNoteEventHandler::SELECTED_BORDER_COLOR = {0, 0, 255, 255};
+CLinearNoteEventRenderer::SELECTED_BORDER_COLOR = {0, 0, 255, 255};
 const rgb_color
-CLinearNoteEventHandler::DISABLED_BORDER_COLOR = {128, 128, 128, 255};
+CLinearNoteEventRenderer::DISABLED_BORDER_COLOR = {128, 128, 128, 255};
 const rgb_color
-CLinearNoteEventHandler::DISABLED_FILL_COLOR = {192, 192, 192, 255};
+CLinearNoteEventRenderer::DISABLED_FILL_COLOR = {192, 192, 192, 255};
 const pattern
-CLinearNoteEventHandler::MIXED_COLORS = { 0xf0, 0xf0, 0xf0, 0xf0, 
+CLinearNoteEventRenderer::MIXED_COLORS = { 0xf0, 0xf0, 0xf0, 0xf0, 
 										  0x0f, 0x0f, 0x0f, 0x0f };
 
 // ---------------------------------------------------------------------------
-// CAbstractEventHandler Implementation
+// CAbstractEventRenderer Implementation
 
 void
-CLinearNoteEventHandler::Invalidate(
+CLinearNoteEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
-CLinearNoteEventHandler::Draw(
+CLinearNoteEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -572,7 +572,7 @@ CLinearNoteEventHandler::Draw(
 }
 
 BRect
-CLinearNoteEventHandler::Extent(
+CLinearNoteEventRenderer::Extent(
 	const Event &ev) const
 {
 	BRect r;
@@ -585,7 +585,7 @@ CLinearNoteEventHandler::Extent(
 }
 
 long
-CLinearNoteEventHandler::Pick(
+CLinearNoteEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -597,7 +597,7 @@ CLinearNoteEventHandler::Pick(
 }
 
 const BCursor *
-CLinearNoteEventHandler::Cursor(
+CLinearNoteEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const
@@ -627,7 +627,7 @@ CLinearNoteEventHandler::Cursor(
 }
 
 long
-CLinearNoteEventHandler::QuantizeDragValue(
+CLinearNoteEventRenderer::QuantizeDragValue(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -648,7 +648,7 @@ CLinearNoteEventHandler::QuantizeDragValue(
 }
 
 EventOp *
-CLinearNoteEventHandler::CreateDragOp(
+CLinearNoteEventRenderer::CreateDragOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -661,7 +661,7 @@ CLinearNoteEventHandler::CreateDragOp(
 }
 
 EventOp *
-CLinearNoteEventHandler::CreateTimeOp(
+CLinearNoteEventRenderer::CreateTimeOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -670,7 +670,7 @@ CLinearNoteEventHandler::CreateTimeOp(
 	if (partCode == 1)
 		return new DurationOffsetOp(timeDelta);
 
-	return CEventHandler::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
+	return CEventRenderer::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
 }
 
 // ---------------------------------------------------------------------------

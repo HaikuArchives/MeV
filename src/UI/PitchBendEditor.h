@@ -46,7 +46,7 @@
 class CPitchBendEditor
 	:	public CContinuousValueEditor
 {
-	friend class CPitchBendEventHandler;
+	friend class CPitchBendEventRenderer;
 
 protected:
 

@@ -48,7 +48,7 @@ class CContinuousValueEditor
 {
 	// ++++++ this class shouldn't need to know about a descendant-related
 	//		  class !
-	friend class CPitchBendEventHandler;
+	friend class CPitchBendEventRenderer;
 
 public:							// Constructor/Destructor
 

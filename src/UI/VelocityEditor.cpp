@@ -22,20 +22,20 @@
 #include <Debug.h>
 
 // ---------------------------------------------------------------------------
-// Note handler class for linear editor
+// Note renderer class for linear editor
 
-class CVelocityNoteEventHandler
-	:	public CEventHandler
+class CVelocityNoteEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// No constructor
 
-								CVelocityNoteEventHandler(
+								CVelocityNoteEventRenderer(
 									CEventEditor * const editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CEventHandler Implementation
+public:							// CEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
@@ -91,7 +91,7 @@ public:							// CEventHandler Implementation
 protected:						// Accessors
 
 	CVelocityEditor * const		Editor() const
-								{ return (CVelocityEditor *)CEventHandler::Editor(); }
+								{ return (CVelocityEditor *)CEventRenderer::Editor(); }
 };
 
 // ---------------------------------------------------------------------------
@@ -123,7 +123,7 @@ CVelocityEditor::CVelocityEditor(
 	:	CEventEditor(frameView, rect, "Velocity", false, false),
 		m_coupleAttackRelease(true)
 {
-	SetHandlerFor(EvtType_Note, new CVelocityNoteEventHandler(this));
+	SetRendererFor(EvtType_Note, new CVelocityNoteEventRenderer(this));
 	SetFlags(Flags() | B_FULL_UPDATE_ON_RESIZE);
 
 	// Make the label view on the left-hand side
@@ -168,7 +168,7 @@ CVelocityEditor::Draw(
 		 || (Track()->IsChannelLocked(*ev)))
 			continue;
 
-		HandlerFor(*ev)->Draw(*ev, false);
+		RendererFor(*ev)->Draw(*ev, false);
 	}
 }
 
@@ -363,7 +363,7 @@ CVelocityEditor::DoDrag(
 				if ((ev->note.attackVelocity != evCopy.note.attackVelocity)
 				 ||	(ev->note.releaseVelocity != evCopy.note.releaseVelocity))
 				{
-					HandlerFor(*ev)->Invalidate(*ev);
+					RendererFor(*ev)->Invalidate(*ev);
 
 					// If the event has not yet been saved, then
 					// go ahead and add it into the undo store
@@ -384,7 +384,7 @@ CVelocityEditor::DoDrag(
 						const_cast<Event *>(ev)->note.releaseVelocity = evCopy.note.releaseVelocity;
 					}
 
-					HandlerFor(*ev)->Invalidate(*ev);
+					RendererFor(*ev)->Invalidate(*ev);
 				}
 				else
 				{
@@ -432,17 +432,17 @@ CVelocityEditor::FinishDrag(
 }
 
 // ---------------------------------------------------------------------------
-// CVelocityNoteEventHandler: CEventHandler Implementation
+// CVelocityNoteEventRenderer: CEventRenderer Implementation
 
 void
-CVelocityNoteEventHandler::Invalidate(
+CVelocityNoteEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
-CVelocityNoteEventHandler::Draw(
+CVelocityNoteEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -496,7 +496,7 @@ CVelocityNoteEventHandler::Draw(
 }
 
 BRect
-CVelocityNoteEventHandler::Extent(
+CVelocityNoteEventRenderer::Extent(
 	const Event &ev) const
 {
 	BRect rect(Editor()->Bounds());
@@ -509,7 +509,7 @@ CVelocityNoteEventHandler::Extent(
 }
 
 const BCursor *
-CVelocityNoteEventHandler::Cursor(
+CVelocityNoteEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const

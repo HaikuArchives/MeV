@@ -42,10 +42,10 @@ CEventEditor::CEventEditor(
 		m_dragOp(NULL),
 		m_dragging(false)
 {
-	m_handlers[EvtType_End] = new CEndEventHandler(this);
-	m_nullEventHandler = new CNullEventHandler(this);
+	m_renderers[EvtType_End] = new CEndEventRenderer(this);
+	m_nullEventRenderer = new CNullEventRenderer(this);
 	for (event_type i = 1; i < EvtType_Count; i++)
-		m_handlers[i] = m_nullEventHandler;
+		m_renderers[i] = m_nullEventRenderer;
 }
 					
 CEventEditor::CEventEditor(
@@ -65,10 +65,10 @@ CEventEditor::CEventEditor(
 		m_dragOp(NULL),
 		m_dragging(false)
 {
-	m_handlers[EvtType_End] = new CEndEventHandler(this);
-	m_nullEventHandler = new CNullEventHandler(this);
+	m_renderers[EvtType_End] = new CEndEventRenderer(this);
+	m_nullEventRenderer = new CNullEventRenderer(this);
 	for (event_type i = 1; i < EvtType_Count; i++)
-		m_handlers[i] = m_nullEventHandler;
+		m_renderers[i] = m_nullEventRenderer;
 }
 	
 CEventEditor::~CEventEditor()
@@ -76,9 +76,9 @@ CEventEditor::~CEventEditor()
 	delete m_lasso;
 
 	for (event_type i = 0; i < EvtType_Count; i++)
-		if (m_handlers[i] != m_nullEventHandler)
-			delete m_handlers[i];
-	delete m_nullEventHandler;
+		if (m_renderers[i] != m_nullEventRenderer)
+			delete m_renderers[i];
+	delete m_nullEventRenderer;
 
 	if (m_track != NULL)
 		m_track->RemoveObserver(this);
@@ -125,27 +125,27 @@ CEventEditor::DoDrag(
 			else
 				dragEvent = Track()->CurrentEvent();
 	
-			const CEventHandler &handler(*HandlerFor(*dragEvent));
-			be_app->SetCursor(handler.Cursor(m_clickPart, editMode, true));
+			const CEventRenderer *renderer(RendererFor(*dragEvent));
+			be_app->SetCursor(renderer->Cursor(m_clickPart, editMode, true));
 
 			// Compute the difference between the original
 			// time and the new time we're dragging the events to.
-			newTimeDelta = handler.QuantizeDragTime(*dragEvent, m_clickPart,
-													m_clickPos, point);
+			newTimeDelta = renderer->QuantizeDragTime(*dragEvent, m_clickPart,
+													  m_clickPos, point);
 	
 			// Compute the difference between the original value
 			// and the new value we're dragging the events to.
-			newValueDelta = handler.QuantizeDragValue(*dragEvent, m_clickPart,
-													  m_clickPos, point);
+			newValueDelta = renderer->QuantizeDragValue(*dragEvent, m_clickPart,
+														m_clickPos, point);
 	
 			if ((newTimeDelta  == m_timeDelta)
 			 && (newValueDelta == m_valueDelta))
 				return true;
 	
-			newValueOp = handler.CreateDragOp(*dragEvent, m_clickPart,
-											  newTimeDelta, newValueDelta);
-			newTimeOp = handler.CreateTimeOp(*dragEvent, m_clickPart,
-											 newTimeDelta, newValueDelta);
+			newValueOp = renderer->CreateDragOp(*dragEvent, m_clickPart,
+												newTimeDelta, newValueDelta);
+			newTimeOp = renderer->CreateTimeOp(*dragEvent, m_clickPart,
+											   newTimeDelta, newValueDelta);
 
 			if (newTimeOp == NULL)
 				newDragOp = newValueOp;
@@ -167,7 +167,7 @@ CEventEditor::DoDrag(
 				Event feedbackEvent(*(Event *)dragEvent);
 	
 				// REM: EvAttr_Pitch should not be hard coded.
-				// This should be in fact computed from the handler.
+				// This should be in fact computed from the renderer.
 				// Or from the valueOp.
 				(*newValueOp)(feedbackEvent, Track()->ClockType());
 				DoEventFeedback(feedbackEvent);
@@ -179,12 +179,12 @@ CEventEditor::DoDrag(
 	
 				if (m_dragOp)
 					(*m_dragOp)(evCopy, Track()->ClockType());
-				HandlerFor(evCopy)->Invalidate(evCopy);
+				RendererFor(evCopy)->Invalidate(evCopy);
 	
 				evCopy = m_newEv;
 				if (newDragOp)
 					(*newDragOp)(evCopy, Track()->ClockType());
-				HandlerFor(evCopy)->Invalidate(evCopy);
+				RendererFor(evCopy)->Invalidate(evCopy);
 			}
 			else
 			{
@@ -260,7 +260,7 @@ CEventEditor::DrawEchoEvents(
 			Event evCopy(*(Event *)ev);
 			(*echoOp)(evCopy, clockType);
 			if ((evCopy.Start() <= stopTime) && (evCopy.Stop() >= startTime))
-				HandlerFor(evCopy)->Draw(evCopy, true);
+				RendererFor(evCopy)->Draw(evCopy, true);
 		}
 	}
 }
@@ -340,7 +340,7 @@ CEventEditor::FinishDrag(
 	short partCode;
 	const Event	*ev;
 	if ((ev = PickEvent(marker, point, partCode)) != NULL)
-		be_app->SetCursor(HandlerFor(*ev)->Cursor(partCode, editMode));
+		be_app->SetCursor(RendererFor(*ev)->Cursor(partCode, editMode));
 	else
 		be_app->SetCursor(CursorFor(editMode));
 
@@ -366,7 +366,7 @@ CEventEditor::FinishDrag(
 					// Creating a new event
 					if (m_dragOp)
 						(*m_dragOp)(m_newEv, Track()->ClockType());
-					HandlerFor(m_newEv)->Invalidate(m_newEv);
+					RendererFor(m_newEv)->Invalidate(m_newEv);
 					Track()->CreateEvent(this, m_newEv, "Create Event");
 				}
 				else if (m_dragType == DragType_CopyEvents)
@@ -419,9 +419,7 @@ CEventEditor::InvalidateSelection()
 		 ev = marker.NextItemInRange(Track()->MinSelectTime(), Track()->MaxSelectTime()))
 	{
 		if (ev->IsSelected())
-		{
-			HandlerFor(*ev)->Invalidate(*ev);
-		}
+			RendererFor(*ev)->Invalidate(*ev);
 	}
 }
 
@@ -445,7 +443,7 @@ CEventEditor::InvalidateSelection(
 		{
 			Event evCopy(*(Event *)ev);
 			inOp(evCopy, clockType);
-			HandlerFor(*ev)->Invalidate(evCopy);
+			RendererFor(*ev)->Invalidate(evCopy);
 		}
 	}
 }
@@ -466,7 +464,7 @@ CEventEditor::StartDrag(
 	{
 		bool wasSelected = false;
 		TrackWindow()->Document()->SetActiveMaster(Track());
-		be_app->SetCursor(HandlerFor(*ev)->Cursor(partCode, toolState, true));
+		be_app->SetCursor(RendererFor(*ev)->Cursor(partCode, toolState, true));
 
 		if (toolState == TOOL_ERASE)
 		{
@@ -481,7 +479,7 @@ CEventEditor::StartDrag(
 				if (modifierKeys & B_SHIFT_KEY)
 				{
 					((Event *)ev)->SetSelected( false );
-					HandlerFor(*ev)->Invalidate(*ev);
+					RendererFor(*ev)->Invalidate(*ev);
 				
 					// This could be faster.
 					Track()->SummarizeSelection();
@@ -498,7 +496,7 @@ CEventEditor::StartDrag(
 					Track()->DeselectAll(this);
 
 				((Event *)ev)->SetSelected(true);
-				HandlerFor(*ev)->Invalidate(*ev);
+				RendererFor(*ev)->Invalidate(*ev);
 	
 				// This could be faster.
 				Track()->SummarizeSelection();
@@ -552,7 +550,7 @@ CEventEditor::StartDrag(
 
 			m_clickPart = 0;
 			m_dragType = DragType_Create;
-			HandlerFor(m_newEv)->Invalidate(m_newEv);
+			RendererFor(m_newEv)->Invalidate(m_newEv);
 			DoEventFeedback(m_newEv);
 
 			// Poke selection times so that drag-limits will work properly
@@ -641,7 +639,7 @@ CEventEditor::SubjectUpdated(
 			if ((ev->HasProperty(Event::Prop_Channel))
 			 && (ev->GetVChannel() == channel))
 			{
-				HandlerFor(*ev)->Invalidate(*ev);
+				RendererFor(*ev)->Invalidate(*ev);
 			}
 		}
 	}
@@ -655,7 +653,7 @@ CEventEditor::SubjectUpdated(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			HandlerFor(*ev)->Invalidate(*ev);
+			RendererFor(*ev)->Invalidate(*ev);
 		}
 	}
 	else
@@ -722,27 +720,27 @@ CEventEditor::DoLassoTracking(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			const CEventHandler *handler(HandlerFor(*ev));
-			if (handler == m_nullEventHandler)
+			const CEventRenderer *renderer(RendererFor(*ev));
+			if (renderer == m_nullEventRenderer)
 				continue;
 			if (Track()->IsChannelLocked(*ev))
 				continue;
 
-			BRect extent(handler->Extent(*ev));
+			BRect extent(renderer->Extent(*ev));
 
 			if (!ev->IsSelected() && r.Intersects(extent)
 			 && IsRectInLasso(extent, gPrefs.inclusiveSelection))
 			{
 				const_cast<Event *>(ev)->SetSelected(true);
 				selectionChanged = true;
-				handler->Invalidate(*ev);
+				renderer->Invalidate(*ev);
 			}
 			else if (ev->IsSelected()
 			 && !IsRectInLasso(extent, gPrefs.inclusiveSelection))
 			{
 				const_cast<Event *>(ev)->SetSelected(false);
 				selectionChanged = true;
-				handler->Invalidate(*ev);
+				renderer->Invalidate(*ev);
 			}
 		}
 	
@@ -809,13 +807,13 @@ CEventEditor::DoRectangleTracking(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			const CEventHandler *handler(HandlerFor(*ev));
-			if (handler == m_nullEventHandler)
+			const CEventRenderer *renderer(RendererFor(*ev));
+			if (renderer == m_nullEventRenderer)
 				continue;
 			if (Track()->IsChannelLocked(*ev))
 				continue;
 
-			BRect extent(handler->Extent(*ev));
+			BRect extent(renderer->Extent(*ev));
 
 			if (!ev->IsSelected()
 			 && (gPrefs.inclusiveSelection ? r.Intersects(extent)
@@ -823,7 +821,7 @@ CEventEditor::DoRectangleTracking(
 			{
 				const_cast<Event *>(ev)->SetSelected(true);
 				selectionChanged = true;
-				handler->Invalidate(*ev);
+				renderer->Invalidate(*ev);
 			}
 			else if (ev->IsSelected()
 			 && (gPrefs.inclusiveSelection ? !r.Intersects(extent)
@@ -831,7 +829,7 @@ CEventEditor::DoRectangleTracking(
 			{
 				const_cast<Event *>(ev)->SetSelected(false);
 				selectionChanged = true;
-				handler->Invalidate(*ev);
+				renderer->Invalidate(*ev);
 			}
 		}
 
@@ -918,7 +916,7 @@ CEventEditor::PickEvent(
 		if (Track()->IsChannelLocked(*ev))
 			continue;
 		
-		long dist = HandlerFor(*ev)->Pick(*ev, pickPt, partCode);
+		long dist = RendererFor(*ev)->Pick(*ev, pickPt, partCode);
 
 		if ((dist < bestPick) && (dist >= 0))
 		{
@@ -1126,7 +1124,7 @@ CEventEditor::DrawCreateEcho(
 	if ((evCopy.Start() <= stopTime) && (evCopy.Stop()  >= startTime))
 	{
 		PushState();
-		HandlerFor(evCopy)->Draw(evCopy, true);
+		RendererFor(evCopy)->Draw(evCopy, true);
 		PopState();
 	}
 }
@@ -1211,7 +1209,7 @@ CEventEditor::MouseMoved(
 			short partCode;
 			const Event	*ev;
 			if ((ev = PickEvent(marker, point, partCode)) != NULL)
-				be_app->SetCursor(HandlerFor(*ev)->Cursor(partCode, editMode));
+				be_app->SetCursor(RendererFor(*ev)->Cursor(partCode, editMode));
 			else
 				be_app->SetCursor(CursorFor(editMode));
 			TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));
@@ -1245,7 +1243,7 @@ CEventEditor::MouseUp(
 		int32 editMode = TrackWindow()->CurrentTool();
 		short partCode;
 		if ((ev = PickEvent(marker, point, partCode)) != NULL)
-			be_app->SetCursor(HandlerFor(*ev)->Cursor(partCode, editMode));
+			be_app->SetCursor(RendererFor(*ev)->Cursor(partCode, editMode));
 		else
 			be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::DEFAULT));
 	}
@@ -1280,10 +1278,10 @@ CEventEditor::Released(
 }
 
 // ---------------------------------------------------------------------------
-// CEventHandler
+// CEventRenderer
 
 const BCursor *
-CEventHandler::Cursor(
+CEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const
@@ -1302,7 +1300,7 @@ CEventHandler::Cursor(
 }
 
 long
-CEventHandler::QuantizeDragTime(
+CEventRenderer::QuantizeDragTime(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -1321,7 +1319,7 @@ CEventHandler::QuantizeDragTime(
 }
 
 EventOp *
-CEventHandler::CreateTimeOp(
+CEventRenderer::CreateTimeOp(
 	const Event	&ev,
 	short partCode,
 	long timeDelta,
@@ -1341,10 +1339,10 @@ CEventHandler::CreateTimeOp(
 }
 
 // ---------------------------------------------------------------------------
-// CEndEventHandler
+// CEndEventRenderer
 
 void
-CEndEventHandler::Invalidate(
+CEndEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
@@ -1353,7 +1351,7 @@ CEndEventHandler::Invalidate(
 static pattern endPt = { 0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff };
 
 void
-CEndEventHandler::Draw(
+CEndEventRenderer::Draw(
 	const Event	&ev,
 	bool shadowed) const
 {
@@ -1383,7 +1381,7 @@ CEndEventHandler::Draw(
 }
 
 BRect
-CEndEventHandler::Extent(
+CEndEventRenderer::Extent(
 	const Event &ev) const
 {
 	BRect r(Editor()->Bounds());
@@ -1395,7 +1393,7 @@ CEndEventHandler::Extent(
 }
 
 long
-CEndEventHandler::Pick(
+CEndEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -1413,7 +1411,7 @@ CEndEventHandler::Pick(
 }
 
 const BCursor *
-CEndEventHandler::Cursor(
+CEndEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const

@@ -79,7 +79,7 @@ CContinuousValueEditor::Draw(
 	{
 		if (ev->HasProperty(Event::Prop_Channel)
 		 && Track()->IsChannelLocked(ev->GetVChannel()))
-			HandlerFor(*ev)->Draw(*ev, false);
+			RendererFor(*ev)->Draw(*ev, false);
 	}
 
 	// For each event that overlaps the current view, draw it. (unlocked channels overdraw!)
@@ -89,7 +89,7 @@ CContinuousValueEditor::Draw(
 	{
 		if (!Track()->IsChannelLocked(ev->GetVChannel()
 		 || !ev->HasProperty(Event::Prop_Channel)))
-			HandlerFor(*ev)->Draw(*ev, false);
+			RendererFor(*ev)->Draw(*ev, false);
 	}
 
 	EventOp	*echoOp = PendingOperation();

@@ -49,7 +49,7 @@
 #include "StripView.h"
 #include "TrackWindow.h"
 
-class CEventHandler;
+class CEventRenderer;
 class CEventTrack;
 class CPolygon;
 class CStripFrameView;
@@ -62,7 +62,7 @@ class CEventEditor :
 	public CStripView,
 	public CObserver
 {
-	friend class		CEndEventHandler;
+	friend class		CEndEventRenderer;
 
 public:							// Constants
 
@@ -178,17 +178,17 @@ public:							// Hook Functions
 
 public:							// Accessors
 
-	void						SetHandlerFor(
+	void						SetRendererFor(
 									event_type type,
-									CEventHandler *handler)
-								{ m_handlers[type] = handler; }
+									CEventRenderer *renderer)
+								{ m_renderers[type] = renderer; }
 
-	CEventHandler *				HandlerFor(
+	CEventRenderer *			RendererFor(
 									const Event &ev) const
-								{ return m_handlers[ev.Command()]; }
-	CEventHandler *				HandlerFor(
+								{ return m_renderers[ev.Command()]; }
+	CEventRenderer *			RendererFor(
 									event_type type) const
-								{ return m_handlers[type]; }
+								{ return m_renderers[type]; }
 
 	// Return the pending operation for this window
 	EventOp *					DragOperation()
@@ -324,9 +324,9 @@ protected:						// Instance Data
 
 	CStripFrameView	&			m_frame;
 
-	// Array of handlers for each event type
-	CEventHandler *				m_nullEventHandler;
-	CEventHandler *				m_handlers[EvtType_Count];
+	// Array of renderers for each event type
+	CEventRenderer *			m_nullEventRenderer;
+	CEventRenderer *			m_renderers[EvtType_Count];
 
 	CPolygon *					m_lasso;
 
@@ -364,7 +364,7 @@ protected:						// Instance Data
 };
 
 // ---------------------------------------------------------------------------
-//  Abstract event handler.
+//  Abstract event renderer.
 //
 // This class represents all of the functions that
 // normally need to operate on events which depend both
@@ -375,12 +375,12 @@ protected:						// Instance Data
 // ONLY functions which need to differ based on the type
 // of the event AND the type of the view should go in here.
 
-class CEventHandler
+class CEventRenderer
 {
 
 public:							// Constructor/Destructor
 
-								CEventHandler(
+								CEventRenderer(
 									CEventEditor * const editor)
 									:	m_editor(editor)
 								{ }
@@ -471,20 +471,20 @@ private:						// Instance Data
 };
 
 // ---------------------------------------------------------------------------
-// The null handler does nothing to the event.
+// The null renderer does nothing to the event.
 
-class CNullEventHandler
-	:	public CEventHandler
+class CNullEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constructor/Destructor
 
-								CNullEventHandler(
+								CNullEventRenderer(
 									CEventEditor *editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CAbstractEventHandler Implementation
+public:							// CAbstractEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
@@ -499,20 +499,20 @@ public:							// CAbstractEventHandler Implementation
 };
 
 // ---------------------------------------------------------------------------
-// Event handler class for "end" events
+// Event renderer class for "end" events
 
-class CEndEventHandler
-	:	public CEventHandler
+class CEndEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constructor/Destructor
 
-								CEndEventHandler(
+								CEndEventRenderer(
 									CEventEditor *editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CAbstractEventHandler Implementation
+public:							// CAbstractEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(

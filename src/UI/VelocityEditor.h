@@ -53,7 +53,7 @@ class EventListUndoAction;
 class CVelocityEditor
 	:	public CEventEditor
 {
-	friend class CVelocityNoteEventHandler;
+	friend class CVelocityNoteEventRenderer;
 	friend class CVelocityStripLabelView;
 
 public:							// Constants

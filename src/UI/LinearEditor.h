@@ -50,7 +50,7 @@
 class CLinearEditor
 	:	public CEventEditor
 {
-	friend class CLinearNoteEventHandler;
+	friend class CLinearNoteEventRenderer;
 	friend class CPianoKeyboardView;
 								
 public:							// Constants

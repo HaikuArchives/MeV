@@ -114,20 +114,20 @@ DualBendOffsetOp::operator()(
 }
 
 // ---------------------------------------------------------------------------
-// pitch bend handler class for pitch bend editor
+// pitch bend renderer class for pitch bend editor
 
-class CPitchBendEventHandler
-	:	public CEventHandler
+class CPitchBendEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// No constructor
 
-								CPitchBendEventHandler(
+								CPitchBendEventRenderer(
 									CEventEditor * const editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CEventHandler Implementation
+public:							// CEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
@@ -186,18 +186,18 @@ public:							// CEventHandler Implementation
 protected:						// Accessors
 
 	CPitchBendEditor * const	Editor() const
-								{ return (CPitchBendEditor *)CEventHandler::Editor(); }
+								{ return (CPitchBendEditor *)CEventRenderer::Editor(); }
 };
 
 void
-CPitchBendEventHandler::Invalidate(
+CPitchBendEventRenderer::Invalidate(
 	const Event &ev ) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
-CPitchBendEventHandler::Draw(
+CPitchBendEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -271,7 +271,7 @@ CPitchBendEventHandler::Draw(
 }
 
 BRect
-CPitchBendEventHandler::Extent(
+CPitchBendEventRenderer::Extent(
 	const Event &ev) const
 {
 	float yStart = Editor()->ValueToViewCoords(ev.pitchBend.startBend - 0x2000);
@@ -287,7 +287,7 @@ CPitchBendEventHandler::Extent(
 }
 
 long
-CPitchBendEventHandler::Pick(
+CPitchBendEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -341,7 +341,7 @@ CPitchBendEventHandler::Pick(
 }
 
 const BCursor *
-CPitchBendEventHandler::Cursor(
+CPitchBendEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const
@@ -365,7 +365,7 @@ CPitchBendEventHandler::Cursor(
 }
 
 long
-CPitchBendEventHandler::QuantizeDragValue(
+CPitchBendEventRenderer::QuantizeDragValue(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -377,7 +377,7 @@ CPitchBendEventHandler::QuantizeDragValue(
 }
 
 long
-CPitchBendEventHandler::QuantizeDragTime(
+CPitchBendEventRenderer::QuantizeDragTime(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -388,7 +388,7 @@ CPitchBendEventHandler::QuantizeDragTime(
 }
 
 EventOp *
-CPitchBendEventHandler::CreateDragOp(
+CPitchBendEventRenderer::CreateDragOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -408,7 +408,7 @@ CPitchBendEventHandler::CreateDragOp(
 }
 
 EventOp *
-CPitchBendEventHandler::CreateTimeOp(
+CPitchBendEventRenderer::CreateTimeOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -433,7 +433,7 @@ CPitchBendEditor::CPitchBendEditor(
 	BRect rect)
 	:	CContinuousValueEditor(frame, rect, "Pitch Bend")
 {
-	SetHandlerFor(EvtType_PitchBend, new CPitchBendEventHandler(this));
+	SetRendererFor(EvtType_PitchBend, new CPitchBendEventRenderer(this));
 
 	minValue = 0 - 0x2000;
 	maxValue = 0x3fff - 0x2000;
@@ -542,7 +542,7 @@ CPitchBendEditor::ConstructEvent(
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
 	int32 time;
-	time = HandlerFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
+	time = RendererFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
 												 BPoint(0.0, 0.0), point,
 												 true);
 	TrackWindow()->SetHorizontalPositionInfo(Track(), time);

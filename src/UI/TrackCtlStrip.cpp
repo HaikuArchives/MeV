@@ -27,8 +27,8 @@
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)		// Constructor/Destructor
 
-class CTrackEventHandler
-	:	public CEventHandler
+class CTrackEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constants
@@ -39,12 +39,12 @@ public:							// Constants
 
 public:							// Constructor/Destructor
 
-								CTrackEventHandler(
+								CTrackEventRenderer(
 									CEventEditor * const editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CEventHandler Implementation
+public:							// CEventRenderer Implementation
 
 	/** Invalidate the event. */
 	virtual void				Invalidate(
@@ -95,11 +95,11 @@ public:							// CEventHandler Implementation
 public:							// Accessors
 
 	CTrackCtlStrip * const		Editor() const
-								{ return (CTrackCtlStrip *)CEventHandler::Editor(); }
+								{ return (CTrackCtlStrip *)CEventRenderer::Editor(); }
 };
 
 const rgb_color
-CTrackEventHandler::GREY_PALETTE[] =
+CTrackEventRenderer::GREY_PALETTE[] =
 {
 	{0xff, 0xff, 0xff},
 	{0xee, 0xee, 0xee},
@@ -110,7 +110,7 @@ CTrackEventHandler::GREY_PALETTE[] =
 };
 	
 const rgb_color
-CTrackEventHandler::BLUE_PALETTE[] =
+CTrackEventRenderer::BLUE_PALETTE[] =
 {
 	{0xff, 0xff, 0xff},
 	{0xdd, 0xff, 0xff},
@@ -121,14 +121,14 @@ CTrackEventHandler::BLUE_PALETTE[] =
 };
 
 void
-CTrackEventHandler::Invalidate(
+CTrackEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 BRect
-CTrackEventHandler::Extent(
+CTrackEventRenderer::Extent(
 	const Event &ev) const
 {
 	BRect rect;
@@ -141,7 +141,7 @@ CTrackEventHandler::Extent(
 }
 
 long
-CTrackEventHandler::Pick(
+CTrackEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -155,7 +155,7 @@ CTrackEventHandler::Pick(
 }
 
 const BCursor *
-CTrackEventHandler::Cursor(
+CTrackEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const
@@ -185,7 +185,7 @@ CTrackEventHandler::Cursor(
 }
 
 long
-CTrackEventHandler::QuantizeDragValue(
+CTrackEventRenderer::QuantizeDragValue(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -202,7 +202,7 @@ CTrackEventHandler::QuantizeDragValue(
 }
 
 EventOp *
-CTrackEventHandler::CreateDragOp(
+CTrackEventRenderer::CreateDragOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -215,7 +215,7 @@ CTrackEventHandler::CreateDragOp(
 }
 
 EventOp *
-CTrackEventHandler::CreateTimeOp(
+CTrackEventRenderer::CreateTimeOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -226,24 +226,24 @@ CTrackEventHandler::CreateTimeOp(
 		return new DurationOffsetOp(timeDelta);
 	}
 
-	return CEventHandler::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
+	return CEventRenderer::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
 }
 
 // ---------------------------------------------------------------------------
-// Event handler class for repeats
+// Event renderer class for repeats
 
-class CRepeatEventHandler
-	:	public CTrackEventHandler
+class CRepeatEventRenderer
+	:	public CTrackEventRenderer
 {
 
 public:							// Constructor/Destructor
 
-								CRepeatEventHandler(
+								CRepeatEventRenderer(
 									CEventEditor * const editor)
-									:	CTrackEventHandler(editor)
+									:	CTrackEventRenderer(editor)
 								{ }
 
-public:							// CTrackEventHandler Implementation
+public:							// CTrackEventRenderer Implementation
 
 	/** Draw the event (or an echo) */
 	void						Draw(
@@ -252,7 +252,7 @@ public:							// CTrackEventHandler Implementation
 };
 
 void
-CRepeatEventHandler::Draw(
+CRepeatEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -342,20 +342,20 @@ CRepeatEventHandler::Draw(
 }
 
 // ---------------------------------------------------------------------------
-// Event handler class for parts
+// Event renderer class for parts
 
-class CSequenceEventHandler
-	:	public CTrackEventHandler
+class CSequenceEventRenderer
+	:	public CTrackEventRenderer
 {
 
 public:							// Constructor/Destructor
 
-								CSequenceEventHandler(
+								CSequenceEventRenderer(
 									CEventEditor * const editor)
-									:	CTrackEventHandler(editor)
+									:	CTrackEventRenderer(editor)
 								{ }
 
-public:							// CTrackEventHandler Implementation
+public:							// CTrackEventRenderer Implementation
 
 	/** Draw the event (or an echo) */
 	void						Draw(
@@ -364,7 +364,7 @@ public:							// CTrackEventHandler Implementation
 };
 
 void
-CSequenceEventHandler::Draw(
+CSequenceEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -453,20 +453,20 @@ CSequenceEventHandler::Draw(
 }
 
 // ---------------------------------------------------------------------------
-// Event handler class for time signatures
+// Event renderer class for time signatures
 
-class CTimeSigEventHandler
-	:	public CEventHandler
+class CTimeSigEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constructor/Destructor
 
-								CTimeSigEventHandler(
+								CTimeSigEventRenderer(
 									CEventEditor * const editor)
-									:	CEventHandler(editor)
+									:	CEventRenderer(editor)
 								{ }
 
-public:							// CEventHandler Implementation
+public:							// CEventRenderer Implementation
 
 	// Invalidate the event
 	void						Invalidate(
@@ -505,18 +505,18 @@ public:							// CEventHandler Implementation
 public:							// Accessors
 
 	CTrackCtlStrip *			Editor() const
-								{ return (CTrackCtlStrip *)CEventHandler::Editor(); }
+								{ return (CTrackCtlStrip *)CEventRenderer::Editor(); }
 };
 
 void
-CTimeSigEventHandler::Invalidate(
+CTimeSigEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
-CTimeSigEventHandler::Draw(
+CTimeSigEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -554,7 +554,7 @@ CTimeSigEventHandler::Draw(
 }
 
 BRect
-CTimeSigEventHandler::Extent(
+CTimeSigEventRenderer::Extent(
 	const Event &ev) const
 {
 	char text[32];
@@ -571,7 +571,7 @@ CTimeSigEventHandler::Extent(
 }
 
 long
-CTimeSigEventHandler::Pick(
+CTimeSigEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -588,7 +588,7 @@ CTimeSigEventHandler::Pick(
 }
 
 long
-CTimeSigEventHandler::QuantizeDragValue(
+CTimeSigEventRenderer::QuantizeDragValue(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -605,7 +605,7 @@ CTimeSigEventHandler::QuantizeDragValue(
 }
 
 EventOp *
-CTimeSigEventHandler::CreateDragOp(
+CTimeSigEventRenderer::CreateDragOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -615,22 +615,22 @@ CTimeSigEventHandler::CreateDragOp(
 }
 
 // ---------------------------------------------------------------------------
-// Event handler class for program changes
+// Event renderer class for program changes
 
-class CProgramChangeEventHandler
-	:	public CEventHandler
+class CProgramChangeEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constructor/Destructor
 
 	/** Load the program change icon from resources. */
-								CProgramChangeEventHandler(
+								CProgramChangeEventRenderer(
 									CEventEditor * const editor);
 
 	/** Free the icon. */
-	virtual						~CProgramChangeEventHandler();
+	virtual						~CProgramChangeEventRenderer();
 
-public:							// CAbstractEventHandler Implementation
+public:							// CAbstractEventRenderer Implementation
 
 	/** Invalidate the event. */
 	virtual void				Invalidate(
@@ -671,7 +671,7 @@ public:							// CAbstractEventHandler Implementation
 protected:						// Accessors
 
 	CTrackCtlStrip *			Editor() const
-								{ return (CTrackCtlStrip *)CEventHandler::Editor(); }
+								{ return (CTrackCtlStrip *)CEventRenderer::Editor(); }
 
 private:						// Internal Operations
 
@@ -688,9 +688,9 @@ private:						// Instance Data
 	float						m_maxWidth;
 };
 
-CProgramChangeEventHandler::CProgramChangeEventHandler(
+CProgramChangeEventRenderer::CProgramChangeEventRenderer(
 	CEventEditor *editor)
-	:	CEventHandler(editor),
+	:	CEventRenderer(editor),
 		m_icon(NULL)
 {
 	m_icon = ResourceUtils::LoadImage("ProgramTool");
@@ -701,13 +701,13 @@ CProgramChangeEventHandler::CProgramChangeEventHandler(
 	m_maxWidth += be_plain_font->StringWidth(maxProgramName);
 }
 
-CProgramChangeEventHandler::~CProgramChangeEventHandler()
+CProgramChangeEventRenderer::~CProgramChangeEventRenderer()
 {
 	delete m_icon;
 }
 
 void
-CProgramChangeEventHandler::Invalidate(
+CProgramChangeEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	BRect r;
@@ -727,7 +727,7 @@ CProgramChangeEventHandler::Invalidate(
 }
 
 void
-CProgramChangeEventHandler::Draw(
+CProgramChangeEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -799,7 +799,7 @@ CProgramChangeEventHandler::Draw(
 }
 
 BRect
-CProgramChangeEventHandler::Extent(
+CProgramChangeEventRenderer::Extent(
 	const Event &ev) const
 {
 	char programName[PROGRAM_NAME_LENGTH];
@@ -823,7 +823,7 @@ CProgramChangeEventHandler::Extent(
 }
 
 long
-CProgramChangeEventHandler::Pick(
+CProgramChangeEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -840,7 +840,7 @@ CProgramChangeEventHandler::Pick(
 }
 
 long
-CProgramChangeEventHandler::QuantizeDragValue(
+CProgramChangeEventRenderer::QuantizeDragValue(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -857,7 +857,7 @@ CProgramChangeEventHandler::QuantizeDragValue(
 }
 
 EventOp *
-CProgramChangeEventHandler::CreateDragOp(
+CProgramChangeEventRenderer::CreateDragOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -867,7 +867,7 @@ CProgramChangeEventHandler::CreateDragOp(
 }
 
 void
-CProgramChangeEventHandler::GetProgramName(
+CProgramChangeEventRenderer::GetProgramName(
 	const Event &ev,
 	char *outName) const
 {
@@ -879,22 +879,22 @@ CProgramChangeEventHandler::GetProgramName(
 }
 
 // ---------------------------------------------------------------------------
-// Event handler class for tempo events
+// Event renderer class for tempo events
 
-class CTempoEventHandler
-	:	public CEventHandler
+class CTempoEventRenderer
+	:	public CEventRenderer
 {
 
 public:							// Constructor/Destructor
 
 	/** Load the program change icon from resources. */
-								CTempoEventHandler(
+								CTempoEventRenderer(
 									CEventEditor * const editor);
 
 	/** Free the icon. */
-	virtual						~CTempoEventHandler();
+	virtual						~CTempoEventRenderer();
 
-public:							// CAbstractEventHandler Implementation
+public:							// CAbstractEventRenderer Implementation
 
 	/** Invalidate the event. */
 	virtual void				Invalidate(
@@ -950,35 +950,35 @@ public:							// CAbstractEventHandler Implementation
 public:							// Accessors
 
 	CTrackCtlStrip *			Editor() const
-								{ return (CTrackCtlStrip *)CEventHandler::Editor(); }
+								{ return (CTrackCtlStrip *)CEventRenderer::Editor(); }
 
 private:						// Instance Data
 
 	BBitmap *					m_icon;
 };
 
-CTempoEventHandler::CTempoEventHandler(
+CTempoEventRenderer::CTempoEventRenderer(
 	CEventEditor *editor)
-	:	CEventHandler(editor),
+	:	CEventRenderer(editor),
 		m_icon(NULL)
 {
 	m_icon = ResourceUtils::LoadImage("MetroTool");
 }
 
-CTempoEventHandler::~CTempoEventHandler()
+CTempoEventRenderer::~CTempoEventRenderer()
 {
 	delete m_icon;
 }
 
 void
-CTempoEventHandler::Invalidate(
+CTempoEventRenderer::Invalidate(
 	const Event &ev) const
 {
 	Editor()->Invalidate(Extent(ev));
 }
 
 void
-CTempoEventHandler::Draw(
+CTempoEventRenderer::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
@@ -1039,7 +1039,7 @@ CTempoEventHandler::Draw(
 }
 
 BRect
-CTempoEventHandler::Extent(
+CTempoEventRenderer::Extent(
 	const Event &ev) const
 {
 	BString tempoText;
@@ -1063,7 +1063,7 @@ CTempoEventHandler::Extent(
 }
 
 long
-CTempoEventHandler::Pick(
+CTempoEventRenderer::Pick(
 	const Event &ev,
 	BPoint pickPt,
 	short &partCode) const
@@ -1091,7 +1091,7 @@ CTempoEventHandler::Pick(
 }
 
 const BCursor *
-CTempoEventHandler::Cursor(
+CTempoEventRenderer::Cursor(
 	short partCode,
 	int32 editMode,
 	bool dragging) const
@@ -1121,7 +1121,7 @@ CTempoEventHandler::Cursor(
 }
 
 long
-CTempoEventHandler::QuantizeDragValue(
+CTempoEventRenderer::QuantizeDragValue(
 	const Event &ev,
 	short partCode,
 	BPoint clickPos,
@@ -1138,7 +1138,7 @@ CTempoEventHandler::QuantizeDragValue(
 }
 
 EventOp *
-CTempoEventHandler::CreateDragOp(
+CTempoEventRenderer::CreateDragOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -1151,7 +1151,7 @@ CTempoEventHandler::CreateDragOp(
 }
 
 EventOp *
-CTempoEventHandler::CreateTimeOp(
+CTempoEventRenderer::CreateTimeOp(
 	const Event &ev,
 	short partCode,
 	long timeDelta,
@@ -1162,7 +1162,7 @@ CTempoEventHandler::CreateTimeOp(
 		return new DurationOffsetOp(timeDelta);
 	}
 
-	return CEventHandler::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
+	return CEventRenderer::CreateTimeOp(ev, partCode, timeDelta, valueDelta);
 }
 
 // ---------------------------------------------------------------------------
@@ -1176,11 +1176,11 @@ CTrackCtlStrip::CTrackCtlStrip(
 	:	CEventEditor(frame, rect, track, name, true, true),
 		m_barHeight(16)
 {
-	SetHandlerFor(EvtType_ProgramChange, new CProgramChangeEventHandler(this));
-	SetHandlerFor(EvtType_Repeat, new CRepeatEventHandler(this));
-	SetHandlerFor(EvtType_Sequence, new CSequenceEventHandler(this));
-	SetHandlerFor(EvtType_TimeSig, new CTimeSigEventHandler(this));
-	SetHandlerFor(EvtType_Tempo, new CTempoEventHandler(this));
+	SetRendererFor(EvtType_ProgramChange, new CProgramChangeEventRenderer(this));
+	SetRendererFor(EvtType_Repeat, new CRepeatEventRenderer(this));
+	SetRendererFor(EvtType_Sequence, new CSequenceEventRenderer(this));
+	SetRendererFor(EvtType_TimeSig, new CTimeSigEventRenderer(this));
+	SetRendererFor(EvtType_Tempo, new CTempoEventRenderer(this));
 
 	CalcZoom();
 
@@ -1243,7 +1243,7 @@ CTrackCtlStrip::Draw(
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
 		if (Track()->IsChannelLocked(*ev))
-			HandlerFor(*ev)->Draw(*ev, false);
+			RendererFor(*ev)->Draw(*ev, false);
 	}
 
 	// For each event that overlaps the current view, draw it.
@@ -1253,7 +1253,7 @@ CTrackCtlStrip::Draw(
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
 		if (!Track()->IsChannelLocked(*ev))
-			HandlerFor(*ev)->Draw(*ev, false);
+			RendererFor(*ev)->Draw(*ev, false);
 	}
 	
 	EventOp	*echoOp = PendingOperation();
@@ -1317,7 +1317,7 @@ CTrackCtlStrip::MessageReceived(
 					
 				// Creating a new event
 				Track()->DeselectAll(this);
-				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				RendererFor(m_newEv)->Invalidate(m_newEv);
 				Track()->CreateEvent(this, m_newEv, "Create Event");
 	
 				if (prevTrackDuration != Track()->LastEventTime())
@@ -1341,7 +1341,7 @@ CTrackCtlStrip::MessageReceived(
 
 				// Invalidate the new event and insert it into the track.
 				Track()->DeselectAll(this);
-				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				RendererFor(m_newEv)->Invalidate(m_newEv);
 				Track()->CreateEvent(this, m_newEv, "Create Event");
 			}
 
@@ -1370,7 +1370,7 @@ CTrackCtlStrip::MouseMoved(
 		{
 			if (m_dragType == DragType_DropTarget)
 			{
-				HandlerFor(m_newEv)->Invalidate(m_newEv);
+				RendererFor(m_newEv)->Invalidate(m_newEv);
 				m_dragType = DragType_None;
 			}
 		
@@ -1411,7 +1411,7 @@ CTrackCtlStrip::MouseMoved(
 						// Initialize a new event.
 						Event dragEv;
 						dragEv.SetCommand(EvtType_Sequence);
-						int32 time = HandlerFor(dragEv)->QuantizeDragTime(dragEv,
+						int32 time = RendererFor(dragEv)->QuantizeDragTime(dragEv,
 																		  0, BPoint(16.0, 0.0),
 																		  point, true);
 						if (time < 0)
@@ -1428,9 +1428,9 @@ CTrackCtlStrip::MouseMoved(
 						 || (memcmp(&dragEv, &m_newEv, sizeof(m_newEv)) != 0))
 						{
 							if (m_dragType == DragType_DropTarget)
-								HandlerFor(m_newEv)->Invalidate(m_newEv);
+								RendererFor(m_newEv)->Invalidate(m_newEv);
 							m_newEv = dragEv;
-							HandlerFor(m_newEv)->Invalidate(m_newEv);
+							RendererFor(m_newEv)->Invalidate(m_newEv);
 
 							if (Window()->IsActive())
 								TrackWindow()->SetHorizontalPositionInfo(Track(),
@@ -1496,7 +1496,7 @@ CTrackCtlStrip::SubjectUpdated(
 			if ((ev->Command() == EvtType_Sequence)
 			 && (ev->sequence.sequence == trackID))
 			{
-				HandlerFor(*ev)->Invalidate(*ev);
+				RendererFor(*ev)->Invalidate(*ev);
 			}
 		}
 
@@ -1526,7 +1526,7 @@ CTrackCtlStrip::SubjectUpdated(
 			if ((ev->HasProperty(Event::Prop_Channel))
 			 && (ev->GetVChannel() == channel))
 			{
-				HandlerFor(*ev)->Invalidate(*ev);
+				RendererFor(*ev)->Invalidate(*ev);
 			}
 		}
 	}
@@ -1540,7 +1540,7 @@ CTrackCtlStrip::SubjectUpdated(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			HandlerFor(*ev)->Invalidate(*ev);
+			RendererFor(*ev)->Invalidate(*ev);
 		}
 	}
 	else
@@ -1558,7 +1558,7 @@ CTrackCtlStrip::SubjectUpdated(
 			 ev;
 			 ev = marker.NextItemInRange(minTime, maxTime))
 		{
-			HandlerFor(*ev)->Invalidate(*ev);
+			RendererFor(*ev)->Invalidate(*ev);
 		}
 		Invalidate(r);
 	}
@@ -1600,7 +1600,7 @@ CTrackCtlStrip::ConstructEvent(
 
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
-	time = HandlerFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
+	time = RendererFor(m_newEv)->QuantizeDragTime(m_newEv, 0,
 												 BPoint(0.0, 0.0), point, true);
 
 	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
