@@ -238,11 +238,17 @@ CTimeIntervalControl::MessageReceived(
 			}
 			if (message->HasBool("tuplet"))
 			{
-				m_tupletModifier = modifier;
+				if (m_tupletModifier == modifier)
+					m_tupletModifier = 0;
+				else
+					m_tupletModifier = modifier;
 			}
 			else if (message->HasBool("dot"))
 			{
-				m_dotModifier = modifier;
+				if (m_dotModifier == modifier)
+					m_dotModifier = 0;
+				else
+					m_dotModifier = modifier;
 			}
 			CalcInterval();
 			break;
