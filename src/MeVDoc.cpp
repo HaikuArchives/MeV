@@ -5,7 +5,6 @@
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "EventTrack.h"
-#include "VChannelWindow.h"
 #include "OperatorWindow.h"
 #include "AssemblyWindow.h"
 #include "StdEventOps.h"
@@ -24,6 +23,7 @@
 // Storage Kit
 #include <NodeInfo.h>
 // Support Kit
+#include <FilePanel.h>
 #include <String.h>
 
 	// REM: Move these elsewhere, eventually

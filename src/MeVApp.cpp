@@ -10,7 +10,6 @@
 #include "StripFrameView.h"
 #include "InspectorWindow.h"
 #include "TransportWindow.h"
-#include "MidiConfigWindow.h"
 #include "Junk.h"
 #include "Splash.h"
 #include "Idents.h"
