@@ -821,7 +821,7 @@ CMeVApp::NewDocument(
 	}
 
 	if (showWindow)
-		doc->ShowWindow(CMeVDoc::Assembly_Window);
+		doc->ShowWindow(CMeVDoc::ASSEMBLY_WINDOW);
 
 	return doc;
 }

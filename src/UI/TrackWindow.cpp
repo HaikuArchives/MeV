@@ -634,13 +634,6 @@ CTrackWindow::MessageReceived(
 			}
 			break;
 		}
-		case 'oper':
-		{
-			BWindow *w;
-			w = Document()->ShowWindow(CMeVDoc::Operator_Window);
-			((COperatorWindow *)w)->SetTrack(track);
-			break;
-		}
 		default:
 		{
 			CDocWindow::MessageReceived(message);

@@ -409,7 +409,7 @@ void MeVDocRef::ShowWindow()
 {
 	CMeVDoc		*doc = (CMeVDoc *)data;
 	
-	doc->ShowWindow( CMeVDoc::Assembly_Window );
+	doc->ShowWindow(CMeVDoc::ASSEMBLY_WINDOW);
 }
 
 MeVTrackRef::MeVTrackRef(void* doc, void* track)

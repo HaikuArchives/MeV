@@ -40,7 +40,8 @@
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
-#define D_SERIALIZE(x) PRINT(x)			// Serialization
+#define D_SERIALIZE(x) //PRINT(x)		// Serialization
+#define D_WINDOW(x) //PRINT(x)			// Window Management
 
 // ---------------------------------------------------------------------------
 // Constants Initialization
@@ -55,11 +56,13 @@ CMeVDoc::CMeVDoc(
 	CMeVApp &app)
 	:	CDocument(app),
 		m_newTrackID(2),
-		m_initialTempo(DEFAULT_TEMPO),
-		operatorWinState( BRect( 40, 40, 480, 280 ) ),
-		assemblyWinState( UScreenUtils::StackOnScreen( 620, 390 ) )
+		m_initialTempo(DEFAULT_TEMPO)
 {
 	Init();
+
+	m_windowState[ASSEMBLY_WINDOW] = BRect(40, 40, 480, 280);
+	m_windowState[ENVIRONMENT_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
+	m_windowState[OPERATORS_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
 
 	AddDefaultOperators();
 
@@ -75,11 +78,14 @@ CMeVDoc::CMeVDoc(
 	entry_ref &ref)
 	:	CDocument(app, ref),
 		m_newTrackID(2),
-		m_initialTempo(DEFAULT_TEMPO),
-		operatorWinState( BRect( 40, 40, 480, 280 ) ),
-		assemblyWinState( BRect( 40, 40, 620, 390 ) )
+		m_initialTempo(DEFAULT_TEMPO)
 {
 	Init();
+
+	m_windowState[ASSEMBLY_WINDOW] = BRect(40, 40, 480, 280);
+	m_windowState[ENVIRONMENT_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
+	m_windowState[OPERATORS_WINDOW] = UScreenUtils::StackOnScreen(620, 390);
+
 	AddDefaultOperators();
 
 	BFile file(&ref, B_READ_ONLY);
@@ -257,62 +263,59 @@ CMeVDoc::OperatorAt(
 // ---------------------------------------------------------------------------
 // Window Management
 
+// ---------------------------------------------------------------------------
+// Window Management
+
 BWindow *
 CMeVDoc::ShowWindow(
-	enum EWindowTypes type)
+	uint32 which,
+	bool show)
 {
-	CWindowState *state;
-	
-	switch (type)
+	D_WINDOW(("CMeVDoc::ShowWindow(%ld, %s)\n",
+			  which, show ? "true" : "false"));
+
+	if (which >= WINDOW_TYPE_COUNT)
+		return NULL;
+
+	if (show && (m_windowState[which].Activate() == false))
 	{
-		case Assembly_Window:
-			state = &assemblyWinState;
-			break;
-		case Operator_Window:
-			state = &operatorWinState;
-			break;
-		default:
-			return NULL;
-	}
-	
-	if (state->Activate() == false)
-	{
-		BWindow *bw;
-	
-		switch (type)
+		BWindow *window;
+		switch (which)
 		{
-			case Assembly_Window:
+			case ASSEMBLY_WINDOW:
 			{
 				ShowWindowFor(m_masterMeterTrack);
 				break;
 			}
-			case Operator_Window:
+			case ENVIRONMENT_WINDOW:
 			{
-				bw = new COperatorWindow( *state, *this );
-				bw->Show();
+				// nyi
+				break;
+			}
+			case OPERATORS_WINDOW:
+			{
+				window = new COperatorWindow(m_windowState[which], *this);
+				window->Show();
 				break;
 			}
 		}
+		return m_windowState[which].Window();
 	}
-	
-	return state->Window();
+	else if (!show)
+	{
+		m_windowState[which].Close();
+		return NULL;
+	}
 }
 	
 bool
 CMeVDoc::IsWindowOpen(
-	enum EWindowTypes type)
+	uint32 which)
 {
-	switch (type)
-	{
-		case Assembly_Window:
-			return assemblyWinState.IsOpen();
-			break;
-		case Operator_Window:
-			return operatorWinState.IsOpen();
-			break;
-		default:
-			return false;
-	}
+	if (which > WINDOW_TYPE_COUNT)
+		return false;
+
+	return m_windowState[which].IsOpen();
 }
 
 void

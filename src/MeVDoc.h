@@ -70,9 +70,15 @@ class CMeVDoc
 
 public:							// Constants
 
-	enum EWindowTypes {
-		Assembly_Window 	= 0,
-		Operator_Window,
+	enum window_types
+	{
+								ASSEMBLY_WINDOW = 0,
+
+								ENVIRONMENT_WINDOW,
+
+								OPERATORS_WINDOW,
+
+								WINDOW_TYPE_COUNT
 	};
 
 	enum EDocUpdateHintBits {
@@ -232,11 +238,12 @@ public:							// Window Management
 
 	/**	Show or hide the window of a particular type */
 	BWindow *					ShowWindow(
-									enum EWindowTypes type);
+									uint32 type,
+									bool show = true);
 
 	/**	Returns TRUE if a particular window type is open. */
 	bool						IsWindowOpen(
-									enum EWindowTypes type);
+									uint32 type);
 
 	/**	Show or hide the window for a particular track */
 	void						ShowWindowFor(
@@ -379,8 +386,7 @@ private:						// Instance Data
 	// everything...
 	CAssemblyWindow *			assemblyWindow;
 
-	CWindowState 				operatorWinState;
-	CWindowState				assemblyWinState;
+	CWindowState				m_windowState[WINDOW_TYPE_COUNT];
 };
 
 #endif /* __C_MeVDoc_H__ */
