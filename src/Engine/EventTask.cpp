@@ -3,10 +3,14 @@
  * ===================================================================== */
  
 #include "EventTask.h"
+
+#include "MeVApp.h"
+#include "MidiDeviceInfo.h"
 #include "PlaybackTaskGroup.h"
 #include "Player.h"
-#include "MidiDeviceInfo.h"
-#include "MeVApp.h"
+
+// Support Kit
+#include <Debug.h>
 
 // ---------------------------------------------------------------------------
 // CEventTask constructor
@@ -97,46 +101,47 @@ CEventTask::~CEventTask()
 	}
 }
 
-// ---------------------------------------------------------------------------
-// playback routine for a single event
-
-void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
+void
+CEventTask::PlayEvent(
+	const Event &ev,
+	CEventStack &stack,
+	long origin)
 {
-		// filter event though virtual channel table
-	if (group.m_destlist->IsDefined(ev.note.vChannel))
+	CMIDIPlayer::ChannelState *chState = NULL;
+	Destination *dest = NULL;
+	Event stackedEvent(ev);
+
+	// filter event though virtual channel table
+	if (ev.HasProperty(Event::Prop_Channel)
+	 && group.m_destlist->IsDefined(ev.note.vChannel))
 	{
-		Destination			*dest = group.m_destlist->get(ev.note.vChannel);
-		//CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ dest->port ].channelStates[ dest->channel ];
-		CMIDIPlayer::ChannelState	*chState = &thePlayer.m_portInfo[ 0 ].channelStates[ dest->channel ];
+		dest = group.m_destlist->get(ev.common.vChannel);
+		chState = &thePlayer.m_portInfo[0].channelStates[dest->channel];
 		
-		int32			duration;
-		Event			stackedEvent( ev );
-		
-			// Process a copy of the event event through the filters...
-		((CEventTrack *)track)->FilterEvent( stackedEvent );
+		// Process a copy of the event event through the filters...
+		((CEventTrack *)track)->FilterEvent(stackedEvent);
+
+		// assign actual port
+		stackedEvent.stack.actualPort = dest->m_producer;
+		stackedEvent.stack.actualChannel = dest->channel;
+	}
 	
-			// Make a copy of the duration field before we kick it to death (below).
-		duration = stackedEvent.common.duration;
+	// Make a copy of the duration field before we kick it to death (below).
+	int32 duration = stackedEvent.common.duration;
+
+	// Modify the stack
+	stackedEvent.stack.start += origin;
+	stackedEvent.stack.task = taskID;
 	
-			// Modify the stack
-		stackedEvent.stack.start			+= origin;
-		stackedEvent.stack.actualPort		= dest->m_producer;
-		stackedEvent.stack.actualChannel	= dest->channel;
-		stackedEvent.stack.task			= taskID;
-	
-			// REM: Do we also want to filter on the VChannel? I think so...
-			
-		switch (ev.Command()) {
-	
-			// MIDI channel events
-	
-		case EvtType_Note:							// note-on event
-	
-				// Ignore the note event if locating
+	switch (ev.Command())
+	{
+		case EvtType_Note:
+		{
+			// Ignore the note event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
 			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
-				// Apply task-specific transposition.
+			// Apply task-specific transposition.
 			if (transposition != 0 && dest->flags & Destination::transposable)
 			{
 				stackedEvent.note.pitch += transposition;
@@ -145,11 +150,11 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 				if (stackedEvent.note.pitch & 0x80) break;
 			}
 			
-				// REM: Here we would apply velocity contour.
-				// REM: Here we would do the VU meter code...
+			// REM: Here we would apply velocity contour.
+			// REM: Here we would do the VU meter code...
 				
-				// If there was room on the stack to push the note-off, then
-				// play the note-on
+			// If there was room on the stack to push the note-off, then
+			// play the note-on
 			stackedEvent.stack.start		+= duration;
 			stackedEvent.stack.command	= EvtType_NoteOff;
 	
@@ -160,9 +165,9 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 				stack.Push( stackedEvent );
 			}
 			break;
-	
+		}
 		case EvtType_PitchBend:						// pitch bend
-		
+		{
 				// Play nothing if muted
 			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
@@ -197,9 +202,9 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 				stack.Push( stackedEvent );
 			}
 			break;
-	
+		}
 		case EvtType_ProgramChange:					// program change
-	
+		{
 				// Play nothing if muted
 			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 	
@@ -226,9 +231,9 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 			
 			stack.Push( stackedEvent );
 			break;
-	
+		}
 		case EvtType_ChannelATouch:					// channel aftertouch
-	
+		{
 				// Play nothing if muted
 			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 	
@@ -241,9 +246,9 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	
 			stack.Push( stackedEvent );
 			break;
-	
+		}
 		case EvtType_Controller:						// controller change
-	
+		{
 				// Play nothing if muted
 			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
@@ -283,42 +288,40 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	
 			stack.Push( stackedEvent );
 			break;
-	
+		}
 		case EvtType_PolyATouch:						// polyphonic aftertouch
-	
+		{
 				// Ignore the event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
 			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 	
 			stack.Push( stackedEvent );
 			break;
-	
+		}
 		case EvtType_SysEx:							// system exclusive
-	
+		{
 			stack.Push( stackedEvent );
 			break;
 	
 			// Global control events
-	
-	// case evtTypeStop:							// stop the sequencer
-	// case evtTypeGo:								// start the sequencer
-	// case evtTypeLocate:							// locate to "duration" time
-	// case evtTypeCue:							// trigger a cue point
-	// case evtTypeMTCCue:							// trigger an MTC cue point
-	// case evtTypeMuteVChannel:					// mute a vChannel
-	// case evtTypeMuteTrack:						// mute a track
-	// case evtTypeSpliceIn:						// a "splice" event for overdub
-	// case evtTypeSpliceOut:						// a "splice" event for overdub
-	// 	break;
-	
-				// Track control events
+			// case evtTypeStop:							// stop the sequencer
+			// case evtTypeGo:								// start the sequencer
+			// case evtTypeLocate:							// locate to "duration" time
+			// case evtTypeCue:							// trigger a cue point
+			// case evtTypeMTCCue:							// trigger an MTC cue point
+			// case evtTypeMuteVChannel:					// mute a vChannel
+			// case evtTypeMuteTrack:						// mute a track
+			// case evtTypeSpliceIn:						// a "splice" event for overdub
+			// case evtTypeSpliceOut:						// a "splice" event for overdub
+			// 	break;
+		}
 		case EvtType_Repeat:							// repeat a section
-	
+		{	
 			BeginRepeat( ev.Start(), ev.Duration(), ev.repeat.repeatCount );
 			break;
-	
+		}
 		case EvtType_Sequence:							// play another track
-	
+		{
 			CTrack			*tr = group.doc->FindTrack( ev.sequence.sequence );
 			CPlaybackTask	*p;
 	
@@ -361,18 +364,6 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 						duration = stop - start;
 					}
 					
-						// This code is wrong...need flags, need auto-repeats
-	//				if (ev.sequence.flags & Event::Seq_Interruptable)
-	//				{
-	//					if (duration > tk->LogicalLength())
-	//						duration = tk->LogicalLength();
-	//				}
-	//				else
-	//				{
-	//					int32	reps = (duration + tk->LogicalLength() - 1) / + tk->LogicalLength();
-	//					duration = tk->LogicalLength() * reps;
-	//				}
-					
 					th = new CRealClockEventTask(
 						group, tk, this, start, duration );
 						
@@ -387,18 +378,6 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 						duration = stop - start;
 					}
 				
-						// This code is wrong...need flags, need auto-repeats
-	//				if (ev.sequence.flags & Event::Seq_Interruptable)
-	//				{
-	//					if (duration > tk->LogicalLength())
-	//						duration = tk->LogicalLength();
-	//				}
-	//				else
-	//				{
-	//					int32	reps = (duration + tk->LogicalLength() - 1) / + tk->LogicalLength();
-	//					duration = tk->LogicalLength() * reps;
-	//				}
-					
 					th = new CMeteredClockEventTask(
 						group, tk, this, start, duration );
 	
@@ -411,20 +390,6 @@ void CEventTask::PlayEvent( const Event &ev, CEventStack &stack, long origin )
 	#else
 			tr->Unlock();
 	#endif
-			break;
-	// case evtTypeBranch:							// conditional branch to track
-	// case evtTypeErase:							// erase notes on channel
-	// case evtTypePunch:							// punch in over track
-	// 	break;
-	
-			// Clock control events
-	
-	// 	case evtTypeTempo:							// change tempo event
-	// 	case evtTypeTimeSig:						// change time signature event
-	// 		break;
-	
-	// 	case evtTypeVelocityContour:				// velocity contour event
-	// 	case evtTypeTranspose:						// transposition for vChannel
 			break;
 		}
 	}
