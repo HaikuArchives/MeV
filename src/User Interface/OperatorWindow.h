@@ -55,7 +55,7 @@ class COperatorWindow : public CDocWindow, public CObserver {
 	BButton				*editButton,
 						*applyButton;
 	CDynamicMenuInstance	plugInMenuInstance;
-	BMenu				*plugInMenu;
+//	BMenu				*plugInMenu;
 	
 	enum EControlIDs {
 		Select_ID 		= 'selc',

@@ -30,6 +30,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	04/21/2000	cell
+ *		Moved the CAboutWindow class into its own source files
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -259,14 +261,6 @@ public:
 	
 		/** Build the export menu */
 	void BuildExportMenu( BMenu *inMenu );
-};
-
-// ---------------------------------------------------------------------------
-// The About window
-
-class CAboutWindow : public CAppWindow {
-public:
-	CAboutWindow( CWindowState &inState );
 };
 
 // ---------------------------------------------------------------------------

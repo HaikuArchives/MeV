@@ -382,11 +382,11 @@ void CStripFrameView::MouseMoved(
 {
 	switch (transit) {
 	case B_ENTERED_VIEW: 
-		if (cursor != NULL) be_app->SetCursor( cursor );
+//		if (cursor != NULL) be_app->SetCursor( cursor );
 		break;
 
 	case B_EXITED_VIEW:
-		be_app->SetCursor( B_HAND_CURSOR );
+//		be_app->SetCursor( B_HAND_CURSOR );
 		break;
 	}
 }

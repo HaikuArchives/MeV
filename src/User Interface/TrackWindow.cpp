@@ -27,11 +27,13 @@
 
 	// CTrackWindow stuff...
 
-CTrackWindow::CTrackWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inTrack )
-	: CDocWindow( frame, (CDocument &)inDocument ),
-	  CObserver( *this, &inDocument ),
-	  plugInMenuInstance( ((CMeVApp *)be_app)->trackWindowPlugIns ),
-	  prefsWinState( BRect( 40, 40, 500, 300 ) )
+CTrackWindow::CTrackWindow(
+	BRect frame,
+	CMeVDoc &inDocument,
+	CEventTrack *inTrack)
+	:	CDocWindow(frame, (CDocument &)inDocument),
+		CObserver(*this, &inDocument),
+		prefsWinState(BRect(40, 40, 500, 300))
 {
 	track = inTrack;
 	track->Acquire();
@@ -45,11 +47,11 @@ CTrackWindow::CTrackWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inTra
 	trackMsg->AddInt32( "TrackID", track->GetID() );
 	trackMsg->AddInt32( "DocumentID", (int32)&inDocument );
 
-	plugInMenu = new BMenu( "Filters" );
-	plugInMenu->AddItem( new BMenuItem( "Event Operators...", new BMessage( 'oper' ) ) );
-	plugInMenu->AddSeparatorItem();
-	plugInMenuInstance.SetBaseMenu( plugInMenu );
-	plugInMenuInstance.SetMessageAttributes( trackMsg );
+//	plugInMenu = new BMenu( "Filters" );
+//	plugInMenu->AddItem( new BMenuItem( "Event Operators...", new BMessage( 'oper' ) ) );
+//	plugInMenu->AddSeparatorItem();
+//	plugInMenuInstance.SetBaseMenu( plugInMenu );
+//	plugInMenuInstance.SetMessageAttributes( trackMsg );
 
 	SetPulseRate( 100000 );
 }
@@ -384,7 +386,7 @@ void CTrackWindow::MessageReceived( BMessage* theMessage )
 	// REM: All of this could be moved into the track window if we were clever.
 void CTrackWindow::MenusBeginning()
 {
-	char			text[ 64 ];
+/*	char			text[ 64 ];
 	const char	*desc;
 
 		// Set up Undo menu
@@ -432,9 +434,9 @@ void CTrackWindow::MenusBeginning()
 		((CMeVApp *)be_app)->TransportWindow() == NULL
 		? "Show Transport Controls" : "Hide Transport Controls" );
 
-	plugInMenuInstance.CheckMenusChanged();
+//	plugInMenuInstance.CheckMenusChanged();
 
-	CDocWindow::MenusBeginning();
+	CDocWindow::MenusBeginning();*/
 }
 
 void CTrackWindow::ShowPrefs()
@@ -491,14 +493,14 @@ void CTrackWindow::CreateFrames( BRect frame, CTrack *inTrack )
 		BRect(	frame.left,
 				frame.top + Ruler_Height,
 				frame.right,
-				frame.bottom ),
+				frame.bottom),
 		(char *)NULL,
 		inTrack,
 		B_FOLLOW_ALL );
 
 	ruler = new CAssemblyRulerView(
 		*this,
-		*stripFrame,
+		stripFrame,
 		(CEventTrack *)inTrack,
 		BRect(	frame.left + 21,
 				frame.top,
@@ -508,14 +510,8 @@ void CTrackWindow::CreateFrames( BRect frame, CTrack *inTrack )
 		B_FOLLOW_LEFT_RIGHT,
 		B_WILL_DRAW );
 		
-	rgb_color	border,
-				fill;
+	rgb_color fill = ui_color(B_PANEL_BACKGROUND_COLOR);
 				
-	border.red = border.blue = border.green = 220;
-	border.alpha = 0;
-	fill.red = fill.green = fill.blue = 128;
-	fill.alpha = 128;
-
 	pad = new CBorderView(BRect(frame.left - 1, frame.top - 1,
 								frame.left + 20, frame.top + Ruler_Height - 1),
 						  "", B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW, 

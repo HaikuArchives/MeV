@@ -23,7 +23,9 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- *  Special strips for editors w/ scrollbars and spacers
+ *  Special strips for editors w/ scrollbars and spacers.
+ *	StripView is a class which can function as a scrolling
+ *	strip within the strip frame.
  * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
@@ -44,81 +46,101 @@
 // Interface Kit
 #include <Control.h>
 
-	// StripView is a class which can function as a scrolling
-	// strip within the strip frame.
-
-class CStripView : protected CScrollerTarget {
+class CStripView :
+	public CScrollerTarget
+{
 	friend class			CStripFrameView;
 
-	CStripFrameView		&frame;
-	CScrollerTarget		*container;
-	CScroller			*rightScroller;
-	BView				*rightSpacer;
-	BControl				*magIncButton,
-						*magDecButton;
-	bool					selectionVisible;	// true if selection should be shown
+public:							// Constructor/Destructor
 
-	void AttachedToWindow()
-	{
-		bounds = Bounds();
-		CScrollerTarget::AttachedToWindow();
-		AdjustScrollers();
-	}
+								CStripView(
+									CStripFrameView &frame,
+									BRect rect,
+									const char *name,
+									bool makeScroller = false,
+									bool makeMagButtons = false);
+
+public:							// Hook Functions
+
+	// Called when the window activates to tell this view
+	// to make the selection visible.
+	virtual void				OnGainSelection()
+								{
+									Invalidate();
+								}
+	
+	// Called when some other window activates to tell this view
+	// to hide the selection.
+	virtual void				OnLoseSelection()
+								{
+									Invalidate();
+								}
+
+public:							// Accessors
+
+	CScrollerTarget *			TopView()
+								{
+									return m_container;
+								}
+
+	// Returns true if this view should display the selection highlight.
+	bool						IsSelectionVisible()
+								{
+									return selectionVisible;
+								}
+
+	// Return cached bounds of view (doesn't require app-server call)
+	const BRect &				ViewBounds()
+								{
+									return bounds;
+								}
+
+public:							// Operations
+
+	void						SetScrollValue(
+									float value,
+									orientation posture);
+
+	// Called by framework when selection is gained or lost.
+	void						SetSelectionVisible(
+									bool visible);
+
+	// Set which handler the zoom buttons are targeting.
+	void						SetZoomTarget(
+									BHandler *handler);
+
+public:							// CScrollerTarget Implementation
+
+	virtual void				AttachedToWindow();
+
+	virtual void				Draw(
+									BRect updateRect);
+
+	virtual void				FrameResized(
+									float width,
+									float height);
+
+private:						// Instance Data
+	
+	CStripFrameView	&			frame;
+
+	CScrollerTarget *			m_container;
+
+	CScroller *					rightScroller;
+
+	BView *						rightSpacer;
+
+	BControl *					magIncButton;
+
+	BControl *					magDecButton;
+
+	// true if selection should be shown
+	bool						selectionVisible;
 
 protected:
-	BRect				bounds;			// Cached bounds.
 
-public:
-		// ---------- Constructor
-
-	CStripView(	CStripFrameView	&frame,
-				BRect			rect,
-				const char		*name,
-				bool			makeScroller = false,
-				bool			makeMagButtons = false );
-	
-		// ---------- Hooks
-
-	void Draw( BRect updateRect );
-	void FrameResized( float width, float height );
-	
-		// ---------- Getters
-
-	CScrollerTarget *TopView() { return container; }
-
-		// ---------- Setters
-
-	void SetScrollValue( float inScrollValue, orientation inOrient )
-	{
-		CScrollerTarget::SetScrollValue( inScrollValue, inOrient );
-		ScrollTo( scrollValue.x, scrollValue.y );
-	}
-
-		/**	Called when the window activates to tell this view
-			to make the selection visible.
-		*/
-	virtual void OnGainSelection() { Invalidate(); }
-	
-		/**	Called when some other window activates to tell this view
-			to hide the selection.
-		*/
-	virtual void OnLoseSelection() { Invalidate(); }
-	
-		/**	Returns true if this view should display the selection highlight. */
-	bool IsSelectionVisible() { return selectionVisible; }
-	
-		/**	Called by framework when selection is gained or lost. */
-	void SetSelectionVisible( bool inVisible );
-
-		/**	Set which handler the zoom buttons are targeting. */
-	void SetZoomTarget( BHandler *inHandler )
-	{
-		if (magIncButton) magIncButton->SetTarget( inHandler );
-		if (magDecButton) magDecButton->SetTarget( inHandler );
-	}
-	
-		/**	Return cached bounds of view (doesn't require app-server call.) */
-	const BRect &ViewBounds() { return bounds; }
+	// Cached bounds
+	BRect						bounds;
 };
 
 #endif /* __C_StripView_H__ */

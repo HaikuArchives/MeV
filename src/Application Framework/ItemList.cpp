@@ -704,16 +704,16 @@ void ItemList_Base::Validate()
 	{
 		ItemMarker_Base	*marker;
 		
-		if (b != FirstBlock()) VERIFY( b->count > 0 );
+//		if (b != FirstBlock()) VERIFY( b->count > 0 );
 		
 		for (	marker = b->FirstMarker();
 				marker;
 				marker = (ItemMarker_Base *)marker->Next() )
 		{
-			VERIFY( marker->blockList == this );
-			VERIFY( marker->block == b );
-			VERIFY( marker->index >= 0 );
-			VERIFY( marker->index <= b->count );
+//			VERIFY( marker->blockList == this );
+//			VERIFY( marker->block == b );
+//			VERIFY( marker->index >= 0 );
+//			VERIFY( marker->index <= b->count );
 		}
 	}
 }

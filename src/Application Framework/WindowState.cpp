@@ -4,66 +4,96 @@
 
 #include "WindowState.h"
 
-void CAppWindow::RememberState( CWindowState &inState )
+// Application Kit
+#include <AppDefs.h>
+// Support Kit
+#include <Debug.h>
+
+// Debugging Macros
+#define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
+#define D_HOOK(x) //PRINT (x)		// BControl Implementation
+
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
+CAppWindow::CAppWindow(
+	BRect frame,
+	const char *title,
+	window_type type,
+	uint32 flags,
+	uint32 workspaces = B_CURRENT_WORKSPACE)
+	:	BWindow(frame, title, type, flags, workspaces),
+		m_state(NULL)
+//		m_cursor(B_CURSOR_SYSTEM_DEFAULT),
+//		m_cursorHidden(false)
 {
-	state = &inState;
-	inState.OnWindowOpen( this );
+	D_ALLOC(("CAppWindow::CAppWindow()\n"));
+}
+
+CAppWindow::CAppWindow(
+	CWindowState &state,
+	BRect frame,
+	const char *title,
+	window_type type,
+	uint32 flags,
+	uint32 workspaces = B_CURRENT_WORKSPACE)
+	:	BWindow(frame, title, type, flags, workspaces),
+		m_state(NULL)
+//		m_cursor(B_CURSOR_SYSTEM_DEFAULT),
+//		m_cursorHidden(false)
+{
+	D_ALLOC(("CAppWindow::CAppWindow()\n"));
+
+	RememberState(state);
 }
 
 CAppWindow::~CAppWindow()
 {
-	if (state) state->OnWindowClosing();
+	D_ALLOC(("CAppWindow::~CAppWindow()\n"));
+
+	if (m_state)
+	{
+		m_state->OnWindowClosing();
+	}
 }
 
-bool CAppWindow::QuitRequested()
+// ---------------------------------------------------------------------------
+// BWindow Implementation
+
+bool
+CAppWindow::QuitRequested()
 {
-	if (state) state->OnWindowClosing();
+	if (m_state)
+	{
+		m_state->OnWindowClosing();
+	}
 	return true;
 }
 
-void CAppWindow::SetCursor( const uint8 *inCursor )
+void
+CAppWindow::WindowActivated(
+	bool active)
 {
-	if (inCursor == NULL) inCursor = B_HAND_CURSOR;
-	if (inCursor != cursorImage)
-	{
-		cursorImage = inCursor;
-		be_app->SetCursor( cursorImage );
-	}
+//	RestoreCursor();
 }
 
-void CAppWindow::HideCursor()
+// ---------------------------------------------------------------------------
+// Operations
+
+void
+CAppWindow::RememberState(
+	CWindowState &state)
 {
-	if (be_app->IsCursorHidden() == false)
-	{
-		cursorHidden = true;
-		be_app->HideCursor();
-	}
+	m_state = &state;
+	m_state->OnWindowOpen(this);
 }
 
-void CAppWindow::ShowCursor()
-{
-	if (cursorHidden)
-	{
-		cursorHidden = false;
-		be_app->ShowCursor();
-	}
-}
-
-void CAppWindow::RestoreCursor()
-{
-	SetCursor( NULL );
-	ShowCursor();
-}
-
-void CAppWindow::WindowActivated( bool active )
-{
-	RestoreCursor();
-}
-
-void CWindowState::OnWindowOpen( CAppWindow *inWindow )
+void
+CWindowState::OnWindowOpen(
+	CAppWindow *window)
 {
 	lock.Lock();
-	w = inWindow;
+	w = window;
 	lock.Unlock();
 }
 	

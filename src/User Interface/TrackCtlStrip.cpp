@@ -1414,7 +1414,7 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 		}
 
 		dragType = DragType_None;
-		TrackWindow()->RestoreCursor();
+//		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
 		Window()->Activate();
 		break;
 
@@ -1450,7 +1450,7 @@ void CTrackCtlStrip::MouseMoved(
 		}
 	
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
-		TrackWindow()->RestoreCursor();
+//		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
 		return;
 	}
 	
@@ -1517,7 +1517,7 @@ void CTrackCtlStrip::MouseMoved(
 						TrackWindow()->DisplayMouseTime( Track(), time );
 						dragType = DragType_DropTarget;
 					}
-					TrackWindow()->HideCursor();
+//					be_app->HideCursor();
 					return;
 				}
 				break;
@@ -1546,7 +1546,7 @@ void CTrackCtlStrip::MouseMoved(
 		}
 	}
 	
-	TrackWindow()->SetCursor( newCursor );
+//	be_app->SetCursor( newCursor );
 }
 
 bool CTrackCtlStrip::ConstructEvent( BPoint point )
@@ -1576,7 +1576,7 @@ bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
 
 	TrackWindow()->DisplayMouseTime( Track(), time );
 	newEv.SetStart( time );
-	newEv.SetDuration( TrackWindow()->GetNewEventDuration() );
+	newEv.SetDuration( TrackWindow()->NewEventDuration() );
 	newEv.SetVChannel( 0 );
 
 	switch (newEv.Command()) {

@@ -723,7 +723,7 @@ void EventList::Validate()
 
 		if (time < prevTime)
 		{
-			ASSERT( time >= prevTime );
+//			ASSERT( time >= prevTime );
 		}
 		prevTime = time;
 	}

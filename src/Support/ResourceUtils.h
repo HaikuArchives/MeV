@@ -42,7 +42,6 @@
 #include <OS.h>
 
 class BBitmap;
-class BCursor;
 
 namespace ResourceUtils
 {

@@ -41,7 +41,8 @@
 #ifndef __C_AssemblyRulerView_H__
 #define __C_AssemblyRulerView_H__
 
-#include "TrackEditFrame.h" // declares CRulerView
+#include "RulerView.h"
+#include "Observer.h"
 
 class CEventTrack;
 class BBitmap;
@@ -64,9 +65,9 @@ public:							// Constructor/Destructor
 
 								CAssemblyRulerView(
 									BLooper &looper,
-									CTrackEditFrame &frameView,
+									CTrackEditFrame *frameView,
 									CEventTrack	*track,
-									BRect rect,
+									BRect frame,
 									const char *name,
 									ulong resizeMask,
 									ulong flags);

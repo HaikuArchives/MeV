@@ -726,14 +726,14 @@ void CLinearEditor::MouseMoved(
 	ulong		transit,
 	const BMessage	* )
 {
-	const Event		*ev;
-	short			partCode;
-	const uint8		*newCursor;
+//	const Event		*ev;
+//	short			partCode;
+//	const uint8		*newCursor;
 
 	if (transit == B_EXITED_VIEW)
 	{
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
-		TrackWindow()->RestoreCursor();
+//		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
 		return;
 	}
 	
@@ -744,23 +744,23 @@ void CLinearEditor::MouseMoved(
 
 	bounds = Bounds();
 
-	if ((ev = PickEvent( marker, point, partCode )) != NULL)
-	{
-		newCursor = Handler( *ev ).CursorImage( partCode );
-	}
-	else newCursor = NULL;
-	
-	if (newCursor == NULL)
-	{
-		if (crossCursor == NULL)
-		{
-			crossCursor = ResourceUtils::LoadCursor(1);
-		}
-
-		newCursor = crossCursor;
-	}
-	
-	TrackWindow()->SetCursor( newCursor );
+//	if ((ev = PickEvent( marker, point, partCode )) != NULL)
+//	{
+//		newCursor = Handler( *ev ).CursorImage( partCode );
+//	}
+//	else newCursor = NULL;
+//	
+//	if (newCursor == NULL)
+//	{
+//		if (crossCursor == NULL)
+//		{
+//			crossCursor = ResourceUtils::LoadCursor(1);
+//		}
+//
+//		newCursor = crossCursor;
+//	}
+//	
+//	TrackWindow()->SetCursor( newCursor );
 }
 
 #if 0
@@ -1109,7 +1109,7 @@ bool CLinearEditor::ConstructEvent( BPoint point )
 	TrackWindow()->DisplayMouseTime( Track(), time );
 
 	newEv.SetStart( time );
-	newEv.SetDuration( TrackWindow()->GetNewEventDuration() - 1 );
+	newEv.SetDuration( TrackWindow()->NewEventDuration() - 1 );
 	newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
 
 	switch (newEv.Command()) {

@@ -38,29 +38,51 @@
 #ifndef __C_EventEditor_H__
 #define __C_EventEditor_H__
 
+// General
 #include "MeVSpec.h"
-#include "StripView.h"
+// Engine
+#include "Event.h"
+// Framework
 #include "Observer.h"
-#include "EventTrack.h"
-#include "TrackWindow.h"
+// User Interface
 #include "BorderView.h"
-#include "./Polygon.h"
+#include "Polygon.h"
+#include "StripView.h"
+#include "TrackWindow.h"
 
 class CAbstractEventHandler;
-class MeVSpec EventOp;
 
 const int			Max_PB_Markers = 8;
 
-extern const uint8		*resizeCursor,
-					*crossCursor;
-
-// ---------------------------------------------------------------------------
-// The base event editor strip view
-
-class CEventEditor : public CStripView, public CObserver {
+class CEventEditor :
+	public CStripView,
+	public CObserver
+{
 	friend class		CEndEventHandler;
 	
+public:								// Constructor/Destructor
+
+									CEventEditor(
+										BLooper	&inLooper,
+										CTrackEditFrame	&inFrame,
+										BRect rect,
+										const char *name,
+										bool makeScroller = false,
+										bool makeMagButtons = false);
+					
+									CEventEditor(
+										BLooper &inLooper,
+										CTrackEditFrame &inFrame,
+										BRect rect,
+										CEventTrack *inTrack,
+										const char *name,
+										bool makeScroller = false,
+										bool makeMagButtons = false );
+	
+	virtual								~CEventEditor();
+
 protected:
+
 	CEventTrack		*track;				// Which track we're editing
 	CTrackEditFrame	&frame;
 	BView			*labelView;
@@ -111,40 +133,6 @@ public:
 		
 		DragType_Count
 	};
-
-		// ---------- Constructor
-
-	CEventEditor(	BLooper				&inLooper,
-					CTrackEditFrame 	&inFrame,
-					BRect			rect,
-					const char		*name,
-					bool				makeScroller = false,
-					bool				makeMagButtons = false )
-		:	CStripView( inFrame, rect, name, makeScroller, makeMagButtons ),
-			CObserver( inLooper, inFrame.Track() ),
-			track( (CEventTrack *)inFrame.Track() ),
-			frame( inFrame )
-	{
-		Init();
-	}
-					
-	CEventEditor(		BLooper			&inLooper,
-					CTrackEditFrame	&inFrame,
-					BRect			rect,
-					CEventTrack		*inTrack,
-					const char		*name,
-					bool				makeScroller = false,
-					bool				makeMagButtons = false )
-		:	CStripView( inFrame, rect, name, makeScroller, makeMagButtons ),
-			CObserver( inLooper, inTrack ),
-			track( inTrack ),
-			frame( inFrame )
-	{
-		ruler = NULL;
-		Init();
-	}
-	
-	~CEventEditor() { delete lassoPoints; }
 
 		// ---------- Getters
 

@@ -155,36 +155,4 @@ enum EBitmapIDs {
 	PlayBeg_Image,
 };
 
-class BBitmap;
-
-extern BBitmap	*smallPlusImage,
-				*smallMinusImage,
-				*gridToolImage,
-				*arrowToolImage,
-				*pencilToolImage,
-				*metroToolImage,
-				*eraserToolImage,
-				*lockToolImage,
-				*textToolImage,
-				*selRectToolImage,
-				*sectionMarkerImage,
-				*beginBtnImage,
-				*rewindBtnImage,
-				*playBtnImage,
-				*ffBtnImage,
-				*endBtnImage,
-				*stopBtnImage,
-				*pauseBtnImage,
-				*recBtnImage,
-				*loop1Image,
-				*loop2Image,
-				*playBegImage,
-				*programToolImage,
-				*timeSigToolImage,
-				*trackToolImage,
-				*repeatToolImage,
-				*endToolImage,
-				*sysexToolImage,
-				*smallClockImage;
-
 #endif /* __Idents_H__ */

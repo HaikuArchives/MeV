@@ -8,8 +8,6 @@
 #include "MathUtils.h"
 #include "ResourceUtils.h"
 
-extern const uint8	*crossCursor;
-
 // ---------------------------------------------------------------------------
 // Note handler class for linear editor
 
@@ -363,18 +361,13 @@ void CVelocityEditor::MouseMoved(
 	if (transit == B_EXITED_VIEW)
 	{
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
-		TrackWindow()->RestoreCursor();
+//		TrackWindow()->RestoreCursor();
 		return;
 	}
 
 	TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
 
-	if (crossCursor == NULL)
-	{
-		crossCursor = ResourceUtils::LoadCursor(1);
-	}
-
-	TrackWindow()->SetCursor( crossCursor );
+//	SetViewCursor(UIDefs::CROSS_HAIR_CURSOR);
 }
 
 void CVelocityEditor::StartDrag( BPoint point, ulong buttons )

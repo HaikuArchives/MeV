@@ -57,19 +57,19 @@ namespace StdBevels
 	void DrawBorderBevel(
 		BView *view,
 		BRect rect,
-		bevel_state state);
+		bevel_state state = NORMAL_BEVEL);
 
 	// Bevels with same coloration as Be buttons.
 	void DrawButtonBevel(
 		BView *view,
 		BRect rect,
-		bevel_state state);
+		bevel_state state = NORMAL_BEVEL);
 
 	// Same as button bevel but with square corners.
 	void DrawSquareBevel(
 		BView *view,
 		BRect rect,
-		bevel_state state);
+		bevel_state state = NORMAL_BEVEL);
 };
 
 #endif /* __StdBevels_H__ */

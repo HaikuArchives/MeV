@@ -104,28 +104,4 @@ public:
 	TClockType FrameClockType() { return frameClockType; }
 };
 
-	// Ruler View, associated with track editr frames
-
-class CRulerView : public CScrollerTarget {
-protected:
-	CTrackEditFrame		&frame;
-public:
-	CRulerView(	CTrackEditFrame &inFrameView,
-				BRect			rect,
-				const char		*name,
-				ulong			resizeMask,
-				ulong			flags )
-		:	CScrollerTarget( rect, name, resizeMask, flags ),
-			frame( inFrameView )
-	{
-		frame.SetRuler( this );
-	}
-
-	void SetScrollValue( float inScrollValue, orientation inOrient )
-	{
-		CScrollerTarget::SetScrollValue( inScrollValue, inOrient );
-		ScrollTo( scrollValue.x, scrollValue.y );
-	}
-};
-
 #endif /* __C_TrackEditFrame_H__ */

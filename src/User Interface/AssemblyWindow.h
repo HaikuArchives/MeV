@@ -44,57 +44,78 @@
 // ---------------------------------------------------------------------------
 // Assembly editor window
 
-class CTimeIntervalEditor;
+//class CTimeIntervalEditor;
 class CTextDisplay;
 class CToolBar;
 class CMultiColumnListView;
-class CMeVDoc;
-class CStripFrameView;
+//class CStripFrameView;
 class CColumnField;
-class CDragPalette;
+//class CDragPalette;
 
 class CAssemblyWindow : 
 	public CTrackWindow 
 {
 	
-	CToolBar				*toolBar;
-	uint8				toolStates[ 1 ];
-	CMultiColumnListView	*trackList;
-	CColumnField			*typeColumn,
-						*nameColumn;
-	CTextDisplay			*eventCount,
-						*channelsUsed;
-	CDragPalette			*eventPalette;
+public:							// Constructor/Destructor
+
+								CAssemblyWindow(
+									BRect frame,
+									CMeVDoc &inDocument);
+
+								~CAssemblyWindow();
+
+public:							// CTrackWindow Implementation
+
+	// For windows which edit dual tracks, select which one
+	// has selected events
+	CEventTrack *				ActiveTrack()
+								{
+									return Document().ActiveMaster();
+								}
+
+	// Returns current toolbar setting
+	int32						CurrentTool()
+								{
+									return toolStates[0];
+								}
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				OnUpdate(
+									BMessage *message);
+
+protected:						// Internal Methods
+
+	void						AddMenuBar();
+
+	void						AddToolBar();
+
+	void						BuildTrackList();
+
+	void						ShowTrackInfo();
+
+private:						// Instance Data
+
+	CToolBar *					toolBar;
+
+	uint8						toolStates[1];
+
+	CMultiColumnListView *		trackList;
+
+	CColumnField *				typeColumn;
+
+	CColumnField *				nameColumn;
+
+//	CTextDisplay *				eventCount;
+//
+//	CTextDisplay *				channelsUsed;
+//
+//	CDragPalette *				eventPalette;
 	
 	enum {
 		TrackEdit_ID = 'tkEd',
 	};
-
-	void MessageReceived( BMessage* theMessage );
-	void OnUpdate( BMessage *inMsg );
-	void BuildTrackList();
-	void ShowTrackInfo();
-
-public:
-	CAssemblyWindow( BRect frame, CMeVDoc &inDocument );
-	~CAssemblyWindow();
-
-		/**	Returns current toolbar setting. */
-	int32 CurrentTool() { return toolStates[ 0 ]; }
-
-		/**	For windows which edit dual tracks, select which one
-			has selected events. */
-	CEventTrack *ActiveTrack() { return Document().ActiveMaster(); }
-
-private:						// Instance Data
-
-	BBitmap	*					m_gridToolBitmap;
-	BBitmap *					m_arrowToolBitmap;
-	BBitmap *					m_eraserToolBitmap;
-	BBitmap *					m_metroToolBitmap;
-	BBitmap *					m_programToolBitmap;
-	BBitmap *					m_timeSigToolBitmap;
-	BBitmap *					m_textToolBitmap;
 };
 
 #endif /* __C_AssemblyWindow_H__ */

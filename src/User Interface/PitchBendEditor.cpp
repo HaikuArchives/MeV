@@ -347,12 +347,12 @@ const uint8 *CPitchBendEventHandler::CursorImage( short partCode ) const
 	case Part_Start:
 		return B_HAND_CURSOR;			// Return the normal hand cursor
 
-	case Part_End:						// Return resizing cursor
-		if (resizeCursor == NULL)
-		{
-			resizeCursor = ResourceUtils::LoadCursor(2);
-		}
-		return resizeCursor;
+//	case Part_End:						// Return resizing cursor
+//		if (resizeCursor == NULL)
+//		{
+//			resizeCursor = ResourceUtils::LoadCursor(2);
+//		}
+//		return resizeCursor;
 	}
 
 	return NULL;

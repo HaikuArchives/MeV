@@ -38,7 +38,7 @@ void CTextDisplay::Draw( BRect updateRect )
 
 		SetHighColor( 0, 0, 0 );
 		MovePenTo( x, (r.top + r.bottom - fh.descent + fh.ascent) / 2 );
-
+		SetDrawingMode(B_OP_OVER);
 		DrawString( text );
 	}
 }

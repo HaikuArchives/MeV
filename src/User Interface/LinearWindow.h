@@ -51,25 +51,57 @@ class CLinearWindow :
 	public CTrackWindow
 {
 	
-	char					timeBuf[ 16 ];
-	CToolBar				*toolBar;
-	uint8				toolStates[ 1 ];
-	BTextControl			*trackNameCtl;
-	CTimeIntervalEditor	*durationEditor;
-	BMenuItem			*playSelectMenu;
-	CTextDisplay			*timeView;
+public:							// Constants
 
-	void MessageReceived( BMessage* theMessage );
-	void DisplayMouseTime( CTrack *track, int32 time );
-	void MenusBeginning();
-	void OnUpdate( BMessage *inMsg );
-	bool QuitRequested();
+	enum messages
+	{
+								NEW_EVENT_TYPE_CHANGED = 'mLWn'
+	};
 
-public:
-	CLinearWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inTrack );
+public:							// Constructor/Destructor
 
-		/**	Returns current toolbar setting. */
-	int32 CurrentTool() { return toolStates[ 0 ]; }
+								CLinearWindow(
+									BRect frame,
+									CMeVDoc &document,
+									CEventTrack *track);
+
+public:							// Accessors
+
+	// Returns current toolbar setting
+	int32						CurrentTool()
+								{
+									return m_toolStates[0];
+								}
+
+public:							// CTrackWindow Implementation
+
+	virtual void				DisplayMouseTime(
+									CTrack *track,
+									int32 time);
+
+	virtual void				MenusBeginning();
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				OnUpdate(
+									BMessage *message);
+
+protected:						// Internal Operations
+
+	void						AddMenuBar();
+
+	void						AddToolBar();
+
+private:						// Instance Data
+
+	char						m_timeBuf[16];
+
+	CToolBar *					m_toolBar;
+
+	uint8						m_toolStates[1];
+
+	CTextDisplay *				m_timeView;
 };
 
 #endif /* __C_LinearWindow_H__ */

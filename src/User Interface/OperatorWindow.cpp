@@ -101,10 +101,10 @@ COperatorWindow::COperatorWindow( CWindowState &inState, CMeVDoc &inDocument )
 	BMessage		*trackMsg = new BMessage( '0000' );
 	trackMsg->AddInt32( "DocumentID", (int32)&inDocument );
 
-	plugInMenu = new BMenu( "Plug-Ins" );
-	plugInMenuInstance.SetBaseMenu( plugInMenu );
-	plugInMenuInstance.SetMessageAttributes( trackMsg );
-	menus->AddItem( plugInMenu );
+//	plugInMenu = new BMenu( "Plug-Ins" );
+//	plugInMenuInstance.SetBaseMenu( plugInMenu );
+//	plugInMenuInstance.SetMessageAttributes( trackMsg );
+//	menus->AddItem( plugInMenu );
 
 		// REM: Create the windows menu here (to be able to re-open track windows...)
 

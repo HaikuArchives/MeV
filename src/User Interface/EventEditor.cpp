@@ -17,36 +17,79 @@ CNullEventHandler		gNullEventHandler;
 CEndEventHandler		gEndEventHandler;
 
 // ---------------------------------------------------------------------------
+// Constructor/Destructor
+
+CEventEditor::CEventEditor(
+	BLooper	&inLooper,
+	CTrackEditFrame	&inFrame,
+	BRect rect,
+	const char *name,
+	bool makeScroller = false,
+	bool makeMagButtons = false)
+	:	CStripView(inFrame, rect, name, makeScroller, makeMagButtons),
+		CObserver(inLooper, inFrame.Track()),
+		track((CEventTrack *)inFrame.Track()),
+		frame(inFrame)
+{
+	Init();
+}
+					
+CEventEditor::CEventEditor(
+	BLooper &inLooper,
+	CTrackEditFrame &inFrame,
+	BRect rect,
+	CEventTrack *inTrack,
+	const char *name,
+	bool makeScroller = false,
+	bool makeMagButtons = false)
+	:	CStripView(inFrame, rect, name, makeScroller, makeMagButtons),
+		CObserver(inLooper, inTrack),
+		track(inTrack),
+		frame(inFrame)
+{
+	ruler = NULL;
+	Init();
+}
+	
+CEventEditor::~CEventEditor()
+{
+	delete lassoPoints;
+}
+	
+// ---------------------------------------------------------------------------
 // Init function for event editor.
 
-void CEventEditor::Init()
+void
+CEventEditor::Init()
 {
-	dragOp			= NULL;
-	pbCount			= 0;
-	dragType			= DragType_None;
-	lassoPoints		= NULL;
+	dragOp = NULL;
+	pbCount = 0;
+	dragType = DragType_None;
+	lassoPoints = NULL;
 
-		// Set the handler array to the "null" handler.
-	for (int i = 0; i < EvtType_Count; i++) handlers[ i ] = &gNullEventHandler;
+	// Set the handler array to the "null" handler.
+	for (int i = 0; i < EvtType_Count; i++)
+	{
+		handlers[ i ] = &gNullEventHandler;
+	}
 }
 
 // ---------------------------------------------------------------------------
 // All event editors handle picking in the same way
 
-const Event *CEventEditor::PickEvent(
-	EventMarker		&resultMarker,
-	const BPoint	&pickPt,
-	short			&resultPartCode )
+const Event *
+CEventEditor::PickEvent(
+	EventMarker	&resultMarker,
+	const BPoint &pickPt,
+	short &resultPartCode)
 {
-	long			startTime,
-				stopTime;
-	long			bestPick = LONG_MAX;
-	const int		mouseLeftSlopSize = 128,
-				mouseRightSlopSize = 8;
-	short		partCode;
+	long startTime, stopTime;
+	long bestPick = LONG_MAX;
+	const int mouseLeftSlopSize = 128, mouseRightSlopSize = 8;
+	short partCode;
 
-	startTime = frame.ViewCoordsToTime( pickPt.x - mouseLeftSlopSize, track->ClockType() );
-	stopTime  = frame.ViewCoordsToTime( pickPt.x + mouseRightSlopSize, track->ClockType() );
+	startTime = frame.ViewCoordsToTime(pickPt.x - mouseLeftSlopSize, track->ClockType());
+	stopTime  = frame.ViewCoordsToTime(pickPt.x + mouseRightSlopSize, track->ClockType());
 
 		// Initialize an event marker for this track.
 	EventMarker		marker( Track()->Events() );
@@ -704,7 +747,7 @@ void CEventEditor::StartDrag( BPoint point, ulong buttons )
 
 		int32 toolState = TrackWindow()->CurrentTool();
 		
-		if (toolState == TOOL_CREATE)
+		if (toolState == CTrackWindow::TOOL_CREATE)
 		{
 			if (!ConstructEvent( point ))
 			{

@@ -23,7 +23,9 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- *  Abstract document window class
+ *	A window class that keeps track of it's state (position, open-ness)
+ *	in a seperate structure which can be used to manipulate the window,
+ *	even if the window is not open.
  * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
@@ -38,73 +40,60 @@
 #ifndef __C_WindowState_H__
 #define __C_WindowState_H__
 
-#include "AppHelp.h"
+//#include "AppHelp.h"
 
+// Interface Kit
+#include <Window.h>
 // Support Kit
 #include <Locker.h>
 
+class BCursor;
 class CWindowState;
 
-	/**	A window class that keeps track of it's state (position, open-ness)
-		in a seperate structure which can be used to manipulate the window,
-		even if the window is not open.
-	*/
-class CAppWindow : public BWindow {
-
-	CWindowState	*state;
-	const uint8	*cursorImage;		//	Current cursor image
-	bool			cursorHidden;		//	TRUE if cursor is hidden
+class CAppWindow :
+	public BWindow
+{
 
 protected:
 	bool QuitRequested();
 
-public:
-	virtual ~CAppWindow();
+public:							// Constructor/Destructor
 
-	CAppWindow(BRect frame,
-		const char *title, 
-		window_type type,
-		uint32 flags,
-		uint32 workspace = B_CURRENT_WORKSPACE)
-	 : BWindow( frame, title, type, flags, workspace )
-	{
-		cursorImage = B_HAND_CURSOR;
-		cursorHidden = false;
-		
-		state = NULL;
-	}
+								CAppWindow(
+									BRect frame,
+									const char *title,
+									window_type type,
+									uint32 flags,
+									uint32 workspace = B_CURRENT_WORKSPACE);
+								CAppWindow(
+									CWindowState &state,
+									BRect frame,
+									const char *title, 
+									window_type type,
+									uint32 flags,
+									uint32 workspace = B_CURRENT_WORKSPACE);
 	
-	void RememberState( CWindowState &inState );
+	virtual						~CAppWindow();
 
-	void WindowActivated( bool active );
+public:							// BWindow Implementation
 
-	CAppWindow(
-		CWindowState	&inState,
-		BRect frame,
-		const char *title, 
-		window_type type,
-		uint32 flags,
-		uint32 workspace = B_CURRENT_WORKSPACE)
-	 : BWindow( frame, title, type, flags, workspace )
-	{
-		cursorImage = B_HAND_CURSOR;
-		cursorHidden = false;
+	virtual void				WindowActivated(
+									bool active );
 
-		state = NULL;
-		RememberState( inState );
-	}
-	
-		/**	Set the current cursor shape. */
-	void SetCursor( const uint8 *inCursor );
-	
-		/**	Hide the cursor. */
-	void HideCursor();
+public:							// Operations
 
-		/**	Show the cursor. */
-	void ShowCursor();
-	
-		/**	Restore the cursor to default shape. */
-	void RestoreCursor();
+	void						RememberState(
+									CWindowState &state);
+
+private:							// Instance Data
+
+	CWindowState *					m_state;
+
+	// Current cursor image
+//	BCursor	*						m_cursor;
+
+	// true if cursor is hidden
+//	bool							m_cursorHidden;
 };
 
 class CWindowState {

@@ -5,6 +5,7 @@
 #include "AssemblyRulerView.h"
 #include "DataSnap.h"
 #include "EventTrack.h"
+#include "TrackEditFrame.h"
 #include "ResourceUtils.h"
 
 // Support Kit
@@ -20,13 +21,13 @@
 
 CAssemblyRulerView::CAssemblyRulerView(
 	BLooper &looper,
-	CTrackEditFrame &frameView,
+	CTrackEditFrame *frameView,
 	CEventTrack *track,
-	BRect rect,
+	BRect frame,
 	const char *name,
 	ulong resizingMode,
 	ulong flags)
-	:	CRulerView(frameView, rect, name, resizingMode, flags),
+	:	CRulerView(frame, name, frameView, resizingMode, flags),
 		CObserver(looper, track),
 		m_showMarkers(true),
 		m_markerBitmap(NULL)
@@ -46,7 +47,7 @@ CAssemblyRulerView::Draw(
 {
 	CEventTrack	*track = (CEventTrack *)subject;
 	TClockType	clockType = track->ClockType();
-	long startTime = frame.ViewCoordsToTime( updateRect.left - 48.0, clockType );
+	long startTime = m_frameView->ViewCoordsToTime( updateRect.left - 48.0, clockType );
 	if (startTime < 0)
 	{
 		startTime = 0;
@@ -57,7 +58,7 @@ CAssemblyRulerView::Draw(
 	BRect rect(Bounds());
 	bool major;
 	int32 majorTime = track->SigMap().entries->sigMajorUnitDur;
-	double majorXStep = frame.TimeToViewCoords( majorTime, clockType );
+	double majorXStep = m_frameView->TimeToViewCoords( majorTime, clockType );
 	int32 steps = 1;
 
 	while (majorXStep < 24)
@@ -70,7 +71,7 @@ CAssemblyRulerView::Draw(
 		{
 			steps *= 2;
 		}
-		majorXStep = frame.TimeToViewCoords(majorTime * steps, clockType);
+		majorXStep = m_frameView->TimeToViewCoords(majorTime * steps, clockType);
 	}
 
 	SetHighColor(255, 255, 220, 255);
@@ -80,7 +81,7 @@ CAssemblyRulerView::Draw(
 
 	for (time = timeIter.First(major); ; time = timeIter.Next(major))
 	{
-		double x = frame.TimeToViewCoords( time, clockType );
+		double x = m_frameView->TimeToViewCoords( time, clockType );
 		if (x > updateRect.right)
 		{
 			break;
@@ -115,7 +116,7 @@ CAssemblyRulerView::Draw(
 
 	for (time = timeIter2.First(major) ; ; time = timeIter2.Next(major))
 	{
-		double x = frame.TimeToViewCoords(time, clockType);
+		double x = m_frameView->TimeToViewCoords(time, clockType);
 		if (x > updateRect.right)
 		{
 			break;
@@ -144,9 +145,9 @@ CAssemblyRulerView::Draw(
 		double	x;
 	
 		SetDrawingMode(B_OP_OVER);
-		x = frame.TimeToViewCoords(track->SectionStart(), clockType);
+		x = m_frameView->TimeToViewCoords(track->SectionStart(), clockType);
 		DrawBitmapAsync(m_markerBitmap, BPoint(x - 4.0, 0.0));
-		x = frame.TimeToViewCoords(track->SectionEnd(), clockType);
+		x = m_frameView->TimeToViewCoords(track->SectionEnd(), clockType);
 		DrawBitmap(m_markerBitmap, BPoint(x - 4.0, 0.0));
 //		SetDrawingMode(B_OP_COPY);
 	}
@@ -174,7 +175,7 @@ CAssemblyRulerView::MouseDown(
 		int32 markers[] = {track->SectionStart(), track->SectionEnd()};
 		for (int i = 0; i < 2; i++)
 		{
-			float x = frame.TimeToViewCoords(markers[i], track->ClockType());
+			float x = m_frameView->TimeToViewCoords(markers[i], track->ClockType());
 			if ((point.x >= x - 4.0) && (point.x <= x + 4.0))
 			{
 				BMessage message(MARKER_MOVED);
@@ -209,7 +210,7 @@ CAssemblyRulerView::MouseMoved(
 				}
 
 				CEventTrack	*track = (CEventTrack *)subject;
-				int32 time = frame.ViewCoordsToTime(point.x, track->ClockType());
+				int32 time = m_frameView->ViewCoordsToTime(point.x, track->ClockType());
 				if (track->GridSnapEnabled())
 				{
 					int32 majorUnit, extraTime;
@@ -225,11 +226,11 @@ CAssemblyRulerView::MouseMoved(
 				int32 markers[] = {track->SectionStart(), track->SectionEnd()};
 				if (time != markers[which])
 				{
-					float x = frame.TimeToViewCoords(markers[which], track->ClockType());
+					float x = m_frameView->TimeToViewCoords(markers[which], track->ClockType());
 					Invalidate(BRect(x - 4.0, 0.0, x + 5.0, 10));
 					markers[which] = time;
 					track->SetSection(markers[0], markers[1]);
-					x = frame.TimeToViewCoords(markers[which], track->ClockType());
+					x = m_frameView->TimeToViewCoords(markers[which], track->ClockType());
 					Invalidate(BRect(x - 4.0, 0.0, x + 5.0, 10));
 				}
 
@@ -237,12 +238,12 @@ CAssemblyRulerView::MouseMoved(
 				BRect r(Bounds());
 				if (point.x > r.right)
 				{
-					frame.ScrollBy(MIN((point.x - r.right) / 4, 10.0),
+					m_frameView->ScrollBy(MIN((point.x - r.right) / 4, 10.0),
 								   B_HORIZONTAL );
 				}
 				else if (point.x < r.left)
 				{
-					frame.ScrollBy(MAX( (point.x - r.left) / 4, -10.0),
+					m_frameView->ScrollBy(MAX( (point.x - r.left) / 4, -10.0),
 								   B_HORIZONTAL);
 				}
 //				Window()->UpdateIfNeeded();

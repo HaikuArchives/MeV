@@ -7,8 +7,11 @@
 #include "TextSlider.h"
 #include "TextDisplay.h"
 #include "Spinner.h"
-#include "ToolBar.h"
 #include "MeVDoc.h"
+// User Interface
+#include "BitmapTool.h"
+#include "ToolBar.h"
+// Support
 #include "ResourceUtils.h"
 
 // Gnu C Library
@@ -70,31 +73,26 @@ CTimeIntervalEditor::CTimeIntervalEditor(
 
 	x = 32;
 						
-	modBar = new CToolBar(	BRect( x, 0.0, x + 18*5 + 5, 26.0 ),
-							new BMessage( ModBar_ID ),
-							BPoint( 18.0, h + 1 ),
-							false,
-							B_FOLLOW_TOP | B_FOLLOW_LEFT,
-							B_WILL_DRAW );
-
-	modBar->AddTool( Tuplet3_ID, true, ResourceUtils::LoadImage("Tuplet3"));
-	modBar->ExcludeTool( Tuplet3_ID, 0 );
-
-	modBar->AddTool( Tuplet5_ID, true, ResourceUtils::LoadImage("Tuplet5"));
-	modBar->ExcludeTool( Tuplet5_ID, 0 );
-
-	modBar->AddTool( Tuplet7_ID, true, ResourceUtils::LoadImage("Tuplet7"));
-	modBar->ExcludeTool( Tuplet7_ID, 0 );
-	modBar->AddSeperator();
-
-	modBar->AddTool( Dot_ID, true, ResourceUtils::LoadImage("Dot1"));
-	modBar->ExcludeTool( Dot_ID, 1 );
-
-	modBar->AddTool( DoubleDot_ID, true, ResourceUtils::LoadImage("Dot2"));
-	modBar->ExcludeTool( DoubleDot_ID, 1 );
-
-	AddChild( modBar );
-	modBar->SetViewColor( B_TRANSPARENT_32_BIT );
+	// Add tool bar
+	modBar = new CToolBar(BRect(x, 0.0, x + 18 * 5 + 5, 26.0), "Modifiers");
+	modBar->AddTool(new CBitmapTool("Tuplet3", ResourceUtils::LoadImage("Tuplet3"),
+									NULL));
+//	modBar->ExcludeTool( Tuplet3_ID, 0 );
+	modBar->AddTool(new CBitmapTool("Tuplet5", ResourceUtils::LoadImage("Tuplet5"),
+									NULL));
+//	modBar->ExcludeTool( Tuplet5_ID, 0 );
+	modBar->AddTool(new CBitmapTool("Tuplet7", ResourceUtils::LoadImage("Tuplet7"),
+									NULL));
+//	modBar->ExcludeTool( Tuplet7_ID, 0 );
+	modBar->AddSeparator();
+	modBar->AddTool(new CBitmapTool("Dot", ResourceUtils::LoadImage("Dot1"),
+									NULL));
+//	modBar->ExcludeTool( Dot_ID, 1 );
+	modBar->AddTool(new CBitmapTool("DoubleDot", ResourceUtils::LoadImage("Dot2"),
+									NULL));
+//	modBar->ExcludeTool( DoubleDot_ID, 1 );
+	AddChild(modBar);
+//	modBar->SetViewColor( B_TRANSPARENT_32_BIT );
 	
 	x += 18*5 + 6;
 
@@ -267,12 +265,12 @@ void CTimeIntervalEditor::CalcInterval()
 
 	if (base > 0) { num >>= 1; den >>= 1; }
 	
-	if (modBar->IsSelected( Tuplet3_ID ))			{ num *= 2; den *= 3; }
-	else if (modBar->IsSelected( Tuplet5_ID ))		{ num *= 4; den *= 5; }
-	else if (modBar->IsSelected( Tuplet7_ID ))		{ num *= 4; den *= 7; }
+//	if (modBar->IsSelected( Tuplet3_ID ))			{ num *= 2; den *= 3; }
+//	else if (modBar->IsSelected( Tuplet5_ID ))		{ num *= 4; den *= 5; }
+//	else if (modBar->IsSelected( Tuplet7_ID ))		{ num *= 4; den *= 7; }
 
-	if (modBar->IsSelected( Dot_ID ))				{ num *= 3; den *= 2; }
-	else if (modBar->IsSelected( DoubleDot_ID ))	{ num *= 7; den *= 4; }
+//	if (modBar->IsSelected( Dot_ID ))				{ num *= 3; den *= 2; }
+//	else if (modBar->IsSelected( DoubleDot_ID ))	{ num *= 7; den *= 4; }
 
 	Reduce( num, den );
 	
@@ -324,11 +322,11 @@ void CTimeIntervalEditor::NoteLengthFromInterval()
 	base = b;
 	
 	baseDuration->SelectItem( menu->ItemAt( b ) );
-	modBar->Select( Tuplet3_ID, tuplet == 1 );
-	modBar->Select( Tuplet5_ID, tuplet == 2 );
-	modBar->Select( Tuplet7_ID, tuplet == 3 );
-	modBar->Select( Dot_ID, dots == 1 );
-	modBar->Select( DoubleDot_ID, dots == 2 );
+//	modBar->Select( Tuplet3_ID, tuplet == 1 );
+//	modBar->Select( Tuplet5_ID, tuplet == 2 );
+//	modBar->Select( Tuplet7_ID, tuplet == 3 );
+//	modBar->Select( Dot_ID, dots == 1 );
+//	modBar->Select( DoubleDot_ID, dots == 2 );
 }
 
 void CTimeIntervalEditor::NoteLengthFromRatio()
@@ -366,11 +364,11 @@ void CTimeIntervalEditor::NoteLengthFromRatio()
 	}
 
 	baseDuration->SelectItem( menu->ItemAt( base ) );
-	modBar->Select( Tuplet3_ID, tuplet == 1 );
-	modBar->Select( Tuplet5_ID, tuplet == 2 );
-	modBar->Select( Tuplet7_ID, tuplet == 3 );
-	modBar->Select( Dot_ID, dots == 1 );
-	modBar->Select( DoubleDot_ID, dots == 2 );
+//	modBar->Select( Tuplet3_ID, tuplet == 1 );
+//	modBar->Select( Tuplet5_ID, tuplet == 2 );
+//	modBar->Select( Tuplet7_ID, tuplet == 3 );
+//	modBar->Select( Dot_ID, dots == 1 );
+//	modBar->Select( DoubleDot_ID, dots == 2 );
 }
 
 void CTimeIntervalEditor::SetValue( int32 newValue )

@@ -227,14 +227,14 @@ void CContinuousValueEditor::MouseMoved(
 	ulong		transit,
 	const BMessage	* )
 {
-	const Event		*ev;
-	short			partCode;
-	const uint8		*newCursor;
+//	const Event		*ev;
+//	short			partCode;
+//	const uint8		*newCursor;
 
 	if (transit == B_EXITED_VIEW)
 	{
 		TrackWindow()->DisplayMouseTime( NULL, 0 );
-		TrackWindow()->RestoreCursor();
+//		SetViewCursor(B_CURSOR_SYSTEM_DEFAULT);
 		return;
 	}
 	
@@ -245,21 +245,21 @@ void CContinuousValueEditor::MouseMoved(
 
 	bounds = Bounds();
 
-	if ((ev = PickEvent( marker, point, partCode )) != NULL)
-	{
-		newCursor = Handler( *ev ).CursorImage( partCode );
-	}
-	else newCursor = NULL;
-	
-	if (newCursor == NULL)
-	{
-		if (crossCursor == NULL)
-		{
-			crossCursor = ResourceUtils::LoadCursor(1);
-		}
-
-		newCursor = crossCursor;
-	}
-	
-	TrackWindow()->SetCursor( newCursor );
+//	if ((ev = PickEvent( marker, point, partCode )) != NULL)
+//	{
+//		newCursor = Handler( *ev ).CursorImage( partCode );
+//	}
+//	else newCursor = NULL;
+//	
+//	if (newCursor == NULL)
+//	{
+//		if (crossCursor == NULL)
+//		{
+//			crossCursor = ResourceUtils::LoadCursor(1);
+//		}
+//
+//		newCursor = crossCursor;
+//	}
+//	
+//	SetViewCursor( newCursor );
 }

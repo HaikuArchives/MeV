@@ -52,29 +52,155 @@ class CTrackOperation;
 
 const int Ruler_Height	 = 12;
 
-enum ETrackWinToolIDs {
-	TOOL_SELECT = 0,
-	TOOL_CREATE,
-	TOOL_ERASE,
-	TOOL_TEXT,
-	TOOL_GRID,
-	TOOL_TEMPO,
-};
-
 // ---------------------------------------------------------------------------
 // A window which displays and edits strips
 
-class CTrackWindow : public CDocWindow, public CObserver {
-protected:
-	CTrackEditFrame		*stripFrame;
-	CEventTrack			*track;
-	CScroller			*stripScroll;
-	EventOp				*trackOp;
-	CDynamicMenuInstance	plugInMenuInstance;
-	enum E_EventType		newEventType;	// Type of newly created events
-	int32				newEventDuration;
+class CTrackWindow :
+	public CDocWindow,
+	public CObserver
+{
 
-		// Addresses of menus (for disabling)
+public:							// Constants
+
+	enum tool_id
+	{
+								TOOL_SELECT,
+								TOOL_CREATE,
+								TOOL_ERASE,
+								TOOL_TEXT,
+								TOOL_GRID,
+								TOOL_TEMPO
+	};
+
+public:							// Constructor/Destructor
+
+								CTrackWindow(
+									BRect frame,
+									CMeVDoc &inDocument,
+									CEventTrack *inTrack);
+
+	virtual						~CTrackWindow();
+
+public:							// Hook Functions
+
+	virtual int32				CurrentTool() = 0;
+	
+	// Display time of mouse event
+	virtual void				DisplayMouseTime(
+									CTrack *track,
+									int32 time)
+								{ }
+	
+	// Set which track we're editing
+	virtual void				SelectActive(
+									CEventTrack *track)
+								{ }
+
+public:							// Accessors
+
+	// For windows which edit dual tracks, select which one
+	// has selected events
+	virtual CEventTrack *		ActiveTrack()
+								{
+									return track;
+								}
+
+	// Return a pointer to the track that this window is viewing
+	CEventTrack *				Track()
+								{
+									return track;
+								}
+
+	// Get the pending operation
+	EventOp *					PendingOperation()
+								{
+									return trackOp;
+								}
+
+	// Returns the default event duration
+	int32						NewEventDuration()
+								{
+									return newEventDuration;
+								}
+	
+public:							// Operations
+
+	// Set the EventOp representing a pending operation
+	void						SetPendingOperation(
+									EventOp *op);
+	
+	// Finish the operation on this track
+	void						FinishTrackOperation(
+									int32 commit);
+
+	// Show the editor preference window
+	void						ShowPrefs();
+
+	// Returns the type of new events to be created
+	E_EventType					GetNewEventType(
+									E_EventType defaultType)
+								{
+									if (newEventType >= EvtType_Count)
+									{
+										return defaultType;
+									}
+									return newEventType;
+								}
+
+public:							// CDocWindow Implementation
+
+	// Returns a pointer to the current document
+	CMeVDoc &					Document()
+								{
+									return (CMeVDoc &)document;
+								}
+	
+	virtual void				MessageReceived(
+									BMessage* message);
+
+	virtual void				MenusBeginning();
+
+	virtual void				WindowActivated(
+									bool active);
+
+public:							// CObserver Implementation
+
+	virtual void				OnDeleteRequested(
+									BMessage *message);
+
+	virtual void				OnUpdate(
+									BMessage *message);
+
+protected:						// Internal Operations
+
+	void						UpdateActiveSelection(
+									bool active);
+
+	void						CreateFrames(
+									BRect frame,
+									CTrack *track);
+
+	void						CreateFileMenu(
+									BMenuBar *menuBar);
+
+protected:						// Instance Data
+
+	CTrackEditFrame	*			stripFrame;
+
+	CEventTrack *				track;
+
+	CScroller *					stripScroll;
+
+	EventOp *					trackOp;
+
+//	CDynamicMenuInstance		plugInMenuInstance;
+
+	// Type of newly created events
+	enum E_EventType			newEventType;
+
+	int32						newEventDuration;
+
+	// Addresses of menus (for disabling)
 	BMenuItem			*undoMenu,
 						*redoMenu,
 						*clearMenu,
@@ -85,75 +211,18 @@ protected:
 						*gridWindowMenu,
 						*transportMenu;
 	
-	BMenu				*plugInMenu;
+//	BMenu *						plugInMenu;
 
-	void UpdateActiveSelection( bool inActive );
-	void WindowActivated( bool inActive );
-	void MessageReceived( BMessage* theMessage );
-	void MenusBeginning();
-	void CreateFrames( BRect frame, CTrack *inTrack );
-	void OnDeleteRequested( BMessage *inMsg );
-	void OnUpdate( BMessage *inMsg );
-
-	CWindowState		prefsWinState;
-	
-	void CreateFileMenu( BMenuBar *inBar );
-	
-public:
-	CTrackWindow( BRect frame, CMeVDoc &inDocument, CEventTrack *inTrack );
-	~CTrackWindow();
-
-		// ---------- Getters
-
-		/**	Returns a pointer to the current document */
-	CMeVDoc &Document() { return (CMeVDoc &)document; }
-	
-		/**	Return a pointer to the track that this window is viewing. */
-	CEventTrack *Track() { return track; }
-	
-		/**	Set the EventOp representing a pending operation. */
-	void SetPendingOperation( EventOp *inOp );
-	
-		/**	Get the pending operation. */
-	EventOp *PendingOperation() { return trackOp; }
-
-		/**	Finish the operation on this track. */
-	void FinishTrackOperation( int32 inCommit );
-
-		/**	Show the editor preference window. */
-	void ShowPrefs();
-
-		/**	Overridden by Assembly and Linear windows. */
-	virtual int32 CurrentTool() = 0;
-	
-		/**	Returns the type of new events to be created. */
-	enum E_EventType GetNewEventType( enum E_EventType inDefault )
-	{
-		if (newEventType >= EvtType_Count) return inDefault;
-		return newEventType;
-	}
-	
-		/**	Returns the default event duration */
-	int32 GetNewEventDuration() { return newEventDuration; }
-	
-		/**	Display time of mouse event. */
-	virtual void DisplayMouseTime( CTrack *track, int32 time ) {}
-	
-		/**	For windows which edit dual tracks, select which one
-			has selected events. */
-	virtual CEventTrack *ActiveTrack() { return track; }
-
-		/**	Set which track we're editing. */	
-	virtual void SelectActive( CEventTrack * ) {}
+	CWindowState				prefsWinState;
 };
 
 	/**	Add this filter function to any control which would normally
 		accept the focus. This will cause it to lose focus on any
 		TAB or RETURN function.
 	*/
-filter_result DefocusTextFilterFunc(
-	BMessage			*msg,
-	BHandler			**target,
-	BMessageFilter	*messageFilter );
+//filter_result DefocusTextFilterFunc(
+//	BMessage			*msg,
+//	BHandler			**target,
+//	BMessageFilter	*messageFilter );
 
 #endif /* __C_TrackWindow_H__ */

@@ -38,7 +38,6 @@
 #ifndef __Junk_H__
 #define __Junk_H__
 
-#include "StripView.h"
 #include "Observer.h"
 #include "Track.h"
 #include "TrackEditFrame.h"

@@ -22,6 +22,8 @@
 #include "ScreenUtils.h"
 #include "PlayerControl.h"
 #include "MidiDeviceInfo.h"
+// User Interface
+#include "AboutWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -51,37 +53,6 @@ CGlobalPrefs				gPrefs;
 char						gPlugInName[ B_FILE_NAME_LENGTH ];
 
 extern void CalcHighlightColor( rgb_color &in, rgb_color &out );
-
-
-	// Images global to application.
-BBitmap		*smallPlusImage = NULL,
-			*smallMinusImage = NULL,
-			*gridToolImage = NULL,
-			*arrowToolImage = NULL,
-			*pencilToolImage = NULL,
-			*metroToolImage = NULL,
-			*eraserToolImage = NULL,
-			*selRectToolImage = NULL,
-			*textToolImage = NULL,
-			*sectionMarkerImage = NULL,
-			*beginBtnImage = NULL,
-			*rewindBtnImage = NULL,
-			*playBtnImage = NULL,
-			*ffBtnImage = NULL,
-			*endBtnImage = NULL,
-			*stopBtnImage = NULL,
-			*pauseBtnImage = NULL,
-			*recBtnImage = NULL,
-			*loop1Image = NULL,
-			*loop2Image = NULL,
-			*playBegImage = NULL,
-			*programToolImage = NULL,
-			*timeSigToolImage = NULL,
-			*trackToolImage = NULL,
-			*repeatToolImage = NULL,
-			*endToolImage = NULL,
-			*sysexToolImage = NULL,
-			*smallClockImage = NULL;
 
 CTrack		*CMeVApp::activeTrack;
 
@@ -169,8 +140,8 @@ static rgb_color defaultColorTable[ 16 ] = {
 };
 
 CMeVApp::CMeVApp()
-	:	CDocApp( "application/x-vnd.SylvanTechnicalArts-MeV" ),
-		prefs( "x-sylvan-MeV" ),
+	:	CDocApp( "application/x-vnd.MeV" ),
+		prefs( "x-vnd.MeV" ),
 		winSettings( prefs, "settings/windows", true ),
 		editSettings( prefs, "settings/edit", true ),
 		midiSettings( prefs, "settings/midi", true ),
@@ -621,10 +592,7 @@ void CMeVApp::WatchTrack( CEventTrack *inTrack )
 
 void CMeVApp::AboutRequested()
 {
-	BWindow			*w;
-
-	w = new CAboutWindow( aboutWinState );
-	w->Show();
+	new CAboutWindow(aboutWinState);
 }
 
 void CMeVApp::MessageReceived( BMessage *inMsg )
@@ -1743,25 +1711,6 @@ void CMeVApp::BuildExportMenu( BMenu *inMenu )
 
 		inMenu->AddItem( new BMenuItem( ei->menuText, msg ) );
 	}
-}
-
-CAboutWindow::CAboutWindow( CWindowState &inState )
-	: CAppWindow( inState, inState.Rect(), "About MeV", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE )
-{
-	BRect		r( Frame() );
-	
-	r.OffsetTo( B_ORIGIN );
-
-/*	BButton		*bb;
-	bb = new BButton(	BRect(	r.right - 80,
-								r.bottom + 9,
-								r.right - 4,
-								r.bottom + 34 ),
-						"Close", "Close",
-						new BMessage( ApplyClose_ID ),
-						B_FOLLOW_LEFT | B_FOLLOW_BOTTOM ) );
-	bb->MakeDefault( true );
-	AddChild( bb ); */
 }
 
 CAboutPluginWindow::CAboutPluginWindow( CWindowState &inState )
