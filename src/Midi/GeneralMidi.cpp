@@ -63,7 +63,7 @@ GM_PROGRAM_NAMES[128] =
  	"Cello",
  	"Contrabass",
  	"Tremolo Strings",
- 	"Pissicato Strings",
+ 	"Pizzicato Strings",
  	"Orchestral Strings",
  	"Timpani",
 
