@@ -158,7 +158,7 @@ private:
 		
 		// returns the next event in the track.  Event
 		// vChannel is the MIDI channel number (0-15).
-		bool	GetNextEvent(Event& outEvent);
+		bool	GetNextEvent(CEvent& outEvent);
 
 	private:
 				uint8	GetByte();
@@ -170,15 +170,15 @@ private:
 				int64	GetTime();
 				uint8	GetStatusByte();
 		
-				bool	ReadNoteOn(			uint8 statusByte, Event& outEvent);
-				bool	ReadNoteOff(		uint8 statusByte, Event& outEvent);
-				bool	ReadPolyPressure(	uint8 statusByte, Event& outEvent);
-				bool	ReadChannelPressure(uint8 statusByte, Event& outEvent);
-				bool	ReadControlChange(	uint8 statusByte, Event& outEvent);
-				bool	ReadProgramChange(	uint8 statusByte, Event& outEvent);
-				bool	ReadPitchBend(		uint8 statusByte, Event& outEvent);
-				bool	ReadSystemExclusive(uint8 statusByte, Event& outEvent);
-				bool	ReadMetaEvent(		uint8 statusByte, Event& outEvent);
+				bool	ReadNoteOn(			uint8 statusByte, CEvent& outEvent);
+				bool	ReadNoteOff(		uint8 statusByte, CEvent& outEvent);
+				bool	ReadPolyPressure(	uint8 statusByte, CEvent& outEvent);
+				bool	ReadChannelPressure(uint8 statusByte, CEvent& outEvent);
+				bool	ReadControlChange(	uint8 statusByte, CEvent& outEvent);
+				bool	ReadProgramChange(	uint8 statusByte, CEvent& outEvent);
+				bool	ReadPitchBend(		uint8 statusByte, CEvent& outEvent);
+				bool	ReadSystemExclusive(uint8 statusByte, CEvent& outEvent);
+				bool	ReadMetaEvent(		uint8 statusByte, CEvent& outEvent);
 		
 		inline	uint32	Position() const;	// offset within track data
 		
@@ -200,7 +200,7 @@ private:
 		
 		~SMFTrackWriter();
 		
-				void	WriteEvent(Event& event);
+				void	WriteEvent(CEvent& event);
 				void	WriteTempo(double tempo_bpm, uint32 deltaTime = 0);
 				void	WriteTrackName(const char* text, uint32 deltaTime = 0);
 
@@ -210,21 +210,21 @@ private:
 		class CmpEventTime
 		{
 		public:
-			bool operator()(const Event& ev1, const Event& ev2)
+			bool operator()(const CEvent& ev1, const CEvent& ev2)
 				{ return ev1.Start() > ev2.Start(); }
 		};
 
-				void	WriteNoteOn(			const Event& event, uint32 deltaTime);
-				void	WriteNoteOff(			const Event& event, uint32 deltaTime);
-				void	WritePolyPressure(		const Event& event, uint32 deltaTime);
-				void	WriteChannelPressure(	const Event& event, uint32 deltaTime);
-				void	WriteControlChange(		const Event& event, uint32 deltaTime);
-				void	WriteProgramChange(		const Event& event, uint32 deltaTime);
-				void	WritePitchBend(			const Event& event, uint32 deltaTime);
-				void	WriteSystemExclusive(	const Event& event, uint32 deltaTime);
-				void	WriteTextMetaEvent(		const Event& event, uint32 deltaTime);
-				void	WriteTempoMetaEvent(	const Event& event, uint32 deltaTime);
-				void	WriteTimeSigMetaEvent(	const Event& event, uint32 deltaTime);
+				void	WriteNoteOn(			const CEvent& event, uint32 deltaTime);
+				void	WriteNoteOff(			const CEvent& event, uint32 deltaTime);
+				void	WritePolyPressure(		const CEvent& event, uint32 deltaTime);
+				void	WriteChannelPressure(	const CEvent& event, uint32 deltaTime);
+				void	WriteControlChange(		const CEvent& event, uint32 deltaTime);
+				void	WriteProgramChange(		const CEvent& event, uint32 deltaTime);
+				void	WritePitchBend(			const CEvent& event, uint32 deltaTime);
+				void	WriteSystemExclusive(	const CEvent& event, uint32 deltaTime);
+				void	WriteTextMetaEvent(		const CEvent& event, uint32 deltaTime);
+				void	WriteTempoMetaEvent(	const CEvent& event, uint32 deltaTime);
+				void	WriteTimeSigMetaEvent(	const CEvent& event, uint32 deltaTime);
 				
 				void	WritePendingNoteOffs(	int32 atOrBeforeTime = 0x7FFFFFFF);
 				
@@ -234,9 +234,9 @@ private:
 				uint32	CalculateDeltaTime(int32 startTime);
 				
 				/**	Returns the MIDI channel of an event. */
-				uint8	GetMidiChannel(const Event& event);
+				uint8	GetMidiChannel(const CEvent& event);
 
-		priority_queue<Event,vector<Event>,CmpEventTime>	m_pendingNoteOffs;
+		priority_queue<CEvent,vector<CEvent>,CmpEventTime>	m_pendingNoteOffs;
 		CIFFWriter&											m_writer;
 		MeVDocHandle										m_doc;
 		int32												m_lastEventTicks;

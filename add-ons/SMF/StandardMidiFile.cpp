@@ -47,13 +47,13 @@ public:
 class NoteEq
 {
 public:
-	NoteEq(const Event& event)
+	NoteEq(const CEvent& event)
 		:	vChannel(event.GetVChannel()),
 			pitch(event.GetAttribute(EvAttr_Pitch))
 		{
 		}
 
-	bool operator()(const Event& event)
+	bool operator()(const CEvent& event)
 		{
 			return    event.GetAttribute(EvAttr_Pitch) == pitch
 			       && event.GetVChannel()               == vChannel;
@@ -69,7 +69,7 @@ class HandleHungNote
 public:
 	HandleHungNote(MeVTrackHandle trk) : track(trk) { }
 
-	void operator()(Event& event)
+	void operator()(CEvent& event)
 		{
 			PRINT(("\tWarning! Hung note at %ld on vChannel %d, pitch %d\n",
 			       event.Start(), event.GetVChannel(), event.note.pitch));
@@ -260,10 +260,10 @@ void CStandardMidiFile::CreateDestinations(MeVDocHandle doc, const char* filenam
 
 bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, const smf_time_base& timeBase )
 {
-	Event			event;
+	CEvent			event;
 	MeVTrackHandle	track = NULL;
 	TClockType		clockType = (timeBase.format == smf_time_base::METERED) ? ClockType_Metered : ClockType_Real;
-	vector<Event>	notesInProgress;
+	vector<CEvent>	notesInProgress;
 					
 	try
 	{
@@ -287,7 +287,7 @@ bool CStandardMidiFile::ReadTrack( MeVDocHandle doc, uint8 *ptr, long length, co
 			else if (event.Command() == EvtType_NoteOff)
 			{
 				// find matching noteon
-				vector<Event>::iterator noteOn = find_if(notesInProgress.begin(),
+				vector<CEvent>::iterator noteOn = find_if(notesInProgress.begin(),
 				                                         notesInProgress.end(),
 				                                         NoteEq(event));
 				if (noteOn != notesInProgress.end())
@@ -343,7 +343,7 @@ void CStandardMidiFile::SetInitialTempo(MeVDocHandle doc)
 		     pEvent->Valid() && pEvent->EventPtr()->Start() == 0;
 		     pEvent->Seek(1))
 		{
-			const Event* event = pEvent->EventPtr();
+			const CEvent* event = pEvent->EventPtr();
 			if (event->Command() == EvtType_Tempo)
 			{
 				tempo = double(event->GetAttribute(EvAttr_TempoValue)) / 1000.0;
@@ -450,7 +450,7 @@ status_t CStandardMidiFile::WriteTrack(CIFFWriter& writer, MeVDocHandle doc, MeV
 	trackWriter.WriteTrackName(name);
  
 	MeVEventHandle pEvent;
-	Event event;
+	CEvent event;
 	for (pEvent = track->FirstEvent(); pEvent->GetEvent(&event); pEvent->Seek(1))
 		trackWriter.WriteEvent(event);
 
@@ -571,9 +571,9 @@ CStandardMidiFile::SMFTrackReader::SMFTrackReader(CStandardMidiFile& smfPlugin, 
 {
 }
 
-bool CStandardMidiFile::SMFTrackReader::GetNextEvent(Event& outEvent)
+bool CStandardMidiFile::SMFTrackReader::GetNextEvent(CEvent& outEvent)
 {
-	Event	event;	// start with fresh event so all fields are initialized
+	CEvent	event;	// start with fresh event so all fields are initialized
 	uint8	status;
 	bool	gotEvent = false;
 
@@ -716,7 +716,7 @@ uint8 CStandardMidiFile::SMFTrackReader::GetStatusByte()
 	}
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadNoteOn(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadNoteOn(uint8 status, CEvent& event)
 {
 	uint8 pitch = GetByte();
 	uint8 vel   = GetByte();
@@ -752,7 +752,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadNoteOn(uint8 status, Event& event)
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadNoteOff(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadNoteOff(uint8 status, CEvent& event)
 {
 	event.SetCommand(EvtType_NoteOff);
 	event.SetVChannel(m_destinationID[status & 0x0F]);
@@ -766,7 +766,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadNoteOff(uint8 status, Event& event)
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadPolyPressure(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadPolyPressure(uint8 status, CEvent& event)
 {
 	event.SetCommand(EvtType_PolyATouch);
 	event.SetVChannel(m_destinationID[status & 0x0F]);
@@ -781,7 +781,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadPolyPressure(uint8 status, Event& ev
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadChannelPressure(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadChannelPressure(uint8 status, CEvent& event)
 {
 	event.SetCommand(EvtType_ChannelATouch);
 	event.SetVChannel(m_destinationID[status & 0x0F]);
@@ -793,7 +793,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadChannelPressure(uint8 status, Event&
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadControlChange(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadControlChange(uint8 status, CEvent& event)
 {
 	event.SetCommand(EvtType_Controller);
 	event.SetVChannel(m_destinationID[status & 0x0F]);
@@ -807,7 +807,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadControlChange(uint8 status, Event& e
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadProgramChange(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadProgramChange(uint8 status, CEvent& event)
 {
 	// To do: merge with bank select?
 	event.SetCommand(EvtType_ProgramChange);
@@ -820,7 +820,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadProgramChange(uint8 status, Event& e
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadPitchBend(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadPitchBend(uint8 status, CEvent& event)
 {
 	int16 bendAmount;
 
@@ -837,7 +837,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadPitchBend(uint8 status, Event& event
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadSystemExclusive(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadSystemExclusive(uint8 status, CEvent& event)
 {
 	vector<uint8> buf;
 	uint8 ch;
@@ -855,7 +855,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadSystemExclusive(uint8 status, Event&
 	return true;
 }
 
-bool CStandardMidiFile::SMFTrackReader::ReadMetaEvent(uint8 status, Event& event)
+bool CStandardMidiFile::SMFTrackReader::ReadMetaEvent(uint8 status, CEvent& event)
 {
 	uint32	usecPerQtr;
 
@@ -1010,7 +1010,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteTrackName(const char* name, uint32 
 	m_writer.MustWrite(const_cast<char*>(name), length);
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteEvent(Event& event)
+void CStandardMidiFile::SMFTrackWriter::WriteEvent(CEvent& event)
 {
 	// check for any pending note-offs whose times have arrived
 	WritePendingNoteOffs(event.Start());
@@ -1078,7 +1078,7 @@ uint32 CStandardMidiFile::SMFTrackWriter::CalculateDeltaTime(int32 startTime)
 	return uint32(delta);
 }
 
-uint8 CStandardMidiFile::SMFTrackWriter::GetMidiChannel(const Event& event)
+uint8 CStandardMidiFile::SMFTrackWriter::GetMidiChannel(const CEvent& event)
 {
 	int channel = m_doc->GetChannelForDestination(event.GetVChannel());
 
@@ -1086,7 +1086,7 @@ uint8 CStandardMidiFile::SMFTrackWriter::GetMidiChannel(const Event& event)
 	return uint8(channel);
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteNoteOn(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteNoteOn(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0x90 + GetMidiChannel(event))
@@ -1094,7 +1094,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteNoteOn(const Event& event, uint32 d
 	         << uint8(event.GetAttribute(EvAttr_AttackVelocity));
 	{
 		// add NoteOff event to list
-		Event noteOff;
+		CEvent noteOff;
 		noteOff.SetCommand(EvtType_NoteOff);
 		noteOff.SetStart(event.Start() + event.Duration());
 		noteOff.SetVChannel(event.GetVChannel());
@@ -1105,7 +1105,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteNoteOn(const Event& event, uint32 d
 	}
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteNoteOff(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteNoteOff(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0x80 + GetMidiChannel(event))
@@ -1113,7 +1113,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteNoteOff(const Event& event, uint32 
 	         << uint8(event.GetAttribute(EvAttr_ReleaseVelocity));
 }
 
-void CStandardMidiFile::SMFTrackWriter::WritePolyPressure(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WritePolyPressure(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0xA0 + GetMidiChannel(event))
@@ -1121,14 +1121,14 @@ void CStandardMidiFile::SMFTrackWriter::WritePolyPressure(const Event& event, ui
 	         << uint8(event.GetAttribute(EvAttr_AfterTouch));
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteChannelPressure(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteChannelPressure(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0xD0 + GetMidiChannel(event))
 	         << uint8(event.GetAttribute(EvAttr_AfterTouch));
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteControlChange(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteControlChange(const CEvent& event, uint32 deltaTime)
 {
 	uint8 controllerNumber = event.GetAttribute(EvAttr_ControllerNumber);
 	WriteVariableLengthNumber(deltaTime);
@@ -1151,14 +1151,14 @@ void CStandardMidiFile::SMFTrackWriter::WriteControlChange(const Event& event, u
 	}
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteProgramChange(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteProgramChange(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0xC0 + GetMidiChannel(event))
 	         << uint8(event.GetAttribute(EvAttr_Program));
 }
 
-void CStandardMidiFile::SMFTrackWriter::WritePitchBend(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WritePitchBend(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0xE0 + GetMidiChannel(event))
@@ -1166,7 +1166,7 @@ void CStandardMidiFile::SMFTrackWriter::WritePitchBend(const Event& event, uint3
 	         << uint8(event.GetAttribute(EvAttr_BendValue) & 0x7F);
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteSystemExclusive(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteSystemExclusive(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0xF0);
@@ -1175,7 +1175,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteSystemExclusive(const Event& event,
 	m_writer << uint8(0xF7);
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteTextMetaEvent(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteTextMetaEvent(const CEvent& event, uint32 deltaTime)
 {
 	int32 count = event.ExtendedDataSize() - 1;
 	uint32* p = reinterpret_cast<uint32*>(event.ExtendedData());
@@ -1186,7 +1186,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteTextMetaEvent(const Event& event, u
 	m_writer.MustWrite(p, count);
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteTempoMetaEvent(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteTempoMetaEvent(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	m_writer << uint8(0xFF) << uint8(0x51) << uint8(0x03);
@@ -1196,7 +1196,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteTempoMetaEvent(const Event& event, 
 	         << uint8( usecPerQtr        & 0xFF);
 }
 
-void CStandardMidiFile::SMFTrackWriter::WriteTimeSigMetaEvent(const Event& event, uint32 deltaTime)
+void CStandardMidiFile::SMFTrackWriter::WriteTimeSigMetaEvent(const CEvent& event, uint32 deltaTime)
 {
 	WriteVariableLengthNumber(deltaTime);
 	int32 log2Size = int32(log(event.GetAttribute(EvAttr_TSigBeatSize)) / log(2));
@@ -1220,7 +1220,7 @@ void CStandardMidiFile::SMFTrackWriter::WritePendingNoteOffs(int32 time)
 {
 	while (!m_pendingNoteOffs.empty() &&  m_pendingNoteOffs.top().Start() <= time)
 	{
-		const Event& noteOff = m_pendingNoteOffs.top();
+		const CEvent& noteOff = m_pendingNoteOffs.top();
 		WriteNoteOff(noteOff, CalculateDeltaTime(noteOff.Start()));
 		
 		m_pendingNoteOffs.pop();
