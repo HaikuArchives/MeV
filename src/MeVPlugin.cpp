@@ -21,10 +21,6 @@ extern char				gPlugInName[ B_FILE_NAME_LENGTH ];
 
 MeVPlugIn::MeVPlugIn()
 {
-	// ++++++ doesn't the app do this already ??
-	//		  see LoadAddOns()
-	((CMeVApp *)be_app)->m_plugins.AddItem(this);
-
 	be_app->AddHandler(this);
 	SetName(gPlugInName);
 }
