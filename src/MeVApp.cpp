@@ -11,18 +11,15 @@
 #include "GridWindow.h"
 #include "Idents.h"
 #include "InspectorWindow.h"
-#include "Junk.h"
 #include "LinearWindow.h"
-#include "MidiDeviceInfo.h"
 #include "MidiManager.h"
 #include "MeV.h"
 #include "MeVDoc.h"
 #include "MeVPlugin.h"
 #include "PlayerControl.h"
+#include "PreferencesWindow.h"
 #include "ScreenUtils.h"
-#include "Spinner.h"
 #include "StripFrameView.h"
-#include "TextDisplay.h"
 #include "TrackListWindow.h"
 #include "TransportWindow.h"
 
@@ -38,17 +35,14 @@
 #include <MenuField.h>
 #include <PopUpMenu.h>
 #include <ScrollView.h>
-#include <StringView.h>
-#include <TextControl.h>
+//#include <StringView.h>
+#include <TextView.h>
 // Storage Kit
 #include <AppFileInfo.h>
 #include <FilePanel.h>
 #include <NodeInfo.h>
 #include <Path.h>
-#include <MidiRoster.h>
-#include <MidiProducer.h>
-#include <MidiConsumer.h>
-//debug
+
 #define TRACKLIST_NAME		"Track List"
 #define INSPECTOR_NAME		"Inspector"
 #define GRID_NAME			"Grid"
@@ -59,9 +53,10 @@
 #define ABOUT_PI_NAME		"About Plug-ins"
 
 CGlobalPrefs				gPrefs;
-char						gPlugInName[ B_FILE_NAME_LENGTH ];
+char						gPlugInName[B_FILE_NAME_LENGTH];
 
-CTrack		*CMeVApp::activeTrack;
+CTrack *
+CMeVApp::activeTrack;
 
 int main(int argc, char *argv[])
 {
@@ -127,6 +122,9 @@ class CImportRefFilter : public BRefFilter {
 	}
 };
 
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
 CMeVApp::CMeVApp()
 	:	CDocApp("application/x-vnd.BeUnited.MeV"),
 		prefs( "x-vnd.BeUnited.MeV" ),
@@ -134,23 +132,23 @@ CMeVApp::CMeVApp()
 		editSettings( prefs, "settings/edit", true ),
 		midiSettings( prefs, "settings/midi", true ),
 		vtableSettings( prefs, "settings/vtable", true ),
-		trackListState(BRect(0.0,
-							 100.0,
+		trackListState(BRect(0.0, 100.0,
 							 CTrackListWindow::DEFAULT_DIMENSIONS.Width(),
 							 CTrackListWindow::DEFAULT_DIMENSIONS.Height())),
-		inspectorState(BRect(0.0,
-							 406.0,
+		inspectorState(BRect(0.0, 406.0,
 							 CInspectorWindow::DEFAULT_DIMENSIONS.Width(),
 							 CInspectorWindow::DEFAULT_DIMENSIONS.Height())),
 		gridWinState(BRect(0.0 + CInspectorWindow::DEFAULT_DIMENSIONS.Width(),
 						   406.0 - CGridWindow::DEFAULT_DIMENSIONS.Height(),
 						   CGridWindow::DEFAULT_DIMENSIONS.Width(),
 						   CGridWindow::DEFAULT_DIMENSIONS.Height())),
-		transportState( BRect( 0.0, 406.0, Transport_Width, Transport_Height ) ),
-		midiConfigWinState( BRect( 40, 40, 500, 400 ) ),
-		appPrefsWinState( BRect( 40, 40, 500, 300 ) ),
-		aboutPluginWinState( BRect( 80, 80, 450, 250 ) )
+		transportState(BRect(0.0, 406.0, Transport_Width, Transport_Height)),
+		appPrefsWinState(BRect(40, 40, 500, 300)),
+		aboutPluginWinState(BRect(80, 80, 450, 250))
 {
+	// Check if the MIME types are installed
+	UpdateMimeDatabase();
+
 	// Iterate through all the plugins...
 	BDirectory			addOnDir( "/boot/home/config/add-ons/MeV" );
 	bool				trackListOpen = true,
@@ -158,7 +156,6 @@ CMeVApp::CMeVApp()
 						gridWindowOpen = false,
 						transportOpen = false,
 						appPrefsOpen = false,
-						midiConfigOpen = false,
 						aboutPlugOpen = false;
 
 	Event::InitTables();
@@ -167,11 +164,6 @@ CMeVApp::CMeVApp()
 	importFilter = new CImportRefFilter;
 	loopFlag = false;
 	
-	// Initialize mini-dialog windows
-	deviceAttrsWindow = NULL;
-	portAttrsWindow = NULL;
-	patchAttrsWindow = NULL;
-
 	// Initialize default global prefs
 	gPrefs.feedbackDragMask = ULONG_MAX;
 	gPrefs.feedbackAdjustMask = ULONG_MAX;
@@ -188,9 +180,6 @@ CMeVApp::CMeVApp()
 	CMidiManager *mm = CMidiManager::Instance();
 	mm->AddInternalSynth();
 	CPlayerControl::InitPlayer();
-
-	//CDestinationList *vcm;
-	//vcm = new CDestinationList();
 
 	// Load in add-ons
 	if (addOnDir.InitCheck() == B_NO_ERROR)
@@ -219,7 +208,7 @@ CMeVApp::CMeVApp()
 								(void **)&func_create ) == B_NO_ERROR)
 			{
 				pi = (func_create)();
-// 			plugInList.AddItem( pi );
+ 				plugInList.AddItem(pi);
 			}
 		}
 	}
@@ -234,7 +223,6 @@ CMeVApp::CMeVApp()
 		gridWindowOpen	= ReadWindowState( prefMessage, GRID_NAME,		  gridWinState, false );
 		transportOpen		= ReadWindowState( prefMessage, TRANSPORT_NAME, transportState, false );
 		appPrefsOpen		= ReadWindowState( prefMessage, APP_PREFS_NAME, appPrefsWinState, false );
-		midiConfigOpen	= ReadWindowState( prefMessage, MIDI_CONFIG_NAME, midiConfigWinState, false );
 		aboutPlugOpen		= ReadWindowState( prefMessage, ABOUT_PI_NAME,  aboutPluginWinState, false );
 	}
 	
@@ -272,9 +260,7 @@ CMeVApp::CMeVApp()
 	// Load in application preferences
 	if (!midiSettings.InitCheck())
 	{
-		BMessage		&prefMessage = midiSettings.GetMessage();
-		
-		SetDevicePrefs( &prefMessage );
+		// +++ what goes in here ?
 	}
 	
 		// Load default virtual channel table...
@@ -310,14 +296,16 @@ CMeVApp::CMeVApp()
 		}	
 	}
 	
-	CalcDeviceTable();
-
-	if (trackListOpen) ShowTrackList( true );
-	if (inspectorOpen) ShowInspector( true );
-	if (gridWindowOpen) ShowGridWindow( true );
-	if (transportOpen) ShowTransportWindow( true );
-	if (appPrefsOpen) ShowPrefs();
-	if (midiConfigOpen) ShowMidiConfig();
+	if (trackListOpen)
+		ShowTrackList(true);
+	if (inspectorOpen)
+		ShowInspector(true);
+	if (gridWindowOpen)
+		ShowGridWindow(true);
+	if (transportOpen)
+		ShowTransportWindow(true);
+	if (appPrefsOpen)
+		ShowPrefs();
 }
 
 CMeVApp::~CMeVApp()
@@ -360,9 +348,6 @@ CMeVApp::~CMeVApp()
 
 	if (!midiSettings.InitCheck())
 	{
-		BMessage		&prefMessage = midiSettings.GetMessage();
-
-		GetDevicePrefs( &prefMessage );
 		midiSettings.Save();
 	}
 
@@ -375,168 +360,36 @@ CMeVApp::~CMeVApp()
 
 	for (int i = 0; i < deviceList.CountItems(); i++)
 	{
-		MIDIDeviceInfo	*mdi = (MIDIDeviceInfo *)deviceList.ItemAt( i );
-
-		delete mdi;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+CTrack *
+CMeVApp::ActiveTrack()
+{
+	return activeTrack ? (CTrack *)activeTrack->Acquire() : NULL;
+}
+
+// ---------------------------------------------------------------------------
+// Operations
+
+void
+CMeVApp::WatchTrack(
+	CEventTrack *inTrack)
+{
+	CMeVApp *mApp = (CMeVApp *)be_app;
+	CAppWindow *w;
+
+	if (activeTrack == inTrack)
+		return;
 	
-	CancelEditDeviceAttrs();
-	CancelEditPortAttrs();
-	CancelEditPatchAttrs();
-
-}
-
-CDocument *CMeVApp::NewDocument( bool inShowWindow, entry_ref *inRef )
-{
-	CMeVDoc			*doc;
-
-	if (inRef)	doc = new CMeVDoc( *this, *inRef );
-	else			doc = new CMeVDoc( *this );
-	
-		// If document did not initialize OK, then fail.
-	if (!doc->InitCheck())
-	{
-		delete doc;
-		return NULL;
-	}
-
-	if (inShowWindow)
-	{
-		doc->ShowWindow(CMeVDoc::Assembly_Window);
-	}
-	return doc;
-}
-
-	/** Import a new document */
-void CMeVApp::ImportDocument()
-{
-	BFilePanel		*fp = GetImportPanel( &be_app_messenger );
-
-	fp->SetMessage( new BMessage( 'impt' ) );
-	fp->SetRefFilter( importFilter );
-	fp->Show();
-}
-
-void CMeVApp::ShowTrackList( bool inShow )
-{
-	trackListState.Lock();
-
-	if (inShow)
-	{
-		if (!trackListState.Activate())
-		{
-			CTrackListWindow *window;
-			window = new CTrackListWindow(trackListState.Rect().LeftTop(),
-										  trackListState);
-			window->Show();
-			if (activeTrack)
-			{
-				window->WatchDocument(&(activeTrack->Document()));
-			}
-		}
-	}
-	else
-	{
-		trackListState.Close();
-	}
-
-	trackListState.Unlock();
-}
-
-void CMeVApp::ShowInspector( bool inShow )
-{
-	inspectorState.Lock();
-
-	if (inShow)
-	{
-		if (!inspectorState.Activate())
-		{
-			BWindow		*w;
-		
-			w = new CInspectorWindow( inspectorState.Rect().LeftTop(), inspectorState );
-			w->Show();//zzzzzz
-		}
-	}
-	else
-	{
-		inspectorState.Close();
-	}
-	
-	inspectorState.Unlock();
-}
-
-void CMeVApp::ShowGridWindow( bool inShow )
-{
-	gridWinState.Lock();
-
-	if (inShow)
-	{
-		if (!gridWinState.Activate())
-		{
-			BWindow		*w;
-		
-			w = new CGridWindow( gridWinState.Rect().LeftTop(), gridWinState );
-			w->Show();
-		}
-	}
-	else
-	{
-		gridWinState.Close();
-	}
-	
-	gridWinState.Unlock();
-}
-
-void CMeVApp::ShowTransportWindow( bool inShow )
-{
-	transportState.Lock();
-
-	if (inShow)
-	{
-		if (!transportState.Activate())
-		{
-			BWindow		*w;
-		
-			w = new CTransportWindow( transportState.Rect().LeftTop(), transportState );
-			w->Show();
-		}
-	}
-	else
-	{
-		transportState.Close();
-	}
-	
-	transportState.Unlock();
-}
-
-void CMeVApp::ShowPrefs()
-{
-	appPrefsWinState.Lock();
-	if (!appPrefsWinState.Activate())
-	{
-		BWindow		*w;
-	
-		w = new CAppPrefsWindow( appPrefsWinState );
-		w->Show();
-	}
-	appPrefsWinState.Unlock();
-}
-
-void CMeVApp::ShowMidiConfig()
-{
-
-}
-
-void CMeVApp::WatchTrack( CEventTrack *inTrack )
-{
-	CMeVApp		*mApp = (CMeVApp *)be_app;
-	CAppWindow	*w;
-	
-	if (activeTrack == inTrack) return;
-	
-	if (activeTrack) CRefCountObject::Release( activeTrack );
+	if (activeTrack)
+		CRefCountObject::Release( activeTrack );
 	activeTrack = inTrack;
-	if (activeTrack) activeTrack->Acquire();
+	if (activeTrack)
+		activeTrack->Acquire();
 
 	mApp->trackListState.Lock();
 	w = mApp->trackListState.Window();
@@ -570,6 +423,210 @@ void CMeVApp::WatchTrack( CEventTrack *inTrack )
 	}
 	mApp->transportState.Unlock();
 }
+
+// ---------------------------------------------------------------------------
+// Device Management
+
+MIDIDeviceInfo *
+CMeVApp::LookupInstrument(
+	uint32 port,
+	uint32 hChannel) const
+{
+	if (port >= Max_MidiPorts || hChannel >= 16)
+		return NULL;
+	return deviceTable[port][hChannel];
+}
+
+// ---------------------------------------------------------------------------
+// Window Management
+
+void
+CMeVApp::ShowTrackList( bool inShow )
+{
+	trackListState.Lock();
+
+	if (inShow)
+	{
+		if (!trackListState.Activate())
+		{
+			CTrackListWindow *window;
+			window = new CTrackListWindow(trackListState.Rect().LeftTop(),
+										  trackListState);
+			window->Show();
+			if (activeTrack)
+			{
+				window->WatchDocument(&(activeTrack->Document()));
+			}
+		}
+	}
+	else
+	{
+		trackListState.Close();
+	}
+
+	trackListState.Unlock();
+}
+
+void
+CMeVApp::ShowInspector( bool inShow )
+{
+	inspectorState.Lock();
+
+	if (inShow)
+	{
+		if (!inspectorState.Activate())
+		{
+			BWindow		*w;
+		
+			w = new CInspectorWindow( inspectorState.Rect().LeftTop(), inspectorState );
+			w->Show();
+		}
+	}
+	else
+	{
+		inspectorState.Close();
+	}
+	
+	inspectorState.Unlock();
+}
+
+void
+CMeVApp::ShowGridWindow( bool inShow )
+{
+	gridWinState.Lock();
+
+	if (inShow)
+	{
+		if (!gridWinState.Activate())
+		{
+			BWindow		*w;
+		
+			w = new CGridWindow( gridWinState.Rect().LeftTop(), gridWinState );
+			w->Show();
+		}
+	}
+	else
+	{
+		gridWinState.Close();
+	}
+	
+	gridWinState.Unlock();
+}
+
+void
+CMeVApp::ShowTransportWindow( bool inShow )
+{
+	transportState.Lock();
+
+	if (inShow)
+	{
+		if (!transportState.Activate())
+		{
+			BWindow		*w;
+		
+			w = new CTransportWindow( transportState.Rect().LeftTop(), transportState );
+			w->Show();
+		}
+	}
+	else
+	{
+		transportState.Close();
+	}
+	
+	transportState.Unlock();
+}
+
+void CMeVApp::ShowPrefs()
+{
+	appPrefsWinState.Lock();
+	if (!appPrefsWinState.Activate())
+	{
+		BWindow *window = new CPreferencesWindow(appPrefsWinState);
+		window->Show();
+	}
+	appPrefsWinState.Unlock();
+}
+
+// ---------------------------------------------------------------------------
+// File Import/Export
+
+BFilePanel *
+CMeVApp::GetImportPanel(
+	BMessenger *msngr)
+{
+	if (importPanel == NULL)
+	{
+		// Create a new import panel
+		importPanel = new BFilePanel(B_OPEN_PANEL, msngr, NULL, B_FILE_NODE, false);
+	}
+	else if (importPanel->IsShowing())
+		return NULL;
+
+	importPanel->SetMessage(new BMessage(B_REFS_RECEIVED));
+	importPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Import");
+	importPanel->SetTarget(*msngr);
+	importPanel->SetRefFilter(NULL);
+	return importPanel;
+}
+
+BFilePanel *
+CMeVApp::GetExportPanel(
+	BMessenger *msngr)
+{
+	if (exportPanel == NULL)
+	{
+		// Create a new export panel
+		exportPanel = new BFilePanel(B_SAVE_PANEL, msngr, NULL, B_FILE_NODE, false );
+	}
+	else if (exportPanel->IsShowing())
+		return NULL;
+
+	exportPanel->SetButtonLabel(B_DEFAULT_BUTTON, "Export");
+	exportPanel->SetTarget(*msngr);
+	exportPanel->SetRefFilter(NULL);
+	return exportPanel;
+}
+
+void
+CMeVApp::ImportDocument()
+{
+	BFilePanel *fp = GetImportPanel(&be_app_messenger);
+
+	fp->SetMessage(new BMessage('impt'));
+	fp->SetRefFilter(importFilter);
+	fp->Show();
+}
+
+// ---------------------------------------------------------------------------
+// Operator Management
+
+void
+CMeVApp::AddDefaultOperator(
+	EventOp *inOp)
+{
+	Lock();
+
+	if (!defaultOperatorList.HasItem( inOp ))
+	{
+		inOp->Acquire();
+		defaultOperatorList.AddItem( inOp );
+	}
+	
+	Unlock();
+}
+
+EventOp *
+CMeVApp::OperatorAt(
+	int32 index)
+{
+	void		*ptr = defaultOperatorList.ItemAt( index );
+	
+	if (ptr) return (EventOp *)((EventOp *)ptr)->Acquire();
+	return NULL;
+}
+
+// ---------------------------------------------------------------------------
+// CDocApp Implementation
 
 void
 CMeVApp::AboutRequested()
@@ -613,122 +670,134 @@ CMeVApp::AboutRequested()
 	alert->Go(0);
 }
 
-void CMeVApp::MessageReceived( BMessage *inMsg )
+BFilePanel *
+CMeVApp::CreateOpenPanel()
 {
-	BWindow			*w;
-
-	switch (inMsg->what) {
-	case MENU_ABOUT_PLUGINS:
-		w = new CAboutPluginWindow( aboutPluginWinState );
-		w->Show();
-		break;
-		
-	case Player_ChangeTransportState:
+	BFilePanel		*p = CDocApp::CreateOpenPanel();
 	
-			// If there's a transport window, forward this message to it.
-		transportState.Lock();
-		w = transportState.Window();
-		if (w) w->PostMessage( inMsg );
-		transportState.Unlock();
-		break;
-		
-		// Import panel message
-	case 'impt':
+	p->SetRefFilter( filter );
+	return p;
+}
 
-		int32			refCount;
-		type_code		type;
-							
-			// For each reference
-		if (inMsg->GetInfo( "refs", &type, &refCount ) == B_NO_ERROR)
+void
+CMeVApp::MessageReceived(
+	BMessage *message)
+{
+	switch (message->what)
+	{
+		case MENU_ABOUT_PLUGINS:
 		{
-			for (int j = 0; j < refCount; j++)
+			CAboutPluginWindow *window = new CAboutPluginWindow(aboutPluginWinState);
+			window->Show();
+			break;
+		}
+		case Player_ChangeTransportState:
+		{
+			// If there's a transport window, forward this message to it.
+			transportState.Lock();
+			BWindow *window = transportState.Window();
+			if (window)
+				window->PostMessage(message);
+			transportState.Unlock();
+			break;
+		}		
+		case 'impt':
+		{
+			int32 refCount;
+			type_code type;
+			
+			// For each reference
+			if (message->GetInfo("refs", &type, &refCount) == B_NO_ERROR)
 			{
-				entry_ref	ref;
-				
-				if (inMsg->FindRef( "refs", j, &ref ) == B_NO_ERROR)
+				for (int j = 0; j < refCount; j++)
 				{
-					BList			&list = ((CMeVApp *)be_app)->importerList;
-
-						// See if there's a plug-in which can identify it...
-					for (int i = 0; i < list.CountItems(); i++)
+					entry_ref ref;
+					if (message->FindRef("refs", j, &ref) == B_NO_ERROR)
 					{
-						MeVPlugIn	*pi = (MeVPlugIn *)list.ItemAt( i );
-						int32		kind;
-						struct stat	st;
-						char			filetype[ B_MIME_TYPE_LENGTH ];
+						// See if there's a plug-in which can identify it...
+						for (int i = 0; i < importerList.CountItems(); i++)
+						{
+							MeVPlugIn *plugin = (MeVPlugIn *)importerList.ItemAt(i);
+							int32 kind;
+							struct stat	st;
+							char filetype[B_MIME_TYPE_LENGTH];
 						
-						BNode		node( &ref );
-						if (node.InitCheck() != B_NO_ERROR) continue;
+							BNode node(&ref);
+							if (node.InitCheck() != B_NO_ERROR)
+								continue;
 						
-						BNodeInfo	ni( &node );
-						if (ni.InitCheck() != B_NO_ERROR) continue;
-						if (ni.GetType( filetype ) != B_NO_ERROR) continue;
-						if (node.GetStat( &st ) != B_NO_ERROR) continue;
+							BNodeInfo ni(&node);
+							if (ni.InitCheck() != B_NO_ERROR)
+								continue;
+							if (ni.GetType(filetype) != B_NO_ERROR)
+								continue;
+							if (node.GetStat(&st) != B_NO_ERROR)
+								continue;
 						
-						kind = pi->DetectFileType( &ref, &node, &st, filetype );
-						if (kind < 0) continue;
+							kind = plugin->DetectFileType(&ref, &node, &st, 
+														  filetype);
+							if (kind < 0)
+								continue;
 
-						pi->OnImport( NULL, &ref, kind );
-						break;
+							plugin->OnImport(NULL, &ref, kind);
+							break;
+						}
 					}
 				}
 			}
+			break;
 		}
-		break;
-
-		// Export panel message
-	case 'expt':
+		case 'expt':
 		{
-			CMeVDoc 	*hDoc = NULL;
-			entry_ref 	saveRef;
-			char 		*saveName;
-			BMessage	pluginMsg;
-			MeVPlugIn	*pluginPtr;
-	
-			if (	inMsg->FindPointer( "Document" , (void **)&hDoc ) == B_NO_ERROR &&
-				inMsg->FindRef( "directory" , &saveRef ) == B_NO_ERROR &&
-				inMsg->FindString( "name" , (const char **)&saveName ) == B_NO_ERROR &&
-				inMsg->FindPointer( "plugin", (void **)&pluginPtr ) == B_NO_ERROR &&
-				inMsg->FindMessage( "msg", &pluginMsg ) == B_NO_ERROR)
+			CMeVDoc *doc = NULL;
+			entry_ref saveRef;
+			BString saveName;
+			BMessage pluginMsg;
+			MeVPlugIn *plugin;
+			if (message->FindPointer("Document" , (void **)&doc) == B_OK &&
+				message->FindRef("directory" , &saveRef) == B_OK &&
+				message->FindString("name" , &saveName) == B_OK &&
+				message->FindPointer("plugin", (void **)&plugin) == B_OK &&
+				message->FindMessage("msg", &pluginMsg) == B_OK)
 			{
-				entry_ref fileRef;
-				
-				BDirectory theDir( &saveRef );
-				BEntry theEntry( &theDir, saveName );
-				
-//				if (theEntry.GetRef( &fileRef ) == B_NO_ERROR)
-//					pluginPtr->OnExport( &pluginMsg, (int32)*hDoc, &fileRef );
+				entry_ref ref;
+				BDirectory dir(&saveRef);
+				BEntry entry(&dir, saveName.String());
+				if (entry.GetRef(&ref) == B_NO_ERROR)
+					plugin->OnExport(&pluginMsg, (int32)doc, &ref);
 			}
+			break;
 		}
-		break;
-		
-	default:
-		CDocApp::MessageReceived( inMsg );
-		break;
+		default:
+		{
+			CDocApp::MessageReceived(message);
+		}
 	}
 }
 
-	/**	Add an operator to the list of default operators. */
-void CMeVApp::AddDefaultOperator( EventOp *inOp )
+CDocument *
+CMeVApp::NewDocument(
+	bool showWindow,
+	entry_ref *ref)
 {
-	Lock();
+	CMeVDoc *doc;
 
-	if (!defaultOperatorList.HasItem( inOp ))
+	if (ref)
+		doc = new CMeVDoc(*this, *ref);
+	else
+		doc = new CMeVDoc(*this);
+
+	// If document did not initialize OK, then fail.
+	if (!doc->InitCheck())
 	{
-		inOp->Acquire();
-		defaultOperatorList.AddItem( inOp );
+		delete doc;
+		return NULL;
 	}
-	
-	Unlock();
-}
 
-	/**	Return the Nth operator (Increases reference count). */
-EventOp *CMeVApp::OperatorAt( int32 index )
-{
-	void		*ptr = defaultOperatorList.ItemAt( index );
-	
-	if (ptr) return (EventOp *)((EventOp *)ptr)->Acquire();
-	return NULL;
+	if (showWindow)
+		doc->ShowWindow(CMeVDoc::Assembly_Window);
+
+	return doc;
 }
 
 bool
@@ -747,823 +816,44 @@ CMeVApp::QuitRequested()
 		WriteWindowState(prefMessage, GRID_NAME, gridWinState );
 		WriteWindowState(prefMessage, TRANSPORT_NAME, transportState );
 		WriteWindowState(prefMessage, APP_PREFS_NAME, appPrefsWinState );
-		WriteWindowState(prefMessage, MIDI_CONFIG_NAME, midiConfigWinState );
 		WriteWindowState(prefMessage, ABOUT_PI_NAME, aboutPluginWinState );
 		winSettings.Save();
 	}
 	return true;
 }
 
-CTrack *CMeVApp::ActiveTrack()
-{
-	return activeTrack ? (CTrack *)activeTrack->Acquire() : NULL;
-}
-
-	/* Overrides file panel creation to install the filter */
-BFilePanel *CMeVApp::CreateOpenPanel()
-{
-	BFilePanel		*p = CDocApp::CreateOpenPanel();
-	
-	p->SetRefFilter( filter );
-	return p;
-}
-
-class CDeviceAttrsDialog : public CMiniDialog {
-	CSpinner		*lcSpinner,
-				*hcSpinner,
-				*bcSpinner;
-	BTextControl	*name;
-	CTextDisplay	*chRange,
-				*baseDisp;
-	MIDIDeviceInfo *info;
-	char			rangeText[ 16 ],
-				baseText[ 16 ];
-	int32		portNum;
-				
-	void ShowChannels();
-	void MessageReceived( BMessage* theMessage );
-	bool QuitRequested()
-	{
-		((CMeVApp *)be_app)->deviceAttrsWindow = NULL;
-		return true;
-	}
-
-public:
-	CDeviceAttrsDialog( BWindow *parent );
-	void SetDevice( MIDIDeviceInfo *info, int32 inPortNum );
-};
-
-CDeviceAttrsDialog::CDeviceAttrsDialog( BWindow *parent )
-	: CMiniDialog( 300, 76, parent, "MIDI Instrument Attributes" )
-{
-		// Create text strings:
-
-		//	Device name
-	background->AddChild( new BStringView( BRect( 8, 1, 150, 16 ), "", "Instrument Name" ) );
-
-		//	Device name edit box
-	name = new BTextControl( BRect( 6, 20, 150, 40 ), "Name", "", "", new BMessage( 'name' ),
-		B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW );
-	background->AddChild( name );
-	name->SetTarget( this );
-	name->SetViewColor( 220, 220, 220 );
-	name->SetDivider( 0.0 );
-	name->MakeFocus();
-
-		//	Low Channel Text
-	background->AddChild( new BStringView( BRect( 160, 1, 246, 16 ), "", "Channel Range" ) );
-
-		//	Low Channel (Spinner)
-	lcSpinner = new CSpinner( BRect( 160, 20, 176, 40 ), "Low", new BMessage( 'lchn' ) );
-	lcSpinner->SetRange( 0, 15 );
-	background->AddChild( lcSpinner );
-//	lcSpinner->SetTarget( this );
-
-	chRange = new CTextDisplay( BRect( 180, 20, 220, 40 ), "Channels" );
-	chRange->SetAlignment( B_ALIGN_CENTER );
-	background->AddChild( chRange );
-
-		//	High Channel Text
-		//	High Channel (Spinner)
-	hcSpinner = new CSpinner( BRect( 224, 20, 240, 40 ), "Low", new BMessage( 'hchn' ) );
-	hcSpinner->SetRange( 0, 15 );
-	background->AddChild( hcSpinner );
-//	hcSpinner->SetTarget( this );
-
-		//	Base Channel Text
-	background->AddChild( new BStringView( BRect( 250, 1, 296, 16 ), "", "Base Ch." ) );
-
-	baseDisp = new CTextDisplay( BRect( 250, 20, 270, 40 ), "BaseDisp" );
-	baseDisp->SetAlignment( B_ALIGN_CENTER );
-	background->AddChild( baseDisp );
-
-		//	Base Channel (Spinner)
-	bcSpinner = new CSpinner( BRect( 274, 20, 290, 40 ), "Base", new BMessage( 'bchn' ) );
-	bcSpinner->SetRange( 0, 15 );
-	background->AddChild( bcSpinner );
-//	bcSpinner->SetTarget( this );
-}
-
-void CDeviceAttrsDialog::ShowChannels()
-{
-	sprintf( rangeText, "%ld - %ld", lcSpinner->Value() + 1, hcSpinner->Value() + 1 );
-	chRange->SetText( rangeText );
-
-	sprintf( baseText, "%ld", bcSpinner->Value() + 1 );
-	baseDisp->SetText( baseText );
-}
-
-void CDeviceAttrsDialog::SetDevice( MIDIDeviceInfo *inInfo, int32 inPortNum )
-{
-	info = inInfo;
-	
-	portNum = inPortNum;
-
-	if (info)
-	{
-		name->SetText( info->name );
-		lcSpinner->SetValue( info->lowChannel );
-		hcSpinner->SetValue( info->highChannel );
-		bcSpinner->SetValue( info->baseChannel );
-	}
-	else
-	{
-		name->SetText( "" );
-		lcSpinner->SetValue( 0 );
-		hcSpinner->SetValue( 0 );
-		bcSpinner->SetValue( 0 );
-	}
-	
-	ShowChannels();
-}
-
-void CDeviceAttrsDialog::MessageReceived( BMessage* theMessage )
-{
-	CMeVApp *app = (CMeVApp *)be_app;
-
-	switch(theMessage->what) {
-	case 'lchn':
-	case 'hchn':
-		if (hcSpinner->Value() < lcSpinner->Value()) hcSpinner->SetValue( lcSpinner->Value() );
-		ShowChannels();
-		break;
-	
-	case 'bchn':
-		ShowChannels();
-		break;
-		
-	case Apply_ID:
-
-#if 0
-		app->appPrefsWinState.Lock();
-		if (app->appPrefsWinState.Window() != NULL)
-		{
-			BMessage		msg( 'chdv' );
-			
-			msg.AddPointer( "device", info );
-			msg.AddString( "name", name->Text() );
-			msg.AddInt8( "low", lcSpinner->Value() );
-			msg.AddInt8( "high", hcSpinner->Value() );
-			msg.AddInt8( "base", bcSpinner->Value() );
-			msg.AddInt8( "port", portNum );
-		
-			app->appPrefsWinState.Window()->PostMessage( &msg );
-		}
-		app->appPrefsWinState.Unlock();
-#else
-		app->midiConfigWinState.Lock();
-		if (app->midiConfigWinState.Window() != NULL)
-		{
-			BMessage		msg( 'chdv' );
-			
-			msg.AddPointer( "device", info );
-			msg.AddString( "name", name->Text() );
-			msg.AddInt8( "low", lcSpinner->Value() );
-			msg.AddInt8( "high", hcSpinner->Value() );
-			msg.AddInt8( "base", bcSpinner->Value() );
-			msg.AddInt8( "port", portNum );
-		
-			app->midiConfigWinState.Window()->PostMessage( &msg );
-		}
-		app->midiConfigWinState.Unlock();
-#endif
-
-		// REM: Notify prefs window to rebuild it's list.
-
-		PostMessage( B_QUIT_REQUESTED );
-		break;
-
-	case Close_ID:
-		PostMessage( B_QUIT_REQUESTED );
-		break;
-
-	default:
-		CMiniDialog::MessageReceived( theMessage );
-		break;
-	}		
-}
-
-void CMeVApp::EditDeviceAttrs( MIDIDeviceInfo *inDevInfo, int32 inPortNum )
-{
-		//	Open device attrs window...
-	if (deviceAttrsWindow == NULL)
-	{
-#if 0
-		appPrefsWinState.Lock();
-		if (appPrefsWinState.Window() != NULL)
-		{
-			deviceAttrsWindow = new CDeviceAttrsDialog( appPrefsWinState.Window() );
-		}
-		appPrefsWinState.Unlock();
-#else
-		midiConfigWinState.Lock();
-		if (midiConfigWinState.Window() != NULL)
-		{
-			deviceAttrsWindow = new CDeviceAttrsDialog( midiConfigWinState.Window() );
-		}
-		midiConfigWinState.Unlock();
-#endif
-
-	}
-	
-	((CDeviceAttrsDialog *)deviceAttrsWindow)->SetDevice( inDevInfo, inPortNum );
-	deviceAttrsWindow->Show();
-}
-
-void CMeVApp::CancelEditDeviceAttrs()
-{
-	if (deviceAttrsWindow) deviceAttrsWindow->Quit();
-	deviceAttrsWindow = NULL;
-}
-
-
-void CMeVApp::EditPortAttrs( int32 inPortIndex )
-{
-	if (portAttrsWindow == NULL)
-	{
-#if 0
-		appPrefsWinState.Lock();
-		if (appPrefsWinState.Window() != NULL)
-		{
-			portAttrsWindow = new CPortAttrsDialog( appPrefsWinState.Window() );
-		}
-		appPrefsWinState.Unlock();
-#else
-		midiConfigWinState.Lock();
-		if (midiConfigWinState.Window() != NULL)
-		{
-			//portAttrsWindow = new CPortAttrsDialog( midiConfigWinState.Window() );
-		}
-		midiConfigWinState.Unlock();
-#endif
-	}
-
-	//((CPortAttrsDialog *)portAttrsWindow)->SetPort( inPortIndex );
-	portAttrsWindow->Show();
-}
-
-void CMeVApp::CancelEditPortAttrs()
-{
-	if (portAttrsWindow) portAttrsWindow->Quit();
-	portAttrsWindow = NULL;
-}
-
-class CPatchAttrsDialog : public CMiniDialog {
-	MIDIDeviceInfo	*mdi;
-	BTextControl		*description,
-					*bankString,
-					*indexString;
-
-	void MessageReceived( BMessage* theMessage );
-	bool QuitRequested()
-	{
-		((CMeVApp *)be_app)->patchAttrsWindow = NULL;
-		return true;
-	}
-
-public:
-	CPatchAttrsDialog( BWindow *parent );
-	void SetPatch( MIDIDeviceInfo *mdi );
-};
-
-CPatchAttrsDialog::CPatchAttrsDialog( BWindow *parent )
-	: CMiniDialog( 300, 76, parent, "Program Attributes" )
-{
-		//	names
-	background->AddChild( new BStringView( BRect( 8, 1, 40, 16 ), "", "Bank" ) );
-	background->AddChild( new BStringView( BRect( 40, 1, 72, 16 ), "", "#" ) );
-	background->AddChild( new BStringView( BRect( 80, 1, 300, 16 ), "", "Program Name" ) );
-
-		//	Patch description
-	bankString = new BTextControl( BRect( 6, 20, 40, 40 ), "Bank", "", "", new BMessage( 'desc' ),
-		B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW | B_NAVIGABLE );
-	background->AddChild( bankString );
-	bankString->SetTarget( this );
-	bankString->SetViewColor( 220, 220, 220 );
-	bankString->SetDivider( 0.0 );
-	bankString->MakeFocus();
-	bankString->SetText( "0" );
-
-		//	Patch description
-	indexString = new BTextControl( BRect( 38, 20, 72, 40 ), "Description", "", "", new BMessage( 'desc' ),
-		B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW | B_NAVIGABLE );
-	background->AddChild( indexString );
-	indexString->SetTarget( this );
-	indexString->SetViewColor( 220, 220, 220 );
-	indexString->SetDivider( 0.0 );
-	indexString->SetText( "0" );
-	
-		// Allow only numbers...
-/*	for (int i = 0; i < 256; i++)
-	{
-		if (i < '0' || i > '9')
-		{
-			bankString->DisallowChar( i );
-			indexString->DisallowChar( i );
-		}
-	} */
-
-		//	Patch description
-	description = new BTextControl( BRect( 78, 20, 294, 40 ), "Description", "", "", new BMessage( 'desc' ),
-		B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW | B_NAVIGABLE );
-	background->AddChild( description );
-	description->SetTarget( this );
-	description->SetViewColor( 220, 220, 220 );
-	description->SetDivider( 0.0 );
-}
-
-void CPatchAttrsDialog::SetPatch( MIDIDeviceInfo *inMDI )
-{
-	mdi = inMDI;
-}
-
-void CPatchAttrsDialog::MessageReceived( BMessage* theMessage )
-{
-	CMeVApp *app = (CMeVApp *)be_app;
-
-	switch(theMessage->what) {
-		case Apply_ID: {
-			int32		bankNum = strtol( bankString->Text(), NULL, 0 ),
-						patchNum = strtol( indexString->Text(), NULL, 0 );
-	
-			if (mdi->GetPatch( bankNum, patchNum ))
-			{
-				CDocApp::Error( "That MIDI program is already defined." );
-				break;
-			}
-	
-			app->midiConfigWinState.Lock();
-			if (app->midiConfigWinState.Window() != NULL)
-			{
-				BMessage		msg( 'chpg' );
-				
-				msg.AddInt32( "index", patchNum );
-				msg.AddInt32( "bank", bankNum );
-				msg.AddString( "description", description->Text() );
-			
-				app->midiConfigWinState.Window()->PostMessage( &msg );
-			}
-			app->midiConfigWinState.Unlock();
-			
-			PostMessage( B_QUIT_REQUESTED );
-			break;
-		}	
-		case Close_ID: {
-			PostMessage( B_QUIT_REQUESTED );
-			break;
-		}
-		default: {
-			CMiniDialog::MessageReceived( theMessage );
-			break;
-		}
-	}
-}
-
-void CMeVApp::EditPatchAttrs( MIDIDeviceInfo *mdi )
-{
-	if (patchAttrsWindow == NULL)
-	{
-		midiConfigWinState.Lock();
-		if (midiConfigWinState.Window() != NULL)
-		{
-			patchAttrsWindow = new CPatchAttrsDialog( midiConfigWinState.Window() );
-		}
-		midiConfigWinState.Unlock();
-	}
-	else patchAttrsWindow->Activate();
-
-	((CPatchAttrsDialog *)patchAttrsWindow)->SetPatch( mdi );
-	patchAttrsWindow->Show();
-}
-
-void CMeVApp::CancelEditPatchAttrs()
-{
-	if (patchAttrsWindow) patchAttrsWindow->Quit();
-	patchAttrsWindow = NULL;
-}
-
-	/** Add a new MIDI device to the device table. */
-MIDIDeviceInfo *CMeVApp::NewDevice()
-{
-	MIDIDeviceInfo		*info = new MIDIDeviceInfo;
-	
-	deviceList.AddItem( info );
-	return info;
-}
-
-	/** Delete a MIDI device from the device table. */
-void CMeVApp::DeleteDevice( MIDIDeviceInfo *inDevInfo )
-{
-	if (deviceList.RemoveItem( inDevInfo )) delete inDevInfo;
-}
-
-void CMeVApp::CalcDeviceTable()
-{
-	for (uint32 i = 0; i < Max_MidiPorts; i++)
-	{
-		for (uint32 j = 0; j < 16; j++)
-		{
-			deviceTable[ i ][ j ] = NULL;
-		}
-	}
-
-	for (int i = 0; i < deviceList.CountItems(); i++)
-	{
-		MIDIDeviceInfo	*mdi = DeviceAt( i );
-		
-		for (int j = mdi->lowChannel; j <= mdi->highChannel; j++)
-		{
-			if (j < 0) continue;
-			if (j > 15) break;
-			
-			deviceTable[ mdi->portNum ][ j ] = mdi;
-		}
-	}
-	
-	// REM: We'll want to kick off any observers that are looking at VChannels...
-}
-
-void CMeVApp::GetDevicePrefs( BMessage *msg )
-{
-	msg->RemoveName( "portDescription" );
-	msg->RemoveName( "portDevice" );
-
-//	for (uint32 i = 0; i < Max_MidiPorts; i++)
-//	{
-//		if (CPlayerControl::PortName( i ))
-//			msg->AddString( "portDescription", CPlayerControl::PortName( i ) );
-//		else msg->AddString( "portDescription", "" );
-
-		//if (CPlayerControl::PortDevice( i ))
-		//	msg->AddString( "portDevice", CPlayerControl::PortDevice( i ) );
-//		else msg->AddString( "portDevice", "" );
-//	}
-	
-	msg->RemoveName( "instrumentName" );
-	msg->RemoveName( "instrumentPort" );
-	msg->RemoveName( "instrumentLowChannel" );
-	msg->RemoveName( "instrumentHighChannel" );
-	msg->RemoveName( "instrumentBaseChannel" );
-
-	for (int32 i = 0; i < deviceList.CountItems(); i++)
-	{
-		MIDIDeviceInfo	*mdi = DeviceAt( i );
-		
-		msg->AddString( "instrumentName", mdi->name );
-		msg->AddInt8( "instrumentPort", mdi->portNum );
-		msg->AddInt8( "instrumentLowChannel", mdi->lowChannel );
-		msg->AddInt8( "instrumentHighChannel", mdi->highChannel );
-		msg->AddInt8( "instrumentBaseChannel", mdi->baseChannel );
-		
-		char				patchNameTag[ 32 ],
-						patchIndexTag[ 32 ],
-						patchBankTag[ 32 ];
-						
-		sprintf( patchNameTag, "patchName.%ld", i );
-		sprintf( patchIndexTag, "patchIndex.%ld", i );
-		sprintf( patchBankTag, "patchBank.%ld", i );
-
-		msg->RemoveName( patchNameTag );
-		msg->RemoveName( patchIndexTag );
-		msg->RemoveName( patchBankTag );
-
-		CDictionary<uint32,PatchInfo>::Iterator	iter( mdi->patches );
-		uint32			*key;
-	
-			// Save all patch banks to prefs file.
-		for (key = iter.First(); key; key = iter.Next())
-		{
-			PatchInfo		*pi = iter.Value();
-			msg->AddString( patchNameTag, pi->Name() );
-			msg->AddInt8( patchIndexTag, *key & 0x7f );
-			msg->AddInt16( patchBankTag, *key >> 7 );
-		}
-	}
-}
-
-#if 1
-
-char *internalNames[ 128 ] = {
-	"Acoustic Grand",
-	"Bright Grand",
-	"Electric Grand",
-	"Honky Tonk",
-	"Electric Piano 1",
-	"Electric Piano 2",
-	"Harpsichord",
-	"Clavichord",
-	"Celesta",
-	"Glockenspiel",
-	"Music Box",
-	"Vibraphone",
-	"Marimba",
-	"Xylophone",
-	"Tubular Bells",
-	"Dulcimer",
-	"Drawbar Organ",
-	"Percussive Organ",
-	"Rock Organ",
-	"Church Organ",
-	"Reed Organ",
-	"Accordian",
-	"Harmonica",
-	"Tango Accordian",
-	
-	  /* Guitars */
-	"Acoustic Guitar Nylon",
- 	"Acoustic Guitar Steel",
- 	"Electric Guitar Jazz",
- 	"Electric Guitar Clean",
- 	"Electric Guitar Muted",
- 	"Overdriven Guitar",
- 	"Distortion Guitar",
- 	"Guitar Harmonics",
-  
-	  /* Basses */
- 	"Acoustic Bass",
- 	"Electric Bass Finger",
- 	"Electric Bass Pick",
- 	"Fretless Bass",
- 	"Slap Bass 1",
- 	"Slap Bass 2",
- 	"Synth Bass 1",
- 	"Synth Bass 2",
-
-	  /* Strings */
- 	"Violin",
- 	"Viola",
- 	"Cello",
- 	"Contrabass",
- 	"Tremolo StringS",
- 	"Pissicato StringS",
- 	"Orchestral StringS",
- 	"Timpani",
-
-	  /* Ensemble strings and voices */
- 	"String Ensemble 1",
- 	"String Ensemble 2",
- 	"Synth StringS 1",
- 	"Synth StringS 2",
- 	"Voice Aah",
- 	"Voice Ooh",
- 	"Synth Voice",
- 	"Orchestra Hit",
-
-	  /* Brass */
- 	"Trumpet",
- 	"Trombone",
- 	"Tuba",
- 	"Muted Trumpet",
- 	"French Horn",
- 	"Brass Section",
- 	"Synth Brass 1",
- 	"Synth Brass 2",
-
-	  /* Reeds */
- 	"Soprano Sax",
- 	"Alto Sax",
- 	"Tenor Sax",
- 	"Baritone Sax",
- 	"Oboe",
- 	"English Horn",
- 	"Bassoon",
- 	"Clarinet",
-
-	  /* Pipes */
- 	"Piccolo",
- 	"Flute",
- 	"Recorder",
- 	"Pan Flute",
- 	"Blown Bottle",
- 	"Shakuhachi",
- 	"Whistle",
- 	"Ocarina",
-
-	  /* Synth Leads*/
- 	"Square Wave",
- 	"Sawtooth Wave",
- 	"Calliope",
- 	"Chiff",
- 	"Charang",
- 	"Voice",
- 	"Fifths",
- 	"Bass Lead",
-  
-	  /* Synth Pads */
- 	"New Age",
- 	"Warm",
- 	"Polysynth",
- 	"Choir",
- 	"Bowed",
- 	"Metallic",
- 	"Halo",
- 	"Sweep",
-
-	  /* Effects */
- 	"FX 1",
- 	"FX 2",
- 	"FX 3",
- 	"FX 4",
- 	"FX 5",
- 	"FX 6",
- 	"FX 7",
- 	"FX 8",
-
-  /* Ethnic */
- 	"Sitar",
- 	"Banjo",
- 	"Shamisen",
- 	"Koto",
- 	"Kalimba",
- 	"Bagpipe",
- 	"Fiddle",
- 	"Shanai",
-
-  /* Percussion */
- 	"Tinkle Bell",
- 	"Agogo",
- 	"Steel Drums",
- 	"Woodblock",
- 	"Taiko Drums",
- 	"Melodic Tom",
- 	"Synth Drum",
- 	"Reverse Cymbal",
-
-  /* Sound Effects */
- 	"Fret Noise",
- 	"Breath Noise",
- 	"Seashore",
- 	"Bird Tweet",
- 	"Telephone",
- 	"Helicopter",
- 	"Applause",
- 	"Gunshot"
-};
-
-#endif
-
-
-void CMeVApp::SetDevicePrefs( BMessage *msg )
-{
-	int32		count;
-	type_code	type;
-
-		// Delete the list of devices...
-	for (int i = 0; i < deviceList.CountItems(); i++)
-	{
-		MIDIDeviceInfo	*mdi = (MIDIDeviceInfo *)deviceList.ItemAt( i );
-		
-		delete mdi;
-	}
-	deviceList.MakeEmpty();
-
-	if (msg->GetInfo( "portDevice", &type, &count ) == B_NO_ERROR)
-	{
-		char		*description,
-				*device;
-	
-		for (uint32 i = 0; i < Max_MidiPorts; i++)
-		{
-			if (	msg->FindString( "portDevice", i, (const char **)&device ) == B_NO_ERROR
-				&& msg->FindString( "portDescription", i, (const char **)&description ) == B_NO_ERROR)
-			{
-				//CPlayerControl::SetPortDevice( i, device );
-				//CPlayerControl::SetPortName( i, description );
-			}
-			else
-			{
-				//CPlayerControl::SetPortDevice( i, NULL );
-				//CPlayerControl::SetPortName( i, "" );
-			}
-		}
-	}
-	else
-	{
-	// Create a default MIDI instrument in case preferences loading went awry.
-			
-		//MIDIDeviceInfo	*mdi = NewDevice();
-		//mdi->SetPort( 0 );
-		//mdi->SetName( "Internal Voices" );
-		//mdi->SetChannels( 0, 15, 0 );
-		
-#if 1
-			// Create test patches for the internal voice instrument.
-		//for (int i = 0; i < 128; i++)
-		//	mdi->SetPatchName( 0, i, internalNames[ i ] );
-#endif
-
-		
-	}
-	if (msg->GetInfo( "instrumentName", &type, &count ) == B_NO_ERROR)
-	{
-		for (int32 i = 0; i < count; i++)
-		{
-			char		*name;
-					
-			if (msg->FindString( "instrumentName", i, (const char **)&name ) == B_NO_ERROR)
-			{
-				MIDIDeviceInfo	*mdi = NewDevice();
-				int8				port = 0,
-								lowChannel = 0,
-								highChannel = 0,
-								baseChannel = 0;
-//				char				patchListName[ 32 ];
-				int32			patchCount;
-								
-				mdi->SetName( name );
-
-				if (msg->FindInt8( "instrumentPort", i, &port ) == B_NO_ERROR)
-					mdi->SetPort( port );
-
-				if (	msg->FindInt8( "instrumentLowChannel", i, &lowChannel ) == B_NO_ERROR
-					&& msg->FindInt8( "instrumentHighChannel", i, &highChannel ) == B_NO_ERROR
-					&& msg->FindInt8( "instrumentBaseChannel", i, &baseChannel ) == B_NO_ERROR)
-				{
-					mdi->SetChannels( lowChannel, highChannel, baseChannel );
-				}
-				
-				char				patchNameTag[ 32 ],
-								patchIndexTag[ 32 ],
-								patchBankTag[ 32 ];
-						
-				sprintf( patchNameTag, "patchName.%ld", i );
-				sprintf( patchIndexTag, "patchIndex.%ld", i );
-				sprintf( patchBankTag, "patchBank.%ld", i );
-				
-				mdi->patches.MakeEmpty();
-
-				if (msg->GetInfo( patchNameTag, &type, &patchCount ) == B_NO_ERROR)
-				{
-					for (int j = 0; j < patchCount; j++)
-					{
-						char		*patchName;
-						int8		patchIndex;
-						int16	patchBank;
-
-						if (msg->FindString( patchNameTag, j, (const char **)&patchName ) == B_NO_ERROR
-							&& msg->FindInt8( patchIndexTag, j, &patchIndex ) == B_NO_ERROR
-							&& msg->FindInt16( patchBankTag, j, &patchBank ) == B_NO_ERROR)
-						{
-							mdi->SetPatchName( patchBank, patchIndex, patchName );
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	CalcDeviceTable();
-}
-
-BFilePanel *CMeVApp::GetImportPanel( BMessenger *msngr )
-{
-	if (importPanel == NULL)
-	{
-			// Create a new import panel
-		importPanel = new BFilePanel(	B_OPEN_PANEL, msngr, NULL, B_FILE_NODE, false );
-	}
-	else if (importPanel->IsShowing()) return NULL;
-	
-	importPanel->SetMessage( new BMessage( B_REFS_RECEIVED ) );
-	importPanel->SetButtonLabel( B_DEFAULT_BUTTON, "Import" );
-	importPanel->SetTarget( *msngr );
-	importPanel->SetRefFilter( NULL );
-	return importPanel;
-}
-
-BFilePanel *CMeVApp::GetExportPanel( BMessenger *msngr )
-{
-	if (exportPanel == NULL)
-	{
-		// Create a new export panel
-		exportPanel = new BFilePanel(B_SAVE_PANEL, msngr, NULL, B_FILE_NODE, false );
-	}
-	else if (exportPanel->IsShowing()) return NULL;
-	
-	exportPanel->SetButtonLabel( B_DEFAULT_BUTTON, "Export" );
-	exportPanel->SetTarget( *msngr );
-	exportPanel->SetRefFilter( NULL );
-	return exportPanel;
-}
-
-
-
-void CMeVApp::BuildExportMenu( BMenu *inMenu )
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CMeVApp::BuildExportMenu(
+	BMenu *menu)
 {
 	for (int i = 0; i < exporterList.CountItems(); i++)
 	{
-		ExportInfo	*ei = (ExportInfo *)exporterList.ItemAt( i );
-		BMessage		*msg = new BMessage( MENU_EXPORT );
-		
-		msg->AddPointer( "plugin", ei->plugIn );
-		msg->AddMessage( "msg", ei->msg );
+		ExportInfo *ei = (ExportInfo *)exporterList.ItemAt(i);
+		BMessage *msg = new BMessage(MENU_EXPORT);
 
-		inMenu->AddItem( new BMenuItem( ei->menuText, msg ) );
+		msg->AddPointer("plugin", ei->plugIn);
+		msg->AddMessage("msg", ei->msg);
+
+		menu->AddItem(new BMenuItem(ei->menuText, msg));
 	}
 }
 
-CAboutPluginWindow::CAboutPluginWindow( CWindowState &inState )
-	: CAppWindow( inState, inState.Rect(), "About MeV Plug-Ins", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE )
+void
+CMeVApp::UpdateMimeDatabase()
+{
+	BMimeType *docType = CMeVDoc::MimeType();
+	if (!docType->IsInstalled())
+		docType->Install();
+
+	delete docType;
+}
+
+CAboutPluginWindow::CAboutPluginWindow(
+	CWindowState &inState)
+	:	CAppWindow(inState, inState.Rect(), "About MeV Plug-Ins", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE)
 {
 	BRect		r( Frame() );
 	BView		*background;

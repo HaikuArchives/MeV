@@ -54,13 +54,14 @@
 #include "DynamicMenu.h"
 #include "Preferences.h"
 #include "Destination.h"
-#include "MeV.h"
 
 class CDocWindow;
 class CStripFrameView;
 class CScroller;
 class CStripView;
 class CInspectorWindow;
+class MIDIDeviceInfo;
+class CTrack;
 class CTrackListWindow;
 class CTransportWindow;
 class CGridWindow;
@@ -70,14 +71,10 @@ class EventOp;
 const float		Transport_Width = 277.0,
 				Transport_Height = 64.0;
 
-// ---------------------------------------------------------------------------
-// The main application class
-
-class CTrack;
-class MIDIDeviceInfo;
-
-class CMeVApp : public CDocApp {
-	
+class CMeVApp
+	:	public CDocApp
+{
+	// +++ far too many friends here !!!
 	friend class CInspectorWindow;
 	friend class CAboutPluginWindow;
 	friend class MeVPlugIn;
@@ -96,177 +93,182 @@ class CMeVApp : public CDocApp {
 		char				*menuText;
 	};
 
-	Preferences			prefs;
-	PreferenceSet 		winSettings,
-				 		editSettings,
-				 		midiSettings,
-				 		vtableSettings;
+public:							// Constructor/Destructor
 
-	CWindowState		trackListState,
-						inspectorState,
-						gridWinState,
-						transportState,
-						midiConfigWinState,
-						appPrefsWinState,
-						aboutPluginWinState;
-	BWindow				*deviceAttrsWindow,
-						*portAttrsWindow,
-						*patchAttrsWindow;
-	BList					plugInList;
-	BList					defaultOperatorList;
-	BList					deviceList;
-	BList					patchList;
-	m_destlist			defaultVCTable;
+								CMeVApp();
 
-		// Menu lists for plug-ins
-	CDynamicMenuDef		assemWindowPlugIns,
-						trackWindowPlugIns,
-						operWindowPlugIns;
-	BList					importerList,
-						exporterList;
-						
-	void MessageReceived( BMessage *inMsg );
-	void AboutRequested();
-	bool QuitRequested();
+								~CMeVApp();
 
-	BFilePanel			*exportPanel,
-						*importPanel;
-	
-	static CTrack			*activeTrack;
-	BRefFilter				*filter;
-	BRefFilter				*importFilter;
-	bool					loopFlag;			// Turn looping on/off
-	
-	MIDIDeviceInfo	*deviceTable[ 16 ][ 16 ];
+public:							// Accessors
 
-public:
-		/**	Constructor. */
-	CMeVApp();
-	~CMeVApp();
-	
-		/**	Create a new document. */
-	CDocument *NewDocument( bool inShowWindow = true, entry_ref *inRef = NULL );
-	
-		/** Import a new document */
-	void ImportDocument();
+	/**	Return pointer to active track. */
+	static CTrack *				ActiveTrack();
 
-		/** return the address of the tracks list window. */
-	CTrackListWindow *TrackList() { return (CTrackListWindow *)trackListState.Window(); }
+	/**	Get/set the state of the "loop" flag. */
+	bool						GetLoopFlag()
+								{ return loopFlag; }
+	void						SetLoopFlag(
+									bool loop)
+								{ loopFlag = loop; }
+	
+public:							// Operations
 
-		/**	Show or hide the tracks list window. */
-	void ShowTrackList( bool inShow );
+	/**	Tell the inspector to watch the current event on this track. */
+	static void					WatchTrack(
+									CEventTrack *track);
 	
-		/**	Return the address of the inspector window. */
-	CInspectorWindow *Inspector() { return (CInspectorWindow *)inspectorState.Window(); }
-	
-		/**	Show or hide the inspector window. */
-	void ShowInspector( bool inShow );
-	
-		/**	Return the address of the grid snap window. */
-	CGridWindow *GridWindow() { return (CGridWindow *)gridWinState.Window(); }
-	
-		/**	Show or hide the grid snap window. */
-	void ShowGridWindow( bool inShow );
-	
-		/**	Return the address of the transport window. */
-	CTransportWindow *TransportWindow() { return (CTransportWindow *)transportState.Window(); }
-	
-		/**	Show or hide the transport window. */
-	void ShowTransportWindow( bool inShow );
-	
-		/**	Show the application preferences window. */
-	void ShowPrefs();
-	
-		/**	Show the MIDI Configuration window */
-	void ShowMidiConfig();
+public:							// Device Management
 
-		/**	Tell the inspector to watch the current event on this track. */
-	static void WatchTrack( CEventTrack *inTrack );
+	/** Returns the number of devices in the instrument table. */
+	int32						CountDevices() const
+								{ return deviceList.CountItems(); }
 	
-		/**	Add an operator to the list of default operators. */
-	void AddDefaultOperator( EventOp *inOp );
+	/** Return information about the Nth MIDI device */
+	MIDIDeviceInfo *			DeviceAt(
+									int32 index) const
+								{ return (MIDIDeviceInfo *)deviceList.ItemAt(index); }
 
-		/**	Return the number of operators. */
-	int32 CountOperators() { return defaultOperatorList.CountItems(); }
-	
-		/**	Return the Nth operator (Increases reference count). */
-	EventOp *OperatorAt( int32 index );
-	
-		/**	Return the Nth operator (Increases reference count). */
-	int32 IndexOfOperator( EventOp *op ) { return defaultOperatorList.IndexOf( op ); }
-	
-		/**	Return pointer to active track. */
-	static CTrack *ActiveTrack();
+	/** Return the MIDI device associated with this port and channel */
+	MIDIDeviceInfo *			LookupInstrument(
+									uint32 port,
+									uint32 hChannel) const;
 
-		/** Overrides file panel creation to install the filter */
-	virtual BFilePanel *CreateOpenPanel();
-	
-		/** Returns the number of devices in the instrument table. */
-	int32 CountDevices() { return deviceList.CountItems(); }
-	
-		/** Return information about the Nth MIDI device */
-	MIDIDeviceInfo *DeviceAt( int32 index )
-	{	
-		return (MIDIDeviceInfo *)deviceList.ItemAt( index );
-	}
+	/** Add a new MIDI device to the device table. */
+	MIDIDeviceInfo *			NewDevice();
 
-		/** Add a new MIDI device to the device table. */
-	MIDIDeviceInfo *NewDevice();
+public:							// Operator Management
 
-		/** Delete a MIDI device from the device table. */
-	void DeleteDevice( MIDIDeviceInfo *inDevInfo );
+	/**	Add an operator to the list of default operators. */
+	void						AddDefaultOperator(
+									EventOp *inOp);
+
+	/**	Return the number of operators. */
+	int32						CountOperators() const
+								{ return defaultOperatorList.CountItems(); }
 	
-		/** Open a device attrs window. */
-	void EditDeviceAttrs( MIDIDeviceInfo *inDevInfo, int32 inPortNum );
-
-		/** Cancel the device attrs window. */
-	void CancelEditDeviceAttrs();
-
-		/** Open a port attrs window. */
-	void EditPortAttrs( int32 inPortIndex );
-
-		/** Cancel the port attrs window. */
-	void CancelEditPortAttrs();
+	/**	Return the Nth operator (Increases reference count). */
+	EventOp *					OperatorAt(
+									int32 index);
 	
-		/** Open a patch attrs window. */
-	void EditPatchAttrs( MIDIDeviceInfo *inDevice );
+	/**	Return the Nth operator (Increases reference count). */
+	int32						IndexOfOperator(
+									EventOp *op)
+								{ return defaultOperatorList.IndexOf(op); }
 
-		/** Cancel the patch attrs window. */
-	void CancelEditPatchAttrs();
-	
-		/** Return the MIDI device associated with this port and channel */
-	MIDIDeviceInfo *LookupInstrument( uint32 port, uint32 hChannel )
-	{
-		if (port >= Max_MidiPorts || hChannel >= 16) return NULL;
-		return deviceTable[ port ][ hChannel ];
-	}
-	
-		/** Rebuild the device table */
-	void CalcDeviceTable();
-	
-		/* Encode device preference information into a BMessage. (Memento) */
-	void GetDevicePrefs( BMessage *msg );
+public:							// Window Management
 
-		/* Decode device preference information from a BMessage. (Memento) */
-	void SetDevicePrefs( BMessage *msg );
+	/** return the address of the tracks list window. */
+	CTrackListWindow *			TrackList() const
+								{ return (CTrackListWindow *)trackListState.Window(); }
 
-		/** Creates a file panel for import operations. */
-	BFilePanel *GetImportPanel( BMessenger *msngr );
+	/**	Show or hide the tracks list window. */
+	void						ShowTrackList(
+									bool show);
 
-		/** Creates a file panel for export operations. */
-	BFilePanel *GetExportPanel( BMessenger *msngr );
+	/**	Return the address of the inspector window. */
+	CInspectorWindow *			Inspector() const
+								{ return (CInspectorWindow *)inspectorState.Window(); }
 
-		/**	Get the state of the "loop" flag. */
-	bool GetLoopFlag() { return loopFlag; }
+	/**	Show or hide the inspector window. */
+	void						ShowInspector(
+									bool show);
+
+	/**	Return the address of the grid snap window. */
+	CGridWindow *				GridWindow() const
+								{ return (CGridWindow *)gridWinState.Window(); }
+
+	/**	Show or hide the grid snap window. */
+	void						ShowGridWindow(
+									bool show);
+
+	/**	Return the address of the transport window. */
+	CTransportWindow *			TransportWindow() const
+								{ return (CTransportWindow *)transportState.Window(); }
 	
-		/** Set the state of the "loop" flag. */
-	void SetLoopFlag( bool inLoop ) { loopFlag = inLoop; }
+	/**	Show or hide the transport window. */
+	void						ShowTransportWindow(
+									bool show);
+
+	/**	Show the application preferences window. */
+	void						ShowPrefs();
 	
-		
-		/** Set the default Virtual Channel table. */
+public:							// File Import/Export
+
+	/** Creates a file panel for import operations. */
+	BFilePanel *				GetImportPanel(
+									BMessenger *messenger);
+
+	/** Creates a file panel for export operations. */
+	BFilePanel *				GetExportPanel(
+									BMessenger *messenger);
+
+	/** Import a new document */
+	void						ImportDocument();
+
+public:							// CDocApp Implementation
+
+	virtual void				AboutRequested();
+
+	/** Overrides file panel creation to install the ref filter */
+	virtual BFilePanel *		CreateOpenPanel();
 	
-		/** Build the export menu */
-	void BuildExportMenu( BMenu *inMenu );
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	/**	Create a new document. */
+	virtual CDocument *			NewDocument(
+									bool showWindow = true,
+									entry_ref *ref = NULL);
+	
+	virtual bool				QuitRequested();
+
+private:						// Internal Operations
+
+	/** Build the export menu */
+	void						BuildExportMenu(
+									BMenu *menu);
+
+	/** Install the document mime type if not already done. */
+	void						UpdateMimeDatabase();
+
+private:						// Instance Data
+
+	Preferences					prefs;
+	PreferenceSet 				winSettings,
+				 				editSettings,
+				 				midiSettings,
+				 				vtableSettings;
+
+	CWindowState				trackListState,
+								inspectorState,
+								gridWinState,
+								transportState,
+								appPrefsWinState,
+								aboutPluginWinState;
+	BList						plugInList;
+	BList						defaultOperatorList;
+	BList						deviceList;
+//	BList						patchList;
+	m_destlist					defaultVCTable;
+
+	/** Menu lists for plug-ins */
+	CDynamicMenuDef				assemWindowPlugIns,
+								trackWindowPlugIns,
+								operWindowPlugIns;
+	BList						importerList,
+								exporterList;
+
+	BFilePanel *				exportPanel;
+	BFilePanel *				importPanel;
+	
+	static CTrack *				activeTrack;
+	BRefFilter *				filter;
+	BRefFilter *				importFilter;
+
+	/** Turn looping on/off */
+	bool						loopFlag;
+
+	MIDIDeviceInfo	*deviceTable[16][16];
 };
 
 // ---------------------------------------------------------------------------

@@ -2,28 +2,36 @@
  * MeVDoc.cpp (MeV)
  * ===================================================================== */
 
-#include "MeVApp.h"
 #include "MeVDoc.h"
-#include "EventTrack.h"
-#include "OperatorWindow.h"
+
 #include "AssemblyWindow.h"
-#include "StdEventOps.h"
-#include "MidiDeviceInfo.h"
-#include "PlayerControl.h"
-#include "Idents.h"
-#include "MeVFileID.h"
-#include "ScreenUtils.h"
 #include "BeFileWriter.h"
 #include "BeFileReader.h"
+#include "Destination.h"
+#include "DestinationList.h"
+#include "EventOp.h"
+#include "EventTrack.h"
+#include "Idents.h"
 #include "IFFWriter.h"
 #include "IFFReader.h"
+#include "MeVDocIconBits.h"
+#include "MeVFileID.h"
+#include "MidiDeviceInfo.h"
+#include "OperatorWindow.h"
+#include "PlayerControl.h"
+#include "ScreenUtils.h"
+#include "StdEventOps.h"
 
 // Gnu C Library
 #include <stdio.h>
+// Interface Kit
+#include <Bitmap.h>
 // Storage Kit
+#include <FilePanel.h>
+#include <Mime.h>
 #include <NodeInfo.h>
 // Support Kit
-#include <FilePanel.h>
+#include <Debug.h>
 #include <String.h>
 
 	// REM: Move these elsewhere, eventually
@@ -40,115 +48,33 @@ inline CAbstractReader &operator>>( CAbstractReader& reader, rgb_color &outColor
 	return reader;
 }
 
-void CMeVDoc::Init()
-{
-	masterRealTrack = NULL;
-	masterMeterTrack = NULL;
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
 
-		// Initialize default attributes
-	defaultAttributes[ EvAttr_Duration ]			= Ticks_Per_QtrNote;
-	defaultAttributes[ EvAttr_Type ]				= EvtType_Note;
-	defaultAttributes[ EvAttr_Selected ]			= 0;
-	defaultAttributes[ EvAttr_Channel ]			= 0;
-	defaultAttributes[ EvAttr_Pitch ]				= 60;
-	defaultAttributes[ EvAttr_AttackVelocity ]		= 64;
-	defaultAttributes[ EvAttr_ReleaseVelocity ]	= 64;
-	defaultAttributes[ EvAttr_Program ]			= 0;
-	defaultAttributes[ EvAttr_ProgramBank ]		= 0;
-	defaultAttributes[ EvAttr_VPos ]				= 60;
-	defaultAttributes[ EvAttr_ControllerNumber ]	= 0;
-	defaultAttributes[ EvAttr_ControllerValue8 ]	= 0;
-	defaultAttributes[ EvAttr_ControllerValue16 ]	= 0;
-	defaultAttributes[ EvAttr_BendValue ]			= 0;	//??
-	defaultAttributes[ EvAttr_InitialBend ]			= 0;	//??
-	defaultAttributes[ EvAttr_UpdatePeriod ]		= 20;	//??
-	defaultAttributes[ EvAttr_TempoValue ]			= 0;//??
-	defaultAttributes[ EvAttr_RepeatCount ]		= 2;
-	defaultAttributes[ EvAttr_SequenceNumber ]		= 2;
-	defaultAttributes[ EvAttr_Transposition ]		= 0;
-	defaultAttributes[ EvAttr_CountourLevel ]		= 0;
-	defaultAttributes[ EvAttr_DataSize ]			= 0;
-	defaultAttributes[ EvAttr_TSigBeatCount ]		= 4;
-	defaultAttributes[ EvAttr_TSigBeatSize ]		= 2;
-
-	initialTempo = 64.0;
-
-	tempoMap.list = new CTempoMapEntry[ 2 ];
-	tempoMap.count = 2;
-	validTempoMap = false;
-//	tempoMap.count = 1;
-	
-	tempoMap.list[ 0 ].SetInitialTempo( RateToPeriod( initialTempo ) );
-	tempoMap.list[ 1 ].SetTempo(		tempoMap.list[ 0 ],
-								RateToPeriod( 256.0 ),
-								Ticks_Per_QtrNote * 4,
-								Ticks_Per_QtrNote * 4,
-								ClockType_Metered );
-	//m_destlist=NULL;
-	
-	//((CMeVApp *)be_app)->GetDefaultVCTable( vcTable );
-	//This should be taken care of by the vctable manager...
-	//in fact...the default should be the latest saved...or something
-
-	m_destlist=new CDestinationList (this);
-		
-	//maybe add *** new
-	// kludge code
-	_me = this;
-}
-
-void CMeVDoc::AddDefaultOperators()
-{
-	CMeVApp			*app = (CMeVApp *)be_app;
-
-		// Add active operarators associated with document to this list.
-	for (int i = 0; i < app->CountOperators(); i++)
-	{
-		EventOp		*op = app->OperatorAt( i );
-		bool			found = false;
-	
-			// Check to see if an oper with this name and
-			// creator has already been added.
-		for (int j = 0; j < operators.CountItems(); j++)
-		{
-			EventOp		*search = (EventOp *)operators.ItemAt( j );
-			
-			if (		strcmp( search->Name(), op->Name() ) == 0
-				&&	strcmp( search->CreatorName(), op->CreatorName() ) == 0)
-			{
-				found = true;
-				break;
-			}
-		}
-		
-		if (found) CRefCountObject::Release( op );
-		else operators.AddItem( op );
-	}
-}
-
-	// CDocument();
-CMeVDoc::CMeVDoc( CMeVApp &inApp )
-	:	CDocument( (CDocApp &)inApp ),
+CMeVDoc::CMeVDoc(
+	CMeVApp &app)
+	:	CDocument(app),
 		m_newTrackID(2),
 		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
 		docPrefsWinState( BRect( 40, 40, 500, 300 ) ),
 		assemblyWinState( UScreenUtils::StackOnScreen( 620, 390 ) )
 {
-	
 	Init();
 
 	AddDefaultOperators();
 
-	masterRealTrack  = new CEventTrack( *this, ClockType_Real, 0, "Master Real" );
-	masterMeterTrack = new CEventTrack( *this, ClockType_Metered, 1, "Master Metric" );
+	masterRealTrack = new CEventTrack(*this, ClockType_Real, 0, "Master Real");
+	masterMeterTrack = new CEventTrack(*this, ClockType_Metered, 1, "Master Metric");
 	activeMaster = masterMeterTrack;
-	NewTrack( TrackType_Event, ClockType_Metered );
+	NewTrack(TrackType_Event, ClockType_Metered);
 	SetValid();
 }
 
-CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
-	:	CDocument( (CDocApp &)inApp, inRef ),
+CMeVDoc::CMeVDoc(
+	CMeVApp &app,
+	entry_ref &ref)
+	:	CDocument(app, ref),
 		m_newTrackID(2),
 		vChannelWinState( BRect( 40, 40, 500, 360 ) ),
 		operatorWinState( BRect( 40, 40, 480, 280 ) ),
@@ -164,7 +90,7 @@ CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
 	BFile		file;
 	status_t	error;
 	
-	error = file.SetTo( &inRef, B_READ_ONLY );
+	error = file.SetTo( &ref, B_READ_ONLY );
 	if (error != B_NO_ERROR)
 	{
 		char		*msg;
@@ -254,6 +180,67 @@ CMeVDoc::~CMeVDoc()
 		CRefCountObject::Release( op );
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Accessors
+
+Destination *
+CMeVDoc::GetVChannel(
+	int channel) const
+{
+	return m_destlist->get(channel);
+}
+
+BMimeType *
+CMeVDoc::MimeType()
+{
+	BMimeType *type = new BMimeType("application/x-vnd.BeUnited.MeV-Document");
+	type->SetShortDescription("MeV Document");
+	type->SetLongDescription("MeV Document");
+	type->SetPreferredApp("application/x-vnd.BeUnited.MeV");
+
+	BBitmap *miniIcon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
+										   B_MINI_ICON - 1.0),
+									 B_CMAP8); 
+	miniIcon->SetBits(SMALL_ICON_BITS, 256, 0, B_CMAP8);
+	type->SetIcon(miniIcon, B_MINI_ICON);
+
+	BBitmap *largeIcon = new BBitmap(BRect(0.0, 0.0, B_LARGE_ICON - 1.0,
+										   B_LARGE_ICON - 1.0),
+									 B_CMAP8);
+	largeIcon->SetBits(LARGE_ICON_BITS, 1024, 0, B_CMAP8);
+	type->SetIcon(largeIcon, B_LARGE_ICON);
+
+	return type;
+}
+
+// ---------------------------------------------------------------------------
+// Operator Management
+
+EventOp *
+CMeVDoc::ActiveOperatorAt(
+	int32 index) const
+{
+	EventOp *op = static_cast<EventOp *>(activeOperators.ItemAt(index));
+	if (op)
+		op->Acquire();
+
+	return op;
+}
+	
+EventOp *
+CMeVDoc::OperatorAt(
+	int32 index) const
+{
+	EventOp *op = static_cast<EventOp *>(operators.ItemAt(index));
+	if (op)
+		op->Acquire();
+
+	return op;
+}
+	
+// ---------------------------------------------------------------------------
+// Operations
 
 long CMeVDoc::GetUniqueTrackID()
 {
@@ -632,7 +619,7 @@ void CMeVDoc::SaveDocument()
 		
 		if (ni.InitCheck() == B_NO_ERROR)
 		{
-			ni.SetType("audio/x-vnd.BeUnited.MeV");
+			ni.SetType("application/x-vnd.BeUnited.MeV-Document");
 			ni.SetPreferredApp("application/x-vnd.BeUnited.MeV");
 		}
 	}
@@ -647,12 +634,12 @@ void CMeVDoc::Export( BMessage *msg )
 		BMessage	pluginMsg;
 		void		*pluginPtr;
 		
-		msg->FindPointer( "plugin", &pluginPtr );
-		msg->FindMessage( "msg", &pluginMsg );
+		msg->FindPointer("plugin", &pluginPtr);
+		msg->FindMessage("msg", &pluginMsg);
 
-		exportMsg.AddPointer( "Document", &this->_me );
-		exportMsg.AddPointer( "plugin", pluginPtr );
-		exportMsg.AddMessage( "msg", &pluginMsg );
+		exportMsg.AddPointer("Document", this);
+		exportMsg.AddPointer("plugin", pluginPtr);
+		exportMsg.AddMessage("msg", &pluginMsg);
 
 		fp->SetMessage( &exportMsg );
 		fp->SetRefFilter( NULL ); // exportFilter????
@@ -726,3 +713,84 @@ void CMeVDoc::ReadTrack( long inTrackType, CIFFReader &reader )
 	if (inTrackType == TrackType_Event)
 		((CEventTrack *)track)->SummarizeSelection();
 }
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CMeVDoc::AddDefaultOperators()
+{
+	// Add active operarators associated with document to this list.
+	for (int32 i = 0; i < Application()->CountOperators(); i++)
+	{
+		EventOp *op = Application()->OperatorAt(i);
+		bool found = false;
+
+		// Check to see if an oper with this name and
+		// creator has already been added.
+		for (int32 j = 0; j < operators.CountItems(); j++)
+		{
+			EventOp *search = (EventOp *)operators.ItemAt(j);
+
+			if ((strcmp(search->Name(), op->Name()) == 0)
+			 && (strcmp(search->CreatorName(), op->CreatorName()) == 0))
+			{
+				found = true;
+				break;
+			}
+		}
+		
+		if (found)
+			CRefCountObject::Release(op);
+		else
+			operators.AddItem(op);
+	}
+}
+
+void
+CMeVDoc::Init()
+{
+	masterRealTrack = NULL;
+	masterMeterTrack = NULL;
+
+	// Initialize default attributes
+	defaultAttributes[EvAttr_Duration] = Ticks_Per_QtrNote;
+	defaultAttributes[EvAttr_Type] = EvtType_Note;
+	defaultAttributes[EvAttr_Selected] = 0;
+	defaultAttributes[EvAttr_Channel] = 0;
+	defaultAttributes[EvAttr_Pitch]	= 60;
+	defaultAttributes[EvAttr_AttackVelocity] = 64;
+	defaultAttributes[EvAttr_ReleaseVelocity] = 64;
+	defaultAttributes[EvAttr_Program] = 0;
+	defaultAttributes[EvAttr_ProgramBank] = 0;
+	defaultAttributes[EvAttr_VPos] = 60;
+	defaultAttributes[EvAttr_ControllerNumber] = 0;
+	defaultAttributes[EvAttr_ControllerValue8] = 0;
+	defaultAttributes[EvAttr_ControllerValue16] = 0;
+	defaultAttributes[EvAttr_BendValue] = 0;
+	defaultAttributes[EvAttr_InitialBend] = 0;
+	defaultAttributes[EvAttr_UpdatePeriod] = 20;
+	defaultAttributes[EvAttr_TempoValue] = 0;
+	defaultAttributes[EvAttr_RepeatCount] = 2;
+	defaultAttributes[EvAttr_SequenceNumber] = 2;
+	defaultAttributes[EvAttr_Transposition] = 0;
+	defaultAttributes[EvAttr_CountourLevel] = 0;
+	defaultAttributes[EvAttr_DataSize] = 0;
+	defaultAttributes[EvAttr_TSigBeatCount] = 4;
+	defaultAttributes[EvAttr_TSigBeatSize] = 2;
+
+	initialTempo = 64.0;
+
+	tempoMap.list = new CTempoMapEntry[2];
+	tempoMap.count = 2;
+	validTempoMap = false;
+	
+	tempoMap.list[0].SetInitialTempo(RateToPeriod(initialTempo));
+	tempoMap.list[1].SetTempo(tempoMap.list[0], RateToPeriod(256.0),
+							  Ticks_Per_QtrNote * 4, Ticks_Per_QtrNote * 4,
+							  ClockType_Metered);
+
+	m_destlist=new CDestinationList (this);
+}
+
+// END - MeVDoc.cpp

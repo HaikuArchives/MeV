@@ -37,58 +37,32 @@
 
 #ifndef __C_MevDoc_H__
 #define __C_MevDoc_H__
-#include "DestinationList.h"
-
-//debug
-#include <stdio.h>
 
 #include "MeV.h"
 #include "MeVApp.h"
 #include "Document.h"
-#include "Destination.h"
 #include "Event.h"
-#include "EventOp.h"
+//#include "EventOp.h"
 #include "WindowState.h"
 #include "TempoMap.h"
+
+class CAssemblyWindow;
+class CDestinationList;
 class CMeVApp;
 class CTrack;
-class CAssemblyWindow;
 class CEventTrack;
 class CIFFReader;
 class CIFFWriter;
 
-class CMeVDoc : public CDocument {
+class BMimeType;
+
+class CMeVDoc
+	:	public CDocument
+{
 	friend class CTrackDeleteUndoAction;
 	friend class CTrack;
-	
-	BList				tracks;
-	int32				m_newTrackID;
 
-	BList				operators;			// Opers associated with doc
-	BList				activeOperators;		// Operators in use...
-	CEventTrack			*masterRealTrack,	// Master track (real)
-					*masterMeterTrack,	// Master track (metered)
-					*activeMaster;		// Which track is being edited
-	CDestinationList *m_destlist;
-	int32				defaultAttributes[ EvAttr_Count ];
-	double			initialTempo;		// Initial tempo for document
-	CTempoMap			tempoMap;
-	bool				validTempoMap;
-
-	CMeVDoc			*_me;
-	
-		// Master editing window -- we close this, we close
-		// everything...
-	CAssemblyWindow		*assemblyWindow;
-	CWindowState			vChannelWinState,
-						operatorWinState,
-						docPrefsWinState,
-						assemblyWinState;
-						
-	void Init();
-	void AddDefaultOperators();
-
-public:
+public:							// Constants
 
 	enum EWindowTypes {
 		VChannel_Window	= 0,
@@ -96,8 +70,6 @@ public:
 		Assembly_Window,
 		Operator_Window,
 	};
-
-		// Track update hints
 
 	enum EDocUpdateHintBits {
 
@@ -110,100 +82,55 @@ public:
 		Update_TempoMap	= (1<<6),			// list of operators changed
 	};
 
-	// CDocument();
-	CMeVDoc( CMeVApp &inApp );
-	CMeVDoc( CMeVApp &inApp, entry_ref &inRef );
-	~CMeVDoc();
-	
-		// Create a new track (refcount = 1)
-	CTrack *NewTrack( ulong inTrackType, TClockType inClockType );
-	
-	long GetUniqueTrackID();
-	
-	//Destination &GetVChannel( int channel ) { return vcTable[ channel ]; }
-	//
-	Destination  * GetVChannel (int channel) {
-		Destination *dest;
-		dest=m_destlist->get(channel);
-		return (dest);
-	}
-	CDestinationList	* GetDestinationList () {
-											return (m_destlist);
-											}
-	
-		/**	Locate a track by it's ID, and Acquire it. (-1 for master track) */
-	CTrack *FindTrack( long inTrackID );
-	
-		/**	Locate a track by it's name, and Acquire it. */
-	CTrack *FindTrack( char *inTrackName );
-	
-		/**	Get the first track. */
-	CTrack *FindNextHigherTrackID( int32 inID );
-	
-		/**	For iterating through tracks in list order. */
-	int32 CountTracks() { return tracks.CountItems(); }
-	
-		/**	For iterating through tracks in list order. */
-	CTrack *TrackAt( int32 index ) { return (CTrack *)tracks.ItemAt( index ); }
-	
-		/**	Get the value of a default attribute */
-	int32 GetDefaultAttribute( enum E_EventAttribute inAttrType )
-	{
-		return defaultAttributes[ (int32)inAttrType ];
-	}
+public:							// Constructor/Destructor
 
-		/**	Set the value of a default attribute */
-	void SetDefaultAttribute( enum E_EventAttribute inAttrType, int32 inValue )
-	{
-			// REM: We should clip this value
-		defaultAttributes[ (int32)inAttrType ] = inValue;
-	}
-	
-		/**	Post an update message to all tracks. */
-	void PostUpdateAllTracks( CUpdateHint *inHint );
+								CMeVDoc(
+									CMeVApp &app);
 
-		/**	Show or hide the window of a particular type */
-	BWindow *ShowWindow( enum EWindowTypes inType );
+								CMeVDoc(
+									CMeVApp &app,
+									entry_ref &ref);
+
+								~CMeVDoc();
 	
-		/**	Returns TRUE if a particular window type is open. */
-	bool IsWindowOpen( enum EWindowTypes inType );
+public:							// Accessors
+
+	Destination *				GetVChannel(
+									int channel) const;
+
+	CDestinationList *			GetDestinationList()
+								{ return m_destlist; }
 	
-		/**	Return the number of operators. */
-	int32 CountOperators() { return operators.CountItems(); }
+	static BMimeType *			MimeType();
+
+public:							// Operator Management
+
+	/**	Return the number of operators. */
+	int32						CountActiveOperators()
+								{ return activeOperators.CountItems(); }
+
+	/**	Return the Nth operator (Increases reference count). */
+	EventOp *					ActiveOperatorAt(
+									int32 index) const;
 	
-		/**	Return the Nth operator (Increases reference count). */
-	EventOp *OperatorAt( int32 index )
-	{
-		void		*ptr = operators.ItemAt( index );
-		
-		if (ptr) return (EventOp *)((EventOp *)ptr)->Acquire();
-		return NULL;
-	}
+	/**	Return the index of this operator in the list, or negative if none. */
+	int32						ActiveOperatorIndex(
+									EventOp *op) const
+								{ return activeOperators.IndexOf(op); }
 	
-		/**	Return the index of this operator in the list, or negative if none. */
-	int32 OperatorIndex( EventOp *op )
-	{
-		return operators.IndexOf( op );
-	}
+	/**	Return the number of operators. */
+	int32						CountOperators() const
+								{ return operators.CountItems(); }
+
+	/**	Return the Nth operator (Increases reference count). */
+	EventOp *					OperatorAt(
+									int32 index) const;
 	
-		/**	Return the number of operators. */
-	int32 CountActiveOperators() { return activeOperators.CountItems(); }
-	
-		/**	Return the Nth operator (Increases reference count). */
-	EventOp *ActiveOperatorAt( int32 index )
-	{
-		void		*ptr = activeOperators.ItemAt( index );
-		
-		if (ptr) return (EventOp *)((EventOp *)ptr)->Acquire();
-		return NULL;
-	}
-	
-		/**	Return the index of this operator in the list, or negative if none. */
-	int32 ActiveOperatorIndex( EventOp *op )
-	{
-		return activeOperators.IndexOf( op );
-	}
-	
+	/**	Return the index of this operator in the list, or negative if none. */
+	int32						OperatorIndex(
+									EventOp *op) const
+								{ return operators.IndexOf(op); }
+
 		/**	Add an operator to the document's list of operators. */
 	void AddOperator( EventOp *inOp );
 
@@ -216,6 +143,61 @@ public:
 		/**	Does a notification to all windows viewing the operator. */
 	void NotifyOperatorChanged( EventOp *inOp );
 
+public:							// Track Management
+
+	/**	Change the ordering of the tracks... */
+	void ChangeTrackOrder( int32 oldIndex, int32 newIndex );
+
+	/** Create a new track (refcount = 1) */
+	CTrack *					NewTrack(
+									ulong inTrackType,
+									TClockType inClockType);
+	
+	long						GetUniqueTrackID();
+	
+	/**	Locate a track by it's ID, and Acquire it. (-1 for master track) */
+	CTrack *					FindTrack(
+									long inTrackID);
+
+	/**	Locate a track by it's name, and Acquire it. */
+	CTrack *					FindTrack(
+									char *inTrackName);
+	
+	/**	Get the first track. */
+	CTrack *					FindNextHigherTrackID(
+									int32 inID);
+	
+	/**	For iterating through tracks in list order. */
+	int32						CountTracks() const
+								{ return tracks.CountItems(); }
+	
+	/**	For iterating through tracks in list order. */
+	CTrack *					TrackAt(
+									int32 index)
+								{ return (CTrack *)tracks.ItemAt(index); }
+	
+public:							// Operations
+
+	/**	Get the value of a default attribute */
+	int32						GetDefaultAttribute(
+									enum E_EventAttribute type) const
+								{ return defaultAttributes[type]; }
+
+	/**	Set the value of a default attribute */
+	void						SetDefaultAttribute(
+									enum E_EventAttribute type,
+									int32 value)
+								{ defaultAttributes[type] = value; }
+
+		/**	Post an update message to all tracks. */
+	void PostUpdateAllTracks( CUpdateHint *inHint );
+
+		/**	Show or hide the window of a particular type */
+	BWindow *ShowWindow( enum EWindowTypes inType );
+	
+		/**	Returns TRUE if a particular window type is open. */
+	bool IsWindowOpen( enum EWindowTypes inType );
+	
 		/**	Notify all observers (including possibly observers of the document
 			as well) that some attributes of this document have changed. */
 	void NotifyUpdate( int32 inHintBits, CObserver *source );
@@ -237,18 +219,8 @@ public:
 		/** Set the initial tempo of this document */
 	void SetInitialTempo( double inTempo ) { initialTempo = inTempo; }
 
-		/**	Change the ordering of the tracks... */
-	void ChangeTrackOrder( int32 oldIndex, int32 newIndex );
-
 		/** Calculate the name of a virtual channel from the instrument table. */
 	void VirtualChannelName( int32 inChannelIndex, char *outBuf );
-
-		/** Save the document to it's current location */
-	void SaveDocument();
-
-	virtual CMeVApp *			Application() const
-								{ return static_cast<CMeVApp *>
-										 (CDocument::Application()); }
 
 		/** Export the document */
 	void Export( BMessage *msg );
@@ -275,6 +247,63 @@ public:
 	
 		/**	Replace the current tempo map. */
 	void ReplaceTempoMap( CTempoMapEntry *entries, int length );
+
+public:							// CDocument Implementation
+
+	virtual CMeVApp *			Application() const
+								{ return static_cast<CMeVApp *>
+										 (CDocument::Application()); }
+
+	/** Save the document to it's current location */
+	virtual void				SaveDocument();
+
+private:						// Internal Operations
+
+	void						AddDefaultOperators();
+
+	void						Init();
+
+private:						// Instance Data
+
+	BList						tracks;
+	int32						m_newTrackID;
+
+	// Opers associated with doc
+	BList						operators;
+
+	// Operators in use...
+	BList						activeOperators;
+
+	// Master track (real)
+	CEventTrack *				masterRealTrack;
+
+	// Master track (metered)
+	CEventTrack *				masterMeterTrack;
+
+	// Which track is being edited
+	CEventTrack *				activeMaster;
+	
+	CDestinationList *			m_destlist;
+
+	int32						defaultAttributes[EvAttr_Count];
+
+	// Initial tempo for document
+	double						initialTempo;
+
+	CTempoMap					tempoMap;
+
+	bool						validTempoMap;
+
+	CMeVDoc *					_me;
+	
+	// Master editing window -- we close this, we close
+	// everything...
+	CAssemblyWindow *			assemblyWindow;
+
+	CWindowState				vChannelWinState;
+	CWindowState 				operatorWinState;
+	CWindowState				docPrefsWinState;
+	CWindowState				assemblyWinState;
 };
 
 #endif /* __C_MeVDoc_H__ */
