@@ -1,16 +1,43 @@
 /* ===================================================================== *
- * Splitter.cpp (MeV/User Interface)
+ * Splitter.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "Splitter.h"
-#include "ResourceUtils.h"
+
+#include "CursorCache.h"
 
 // Application Kit
 #include <Application.h>
 #include <Cursor.h>
 #include <Message.h>
+#include <MessageFilter.h>
 // Interface Kit
 #include <Window.h>
+// Support Kit
+#include <Debug.h>
+
+// ---------------------------------------------------------------------------
+// BMessageFilter subclass for handling of B_MOUSE_MOVED while dragging
+
+class CSplitterMessageFilter
+	:	public BMessageFilter
+{
+
+public:							// Constructor/Destructor
+
+								CSplitterMessageFilter(
+									CSplitter *splitter);
+
+public:							// BMessageFilter Implementaton
+
+	virtual filter_result		Filter(
+									BMessage *message,
+									BHandler **target);
+
+private:						// Instance Data
+
+	CSplitter *					m_splitter;
+};
 
 // ---------------------------------------------------------------------------
 // Class Data Initialization
@@ -52,7 +79,7 @@ CSplitter::CSplitter(
 		m_secondaryTarget(secondaryTarget),
 		m_posture(posture),
 		m_dragging(false),
-		m_cursor(NULL)
+		m_messageFilter(NULL)
 {
 	SetViewColor(B_TRANSPARENT_COLOR);
 	
@@ -62,14 +89,12 @@ CSplitter::CSplitter(
 		{
 			if (frame.Width() != V_SPLITTER_WIDTH)
 				ResizeTo(V_SPLITTER_WIDTH, frame.Height());
-			m_cursor = new BCursor(ResourceUtils::LoadCursor(4));
 			break;
 		}
 		case B_HORIZONTAL:
 		{
 			if (frame.Height() != H_SPLITTER_HEIGHT)
 				ResizeTo(frame.Width(), H_SPLITTER_HEIGHT);
-			m_cursor = new BCursor(ResourceUtils::LoadCursor(3));
 			break;
 		}
 	}
@@ -77,11 +102,6 @@ CSplitter::CSplitter(
 
 CSplitter::~CSplitter()
 {
-	if (m_cursor)
-	{
-		delete m_cursor;
-		m_cursor = NULL;
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -121,7 +141,38 @@ CSplitter::MoveRequested (
 }
 
 // ---------------------------------------------------------------------------
-// BControl Implementation
+// Operations
+
+void
+CSplitter::Dragged(
+	BPoint point)
+{
+	bigtime_t when;
+	Window()->CurrentMessage()->FindInt64("when", &when);
+	if (when < (m_lastDragTime + DRAG_LAG_TIME))
+		return;
+	switch (m_posture)
+	{
+		case B_HORIZONTAL:
+		{
+			float diff = point.y - m_offset;
+			MoveRequested(diff);
+			m_offset = point.y;
+			break;
+		}
+		case B_VERTICAL:
+		{
+			float diff = point.x - m_offset;
+			MoveRequested(diff);
+			m_offset = point.x;
+			break;
+		}
+	}
+	m_lastDragTime = when;
+}
+
+// ---------------------------------------------------------------------------
+// BView Implementation
 
 void
 CSplitter::Draw(
@@ -172,9 +223,24 @@ CSplitter::MouseDown(
 		SetMouseEventMask(B_POINTER_EVENTS,
 						  B_NO_POINTER_HISTORY | B_LOCK_WINDOW_FOCUS);
 		m_dragging = true;
-		ConvertToScreen(&point);
+
+		// get the point in window coordinates
+		BView *view = this;
+		do
+		{
+			view->ConvertToParent(&point);
+		} while ((view = view->Parent()) != NULL);
 		m_offset = (m_posture == B_VERTICAL) ? point.x : point.y;
 		Window()->CurrentMessage()->FindInt64("when", &m_lastDragTime);
+
+		if (m_messageFilter == NULL)
+		{
+			m_messageFilter = new CSplitterMessageFilter(this);
+			Window()->AddCommonFilter(m_messageFilter);
+		}
+		be_app->SetCursor(CCursorCache::GetCursor(m_posture == B_HORIZONTAL ?
+												  CCursorCache::VERTICAL_MOVE :
+												  CCursorCache::HORIZONTAL_MOVE));
 	}
 }
 
@@ -183,42 +249,17 @@ void CSplitter::MouseMoved(
 	uint32 transit,
 	const BMessage *message)
 {
-	if (m_dragging)
+	if (message == NULL)
 	{
-		be_app->SetCursor(m_cursor);
-		bigtime_t when;
-		Window()->CurrentMessage()->FindInt64("when", &when);
-		if (when < (m_lastDragTime + DRAG_LAG_TIME))
-			return;
-		ConvertToScreen(&point);
-		switch (m_posture)
+		if (transit == B_ENTERED_VIEW)
 		{
-			case B_HORIZONTAL:
-			{
-				float diff = point.y - m_offset;
-				MoveRequested(diff);
-				m_offset = point.y;
-				break;
-			}
-			case B_VERTICAL:
-			{
-				float diff = point.x - m_offset;
-				MoveRequested(diff);
-				m_offset = point.x;
-				break;
-			}
-		}
-		m_lastDragTime = when;
-	}
-	else
-	{
-		if ((transit == B_ENTERED_VIEW) && (message == NULL))
-		{
-			be_app->SetCursor(m_cursor);
+			be_app->SetCursor(CCursorCache::GetCursor(m_posture == B_HORIZONTAL ?
+													  CCursorCache::VERTICAL_MOVE :
+													  CCursorCache::HORIZONTAL_MOVE));
 		}
 		else if (transit == B_EXITED_VIEW)
 		{
-			be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
+			be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::DEFAULT));
 		}
 	}
 }
@@ -227,10 +268,43 @@ void
 CSplitter::MouseUp(
 	BPoint point)
 {
-	m_dragging = false;
+	if (m_dragging)
+	{
+		if (m_messageFilter != NULL)
+		{
+			Window()->RemoveCommonFilter(m_messageFilter);
+			delete m_messageFilter;
+			m_messageFilter = NULL;
+		}
+		m_dragging = false;
+	}
 
 	if (!Bounds().Contains(point))
-		be_app->SetCursor(B_CURSOR_SYSTEM_DEFAULT);
+	{
+		be_app->SetCursor(CCursorCache::GetCursor(CCursorCache::DEFAULT));
+	}
+}
+
+// ---------------------------------------------------------------------------
+// CSplitterMessageFilter Implementation
+
+CSplitterMessageFilter::CSplitterMessageFilter(
+	CSplitter *splitter)
+	:	BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE, B_MOUSE_MOVED),
+		m_splitter(splitter)
+{
+}
+
+filter_result
+CSplitterMessageFilter::Filter(
+	BMessage *message,
+	BHandler **target)
+{
+	BPoint point;
+	if (message->FindPoint("where", &point) == B_OK)
+		m_splitter->Dragged(point);
+
+	return B_SKIP_MESSAGE;
 }
 
 // END - Splitter.cpp

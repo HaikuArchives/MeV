@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * Splitter.h (MeV/User Interface)
+ * Splitter.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -38,6 +38,8 @@
 
 // Interface Kit
 #include <View.h>
+
+class CSplitterMessageFilter;
 
 class CSplitter
 	:	public BView
@@ -82,6 +84,13 @@ public:							// Accessors
 	orientation					Posture() const
 								{ return m_posture; }
 
+public:							// Operations
+
+	// called by the B_MOUSE_MOVED message filter when the splitter
+	// bar is being dragged
+	void						Dragged(
+									BPoint point);
+
 public:							// BView Implementation
 
 	virtual void				Draw(
@@ -109,7 +118,7 @@ private:						// Instance Data
 	float						m_offset;
 	bigtime_t					m_lastDragTime;
 
-	BCursor *					m_cursor;
+	CSplitterMessageFilter *	m_messageFilter;
 
 private:						// Class Data
 
