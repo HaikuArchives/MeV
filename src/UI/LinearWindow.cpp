@@ -439,10 +439,6 @@ CLinearWindow::AddToolBar()
 										  ResourceUtils::LoadImage("PencilTool")));
 	createMenu->AddSeparatorItem();
 	message = new BMessage(*message);
-	message->ReplaceInt32("type", EvtType_Tempo);
-	createMenu->AddItem(new CIconMenuItem("Tempo", message,
-										  ResourceUtils::LoadImage("MetroTool")));
-	message = new BMessage(*message);
 	message->ReplaceInt32("type", EvtType_TimeSig);
 	createMenu->AddItem(new CIconMenuItem("Time Signature", message,
 										  ResourceUtils::LoadImage("TimeSigTool")));
