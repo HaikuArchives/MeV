@@ -478,7 +478,6 @@ CLinearWindow::AddToolBar()
 	m_toolBar->AddTool(tool = new CBitmapTool("Erase",
 											ResourceUtils::LoadImage("EraserTool"),
 											new BMessage(TOOL_ERASE)));
-	tool->SetEnabled(false);
 	m_toolBar->AddTool(tool = new CBitmapTool("Text",
 											ResourceUtils::LoadImage("TextTool"),
 											new BMessage(TOOL_TEXT)));

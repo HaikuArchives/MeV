@@ -47,7 +47,9 @@ CTrackWindow::CTrackWindow(
 	CMeVDoc &inDocument,
 	CEventTrack *inTrack)
 	:	CDocWindow(frame, (CDocument &)inDocument,
-				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL),
+				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL,
+				   B_DOCUMENT_WINDOW,
+				   B_ASYNCHRONOUS_CONTROLS),
 		CObserver(*this, &inDocument),
 		stripFrame(NULL),
 		stripScroll(NULL),
