@@ -2,27 +2,29 @@
  * MeVApp.cpp (MeV)
  * ===================================================================== */
 
-#include "MeV.h"
 #include "MeVApp.h"
-#include "MeVDoc.h"
-#include "MeVPlugin.h"
-#include "DocWindow.h"
-#include "StripFrameView.h"
-#include "InspectorWindow.h"
-#include "TransportWindow.h"
-#include "Junk.h"
-#include "Idents.h"
-#include "EventOp.h"
-#include "LinearWindow.h"
+
 #include "AssemblyWindow.h"
+#include "DocWindow.h"
+#include "EventOp.h"
+#include "EventTrack.h"
 #include "GridWindow.h"
-#include "Spinner.h"
-#include "ScreenUtils.h"
-#include "PlayerControl.h"
+#include "Idents.h"
+#include "InspectorWindow.h"
+#include "Junk.h"
+#include "LinearWindow.h"
 #include "MidiDeviceInfo.h"
 #include "MidiManager.h"
-// User Interface
+#include "MeV.h"
+#include "MeVDoc.h"
+#include "MeVPlugin.h"
+#include "PlayerControl.h"
+#include "ScreenUtils.h"
+#include "Spinner.h"
+#include "StripFrameView.h"
+#include "TextDisplay.h"
 #include "TrackListWindow.h"
+#include "TransportWindow.h"
 
 // Gnu C Library
 #include <stdio.h>
