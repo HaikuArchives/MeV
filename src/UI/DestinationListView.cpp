@@ -108,10 +108,9 @@ CDestinationListView::SetDocument(
 
 			StSubjectLock lock(*m_doc, Lock_Shared);
 			CDestination *dest = NULL;
-			int32 i = 0;
 			int32 index = 0;
 			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
-				DestinationRemoved(i++);
+				_destinationRemoved(0);
 		}
 
 		m_doc = document;
@@ -123,7 +122,7 @@ CDestinationListView::SetDocument(
 			CDestination *dest = NULL;
 			int32 index = 0;
 			while ((dest = m_doc->GetNextDestination(&index)) != NULL)
-				DestinationAdded(dest->ID());
+				_destinationAdded(dest->ID());
 		}
 	}
 }
@@ -182,13 +181,13 @@ CDestinationListView::SubjectUpdated(
 		{
 			int32 destID;
 			if (message->FindInt32("DestID", &destID) == B_OK)
-				DestinationAdded(destID);
+				_destinationAdded(destID);
 		}
 		if (docAttrs & CMeVDoc::Update_DelDest)
 		{
 			int32 originalIndex;
 			if (message->FindInt32("original_index", &originalIndex) == B_OK)
-				DestinationRemoved(originalIndex);
+				_destinationRemoved(originalIndex);
 		}
 		return;
 	}
@@ -205,7 +204,7 @@ CDestinationListView::SubjectUpdated(
 		 || (destAttrs & CDestination::Update_Flags)
 		 || (destAttrs & CDestination::Update_Color))
 		{
-			DestinationChanged(destID);
+			_destinationChanged(destID);
 		}
 		return;
 	}
@@ -375,14 +374,12 @@ CDestinationListView::Released(
 	{
 		if (subject == m_doc)
 		{
-			m_doc->RemoveObserver(this);
-			m_doc = NULL;
+			SetDocument(NULL);
 			released = true;
 		}
 		else if (subject == m_track)
 		{
-			m_track->RemoveObserver(this);
-			m_track = NULL;
+			SetTrack(NULL);
 			released = true;
 		}
 		UnlockLooper();
@@ -403,7 +400,7 @@ CDestinationListView::Updated(
 //	Internal Operations
 
 void
-CDestinationListView::DestinationAdded(
+CDestinationListView::_destinationAdded(
 	int32 id)
 {
 	CDestination *dest = Document()->FindDestination(id);
@@ -431,13 +428,13 @@ CDestinationListView::DestinationAdded(
 		dest->ReadUnlock();
 		item->SetTarget(this);
 		m_destMenu->AddItem(item, index + 2);
-		if (index == current)
+		if (id == current)
 			item->SetMarked(true);
 	}
 }
 
 void
-CDestinationListView::DestinationChanged(
+CDestinationListView::_destinationChanged(
 	int32 id)
 {
 	CDestination *dest = Document()->FindDestination(id);
@@ -472,7 +469,7 @@ CDestinationListView::DestinationChanged(
 }
 
 void
-CDestinationListView::DestinationRemoved(
+CDestinationListView::_destinationRemoved(
 	int32 originalIndex)
 {
 	BMenuItem *item = m_destMenu->RemoveItem(originalIndex + 2);
@@ -489,10 +486,7 @@ CDestinationListView::DestinationRemoved(
 		if (item)
 			item->SetMarked(true);
 	}
-	else
-	{
-		m_destField->Invalidate();
-	}
+	m_destField->Invalidate();
 }
 
 // END - DestinationListView.cpp

@@ -110,15 +110,15 @@ public:							// CObserver Implementation
 	virtual void				Updated(
 									BMessage *message);
 
-public:							// Internal Operations
+private:						// Internal Operations
 
-	void						DestinationAdded(
+	void						_destinationAdded(
 									int32 id);
 
-	void						DestinationChanged(
+	void						_destinationChanged(
 									int32 id);
 
-	void						DestinationRemoved(
+	void						_destinationRemoved(
 									int32 originalIndex);
 
 private:						// Instance Data
