@@ -187,39 +187,6 @@ public:							// Operations
 	static void					SetTempo(
 									CMeVDoc *document,
 									double tempo);
-
-	/**	Get the port name of the Nth port. */
-	static char *				PortName(
-									uint32 index);
-	/**	Set the port name of the Nth port. */
-	static void					SetPortName(
-									uint32 index,
-									char *name);
-
-	/**	Get the port device string of the Nth port. */
-	static const char *			PortDevice(
-									uint32 index);
-	/**	Set the port device string of the Nth port. */
-	static bool					SetPortDevice(
-									uint32 index,
-									char *name);
-
-	/** In general we don't seem to like working with pointers 
-		here, but for now...
-	*/
-	static bool					SetPortConnect(
-									uint32 index,
-									BMidiConsumer *sink);
-
-	//returns the midiroster proviced endpoint ID.
-	static int32				PortDeviceID(
-									uint32 index);
-	static bool					DeleteDevice(
-									int index);
-	
-	static int					CountDefinedPorts();
-	static bool					IsDefined(
-									uint32 index);
 };
 
 #endif /* __C_PlayerControl_H__ */

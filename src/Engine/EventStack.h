@@ -22,17 +22,11 @@
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
- * Purpose:
- *  a prioritized stack of events, sorted by time
- * ---------------------------------------------------------------------
  * History:
  *	1997		Talin
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
- * ---------------------------------------------------------------------
- * To Do:
- *
  * ===================================================================== */
 
 #ifndef __C_EventStack_H__
@@ -40,91 +34,99 @@
 
 #include "Event.h"
 
-class CEventStack {
+/**
+ *	A prioritized stack of events, sorted by time.
+ *	@author Talin, Christopher Lenz
+ */
+class CEventStack
+{
 	friend class CEventStackIterator;
 
-private:
-	Event				*current,					// top item of stack
-						*max;						// max item of stack
-	Event				stack[ 256 ];				// the stack of items
+public:							// Constructor/Destructor
 
-public:
-		// ---------- Consructor
-	CEventStack()
-	{
-		current = stack;
-		max = &stack[sizeof(stack)/sizeof(stack[0])];
-	}
+	/** Default constructor. */
+								CEventStack();
 
-		// ---------- 	Stack access functions
-	bool Push( const Event &ev );					// add event to stack
-	bool Push( const Event &ev, long t );			// add event to stack at time t
-	bool Pop( Event &ev, long time );				// pop event to stack if time reached
-	bool Pop( Event &ev );						// pop event from stack always
+public:							// Accessors
 
-	bool NextTime( long &next );					// return time of top event
+	/** Test if stack empty. */
+	bool						Empty() const;
 
-		// Test if stack empty
-	bool Empty() const { return (current <= stack); }
+	/** Return time of top event. */
+	bool						NextTime(
+									long *outTime) const;
 
-		// push a list of events (all or none)
-	bool PushList( Event *eventList, int16 count, long startTime );
+public:							// Operations
+
+	/** Add event to stack. */
+	bool						Push(
+									const Event &ev);
+
+	/** Add event to stack at a specfic time. */
+	bool						Push(
+									const Event &ev,
+									long time);
+
+	/** push a list of events (all or none). */
+	bool						PushList(
+									Event *eventList,
+									int16 count,
+									long startTime);
+
+	/** Pop event from stack. */
+	bool						Pop(
+									Event &ev);
+
+	/** Pop event to stack if time reached. */
+	bool						Pop(
+									Event &ev,
+									long time);
+
+private:						// Instance Data
+
+	/** Top item of stack. */
+	Event *						m_current;
+
+	/** Max item of stack. */
+	Event *						m_max;
+
+	/** The stack of items. */
+	Event						m_stack[256];
 };
 
-	/** 	A class used in selectively filtering events from the event stack. */
-class CEventStackIterator {
-	Event				*read,
-						*write;
-	CEventStack			&stack;
+/**	A class used in selectively filtering events from the event stack. */
+class CEventStackIterator
+{
 
-public:
+public:							// Constructor/Destructor
 
-		/**	Constructor -- takes a stack as an argument. */
-	CEventStackIterator( CEventStack &inStack ) : stack( inStack )
-	{
-		read = write = stack.stack;
-	}
-	
-		/**	Destructor -- cleans up all pending deletes. */
-	~CEventStackIterator()
-	{
-		if (read > stack.current) read = stack.current;
-		if (read > write && stack.current > read)
-		{
-			Event::Relocate( write, read, stack.current - read );
-			stack.current = read;
-		}
-	}
+	/**	Constructor -- takes a stack as an argument. */
+								CEventStackIterator(
+									CEventStack &stack);
 
-		/**	Returns pointer to current event, if any. */
-	Event *Current()
-	{
-		return read < stack.current ? read : NULL;
-	}
+	/**	Destructor -- cleans up all pending deletes. */
+								~CEventStackIterator();
 
-		/**	Skips to the next event. */
-	bool Next()
-	{
-		if (read >= stack.current) return false;
-	
-		if (read > write)
-		{
-			Event::Relocate( write, read, 1 );
-		}
-		read++;
-		write++;
-		return true;
-	}
+public:							// Accessors
 
-		/**	Removes the current event and skips to the next one. */
-	void Remove()
-	{
-		if (read < stack.current)
-		{
-			Event::Destruct( read, 1 );
-			read++;
-		}
-	}
+	/**	Returns pointer to current event, if any. */
+	Event *						Current() const;
+
+public:							// Operations
+
+	/**	Skips to the next event. */
+	bool						Next();
+
+	/**	Removes the current event and skips to the next one. */
+	void						Remove();
+
+private:						// Instance Data
+
+	Event *						m_read;
+
+	Event *						m_write;
+
+	CEventStack &				m_stack;
 };
 
 // ---------------------------------------------------------------------------

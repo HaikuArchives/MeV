@@ -272,30 +272,6 @@ CPlayerControl::SetTempo(
 		group->ChangeTempo(period, group->metered.time, 0, ClockType_Metered);
 }
 
-char *
-CPlayerControl::PortName(
-	uint32 index)
-{
-	//maybe we should be returning the name of the producer on this index.
-	if ((index < 0) || (index >= Max_MidiPorts))
-		return NULL;
-	return thePlayer.m_portInfo[index].portName;
-}
-	
-void
-CPlayerControl::SetPortName(
-	uint32 index,
-	char *name)
-{
-	//maybe we should be setting the name of the producer on this index.
-	CPlayer::PortInfo *pi;
-	if ((index < 0) || (index >= Max_MidiPorts))
-		return;
-	pi = &thePlayer.m_portInfo[index];
-	strncpy(pi->portName, name, sizeof(pi->portName));
-	pi->portName[sizeof(pi->portName) - 1] = '\0';
-}
-	
 int32
 CPlayerControl::GetPlaybackMarkerTimes(
 	CTrack *track,

@@ -104,58 +104,62 @@ void CPlaybackTaskGroup::Update( long internalTicks )
 		break;
 	}
 
-		// If we are not in the middle of locating, then go ahead and
-		// play some events.
+	// If we are not in the middle of locating, then go ahead and
+	// play some events.
 	if (ClockRunning())
 	{
-		long			next;
-		bool			done = true;
-			// Record what time our track is positioned to.
-		real.seekTime			= real.time;
-		metered.seekTime		= metered.time;
+		// Record what time our track is positioned to.
+		real.seekTime = real.time;
+		metered.seekTime = metered.time;
 
-			// Pop events off of the stack which are ready to go
-		while (real.stack.Pop   ( ev, real.seekTime ))		ExecuteEvent( ev, real );
-		while (metered.stack.Pop( ev, metered.seekTime ))	{ ExecuteEvent( ev, metered );}
-			// Compute next event time as min of all track times
-		if (	real.stack.NextTime( next ))
+		// Pop events off of the stack which are ready to go
+		while (real.stack.Pop(ev, real.seekTime))
+			ExecuteEvent(ev, real);
+		while (metered.stack.Pop(ev, metered.seekTime))
+			ExecuteEvent(ev, metered);
+
+		long next;
+		bool done = true;
+
+		// Compute next event time as min of all track times
+		if (real.stack.NextTime(&next))
 		{
 			done = false;
-			if (IsTimeGreater( next, nextEventTime ))
+			if (IsTimeGreater(next, nextEventTime))
 				nextEventTime = next;
 		}
 
-			// Same computation for metered stack, but with a conversion
-			// to real time
-		if (	metered.stack.NextTime( next ))
+		// Same computation for metered stack, but with a conversion
+		// to real time
+		if (metered.stack.NextTime(&next))
 		{
 			done = false;
-			next = tempo.ConvertMeteredToReal( next );
-			if (IsTimeGreater( next, nextEventTime ))
+			next = tempo.ConvertMeteredToReal(next);
+			if (IsTimeGreater(next, nextEventTime))
 				nextEventTime = next;
 		}
 		
-			// Looping options for entire task!
+		// Looping options for entire task!
 		if (pbOptions & PB_Loop)
 		{
 			if (done)
 			{
-				if (real.end < 0) real.end = real.seekTime;
+				if (real.end < 0)
+					real.end = real.seekTime;
 				Restart();
 				nextEventTime = real.time;
 			}
 		}
 		else
 		{
-				// If both stacks are empty, then stop
-			if (		done
-				&&	!(flags & Clock_Continuous))
+			// If both stacks are empty, then stop
+			if (done && !(flags & Clock_Continuous))
 			{
 				flags |= Clock_Stopped;
 
-					// Notify the UI that we've changed state.
-				BMessage		msg( Player_ChangeTransportState );
-				be_app->PostMessage( &msg );
+				// Notify the UI that we've changed state.
+				BMessage message(Player_ChangeTransportState);
+				be_app->PostMessage(&message);
 			}
 		}
 	}
@@ -346,90 +350,81 @@ void CPlaybackTaskGroup::Locate()
 
 	if (locateType == LocateTarget_Real)
 	{
-			// While seek time has not caught up to actual time,
-			// locate through some number of events, except
-			// if we're near the start of the song there's no need
-			// to do any locating.
-		while (real.seekTime < real.time && real.time > 100)
+		// While seek time has not caught up to actual time,
+		// locate through some number of events, except
+		// if we're near the start of the song there's no need
+		// to do any locating.
+		while ((real.seekTime < real.time) && (real.time > 100))
 		{
-				// Check once in a while to see if we have spent too much
-				// time locating and didn't give other tasks a chance to run.
-				// Also, check to see if the locate should be abandoned.
-			if (flags & (Locator_Reset|Locator_Find)) return;
+			// Check once in a while to see if we have spent too much
+			// time locating and didn't give other tasks a chance to run.
+			// Also, check to see if the locate should be abandoned.
+			if (flags & (Locator_Reset|Locator_Find))
+				return;
 
 			LOCK_PLAYER;
 
-				// Pop events off of the stack which are ready to go
-			LocateNextChunk( real );
-			metered.seekTime = tempo.ConvertRealToMetered( real.seekTime );
-			LocateNextChunk( metered );
+			// Pop events off of the stack which are ready to go
+			LocateNextChunk(real);
+			metered.seekTime = tempo.ConvertRealToMetered(real.seekTime);
+			LocateNextChunk(metered);
 
-			if (!real.stack.NextTime( real.seekTime )) real.seekTime = real.time;
+			if (!real.stack.NextTime(&real.seekTime))
+				real.seekTime = real.time;
 		}
 	}
 	else
 	{
-		int32		target = metered.time;
-	
-			// While seek time has not caught up to actual time,
-			// locate through some number of events, except
-			// if we're near the start of the song there's no need
-			// to do any locating.
+		int32 target = metered.time;
+
+		// While seek time has not caught up to actual time,
+		// locate through some number of events, except
+		// if we're near the start of the song there's no need
+		// to do any locating.
 		if (metered.time > 10)
 		{
 			while (metered.seekTime < target)
 			{
-				int32		nextTime;
-	
-					// Check once in a while to see if we have spent too much
-					// time locating and didn't give other tasks a chance to run.
-					// Also, check to see if the locate should be abandoned.
-				if (flags & (Locator_Reset|Locator_Find)) return;
-	
-					// Lock the player for another batch of events we are seeking.
+				// Check once in a while to see if we have spent too much
+				// time locating and didn't give other tasks a chance to run.
+				// Also, check to see if the locate should be abandoned.
+				if (flags & (Locator_Reset|Locator_Find))
+					return;
+
+				// Lock the player for another batch of events we are seeking.
 				LOCK_PLAYER;
 	
-				LocateNextChunk( metered );
-				real.seekTime = tempo.ConvertMeteredToReal( metered.seekTime );
-				LocateNextChunk( real );
+				LocateNextChunk(metered);
+				real.seekTime = tempo.ConvertMeteredToReal(metered.seekTime);
+				LocateNextChunk(real);
 	
 				if (pbOptions & PB_Folded)
-				{
-#if 0
-					for (int i = 0; i < 2; i++)
-					{
-						if (th[ i ])
-						{
-							CEventTask	*eth = (CEventTask *)th[ i ];
-							eth->Repeat( eth->clockType == ClockType_Real ? real : metered );
-						}
-					}
-#endif
 					target = metered.time + metered.expansion;
-				}
-				else target = metered.time;
+				else
+					target = metered.time;
 
-				if (metered.stack.NextTime( nextTime ))
-				{
-					metered.seekTime = MIN( nextTime + cTrackAdvance_Metered, target );
-				}
-				else metered.seekTime = target;
+				int32 nextTime;
+				if (metered.stack.NextTime(&nextTime))
+					metered.seekTime = MIN(nextTime + cTrackAdvance_Metered,
+										   target );
+				else
+					metered.seekTime = target;
 			}
 		}
 
-			// REM: I'm not sure this is right, but it works for now...
-		real.time = tempo.ConvertMeteredToReal( metered.seekTime );
+		// REM: I'm not sure this is right, but it works for now...
+		real.time = tempo.ConvertMeteredToReal(metered.seekTime);
 	}
 
-		// Push back task origin so that lTime is correct.
-		// REM: Is this correct for synced sequences???
+	// Push back task origin so that lTime is correct.
+	// REM: Is this correct for synced sequences???
 	origin = thePlayer.m_internalTimerTick - real.time; // +++++ REMOVE THIS DEPENDANCY +++++
 	flags &= ~Clock_Locating;
 
-		// Poke the main player task to make sure it handles the first
-		// event promptly. It doesn't have to actually do anything with
-		// this command.
-	write_port( thePlayer.Port(), Command_Attention, "", 0 );
+	// Poke the main player task to make sure it handles the first
+	// event promptly. It doesn't have to actually do anything with
+	// this command.
+	write_port(thePlayer.Port(), Command_Attention, "", 0);
 }
 
 // ---------------------------------------------------------------------------
