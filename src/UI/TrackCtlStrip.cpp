@@ -1355,18 +1355,16 @@ CTrackCtlStrip::OnUpdate(
 			return;
 	}
 
-	int32 minTime = 0;
-	if (message->FindInt32("MinTime", 0, &minTime) == B_OK)
-	{
-		r.left = TimeToViewCoords(minTime) - 1.0;
-	}
+	int32 minTime;
+	if (message->FindInt32("MinTime", 0, &minTime) != B_OK)
+		minTime = ViewCoordsToTime(Bounds().left);
+	r.left = TimeToViewCoords(minTime) - 1.0;
 
-	int32 maxTime = LONG_MAX;
-	if (message->FindInt32("MaxTime", 0, &maxTime) == B_OK)
-	{
-		r.right = TimeToViewCoords(maxTime) + 1.0;
-	}
-	
+	int32 maxTime;
+	if (message->FindInt32("MaxTime", 0, &maxTime) != B_OK)
+		maxTime = ViewCoordsToTime(Bounds().right);
+	r.right = TimeToViewCoords(maxTime) + 1.0;
+
 	if (trackHint & CTrack::Update_Duration)
 		RecalcScrollRangeH();
 

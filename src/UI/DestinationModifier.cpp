@@ -134,7 +134,6 @@ CDestinationModifier::Update()
 }
 void CDestinationModifier::OnUpdate(BMessage *msg)
 {
-printf("OnUpdate (Dest)\n");
 //i don't really know why this would happen.
 }
 void
