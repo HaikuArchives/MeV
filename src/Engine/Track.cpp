@@ -105,8 +105,6 @@ CTrack::SetName(
 {
 	strncpy(m_name, name, 64);
 
-	Document().SetModified();
-
 	// Tell everyone that the name of the track changed
 	CUpdateHint hint;
 	hint.AddInt32("TrackID", GetID());
@@ -238,6 +236,8 @@ CTrackRenameUndoAction::CTrackRenameUndoAction(
 
 	m_name = m_track->Name();
 	m_track->SetName(newName.String());
+
+	m_track->Document().SetModified();
 }
 
 CTrackRenameUndoAction::~CTrackRenameUndoAction()
@@ -257,6 +257,7 @@ CTrackRenameUndoAction::Redo()
 	BString oldName = m_track->Name();
 	m_track->SetName(m_name.String());
 	m_name = oldName;
+	m_track->Document().SetModified();
 }
 
 void
@@ -267,6 +268,7 @@ CTrackRenameUndoAction::Undo()
 	BString oldName = m_track->Name();
 	m_track->SetName(m_name.String());
 	m_name = oldName;
+	m_track->Document().SetModified();
 }
 
 // END - Track.cpp
