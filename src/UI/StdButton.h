@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * StdButton.h (MeV/User Interface)
+ * StdButton.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -38,51 +38,63 @@
 #ifndef __StdButton_H__
 #define __StdButton_H__
 
-#include <interface/Control.h>
+#include <Control.h>
 
-	/**	A button class which pushes on but never off.
-	*/
+/**	A button class which pushes on but never off.
+*/
+class CPushOnButton
+	:	public BControl
+{
 
-class CPushOnButton : public BControl {
-	void Draw( BRect inUpdateRect );
-	void MouseDown( BPoint where );
-	void AttachedToWindow()
-	{
-		BControl::AttachedToWindow();
-		SetViewColor( B_TRANSPARENT_32_BIT );
-	}
-	BBitmap			*glyph[ 2 ];
+public:							// Constructor/Destructor
 
-public:
-	CPushOnButton(	BRect frame,
-					const char *name,
-					BBitmap	*inImage,
-					BMessage *message,
-					uint32 resizeMask = B_FOLLOW_LEFT | B_FOLLOW_TOP,
-					uint32 flags = B_WILL_DRAW )
-	: BControl( frame, name, NULL, message, resizeMask, flags )
-	{
-		glyph[ 0 ] = inImage;
-		glyph[ 1 ] = NULL;
-	}
+								CPushOnButton(
+									BRect frame,
+									const char *name,
+									BBitmap	*bitmap,
+									BMessage *message,
+									uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP,
+									uint32 flags = B_WILL_DRAW);
+
+								~CPushOnButton();
+
+public:							// BControl Implementation
+
+	virtual void				AttachedToWindow();
+
+	virtual void				Draw(
+									BRect updateRect);
+
+	virtual void				MouseDown(
+									BPoint point);
+
+	virtual void				MouseUp(
+									BPoint point);
+
+private:						// Instance Data
+
+	BBitmap	*					m_glyphs[2];
 };
 
-	/**	A button which toggles it's state.
-	*/
+/**	A button which toggles it's state.
+*/
+class CToggleButton
+	:	public CPushOnButton
+{
 
-class CToggleButton : public CPushOnButton {
-	void MouseDown( BPoint where );
+public:							// Constructor/Destructor
 
-public:
 	CToggleButton(	BRect frame,
 					const char *name,
-					BBitmap	*inImage,
+					BBitmap	*bitmap,
 					BMessage *message,
-					uint32 resizeMask = B_FOLLOW_LEFT | B_FOLLOW_TOP,
-					uint32 flags = B_WILL_DRAW )
-	: CPushOnButton( frame, name, inImage, message, resizeMask, flags )
-	{
-	}
+					uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP,
+					uint32 flags = B_WILL_DRAW);
+
+public:							// CPushOnButton Implementation
+
+	virtual void				MouseDown(
+									BPoint point);
 };
 
 #endif /* __StdButton_H__*/
