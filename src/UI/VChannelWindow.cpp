@@ -27,7 +27,7 @@
 class CVCRefFilter : public BRefFilter {
 	bool Filter( const entry_ref *ref, BNode *node, struct stat *st, const char *filetype )
 	{
-		return (strstr( filetype, "MeV" ) != NULL);
+		return (strstr( filetype, "MeV" ) != NULL || node->IsDirectory());
 	}
 };
 
@@ -324,8 +324,8 @@ void CVChannelWindow::MessageReceived( BMessage *msg )
 	
 			if (ni.InitCheck() == B_NO_ERROR)
 			{
-				ni.SetType( "audio/x-vnd.SylvanTechnicalArts-MeV-VTable" );
-				ni.SetPreferredApp( "application/x-vnd.SylvanTechnicalArts-MeV" );
+				ni.SetType("application/x-vnd.MeV-VTable");
+				ni.SetPreferredApp("application/x-vnd.MeV");
 			}
 		}
 		break;

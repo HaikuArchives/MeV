@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -30,6 +31,9 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	06/05/2000	malouin
+ *		Changed file types and changed CVCRefFilter so that directories
+ *		are visible in file panel.
  * ---------------------------------------------------------------------
  * To Do:
  *
