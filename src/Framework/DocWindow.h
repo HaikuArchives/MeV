@@ -51,8 +51,8 @@ class CDocWindow :
 	static CDocWindow	*activeDocWin;
 	friend class			CDocument;
 
-private:
-	void CalcWindowTitle( char *inTypeName );
+protected:
+	void CalcWindowTitle(const char *inTypeName);
 	void RecalcWindowTitle();
 	
 protected:
@@ -76,11 +76,11 @@ public:
 		/**	Constructor. */
 	CDocWindow(	BRect		frame,
 				CDocument	&inDocument,
-				char			*inWinTypeName = NULL,
+				const char	*inWinTypeName = NULL,
 				window_type = B_DOCUMENT_WINDOW, uint32 flags = 0 );
 	CDocWindow(	CWindowState	&inState,
 				CDocument	&inDocument,
-				char			*inWinTypeName = NULL,
+				const char	*inWinTypeName = NULL,
 				window_type = B_DOCUMENT_WINDOW, uint32 flags = 0 );
 	virtual ~CDocWindow();
 

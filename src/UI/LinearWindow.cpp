@@ -344,20 +344,14 @@ CLinearWindow::OnUpdate(
 {
 	int32 trackHint;
 	if (message->FindInt32("TrackAttrs", 0, &trackHint) != B_OK)
-	{
 		trackHint = 0;
-	}
 
 	int32 trackID;
 	if (message->FindInt32("TrackID", 0, &trackID) != B_OK)
-	{
 		trackID = -1;
-	}
 
 	if (trackHint & CTrack::Update_Name)
-	{
-//		trackNameCtl->SetText( Track()->Name() );
-	}
+		CalcWindowTitle(track->Name());
 }
 
 // ---------------------------------------------------------------------------

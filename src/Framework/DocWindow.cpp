@@ -14,7 +14,12 @@
 
 CDocWindow	*CDocWindow::activeDocWin;
 
-CDocWindow::CDocWindow( BRect frame, CDocument &inDocument, char *inTypeName, window_type wType, uint32 flags )
+CDocWindow::CDocWindow(
+	BRect frame,
+	CDocument &inDocument,
+	const char *inTypeName,
+	window_type wType,
+	uint32 flags)
 	: CAppWindow(frame, NULL, wType, 0 ),
 	  document( inDocument )
 {
@@ -27,7 +32,12 @@ CDocWindow::CDocWindow( BRect frame, CDocument &inDocument, char *inTypeName, wi
 	updateMenus = true;
 }
 
-CDocWindow::CDocWindow( CWindowState &inState, CDocument &inDocument, char *inTypeName, window_type wType, uint32 flags )
+CDocWindow::CDocWindow(
+	CWindowState &inState,
+	CDocument &inDocument,
+	const char *inTypeName,
+	window_type wType,
+	uint32 flags )
 	: CAppWindow( inState, inState.Rect(), NULL, wType, 0 ),
 	  document( inDocument )
 {
@@ -49,7 +59,9 @@ CDocWindow::~CDocWindow()
 	be_app->Unlock();
 }
 
-void CDocWindow::CalcWindowTitle( char *inTypeName )
+void
+CDocWindow::CalcWindowTitle(
+	const char *inTypeName)
 {
 	char				name[ B_FILE_NAME_LENGTH + 32 ];
 	document.GetName( name );

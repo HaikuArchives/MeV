@@ -46,7 +46,8 @@ CTrackWindow::CTrackWindow(
 	BRect frame,
 	CMeVDoc &inDocument,
 	CEventTrack *inTrack)
-	:	CDocWindow(frame, (CDocument &)inDocument),
+	:	CDocWindow(frame, (CDocument &)inDocument,
+				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL),
 		CObserver(*this, &inDocument),
 		stripFrame(NULL),
 		stripScroll(NULL),
