@@ -165,6 +165,19 @@ public:							// Accessors
 	CSignatureMap &				SigMap()
 								{ return sigMap; }
 
+	/**	Get start of playback section. */
+	int32						SectionStart() const
+								{ return m_sectionStart; }
+
+	/**	Get end of playback section. */
+	int32						SectionEnd()
+								{ return m_sectionEnd; }
+
+	/**	Set the playback section. */
+	void						SetSection(
+									int32 start,
+									int32 end);
+
 	/** Remember the associated TrackWindows' state */
 	void						SetWindowSettings(
 									BMessage *message);
@@ -247,6 +260,12 @@ private:
 	/** indicates that the associated window should be opened after loading
 	 the track. */
 	bool						m_openWindow;
+
+	/** Start of playback section. */
+	int32						m_sectionStart;
+
+	/** End of playback section. */
+	int32						m_sectionEnd;
 };
 
 // ---------------------------------------------------------------------------

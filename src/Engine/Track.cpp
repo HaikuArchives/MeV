@@ -38,7 +38,9 @@ CTrack::CTrack(
 		m_deleted(false),
 		m_window(NULL),
 		m_windowSettings(NULL),
-		m_openWindow(false)
+		m_openWindow(false),
+		m_sectionStart(0),
+		m_sectionEnd(0)
 {
 	// REM: Calculate a unique track ID.
 	if (inID < 0)
@@ -119,6 +121,69 @@ CTrack::SetSolo(
 {
 	m_solo = solo;
 	NotifyUpdate(Update_Flags, NULL);
+}
+
+void
+CTrack::SetSection(
+	int32 begin,
+	int32 end)
+{
+	ASSERT(IsLocked());
+
+	if (begin > end)
+	{
+		int32 temp = begin;
+		begin = end;
+		end = temp;
+	}
+
+	int32 beginMinTime = 0, beginMaxTime = 0;
+	if (begin != m_sectionStart)
+	{
+		if (begin > m_sectionStart)
+		{
+			beginMinTime = m_sectionStart;
+			beginMaxTime = begin;
+		}
+		else
+		{
+			beginMinTime = begin;
+			beginMaxTime = m_sectionStart;
+		}
+	}
+	int32 endMinTime = 0, endMaxTime = 0;
+	if (end != m_sectionEnd)
+	{
+		if (end < m_sectionEnd)
+		{
+			endMinTime = end;
+			endMaxTime = m_sectionEnd;
+		}
+		else
+		{
+			endMinTime = m_sectionEnd;
+			endMaxTime = end;
+		}
+	}
+
+	int32 minTime = beginMinTime;
+	if (beginMinTime == 0)
+		minTime = endMinTime;
+	int32 maxTime = endMaxTime;
+	if (endMaxTime == 0)
+		maxTime = beginMaxTime;
+
+	m_sectionStart = begin;
+	m_sectionEnd = end;
+	Document().SetModified();
+
+	// Tell everyone that the section has changed
+	CUpdateHint hint;
+	hint.AddInt32("TrackID", GetID());
+	hint.AddInt32("TrackAttrs", Update_Section);
+	hint.AddInt32("MinTime", minTime);
+	hint.AddInt32("MaxTime", maxTime);
+	PostUpdate(&hint, NULL);
 }
 
 void
@@ -233,6 +298,11 @@ CTrack::ReadTrackChunk(
 			reader.MustRead(m_name, MIN(reader.ChunkLength(), TRACK_NAME_LENGTH));
 			break;
 		}
+		case Track_Section_ID:
+		{
+			reader >> m_sectionStart >> m_sectionEnd;
+			break;
+		}
 		case TRACK_WINDOW_CHUNK:
 		{
 			int8 visible;
@@ -274,6 +344,14 @@ CTrack::WriteTrack(
 
 	// write track name
 	writer.WriteChunk(Track_Name_ID, m_name, TRACK_NAME_LENGTH);
+
+	// write section markers if non-default.
+	if ((SectionStart() != 0) || (SectionEnd() != 0))
+	{
+		writer.Push( Track_Section_ID );
+		writer << SectionStart() << SectionEnd();
+		writer.Pop();
+	}
 
 	// write window settings
 	if (m_window)

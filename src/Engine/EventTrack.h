@@ -69,9 +69,6 @@ private:
 	long				minSelectTime,			// start time of selection
 					maxSelectTime;			// end time of selection
 					
-	long				sectionStart,			// Start of playback section
-						sectionEnd;				// End of playback section.
-
 	long				timeGridSize;			// gridsnap size for time
 	bool				gridSnapEnabled;			// grid snap is enabled.
 
@@ -259,19 +256,6 @@ public:
 		/**	Set the track grid size. */
 	void SetTimeGridSize( int32 inGrid ) { timeGridSize = inGrid; }
 	
-		/**	Get start of playback section. */
-	int32 SectionStart() { return sectionStart; }
-	
-		/**	Get end of playback section. */
-	int32 SectionEnd() { return sectionEnd; }
-	
-		/**	Set the playback section. */
-	void SetSection( int32 start, int32 end )
-	{
-		sectionStart	= start < end ? start : end;
-		sectionEnd	= start > end ? start : end;
-	}
-
 		/**	Overrides AddUndoAction from CObservable to deal with
 			master track issues. */
 	void AddUndoAction( UndoAction *inAction );

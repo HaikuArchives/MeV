@@ -14,43 +14,42 @@
 // ---------------------------------------------------------------------------
 // Event track constructor
 
-CEventTrack::CEventTrack( CMeVDoc &inDoc, TClockType cType, int32 inID, char *inName )
-	: CTrack( inDoc, cType, inID, inName )
+CEventTrack::CEventTrack(
+	CMeVDoc &inDoc,
+	TClockType cType,
+	int32 inID,
+	char *inName)
+	: CTrack(inDoc, cType, inID, inName)
 {
-	
 	StSubjectLock		lock( *this, Lock_Exclusive );
 
-		// Set the initial grid size and enable gridsnap
+	// Set the initial grid size and enable gridsnap
 	timeGridSize = Ticks_Per_QtrNote / 2;
 	gridSnapEnabled = true;
 
-		// Initialize the count of selected events (initially 0)
+	// Initialize the count of selected events (initially 0)
 	selectionCount = 0;
 
-		// Associate the current event marker with the event list.
-	currentEvent.SetList( events );
-	
-		// Initialize the list of filters
+	// Associate the current event marker with the event list.
+	currentEvent.SetList(events);
+
+	// Initialize the list of filters
 	filterCount = 0;
 
-		// Set the signature map to invalid so that it will be regenerated
+	// Set the signature map to invalid so that it will be regenerated
 	validSigMap = false;
 
-		// Initialize the signature map.
+	// Initialize the signature map.
 	if (sigMap.clockType == ClockType_Metered)
 	{
 		sigMap.entries		= NULL;
 		sigMap.numEntries	= 0;
 	}
-	
-		// Sunmarize the current selection (which is NIL).
+
+	// Sunmarize the current selection (which is NIL).
 	SummarizeSelection();
 
-	// Initialize the section markers to the beginning of the track
-	sectionStart = 0;
-	sectionEnd = LogicalLength();
-
-		// Compile list of track operators
+	// Compile list of track operators
 	CompileOperators();
 }
 
@@ -1040,14 +1039,6 @@ void CEventTrack::WriteTrack( CIFFWriter &writer )
 
 	CTrack::WriteTrack( writer );
 
-		// Write section markers if non-default.
-	if (sectionStart != 0 || sectionEnd != 0)
-	{
-		writer.Push( Track_Section_ID );
-		writer << sectionStart << sectionEnd;
-		writer.Pop();
-	}
-
 	writer.Push( Track_Grid_ID );
 	writer << timeGridSize << gsnap;
 	writer.Pop();
@@ -1070,11 +1061,6 @@ CEventTrack::ReadTrackChunk(
 {
 	switch (reader.ChunkID())
 	{
-		case Track_Section_ID:
-		{
-			reader >> sectionStart >> sectionEnd;
-			break;
-		}
 		case Track_Grid_ID:
 		{
 			uint8 gsnap;
