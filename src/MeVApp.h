@@ -249,7 +249,6 @@ private:						// Instance Data
 	BList						defaultOperatorList;
 	BList						deviceList;
 //	BList						patchList;
-	m_destlist					defaultVCTable;
 
 	/** Menu lists for plug-ins */
 	CDynamicMenuDef				assemWindowPlugIns,

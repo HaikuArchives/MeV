@@ -42,9 +42,10 @@ CDestinationListView::CDestinationListView(
 		//popup
 	r.Set(2,2,132,10);
 	m_destMenu=new BPopUpMenu("-");
-	BMenuField *menufield;
-	menufield=new BMenuField(r,"dest field","Destination",m_destMenu);
-	AddChild (menufield);
+	m_destfield=new BMenuField(r,"dest field","Destination",m_destMenu);
+	m_destfield->SetEnabled(false);
+	AddChild (m_destfield);
+	
 			//add new, delete.
 	BMenuItem *new_vc=new BMenuItem ("New",new BMessage (NEW_ID));
 	m_destMenu->AddItem(new_vc);
@@ -78,6 +79,7 @@ CDestinationListView::CDestinationListView(
 	
 	BBox *box=new BBox(Bounds());
 	AddChild(box);
+	
 }
 
 void CDestinationListView::AttachedToWindow()
@@ -93,7 +95,7 @@ void CDestinationListView::OnUpdate(BMessage *message)
 {
 //read port,channel,color,name changes and what not.//mute refresh track.
 	Update();
-	SetChannel(m_selected_id);
+	SetChannel(m_destList->SelectedId());
 	//we can really improve the efficency here.
 }
 void CDestinationListView::Update()
@@ -140,7 +142,9 @@ void CDestinationListView::Update()
 }
 void CDestinationListView::SetTrack( CEventTrack *inTrack )
 {
-
+	BView::LockLooper();
+	m_destfield->SetEnabled(true);
+	BView::UnlockLooper();
 	if (track != inTrack)
 	{
 		CRefCountObject::Release( track );
@@ -153,18 +157,24 @@ void CDestinationListView::SetTrack( CEventTrack *inTrack )
 			Window()->Unlock();
 		}*/
 		Update();
+		SetChannel(m_destList->SelectedId());
 	}
 }
 
 		/**	Set which channel is selected. */
-void CDestinationListView::SetChannel( uint8 inChannel )
+void CDestinationListView::SetChannel( int inChannel )
 {
-	m_selected_id=inChannel;
-	if (m_selected_id==-1) return;
+	m_destList->SetSelectedId(inChannel);
+	if (m_destList->SelectedId()==-1)
+	{
+		BMenuItem *selected=m_destMenu->ItemAt(0);
+		selected->SetMarked(true);
+		return;
+	}
 	int c=0;
 	for (m_destList->First();!m_destList->IsDone();m_destList->Next())
 	{
-		if (m_selected_id==m_destList->CurrentID())
+		if (m_destList->SelectedId()==m_destList->CurrentID())
 		{
 			Destination *dest=m_destList->CurrentDest();
 			BMenuItem *selected=m_destMenu->ItemAt(c+2);
@@ -196,7 +206,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 				int8 vc_id;
 			  	msg->FindInt8("channel",&vc_id);
 			  	SetChannel(vc_id);
-			  	m_selected_id=vc_id;
+			  	m_destList->SetSelectedId(vc_id);
 				Window()->PostMessage( msg );
 			}
 			break;
@@ -204,18 +214,18 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 			{
 				if (!m_destMenu->ItemAt(0)->IsMarked())
 				{
-					if (m_modifierMap[m_selected_id]!=NULL)
+					if (m_modifierMap[m_destList->SelectedId()]!=NULL)
 					{
-						m_modifierMap[m_selected_id]->Lock();
-						m_modifierMap[m_selected_id]->Activate();
-						m_modifierMap[m_selected_id]->Unlock();
+						m_modifierMap[m_destList->SelectedId()]->Lock();
+						m_modifierMap[m_destList->SelectedId()]->Activate();
+						m_modifierMap[m_destList->SelectedId()]->Unlock();
 					}
 					else 
 					{
 						BRect r;
 						r.Set(40,40,300,240);
-						m_modifierMap[m_selected_id]=new CDestinationModifier(r,m_selected_id,m_destList,(BView *)this);
-						m_modifierMap[m_selected_id]->Show();
+						m_modifierMap[m_destList->SelectedId()]=new CDestinationModifier(r,m_destList->SelectedId(),m_destList,(BView *)this);
+						m_modifierMap[m_destList->SelectedId()]->Show();
 					}
 				}
 				
@@ -225,17 +235,17 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 			{	
 				if (!m_destMenu->ItemAt(0)->IsMarked())
 				{
-					m_destList->RemoveVC(m_selected_id);
+					m_destList->RemoveVC(m_destList->SelectedId());
 					Update();
 					BMenuItem *select=m_destMenu->ItemAt(0);
 					select->SetMarked(true);
-					if (m_modifierMap[m_selected_id]!=NULL)
+					if (m_modifierMap[m_destList->SelectedId()]!=NULL)
 					{
-						m_modifierMap[m_selected_id]->Lock();	
-						m_modifierMap[m_selected_id]->Quit();
-						m_modifierMap[m_selected_id]=NULL;
+						m_modifierMap[m_destList->SelectedId()]->Lock();	
+						m_modifierMap[m_destList->SelectedId()]->Quit();
+						m_modifierMap[m_destList->SelectedId()]=NULL;
 					}
-					m_selected_id=-1;
+					m_destList->SetSelectedId(-1);
 				}
 			}
 			break;
@@ -270,7 +280,7 @@ void CDestinationListView::MessageReceived(BMessage *msg)
 			//case VCTM_NOTIFY:
 			//{
 			//	Update();
-			//	SetChannel(m_selected_id);
+			//	SetChannel(m_destList->SelectedId(););
 			//}
 			default:
 				BView::MessageReceived(msg);

@@ -263,39 +263,6 @@ CMeVApp::CMeVApp()
 		// +++ what goes in here ?
 	}
 	
-		// Load default virtual channel table...
-	if (!vtableSettings.InitCheck())
-	{
-		BMessage		&prefMessage = vtableSettings.GetMessage();
-				
-		for (int i = 0; i < Max_Destinations; i++)
-		{
-			int8				b;
-			bool				t;
-		
-			Destination	&dest = (*defaultVCTable)[ i ];
-
-			//if (prefMessage.FindInt8( "Port", i, &b ) == B_OK) dest.port = b;
-			if (prefMessage.FindInt8( "Channel", i, &b ) == B_OK) dest.channel = b;
-			if (prefMessage.FindInt8( "Red", i, &b ) == B_OK) dest.fillColor.red = b;
-			if (prefMessage.FindInt8( "Green", i, &b ) == B_OK) dest.fillColor.green = b;
-			if (prefMessage.FindInt8( "Blue", i, &b ) == B_OK) dest.fillColor.blue = b;
-			//if (prefMessage.FindInt8( "Contour", i, &b ) == B_OK) dest.velocityContour = b;
-
-			if (prefMessage.FindBool( "Transpose", i, &t ) == B_OK)
-			{
-				if (t) dest.flags |= Destination::transposable;
-				else dest.flags &= ~Destination::transposable;
-			}
-
-			if (prefMessage.FindBool( "Mute", i, &t ) == B_OK)
-			{
-				if (t) dest.flags |= Destination::mute;
-				else dest.flags &= ~Destination::mute;
-			}
-		}	
-	}
-	
 	if (trackListOpen)
 		ShowTrackList(true);
 	if (inspectorOpen)

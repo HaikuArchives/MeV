@@ -45,7 +45,7 @@
 #include <CheckBox.h> 
 #include <StringView.h> 
 #include <Looper.h> 
-
+#include <MenuField.h>
 //stl 
 #include <map.h> 
 #include "DestinationModifier.h" 
@@ -53,7 +53,7 @@ class CDestinationListView :
         public BView ,public CObserver{ 
 
 private: 
-        uint8                   m_selected_id; 
+       // uint8                   m_selected_id; 
         uint8                   m_default_id; 
         Destination *m_dest;//selected vc. 
         
@@ -64,7 +64,8 @@ private:
         BStringView         *m_channel; 
         CTextDisplay    *m_channelValue; 
         BStringView     *m_port; 
-        CTextDisplay    *m_portName; 
+        CTextDisplay    *m_portName;
+        BMenuField		*m_destfield;
         BCheckBox               *m_mute; 
         BCheckBox               *m_lock; 
         map <int,CDestinationModifier *> m_modifierMap; 
@@ -93,7 +94,7 @@ public:
         void Update(); 
         virtual void MessageReceived(BMessage *msg); 
                 /**     Set which channel is selected. */ 
-        void SetChannel( uint8 inChannel ); 
+        void SetChannel( int inChannel ); 
         virtual void OnUpdate (BMessage *message); 
 }; 
 #endif /* __C_ChannelSelectorView_H__ */

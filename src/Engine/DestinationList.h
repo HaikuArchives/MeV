@@ -77,7 +77,10 @@ public:
 	void SetDeletedFor (int id, bool deleted);
 	void ReadVCTable (CIFFReader &reader);
 	void WriteVCTable (CIFFWriter &writer);
+	void SetSelectedId(int id);
+	int SelectedId();
 private:
+	int m_selected_id;
 	int32 count;
 	virtual void OnUpdate(BMessage *msg);
 	CMidiManager *m_midimanager;

@@ -25,6 +25,7 @@ const rgb_color CDestinationList::m_defaultColorTable[]= {
 };
 CDestinationList::CDestinationList(CMeVDoc *inDoc) : CObservableSubject (),CObserver(* CMidiManager::Instance(),CMidiManager::Instance())
 {
+	m_selected_id=-1;
     count=0;
     pos=0;
     m_notifier=NULL;
@@ -66,6 +67,14 @@ int CDestinationList::NewDest()
     	}
     }
     return -1;		
+}
+void CDestinationList::SetSelectedId(int id)
+{
+	m_selected_id=id;
+}
+int CDestinationList::SelectedId()
+{
+	return (m_selected_id);
 }
 void CDestinationList::RemoveVC (int id)
 {

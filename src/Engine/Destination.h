@@ -94,7 +94,6 @@ public:
 						highlightColor;			// hightlight color
 };
 
-typedef Destination  * m_destlist[ Max_Destinations ];
 
 /* ============================================================================ *
    VBitTable -- array of bits, one for each possible virtual channel.
