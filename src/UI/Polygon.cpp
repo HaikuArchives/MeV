@@ -1,9 +1,11 @@
 /* ===================================================================== *
- * Polygon.cpp (MeV/User Interface)
+ * Polygon.cpp (MeV/UI)
  * ===================================================================== */
 
 #include "Polygon.h"
 
+// Gnu C Library
+#include <string.h>
 // Support Kit
 #include <Debug.h>
 
