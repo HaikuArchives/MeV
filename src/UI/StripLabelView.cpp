@@ -41,8 +41,6 @@ CStripLabelView::CStripLabelView(
 	SetViewColor(B_TRANSPARENT_COLOR);
 	SetLowColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	SetHighColor(128, 128, 128, 255);
-
-	InitContextMenu();
 }
 
 CStripLabelView::~CStripLabelView()
@@ -109,6 +107,8 @@ CStripLabelView::FrameView() const
 void
 CStripLabelView::AttachedToWindow()
 {
+	InitContextMenu();
+
 	if (m_bitmap == NULL)
 	{
 		BFont font(be_bold_font);
@@ -147,6 +147,15 @@ CStripLabelView::Draw(
 	BRect updateRect)
 {
 	DrawInto(this, updateRect);
+
+	if (!Window()->IsActive())
+	{
+		BRect r(Bounds());
+		r.InsetBy(1.0, 0.0);
+		SetHighColor(255, 255, 255, 255);
+		SetDrawingMode(B_OP_BLEND);
+		FillRect(r & updateRect);
+	}
 }
 
 void
@@ -215,6 +224,13 @@ CStripLabelView::MouseUp(
 	{
 		m_dragging = false;
 	}
+}
+
+void
+CStripLabelView::WindowActivated(
+	bool active)
+{
+	Invalidate();
 }
 
 // ---------------------------------------------------------------------------

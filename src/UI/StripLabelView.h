@@ -94,6 +94,9 @@ public:							// BView Implementation
 	virtual void				MouseUp(
 									BPoint point);
 
+	virtual void				WindowActivated(
+									bool active);
+
 protected:						// Internal Methods
 
 	BPopUpMenu *				ContextMenu() const
