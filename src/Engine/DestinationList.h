@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * DestinationList.h (MeV/engine)
+ * DestinationList.h (MeV/Engine)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -43,12 +43,13 @@
 #include "IFFReader.h"
 #include "MidiManager.h"
 #include <String.h>
-//enum ID {
-//	VCTM_NOTIFY='ntfy'
-//	};
+
 class CMeVDoc;
+
 class CDestinationList :
-	public CObservableSubject,public CObserver {
+	public CObservableSubject,
+	public CObserver
+{
 public:
 	CDestinationList(CMeVDoc *inDoc);
 	~CDestinationList();
@@ -68,7 +69,7 @@ public:
 	int CurrentID();
 	BBitmap * GetIconFor (int id,BRect r) const;
 	void ToggleConnectFor (int id, BMidiConsumer *sink);
-	void SetColorFor(int id, rgb_color color);
+	void SetColorFor(int id, rgb_color color, bool postUpdate = true);
 	void SetNameFor(int id,BString name);
 	void SetChannelFor(int id,int channel);
 	void SetPortFor (int id,BMidiLocalProducer *producer);
@@ -91,4 +92,5 @@ private:
 	Destination * m_tablerep[Max_Destinations];
 	CMeVDoc *m_doc;
 };
-#endif /* __C_VChannelManager_H__ */
+
+#endif /* __C_DestinationList_H__ */

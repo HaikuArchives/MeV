@@ -79,9 +79,6 @@ CDestinationListView::CDestinationListView(
 	
 	BBox *box=new BBox(Bounds());
 	AddChild(box);
-	
-
-	
 }
 
 void CDestinationListView::AttachedToWindow()
@@ -144,13 +141,8 @@ void CDestinationListView::SetTrack( CEventTrack *inTrack )
 	{
 		CRefCountObject::Release( track );
 		track = inTrack;
-		if (track) track->Acquire();
-		/*if (Window())
-		{
-			Window()->Lock();
-			Update();
-			Window()->Unlock();
-		}*/
+		if (track)
+			track->Acquire();
 		Update();
 		SetChannel(m_destList->SelectedId());
 	}
@@ -191,85 +183,87 @@ void CDestinationListView::SetChannel( int inChannel )
 void CDestinationListView::MessageReceived(BMessage *msg)
 {
 	switch (msg->what)
+	{
+		case CHANNEL_CONTROL_ID:
 		{
-			case CHANNEL_CONTROL_ID:
+			int8 vc_id;
+		  	msg->FindInt8("channel",&vc_id);
+		  	SetChannel(vc_id);
+		  	m_destList->SetSelectedId(vc_id);
+			Window()->PostMessage( msg );
+		}
+		break;
+		case EDIT_ID:
+		{
+			if (!m_destMenu->ItemAt(0)->IsMarked())
 			{
-				int8 vc_id;
-			  	msg->FindInt8("channel",&vc_id);
-			  	SetChannel(vc_id);
-			  	m_destList->SetSelectedId(vc_id);
-				Window()->PostMessage( msg );
-			}
-			break;
-			case EDIT_ID:
-			{
-				if (!m_destMenu->ItemAt(0)->IsMarked())
+				if (m_modifierMap[m_destList->SelectedId()]!=NULL)
 				{
-					if (m_modifierMap[m_destList->SelectedId()]!=NULL)
-					{
-						m_modifierMap[m_destList->SelectedId()]->Lock();
-						m_modifierMap[m_destList->SelectedId()]->Activate();
-						m_modifierMap[m_destList->SelectedId()]->Unlock();
-					}
-					else 
-					{
-						BRect r;
-						r.Set(40,40,300,220);
-						m_modifierMap[m_destList->SelectedId()]=new CDestinationModifier(r,m_destList->SelectedId(),m_destList,(BView *)this);
-						m_modifierMap[m_destList->SelectedId()]->Show();
-					}
+					m_modifierMap[m_destList->SelectedId()]->Lock();
+					m_modifierMap[m_destList->SelectedId()]->Activate();
+					m_modifierMap[m_destList->SelectedId()]->Unlock();
 				}
-				
-			}
-			break;
-			case DELETE_ID:
-			{	
-				if (!m_destMenu->ItemAt(0)->IsMarked())
+				else 
 				{
-					m_destList->RemoveVC(m_destList->SelectedId());
-					Update();
-					BMenuItem *select=m_destMenu->ItemAt(0);
-					select->SetMarked(true);
-					if (m_modifierMap[m_destList->SelectedId()]!=NULL)
-					{
-						m_modifierMap[m_destList->SelectedId()]->Lock();	
-						m_modifierMap[m_destList->SelectedId()]->Quit();
-						m_modifierMap[m_destList->SelectedId()]=NULL;
-					}
-					m_destList->SetSelectedId(-1);
+					BRect r;
+					r.Set(40,40,300,220);
+					m_modifierMap[m_destList->SelectedId()]=new CDestinationModifier(r,m_destList->SelectedId(),m_destList,(BView *)this);
+					m_modifierMap[m_destList->SelectedId()]->Show();
 				}
 			}
-			break;
-			case VCQUIT:
+			
+		}
+		break;
+		case DELETE_ID:
+		{	
+			if (!m_destMenu->ItemAt(0)->IsMarked())
 			{
-				int32 quit_id=msg->FindInt32("ID");
-				m_modifierMap[quit_id]->Lock();
-				m_modifierMap[quit_id]->Quit();
-				m_modifierMap[quit_id]=NULL;
+				m_destList->RemoveVC(m_destList->SelectedId());
+				Update();
+				BMenuItem *select=m_destMenu->ItemAt(0);
+				select->SetMarked(true);
+				if (m_modifierMap[m_destList->SelectedId()]!=NULL)
+				{
+					m_modifierMap[m_destList->SelectedId()]->Lock();	
+					m_modifierMap[m_destList->SelectedId()]->Quit();
+					m_modifierMap[m_destList->SelectedId()]=NULL;
+				}
+				m_destList->SetSelectedId(-1);
 			}
+		}
+		break;
+		case VCQUIT:
+		{
+			int32 quit_id=msg->FindInt32("ID");
+			m_modifierMap[quit_id]->Lock();
+			m_modifierMap[quit_id]->Quit();
+			m_modifierMap[quit_id]=NULL;
+		}
+		break;
+		case NEW_ID:
+		{
+			BRect r;
+			r.Set(40,40,300,220);
+			int n=m_destList->NewDest();
+			m_modifierMap[n]=new CDestinationModifier(r,n,m_destList,(BView *)this);
+			m_modifierMap[n]->Show();	
+			Update();	
+			SetChannel(n);	
+			BMessage *msg=new BMessage(CHANNEL_CONTROL_ID);
+			msg->AddInt8("channel",n);
+			Window()->PostMessage( msg );
+		}
+		break;
+		case Update_ID:
+		case Delete_ID:
+		{
+			CObserver::MessageReceived(msg);
+		}
+		break;
+		default:
+		{
+			BView::MessageReceived(msg);
 			break;
-			case NEW_ID:
-			{
-				BRect r;
-				r.Set(40,40,300,220);
-				int n=m_destList->NewDest();
-				m_modifierMap[n]=new CDestinationModifier(r,n,m_destList,(BView *)this);
-				m_modifierMap[n]->Show();	
-				Update();	
-				SetChannel(n);	
-				BMessage *msg=new BMessage(CHANNEL_CONTROL_ID);
-				msg->AddInt8("channel",n);
-				Window()->PostMessage( msg );
-			}
-			break;
-			case Update_ID:
-			case Delete_ID:
-			{
-				CObserver::MessageReceived(msg);
-			}
-			break;
-			default:
-				BView::MessageReceived(msg);
-				break;
-			}
+		}
+	}
 }

@@ -16,10 +16,13 @@ CReconnectingMidiProducer::CReconnectingMidiProducer(const char *name)
 
 void CReconnectingMidiProducer::AddToConnectList (const char *name)
 {
-	BMessage *props;
+	BMessage *props = NULL;
 	GetProperties (props);
-	props->AddString("mev:holdConnection",name);
-	SetProperties (props);
+	if (props)
+	{
+		props->AddString("mev:holdConnection",name);
+		SetProperties (props);
+	}
 }
 
 void CReconnectingMidiProducer::RemoveFromConnectList (const char *name)
@@ -81,11 +84,11 @@ BBitmap* CReconnectingMidiProducer::_createIcon(const BMessage* msg, icon_size w
 	const char* iconName;
 
 	if (which == B_LARGE_ICON) {
-		iconSize = 32;
+		iconSize = B_LARGE_ICON;
 		iconType = 'ICON';
 		iconName = "be:large_icon";
 	} else if (which == B_MINI_ICON) {
-		iconSize = 16;
+		iconSize = B_MINI_ICON;
 		iconType = 'MICN';
 		iconName = "be:mini_icon";
 	} else {

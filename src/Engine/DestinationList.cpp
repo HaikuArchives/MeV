@@ -241,7 +241,6 @@ void WriteStr255( CAbstractWriter &outWriter, char *inBuffer, int32 inLength )
 
 void CDestinationList::ReadVCTable (CIFFReader &reader)
 {
-	int32		i = 0;
 	int32 portid=0;
 	BString midiport;
 	char buff[255];
@@ -251,10 +250,12 @@ void CDestinationList::ReadVCTable (CIFFReader &reader)
 		m_tablerep[portid]=new Destination;
 		m_tablerep[portid]->m_producer=new CReconnectingMidiProducer("");
 		reader >> m_tablerep[portid]->channel >> m_tablerep[portid]->flags >> m_tablerep[portid]->velocityContour >> m_tablerep[portid]->initialTranspose;
-		reader >> m_tablerep[portid]->fillColor.red;
-		reader >> m_tablerep[portid]->fillColor.green;
-		reader >> m_tablerep[portid]->fillColor.blue;
-		ReadStr255( reader,buff, 255 );
+		rgb_color color;
+		reader >> color.red;
+		reader >> color.green;
+		reader >> color.blue;
+		SetColorFor(portid, color, false);
+		ReadStr255(reader,buff, 255);
 		m_tablerep[portid]->name.SetTo(buff);
 		//set producer name
 		ReadStr255(reader,buff,255);
@@ -282,7 +283,6 @@ void CDestinationList::ReadVCTable (CIFFReader &reader)
 void CDestinationList::WriteVCTable (CIFFWriter &writer)
 {
 	char buff[255];
-	char buff2[255];
 	for (First();!IsDone();Next())
 	{
 		writer << (int32)CurrentID(); 
@@ -326,9 +326,9 @@ BBitmap * CDestinationList::GetIconFor (int id,BRect r) const
 		
 		//BView::LockLooper();
 		icon->Lock();
-		icon->AddChild (icon_view);
-		icon_view->SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
-		icon_view->FillRect(r,B_SOLID_HIGH);
+		icon->AddChild(icon_view);
+		icon_view->SetHighColor(B_TRANSPARENT_COLOR);
+		icon_view->FillRect(r, B_SOLID_HIGH);
 		icon_view->SetHighColor(dest->fillColor);
 		
 		if ((dest->flags & Destination::disabled) || (dest->flags & Destination::mute))
@@ -382,7 +382,8 @@ void CDestinationList::SetNameFor(
 void
 CDestinationList::SetColorFor(
 	int id,
-	rgb_color color)
+	rgb_color color,
+	bool postUpdate)
 {
 	Destination *dest = m_tablerep[id];
 	if (dest)
@@ -404,15 +405,15 @@ CDestinationList::SetColorFor(
 	dest->m_producer->SetProperties(&msg);
 	//end producer set
 	
-	CUpdateHint		hint;
-	hint.AddInt8( "channel", id);
-	CObservableSubject::PostUpdate( &hint, NULL );
-	m_doc->PostUpdateAllTracks(&hint);
-	
-	
-	
-	
+	if (postUpdate)
+	{
+		CUpdateHint hint;
+		hint.AddInt8("channel", id);
+		CObservableSubject::PostUpdate(&hint, NULL);
+		m_doc->PostUpdateAllTracks(&hint);
+	}
 }
+
 void 
 CDestinationList::SetChannelFor(
 	int id,
@@ -474,11 +475,8 @@ CDestinationList::SetDeletedFor(
 	{
 		dest->flags+=Destination::deleted;		
 		dest->m_producer->Unregister();
-		dest->fillColor.red=150;
-		dest->fillColor.green=150;
-		dest->fillColor.blue=150;
-		
-		
+		rgb_color color = {150, 150, 150, 255};
+		SetColorFor(id, color);
 		
 		CUpdateHint hint;
 		hint.AddInt8("channel",id);

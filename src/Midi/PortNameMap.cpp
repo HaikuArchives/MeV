@@ -12,8 +12,8 @@ CPortNameMap::CPortNameMap()
 m_map=new BList();
 
 //this is kinda ugly right now...
-CStringTuple * amap=new CStringTuple;
 /*
+CStringTuple * amap=new CStringTuple;
 amap->name=new BString("/dev/midi/awe64/1");
 amap->map=new BString("SoundBlaster AWE64 1");
 m_map->AddItem(amap);

@@ -246,8 +246,7 @@ void CMidiManager::_copyIcon(const BMessage* smsg,BMessage* dmsg)
 	uint32 iconType;
 	const char* iconName;
 	const void* data;
-	const void* data2;
-	ssize_t size,size2;
+	ssize_t size;
 
 	iconSize = 32;
 	iconType = 'ICON';
@@ -270,8 +269,8 @@ void CMidiManager::_copyIcon(const BMessage* smsg,BMessage* dmsg)
 void CMidiManager::_disconnect(int32 prod,int32 con)
 {
 	
-	BMidiProducer *producer = m_roster->FindProducer(prod);
-	BMidiConsumer *consumer = m_roster->FindConsumer(con);	
+//	BMidiProducer *producer = m_roster->FindProducer(prod);
+//	BMidiConsumer *consumer = m_roster->FindConsumer(con);	
 	//printf ("disonnected %s %s\n",producer->Name(),consumer->Name());
 
 }
