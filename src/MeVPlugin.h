@@ -20,6 +20,7 @@
  *
  *  Contributor(s): 
  *		Christopher Lenz (cell)
+ *		Curt Malouin (malouin)
  *
  * ---------------------------------------------------------------------
  * Purpose:
@@ -30,6 +31,8 @@
  *		Original implementation
  *	04/08/2000	cell
  *		General cleanup in preparation for initial SourceForge checkin
+ *	09/13/2000	malouin
+ *		Expanded MeVTrackRef interface, implemented part of MeVEventRef
  * ---------------------------------------------------------------------
  * To Do:
  *
@@ -43,9 +46,11 @@
 #include "EventOp.h"
 
 // Application Kit
-#include <Handler.h>
-// Support Kit
-#include <OS.h>
+#include <app/Handler.h>
+// Interface Kit
+#include <interface/GraphicsDefs.h>
+// Kernel Kit
+#include <kernel/OS.h>
 
 // ---------------------------------------------------------------------
 //	Forward declarations
@@ -53,10 +58,11 @@
 class MeVSpec MeVPlugIn;
 class MeVSpec MeVDocRef;
 class MeVSpec MeVTrackRef;
+class MeVSpec MeVEventRef;
 
 typedef MeVDocRef	*MeVDocHandle;
 typedef MeVTrackRef	*MeVTrackHandle;
-// typedef MeVEventRef	*MeVEventHandle;
+typedef MeVEventRef	*MeVEventHandle;
 
 // ---------------------------------------------------------------------
 //	Constants for adding plugins to various editor window menus.
@@ -224,6 +230,9 @@ public:
 			Note that the master track has an ID of 0.
 		*/
 	MeVTrackHandle FindTrack( char *inTrackName );
+	
+		/**	Returns a handle to the active master track. */
+	MeVTrackHandle ActiveMasterTrack();
 
 		/**	Returns a handle to the first track. */
 	MeVTrackHandle FirstTrack();
@@ -236,6 +245,32 @@ public:
 
 		/**	Get the name of this document */
 	void GetName( char *name, int32 inMaxChars );
+	
+		/**	Get the initial tempo of this document */
+	double GetInitialTempo();
+	
+		/**	Set the initial tempo of this document */
+	void SetInitialTempo(double tempo);
+	
+		/**	Iterate through available MIDI consumers.  cookie should be 0 for
+		 *	the initial call.  Returns false if there are no more consumers.
+		 *	nameLength is the size of the outName buffer allocated by the caller
+		 *	(includes terminating NULL).
+		 */
+	bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_t nameLength);
+	
+		/**	Return the ID of the internal synth. */
+	int GetInternalSynthConsumerID();
+	
+		/**	Add a new destination.  Returns the destination ID.
+		 *  Channels are 1-16.
+		 */
+	int NewDestination(const char* name, int consumerID, int channel);
+	
+		/**	Return the MIDI channel for a destination, negative if destination does not exist.
+		 *  Channels are 1-16.
+		 */
+	int GetChannelForDestination(int destinationID);
 
 		/**	Call this function to add an event operator to
 			the document's list of available operators.
@@ -277,10 +312,11 @@ const int32		MasterTrack_ID = 0;
 class MeVTrackRef {
 	friend class MeVDocRef;
 
-	void *data;
+	void *trackData;	// track
+	void *docData;		// owner (document)
 	void *undo;
 	
-	MeVTrackRef();
+	MeVTrackRef(void* doc, void* track);
 	~MeVTrackRef();
 
 public:
@@ -296,6 +332,9 @@ public:
 
 		/**	Change the name of this track */
 	void SetName( char *name );
+	
+		/**	Get whether it is a real-time or metered track */
+	TClockType GetClockType();
 
 		/**	Select all events on this track. */
 	void SelectAll();
@@ -326,13 +365,13 @@ public:
 		/* Merge a list of sorted events into the EventList. */
 	void Merge( Event *inEventArray, long inEventCount );
 
-#if 0
 		/**	Returns a handle to the first event in track. */
 	MeVEventHandle FirstEvent();
 
 		/**	Function to release a track handle */
 	void ReleaseEventRef( MeVEventHandle );
 	
+#if 0
 		/**	Returns the number of selected events. */
 	int CountSelected();
 
@@ -456,18 +495,24 @@ public:
 	
 };
 
-#if 0
 class MeVEventRef {
 private:
-	void			*edata;				// event reference
-	void			*tdata;				// track reference
+	friend class MeVTrackRef;
+
+	void			*data;				// event marker
+
+		/**	pass address of an event list (copied)
+		 */
+	MeVEventRef(void* eventList);
 
 public:
+
+	~MeVEventRef();
 
 		/**	Returns a copy of the curent event. Returns false if at end
 			of track.
 		*/
-	bool GetEvent( Event *inEvent );
+	bool GetEvent( Event *inEvent ) const;
 
 		/**	Returns a pointer to the current event. Do not modify this
 			directly, otherwise the undo information will not be recorded.
@@ -481,6 +526,7 @@ public:
 		*/
 	bool Valid();
 	
+#if 0
 		/**	Modifies the current event, replacing it with the given event.
 		*/
 	bool Modify( const Event *inEv );
@@ -489,6 +535,7 @@ public:
 			marker is positioned to the event after the deleted one.
 		*/
 	void Delete();
+#endif
 
 		//	Navigation functions
 		
@@ -497,6 +544,7 @@ public:
 		*/
 	bool Seek( int32 inSeekCount );
 	
+#if 0
 		/**	Position the reference to the first event which has a start time
 			that is greater than or equal to the given time.
 			@return false if inStartTime is greater than the start time of any event.
@@ -527,12 +575,14 @@ public:
 			@return false if there are no such events, true otherwise.
 		*/
 	bool SeekToNextInRange ( int32 inStartTime, int32 inEndTime );
+#endif
 
 		/**	Position the reference to the first event in the track.
 			@return true if the sequence is non-empty.
 		*/
 	bool SeekToFirst();
 
+#if 0
 		/**	Position the reference to the last event in the track.
 			@return true if the sequence is non-empty.
 		*/
@@ -552,8 +602,8 @@ public:
 			last event in the track.
 		*/
 	bool IsAtEnd();
-};
 #endif
+};
 
 #ifdef __POWERPC__
 #pragma export off

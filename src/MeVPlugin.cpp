@@ -6,6 +6,12 @@
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "EventTrack.h"
+#include "Event.h"
+#include "DestinationList.h"
+#include "InternalSynth.h"
+#include "MidiManager.h"
+
+#include <support/Debug.h>
 
 #ifdef __POWERPC__
 #pragma export on
@@ -233,6 +239,61 @@ bool MeVDocRef::NextDocument()
 	return false;
 }
 
+bool GetNextMidiConsumer(int32* cookie, int* outConsumerID, char* outName, size_t nameLength)
+{
+	ASSERT(cookie);
+	ASSERT(outConsumerID);
+	ASSERT(outName);
+	ASSERT(nameLength > 0);
+
+	BMidiConsumer* consumer = CMidiManager::Instance()->NextConsumer(cookie);
+	if (consumer)
+	{
+		*outConsumerID = consumer->ID();
+		strncpy(outName, consumer->Name(), nameLength);
+		outName[nameLength - 1] = '\0';
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+int MeVDocRef::GetInternalSynthConsumerID()
+{
+	BMidiConsumer* synth = CMidiManager::Instance()->InternalSynth();
+	ASSERT(synth);
+	return synth ? synth->ID() : -1;
+}
+
+int MeVDocRef::NewDestination(const char* name, int consumerID, int channel)
+{
+	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
+	CDestinationList* list = doc->GetDestinationList();
+
+	int id = list->NewDest();
+	list->SetNameFor(id, name);
+	list->SetChannelFor(id, channel - 1); // MeV uses [0,15]
+	
+	BMidiConsumer* consumer = CMidiManager::Instance()->FindConsumer(consumerID);
+	if (consumer)
+		list->ToggleConnectFor(id, consumer);
+	
+	return id;
+}
+
+int MeVDocRef::GetChannelForDestination(int destinationID)
+{
+	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
+	CDestinationList* list = doc->GetDestinationList();
+	
+	if (!list->IsDefined(destinationID))
+		return -1;
+	else
+		return list->get(destinationID)->channel;
+}
+
 void MeVDocRef::AddEventOperator( EventOp *inOper )
 {
 	CMeVDoc		*doc = (CMeVDoc *)data;
@@ -264,15 +325,9 @@ MeVTrackHandle MeVDocRef::NewEventTrack( TClockType inClockType )
 	CTrack		*track = doc->NewTrack( TrackType_Event, inClockType );
 	
 	if (track != NULL)
-	{
-		MeVTrackRef		*th = new MeVTrackRef();
-		
-		th->data = track;
-		track->Acquire();
-		track->Lock(Lock_Exclusive);
-		return th;
-	}
-	return NULL;
+		return new MeVTrackRef(data, track);
+	else
+		return NULL;
 }
 
 
@@ -283,15 +338,9 @@ MeVTrackHandle MeVDocRef::FindTrack( int32 inTrackID )
 	CTrack		*track = doc->FindTrack( inTrackID );
 	
 	if (track != NULL)
-	{
-		MeVTrackRef		*th = new MeVTrackRef();
-		
-		th->data = track;
-		track->Acquire();
-		track->Lock(Lock_Exclusive);
-		return th;
-	}
-	return NULL;
+		return new MeVTrackRef(data, track);
+	else
+		return NULL;
 }
 
 MeVTrackHandle MeVDocRef::FindTrack( char *inTrackName )
@@ -300,34 +349,25 @@ MeVTrackHandle MeVDocRef::FindTrack( char *inTrackName )
 	StSubjectLock	myLock( *doc, Lock_Shared );
 	CTrack		*track = doc->FindTrack( inTrackName );
 	
-	if (track != NULL)
-	{
-		MeVTrackRef		*th = new MeVTrackRef();
-		
-		th->data = track;
-		track->Acquire();
-		track->Lock(Lock_Exclusive);
-		return th;
-	}
-	return NULL;
+	return track ? new MeVTrackRef(data, track) : NULL;
+}
+
+MeVTrackHandle MeVDocRef::ActiveMasterTrack()
+{
+	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
+	StSubjectLock lock(*doc, Lock_Shared);
+	CTrack* track = doc->ActiveMaster();
+	
+	return track ? new MeVTrackRef(data, track) : NULL;
 }
 
 MeVTrackHandle MeVDocRef::FirstTrack()
 {
-	CMeVDoc		*doc = (CMeVDoc *)data;
-	StSubjectLock	myLock( *doc, Lock_Shared );
-	CTrack		*track = doc->FindNextHigherTrackID( 0 );
+	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
+	StSubjectLock lock(*doc, Lock_Shared);
+	CTrack* track = doc->FindNextHigherTrackID( 0 );
 	
-	if (track != NULL)
-	{
-		MeVTrackRef		*th = new MeVTrackRef();
-		
-		th->data = track;
-		track->Acquire();
-		track->Lock(Lock_Exclusive);
-		return th;
-	}
-	return NULL;
+	return track ? new MeVTrackRef(data, track) : NULL;
 }
 
 void MeVDocRef::ReleaseTrack( MeVTrackHandle th )
@@ -344,12 +384,26 @@ void MeVDocRef::GetName( char *outName, int32 inMaxChars )
 {
 	CMeVDoc		*doc = (CMeVDoc *)data;
 
-	char		name[ B_FILE_NAME_LENGTH ];
+	char		name[B_FILE_NAME_LENGTH];
 		
-	doc->GetName( name );
+	doc->GetName(name);
 
-	strncpy( outName, name, inMaxChars - 1 );
-	outName[ inMaxChars - 1 ] = '\0';
+	strncpy(outName, name, inMaxChars);
+	outName[inMaxChars - 1] = '\0';
+}
+
+double MeVDocRef::GetInitialTempo()
+{
+	CMeVDoc		*doc = (CMeVDoc *)data;
+	
+	return doc->InitialTempo();
+}
+
+void MeVDocRef::SetInitialTempo(double tempo)
+{
+	CMeVDoc		*doc = (CMeVDoc *)data;
+	
+	doc->SetInitialTempo(tempo);
 }
 
 void MeVDocRef::ShowWindow()
@@ -359,29 +413,51 @@ void MeVDocRef::ShowWindow()
 	doc->ShowWindow( CMeVDoc::Assembly_Window );
 }
 
-MeVTrackRef::MeVTrackRef()
+MeVTrackRef::MeVTrackRef(void* doc, void* track)
+	:	trackData(track), docData(doc), undo(0)
 {
-	data = NULL;
-	undo = NULL;
+	CTrack* theTrack = reinterpret_cast<CTrack *>(track);
+	theTrack->Acquire();
+	theTrack->Lock(Lock_Exclusive);
 }
 
 MeVTrackRef::~MeVTrackRef()
 {
-	((CTrack *)data)->Unlock( Lock_Exclusive );
-	CRefCountObject::Release( (CTrack *)data );
+	((CTrack *)trackData)->Unlock( Lock_Exclusive );
+	CRefCountObject::Release( (CTrack *)trackData );
 }
 
-#if 0
 	/**	Repositions this handle to point to the next track. */
 bool MeVTrackRef::NextTrack()
 {
+	CTrack*  track = reinterpret_cast<CTrack*>(trackData);
+	CMeVDoc* doc   = reinterpret_cast<CMeVDoc*>(docData);
+
+	StSubjectLock docLock(*doc, Lock_Shared);
+	if (!docLock.LockValid())
+		return false;
+	
+	int32 index = doc->tracks.IndexOf(track);
+	if (index >= 0 && doc->tracks.CountItems() > index + 1)
+	{
+		track->Unlock(Lock_Exclusive);
+		CRefCountObject::Release(track);
+		track = reinterpret_cast<CTrack*>(doc->tracks.ItemAt(index + 1));
+		track->Acquire();
+		track->Lock(Lock_Exclusive);
+		trackData = track;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
-#endif
 
 	/**	Get the ID of this track */
 int32 MeVTrackRef::GetID()
 {
-	CTrack		*track = (CTrack *)data;
+	CTrack		*track = (CTrack *)trackData;
 	
 	return track->GetID();
 }
@@ -389,7 +465,7 @@ int32 MeVTrackRef::GetID()
 	/**	Get the name of this track */
 void MeVTrackRef::GetName( char *name, int32 inMaxChars )
 {
-	CTrack		*track = (CTrack *)data;
+	CTrack		*track = (CTrack *)trackData;
 	
 	strncpy( name, track->Name(), inMaxChars );
 }
@@ -397,15 +473,35 @@ void MeVTrackRef::GetName( char *name, int32 inMaxChars )
 	/**	Change the name of this track */
 void MeVTrackRef::SetName( char *name )
 {
-	CTrack		*track = (CTrack *)data;
+	CTrack		*track = (CTrack *)trackData;
 	
 	track->SetName( name );
+}
+
+	/**	Get whether it is a metered or real-time track */
+TClockType MeVTrackRef::GetClockType()
+{
+	CTrack		*track = (CTrack *)trackData;
+	
+	return track->ClockType();
+}
+
+MeVEventHandle MeVTrackRef::FirstEvent()
+{
+	CEventTrack		*track = (CEventTrack *)trackData;
+
+	return new MeVEventRef(&track->Events());
+}
+
+void MeVTrackRef::ReleaseEventRef(MeVEventHandle event)
+{
+	delete event;
 }
 
 	/**	Start a new undo record for this track */
 bool MeVTrackRef::BeginUndoAction( char *inActionLabel )
 {
-	CEventTrack	*track = (CEventTrack *)data;
+	CEventTrack	*track = (CEventTrack *)trackData;
 	if (undo)
 	{
 		return false;
@@ -420,7 +516,7 @@ void MeVTrackRef::EndUndoAction( bool keep )
 {
 	if (undo != NULL)
 	{
-		if (keep) ((CTrack *)data)->AddUndoAction( (EventListUndoAction *)undo );
+		if (keep) ((CTrack *)trackData)->AddUndoAction( (EventListUndoAction *)undo );
 		else ((EventListUndoAction *)undo)->Rollback();
 
 		delete (EventListUndoAction *)undo;
@@ -431,7 +527,7 @@ void MeVTrackRef::EndUndoAction( bool keep )
 		/* Merge a list of sorted events into the EventList. */
 void MeVTrackRef::Merge( Event *inEventArray, long inEventCount )
 {
-	CEventTrack		*track = (CEventTrack *)(CTrack *)data;
+	CEventTrack		*track = (CEventTrack *)(CTrack *)trackData;
 
 	track->MergeEvents( inEventArray, inEventCount, (EventListUndoAction *)undo );
 }
@@ -467,6 +563,53 @@ void MeVTrackRef::ApplyEventOperator( EventOp *inOper, bool inSelectedOnly )
 }
 
 #endif
+
+MeVEventRef::MeVEventRef(void* evList)
+	: data(new EventMarker(*reinterpret_cast<EventList*>(evList)))
+{
+	EventMarker* marker = reinterpret_cast<EventMarker*>(data);
+	marker->First();
+}
+
+MeVEventRef::~MeVEventRef()
+{
+	delete data;
+}
+
+bool MeVEventRef::GetEvent(Event* inEvent) const
+{
+	const EventMarker* marker = reinterpret_cast<const EventMarker*>(data);
+
+	return marker->Get(inEvent) == 1;
+}
+
+const Event* MeVEventRef::EventPtr()
+{
+	EventMarker* marker = reinterpret_cast<EventMarker*>(data);
+
+	return Valid() ? (const Event *)*marker : 0;
+}
+
+bool MeVEventRef::Valid()
+{
+	EventMarker* marker = reinterpret_cast<EventMarker*>(data);
+
+	return !marker->IsAtEnd();
+}
+
+bool MeVEventRef::Seek(int32 inSeekCount)
+{
+	EventMarker* marker = reinterpret_cast<EventMarker*>(data);
+
+	return marker->Seek(inSeekCount) != 0;
+}
+
+bool MeVEventRef::SeekToFirst()
+{
+	EventMarker* marker = reinterpret_cast<EventMarker*>(data);
+
+	return marker->First() != 0;
+}
 
 #ifdef __POWERPC__
 #pragma export off
