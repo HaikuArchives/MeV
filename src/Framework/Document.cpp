@@ -152,6 +152,12 @@ CDocument::SetNamed()
 
 	BMessage message(NAME_CHANGED);
 	message.AddString("name", name);
+
+	// send update to master window
+	BMessenger messenger(NULL, MasterWindow());
+	messenger.SendMessage(&message);
+
+	// send updates to the other windows
 	for (int32 i = 0; i < CountWindows(); i++)
 	{
 		BMessenger messenger(NULL, WindowAt(i));
