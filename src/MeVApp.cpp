@@ -40,7 +40,9 @@
 #include <FilePanel.h>
 #include <NodeInfo.h>
 #include <Path.h>
-
+#include <MidiRoster.h>
+#include <MidiProducer.h>
+#include <MidiConsumer.h>
 #define INSPECTOR_NAME		"Inspector"
 #define GRID_NAME			"Grid"
 #define TRANSPORT_NAME		"Transport"
@@ -48,7 +50,6 @@
 #define MIDI_CONFIG_NAME	"Midi Config"
 #define ABOUT_NAME			"About Box"
 #define ABOUT_PI_NAME		"About Plug-ins"
-
 CGlobalPrefs				gPrefs;
 char						gPlugInName[ B_FILE_NAME_LENGTH ];
 
@@ -198,8 +199,9 @@ CMeVApp::CMeVApp()
 	importPanel = NULL;
 
 	CSplashWindow::DisplayStatus( "Starting MIDI Player..." );
+	
 	CPlayerControl::InitPlayer();
-
+	
 		// Initialize default virtual channel table
 	for (int i = 0; i < Max_VChannels; i++)
 	{
@@ -969,6 +971,12 @@ class CPortAttrsDialog : public CMiniDialog {
 public:
 	CPortAttrsDialog( BWindow *parent );
 	void SetPort( int32 inPortIndex );
+	
+private:
+	virtual void MenusBeginning();
+	virtual void MenusEnded();
+	BMidiRoster *MidiRoster;
+	BMenu		*devMenu;
 };
 
 CPortAttrsDialog::CPortAttrsDialog( BWindow *parent )
@@ -994,11 +1002,9 @@ CPortAttrsDialog::CPortAttrsDialog( BWindow *parent )
 	name->SetTarget( this );
 	name->SetViewColor( 220, 220, 220 );
 	name->SetDivider( 0.0 );
-
-	BMenu		*devMenu = new BPopUpMenu( "synth" );
-	devMenu->AddItem( new BMenuItem( "synth",			new BMessage( 3000 ) ) );
-	devMenu->AddItem( new BMenuItem( "midi1",			new BMessage( 3001 ) ) );
-	devMenu->AddItem( new BMenuItem( "midi2",			new BMessage( 3002 ) ) );
+	//this should contain all the bmidiconsumers.
+	devMenu = new BPopUpMenu( "port" );
+	devMenu->SetRadioMode(FALSE);
 	devMenu->SetTargetForItems( (CDocWindow *)this );
 
 	BMenuField	*devType = new BMenuField(	BRect( 244, 20, 292, 40 ),
@@ -1006,23 +1012,79 @@ CPortAttrsDialog::CPortAttrsDialog( BWindow *parent )
 											devMenu,
 											B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW );
 	background->AddChild( devType );
+
+	MidiRoster = BMidiRoster::MidiRoster();
+		if (! MidiRoster) {
+			printf("Couldn't get MIDI roster\n");
+			be_app->PostMessage(B_QUIT_REQUESTED);
+			return;
+		}
 }
 
 void CPortAttrsDialog::SetPort( int32 inPortIndex )
 {
 	portNum = inPortIndex;
-	description->SetText( CPlayerControl::PortName( portNum ) );
-	name->SetText( CPlayerControl::PortDevice( portNum ) );
+	if (inPortIndex>CPlayerControl::CountDefinedPorts())
+	{
+		description->SetText( "No Name" );
+		name->SetText( "No Name" );
+		CPlayerControl::SetPortDevice ( inPortIndex,"No Name" );
+	}
+	else
+	{
+		description->SetText( CPlayerControl::PortName( portNum ) );
+		name->SetText( CPlayerControl::PortDevice( portNum ) );
+	}
 }
-
+void CPortAttrsDialog::MenusBeginning()
+{
+	int32 id;
+	id=0;
+	BMidiConsumer *sink=NULL;
+	BMidiProducer *source=MidiRoster->FindProducer((CPlayerControl::PortDeviceID(portNum)));
+	
+	while ((sink=MidiRoster->NextConsumer(&id))!=NULL)
+		{
+		BMenuItem *item;
+		item=new BMenuItem(sink->Name(),new BMessage(Connect_ID));
+		item->Message()->AddPointer("sink",sink);
+		item->Message()->AddInt32("source",portNum);
+		devMenu->AddItem(item);
+		if (source!=NULL)
+		{
+			if (source->IsConnected(sink))
+				{		
+				item->SetMarked(TRUE);
+				}
+		}
+		sink->Release();
+		}
+	if (source!=NULL)
+	{
+		source->Release();
+	}
+}
+void CPortAttrsDialog::MenusEnded()
+{
+	BMenuItem *item;
+	int i = devMenu->CountItems();
+	while (i>=0)
+		{
+		item=(devMenu->RemoveItem(i));
+		delete item;
+		i--;
+		}
+}
 void CPortAttrsDialog::MessageReceived( BMessage* theMessage )
 {
 	CMeVApp *app = (CMeVApp *)be_app;
 
 	switch(theMessage->what) {
-	case 3000:	name->SetText( "synth" ); break;
-	case 3001:	name->SetText( "midi1" ); break;
-	case 3002:	name->SetText( "midi2" ); break;
+	case Connect_ID:
+		BMidiConsumer *sink;
+		theMessage->FindPointer("sink",(void **)&sink);
+		CPlayerControl::SetPortConnect(theMessage->FindInt32("source"),sink);
+		break;
 
 	case Apply_ID:
 #if 0
@@ -1030,7 +1092,6 @@ void CPortAttrsDialog::MessageReceived( BMessage* theMessage )
 		if (app->appPrefsWinState.Window() != NULL)
 		{
 			BMessage		msg( 'chpt' );
-			
 			msg.AddInt32( "port", portNum );
 			msg.AddString( "name", name->Text() );
 			msg.AddString( "description", description->Text() );
@@ -1059,7 +1120,6 @@ void CPortAttrsDialog::MessageReceived( BMessage* theMessage )
 			((CDocApp *)be_app)->Error( "Invalid device name" );
 			return;
 		}
-
 		CPlayerControl::SetPortName( portNum, (char *)description->Text() );
 #endif
 		
@@ -1528,31 +1588,28 @@ void CMeVApp::SetDevicePrefs( BMessage *msg )
 			if (	msg->FindString( "portDevice", i, (const char **)&device ) == B_NO_ERROR
 				&& msg->FindString( "portDescription", i, (const char **)&description ) == B_NO_ERROR)
 			{
-				CSplashWindow::DisplayStatus( "Opening device: %s...", description );
+				CSplashWindow::DisplayStatus( "Creating device: %s...", description );
 				CPlayerControl::SetPortDevice( i, device );
 				CPlayerControl::SetPortName( i, description );
 			}
 			else
 			{
-				CPlayerControl::SetPortDevice( i, "" );
-				CPlayerControl::SetPortName( i, "<No Device>" );
+				CPlayerControl::SetPortDevice( i, NULL );
+				CPlayerControl::SetPortName( i, "" );
 			}
 		}
 	}
 	else
 	{
-			// Default set of ports and instruments...
-
-		CPlayerControl::SetPortName( 0, "Internal MIDI Synth" );
-		CPlayerControl::SetPortDevice( 0, "synth" );
+	// Create a default MIDI instrument in case preferences loading went awry.
+	printf("adding devices\n");
 	
-		CPlayerControl::SetPortName( 1, "MIDI Port 1" );
-		CPlayerControl::SetPortDevice( 1, "midi1" );
-	
-		CPlayerControl::SetPortName( 2, "MIDI Port 2" );
-		CPlayerControl::SetPortDevice( 2, "midi2" );
-	
-			// Create a default MIDI instrument in case preferences loading went awry.
+	CPlayerControl::SetPortDevice (0,"MeV1");
+	CPlayerControl::SetPortName (0,"MeV Default Device");
+	CPlayerControl::SetPortDevice (1,"MeV2");
+	CPlayerControl::SetPortName (1,"MeV Default Device2");
+		
+			
 		MIDIDeviceInfo	*mdi = NewDevice();
 		mdi->SetPort( 0 );
 		mdi->SetName( "Internal Voices" );
@@ -1564,14 +1621,8 @@ void CMeVApp::SetDevicePrefs( BMessage *msg )
 			mdi->SetPatchName( 0, i, internalNames[ i ] );
 #endif
 
-			// Erase all other devices from table...
-		for (uint32 i = 3; i < Max_MidiPorts; i++)
-		{
-			CPlayerControl::SetPortDevice( i, "" );
-			CPlayerControl::SetPortName( i, "<No Device>" );
-		}
+		
 	}
-
 	if (msg->GetInfo( "instrumentName", &type, &count ) == B_NO_ERROR)
 	{
 		for (int32 i = 0; i < count; i++)
