@@ -702,11 +702,7 @@ CProgramChangeEventHandler::CProgramChangeEventHandler(
 
 CProgramChangeEventHandler::~CProgramChangeEventHandler()
 {
-	if (m_icon)
-	{
-		delete m_icon;
-		m_icon = NULL;
-	}
+	delete m_icon;
 }
 
 void
@@ -969,11 +965,7 @@ CTempoEventHandler::CTempoEventHandler(
 
 CTempoEventHandler::~CTempoEventHandler()
 {
-	if (m_icon)
-	{
-		delete m_icon;
-		m_icon = NULL;
-	}
+	delete m_icon;
 }
 
 void
@@ -1198,6 +1190,10 @@ CTrackCtlStrip::CTrackCtlStrip(
 	SetFlags(Flags() | B_PULSE_NEEDED);
 }
 
+CTrackCtlStrip::~CTrackCtlStrip()
+{
+}
+
 float
 CTrackCtlStrip::VPosToViewCoords(
 	int32 pos) const
@@ -1237,8 +1233,6 @@ CTrackCtlStrip::Draw(
 	// Initialize an event marker for this track.
 	StSubjectLock trackLock(*Track(), Lock_Shared);
 	EventMarker marker(Track()->Events());
-
-	bounds = Bounds();
 
 	// For each event that overlaps the current view, draw it.
 	// (locked channels first)
@@ -1455,7 +1449,6 @@ CTrackCtlStrip::SubjectUpdated(
 	BMessage *message)
 {
 	BRect r(Bounds());
-	bounds = r;
 
 	bool selChange = false;
 	if (message->FindBool("SelChange", 0, &selChange) == B_OK)

@@ -128,10 +128,6 @@ public:							// Accessors
 									bool removable = true)
 								{ m_removable = removable; }
 
-	// Return cached bounds of view (doesn't require app-server call)
-	const BRect &				ViewBounds()
-								{ return bounds; }
-
 public:							// Operations
 
 	void						SetScrollValue(
@@ -182,11 +178,6 @@ public:							// CScrollerTarget Implementation
 
 	virtual void				MessageReceived(
 									BMessage *message);
-
-protected:						// Instance Data
-
-	// Cached bounds
-	BRect						bounds;
 
 private:
 	

@@ -286,7 +286,6 @@ CStripView::AllAttached()
 void
 CStripView::AttachedToWindow()
 {
-	bounds = Bounds();
 	CScrollerTarget::AttachedToWindow();
 	AdjustScrollers();
 }

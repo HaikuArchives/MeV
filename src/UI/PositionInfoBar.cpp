@@ -33,6 +33,8 @@ CPositionInfoBar::CPositionInfoBar(
 CPositionInfoBar::~CPositionInfoBar() {
 	D_ALLOC(("CPositionInfoBar::~CPositionInfoBar()\n"));
 
+	delete m_verticalIcon;
+	delete m_horizontalIcon;
 }
 
 // -------------------------------------------------------- //

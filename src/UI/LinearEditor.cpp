@@ -284,8 +284,6 @@ CLinearEditor::Draw(
 	StSubjectLock trackLock(*Track(), Lock_Shared);
 	EventMarker marker(Track()->Events());
 
-	bounds = Bounds();
-	
 	// REM: We should be able to figure out the maximum and minimum pitch of notes 
 	// which are in the update rect.
 

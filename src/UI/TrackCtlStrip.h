@@ -48,12 +48,6 @@
 class CTrackCtlStrip
 	:	public CEventEditor
 {
-	friend class	CTrackEventHandler;
-	friend class	CRepeatEventHandler;
-	friend class	CSequenceEventHandler;
-	friend class	CTimeSigEventHandler;
-	friend class	CProgramChangeEventHandler;
-	friend class	CTempoEventHandler;
 
 public:							// Constructor/Destructor
 
@@ -62,6 +56,8 @@ public:							// Constructor/Destructor
 									BRect rect,
 									CEventTrack *track,
 									char *name = "Part");
+
+	virtual						~CTrackCtlStrip();
 
 public:							// Accessors
 

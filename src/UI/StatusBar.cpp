@@ -55,6 +55,7 @@ CStatusBar::CStatusBar(
 CStatusBar::~CStatusBar() {
 	D_ALLOC(("CStatusBar::~CStatusBar()\n"));
 
+	delete m_backBitmap;
 }
 
 // -------------------------------------------------------- //

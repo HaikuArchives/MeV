@@ -179,13 +179,16 @@ public:							// Hook Functions
 public:							// Accessors
 
 	void						SetHandlerFor(
-									TEventType eventType,
+									event_type type,
 									CEventHandler *handler)
-								{ m_handlers[eventType] = handler; }
+								{ m_handlers[type] = handler; }
 
 	CEventHandler *				HandlerFor(
 									const Event &ev) const
 								{ return m_handlers[ev.Command()]; }
+	CEventHandler *				HandlerFor(
+									event_type type) const
+								{ return m_handlers[type]; }
 
 	// Return the pending operation for this window
 	EventOp *					DragOperation()
