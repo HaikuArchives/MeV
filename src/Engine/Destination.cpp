@@ -197,6 +197,17 @@ CDestination::IsValid() const
 		 || (m_flags & CDestination::deleted));
 }
 
+bool
+CDestination::Muted(
+	bool *fromSolo) const {
+
+	if (fromSolo) {
+		*fromSolo = m_flags & mutedFromSolo;
+	}
+
+	return m_flags & muted;
+}
+
 void
 CDestination::SetMuted(
 	bool muted)

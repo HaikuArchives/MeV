@@ -136,11 +136,13 @@ public:							// Accessors
 
 	virtual void 				SetMuted(
 									bool muted);
-	bool						Muted() const
-								{ return m_flags & muted; }
-
-	bool 						MutedFromSolo() const
-								{ return m_flags & mutedFromSolo; }
+	/** Returns whether or not the destination is currently muted. If 
+	 *	you provide the fromSolo argument, it is set to true when the
+	 *	destination is muted because another destination is currently
+	 *	soloed.
+	 */
+	bool						Muted(
+									bool *fromSolo = NULL) const;
 
 	virtual void 				SetSolo(
 									bool solo);
