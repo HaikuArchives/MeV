@@ -64,23 +64,6 @@ CLinearWindow::CLinearWindow(
 	stripFrame->AddType("Pitch Bend");
 	stripFrame->AddType("Sequence");
 
-	BRect scrollFrame(stripScroll->Frame());
-	stripScroll->ResizeTo(scrollFrame.Width() - 100.0, scrollFrame.Height());
-	stripScroll->MoveTo(scrollFrame.left + 100.0, scrollFrame.top);
-
-	// Add the time display string view
-	scrollFrame.right = 100.0;
-	BView *view = new CBorderView(scrollFrame, "", B_FOLLOW_LEFT | B_FOLLOW_BOTTOM,
-								  B_WILL_DRAW);
-	AddChild(view);
-	m_timeView = new CTextDisplay(BRect(1.0, 1.0, scrollFrame.right,
-								  scrollFrame.Height()),
-								  "", false );
-	m_timeView->SetAlignment(B_ALIGN_RIGHT);
-	m_timeView->SetFont(be_fixed_font);
-	m_timeView->SetFontSize(10);
-	view->AddChild(m_timeView);
-
 	if (!hasSettings)
 	{
 		// create default strips
@@ -93,34 +76,6 @@ CLinearWindow::CLinearWindow(
 
 // ---------------------------------------------------------------------------
 // CTrackWindow Implementation
-
-void
-CLinearWindow::DisplayMouseTime(
-	CTrack *track,
-	int32 time)
-{
-	long majorUnit, minorUnit, extraTime;
-
-	if (track == NULL)
-	{
-		m_timeBuf[0] = '\0';
-	}
-	else
-	{
-		track->SigMap().DecomposeTime(time, majorUnit, minorUnit, extraTime);
-		if (track->ClockType() == ClockType_Real)
-		{
-			int32 hours = majorUnit / 60;
-			int32 minutes = majorUnit - (hours * 60);
-			sprintf(m_timeBuf, "%2ld:%2.2ld:%2.2ld.%2.2ld", hours, minutes, minorUnit, extraTime);
-		}
-		else
-		{
-			sprintf(m_timeBuf, "%4ld.%2.2ld.%4.4ld", majorUnit + 1, minorUnit, extraTime);
-		}
-	}
-	m_timeView->SetText(m_timeBuf);
-}
 
 void
 CLinearWindow::MenusBeginning()
@@ -555,6 +510,8 @@ CLinearWindow::AddFrameView(
 	AddChild(ruler);
 	AddChild(stripScroll);
 	AddChild(stripFrame);
+
+	CTrackWindow::AddFrameView(frame, track);
 }
 
 // END - LinearWindow.cpp

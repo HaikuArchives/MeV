@@ -1552,14 +1552,14 @@ CTrackCtlStrip::MouseMoved(
 			m_dragType = DragType_None;
 		}
 	
-		TrackWindow()->DisplayMouseTime( NULL, 0 );
+		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
 		return;
 	}
 	
 	StSubjectLock		trackLock( *Track(), Lock_Shared );
 	EventMarker		marker( Track()->Events() );
 
-	TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
+	TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));
 	bounds = Bounds();
 	
 		// If there's a drag message, and we're not already doing another kind of
@@ -1611,7 +1611,8 @@ CTrackCtlStrip::MouseMoved(
 							m_newEv = dragEv;
 							Handler(m_newEv).Invalidate(*this, m_newEv);
 
-							TrackWindow()->DisplayMouseTime(Track(), time);
+							TrackWindow()->SetHorizontalPositionInfo(Track(),
+																	 time);
 							m_dragType = DragType_DropTarget;
 						}
 						return;
@@ -1677,7 +1678,7 @@ CTrackCtlStrip::ConstructEvent(
 	time = Handler(m_newEv).QuantizeDragTime(*this, m_newEv, 0,
 											 BPoint(0.0, 0.0), point, true);
 
-	TrackWindow()->DisplayMouseTime(Track(), time);
+	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(TrackWindow()->NewEventDuration());
 	m_newEv.SetVChannel(0);
@@ -1742,6 +1743,8 @@ CTrackCtlStrip::ConstructEvent(
 		}
 		case EvtType_Tempo:
 		{
+			if (Track()->GetID() < 2)
+				return false;
 			m_newEv.SetVChannel(0);
 			m_newEv.tempo.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));
 			m_newEv.tempo.newTempo = static_cast<uint32>(CPlayerControl::Tempo(TrackWindow()->Document()) * 1000.0);

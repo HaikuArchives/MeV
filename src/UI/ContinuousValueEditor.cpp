@@ -229,44 +229,22 @@ void CContinuousValueEditor::AttachedToWindow()
 // ---------------------------------------------------------------------------
 // Continuous value editor mouse movement handler
 
-void CContinuousValueEditor::MouseMoved(
-	BPoint		point,
-	ulong		transit,
-	const BMessage	* )
+void
+CContinuousValueEditor::MouseMoved(
+	BPoint point,
+	uint32 transit,
+	const BMessage *message)
 {
-//	const Event		*ev;
-//	short			partCode;
-//	const uint8		*newCursor;
-
 	if (transit == B_EXITED_VIEW)
 	{
-		TrackWindow()->DisplayMouseTime( NULL, 0 );
-//		SetViewCursor(B_CURSOR_SYSTEM_DEFAULT);
+		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
+		TrackWindow()->SetVerticalPositionInfo("");
 		return;
 	}
 	
-	TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
-
-	StSubjectLock		trackLock( *Track(), Lock_Shared );
-	EventMarker		marker( Track()->Events() );
-
+	TrackWindow()->SetHorizontalPositionInfo(Track(),
+											 ViewCoordsToTime(point.x));
 	bounds = Bounds();
-
-//	if ((ev = PickEvent( marker, point, partCode )) != NULL)
-//	{
-//		newCursor = Handler( *ev ).CursorImage( partCode );
-//	}
-//	else newCursor = NULL;
-//	
-//	if (newCursor == NULL)
-//	{
-//		if (crossCursor == NULL)
-//		{
-//			crossCursor = ResourceUtils::LoadCursor(1);
-//		}
-//
-//		newCursor = crossCursor;
-//	}
-//	
-//	SetViewCursor( newCursor );
 }
+
+// END - ContinuousValueEditor.cpp

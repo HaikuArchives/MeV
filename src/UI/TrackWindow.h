@@ -49,6 +49,7 @@
 
 class CScroller;
 class CStripFrameView;
+class CTextDisplay;
 class CTrackOperation;
 
 // ---------------------------------------------------------------------------
@@ -99,18 +100,18 @@ public:							// Hook Functions
 
 	virtual int32				CurrentTool() = 0;
 	
-	// Display time of mouse event
-	virtual void				DisplayMouseTime(
-									CTrack *track,
-									int32 time)
-								{ }
-	
 	// Set which track we're editing
 	virtual void				SelectActive(
 									CEventTrack *track)
 								{ }
 
 protected:
+
+	/** call this from the subclass implementation after adding
+		the frame view */
+	virtual void				AddFrameView(
+									BRect frame,
+									CTrack *track);
 
 	virtual bool				AddStrip(
 									BString type,
@@ -156,6 +157,15 @@ public:							// Operations
 	void						FinishTrackOperation(
 									int32 commit);
 
+	void						SetHorizontalPositionInfo(
+									BString text);
+	void						SetHorizontalPositionInfo(
+									CTrack *track,
+									int32 time);
+
+	void						SetVerticalPositionInfo(
+									BString text);
+
 public:							// Serialization
 
 	virtual void				ExportSettings(
@@ -200,14 +210,14 @@ public:							// CObserver Implementation
 
 protected:						// Internal Operations
 
-	void						UpdateActiveSelection(
-									bool active);
-
 	void						CreateFileMenu(
 									BMenuBar *menuBar);
 
 	void						CreateWindowMenu(
 									BMenuBar *menuBar);
+
+	void						UpdateActiveSelection(
+									bool active);
 
 protected:						// Instance Data
 
@@ -223,6 +233,14 @@ private:
 
 	/** Type of newly created events */
 	event_type					m_newEventType;
+
+	/** The horizontal position info display in the lower left 
+		corner of the window */
+	CTextDisplay *				m_hPosInfoView;
+
+	/** The vertical position info display in the lower left 
+		corner of the window */
+	CTextDisplay *				m_vPosInfoView;
 };
 
 #endif /* __C_TrackWindow_H__ */

@@ -501,6 +501,23 @@ CPitchBendEditor::MessageReceived(
 	}
 }
 
+void
+CPitchBendEditor::MouseMoved(
+	BPoint point,
+	uint32 transit,
+	const BMessage *message)
+{
+	CContinuousValueEditor::MouseMoved(point, transit, message);
+
+	if (transit != B_EXITED_VIEW)
+	{
+		int32 value = ViewCoordsToValue(point.y);
+		BString text;
+		text << value;
+		TrackWindow()->SetVerticalPositionInfo(text);
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Update message from another observer
 
@@ -606,7 +623,7 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 	time = Handler(m_newEv).QuantizeDragTime(*this, m_newEv, 0,
 											 BPoint(0.0, 0.0), point,
 											 true);
-	TrackWindow()->DisplayMouseTime(Track(), time);
+	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
 
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(0);

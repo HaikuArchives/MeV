@@ -468,6 +468,8 @@ CAssemblyWindow::AddFrameView(
 	// add views to window
 	AddChild(stripScroll);
 	AddChild(stripFrame);
+
+	CTrackWindow::AddFrameView(frame, track);
 }
 
 // END - AssemblyWindow.cpp

@@ -124,6 +124,9 @@ protected:						// Internal Operations
 
 	void						DeselectAll();
 
+	void						DisplayPitchInfo(
+									BPoint point);
+
 	// convert a pitch-value to a y-coordinate
 	long						PitchToViewCoords(
 									int pitch);

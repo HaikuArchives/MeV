@@ -364,14 +364,18 @@ void CVelocityEditor::MouseMoved(
 
 	if (transit == B_EXITED_VIEW)
 	{
-		TrackWindow()->DisplayMouseTime( NULL, 0 );
-//		TrackWindow()->RestoreCursor();
+		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
+		TrackWindow()->SetVerticalPositionInfo("");
 		return;
 	}
 
-	TrackWindow()->DisplayMouseTime( Track(), ViewCoordsToTime( point.x ) );
-
-//	SetViewCursor(UIDefs::CROSS_HAIR_CURSOR);
+	TrackWindow()->SetHorizontalPositionInfo(Track(),
+											 ViewCoordsToTime(point.x));
+	int8 velocity = static_cast<int8>(127 * ((Bounds().bottom - point.y)
+										     / Bounds().Height()));
+	BString text;
+	text << velocity;
+	TrackWindow()->SetVerticalPositionInfo(text);
 }
 
 void CVelocityEditor::StartDrag( BPoint point, ulong buttons )
@@ -384,7 +388,7 @@ void CVelocityEditor::StartDrag( BPoint point, ulong buttons )
 	dragAction	= NULL;
 	smallestTime = LONG_MAX;
 	largestTime	= LONG_MIN;
-	TrackWindow()->DisplayMouseTime( Track(), dragTime );
+	TrackWindow()->SetHorizontalPositionInfo(Track(), dragTime);
 }
 
 bool CVelocityEditor::DoDrag( BPoint point, ulong buttons )
@@ -549,7 +553,7 @@ bool CVelocityEditor::DoDrag( BPoint point, ulong buttons )
 		smallestTime = MIN( smallestTime, dragTime );
 		largestTime = MAX( largestTime, dragTime );
 
-		TrackWindow()->DisplayMouseTime( Track(), dragTime );
+		TrackWindow()->SetHorizontalPositionInfo(Track(), dragTime);
 	}
 	return true;
 }
@@ -568,5 +572,5 @@ void CVelocityEditor::FinishDrag(
 		hint.AddInt32( "MaxTime", largestTime );
 		PostUpdate( &hint, true );
 	}
-	TrackWindow()->DisplayMouseTime( NULL, 0 );
+	TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
 }

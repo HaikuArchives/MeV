@@ -94,7 +94,7 @@ CLinearEditor::ConstructEvent(
 	time = HandlerFor(m_newEv)->QuantizeDragTime(*this, m_newEv, 0,
 												 BPoint(0.0, 0.0), point,
 												 true);
-	TrackWindow()->DisplayMouseTime(Track(), time);
+	TrackWindow()->SetHorizontalPositionInfo(Track(), time);
 
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
@@ -278,11 +278,13 @@ CLinearEditor::MouseMoved(
 
 	if (transit == B_EXITED_VIEW)
 	{
-		TrackWindow()->DisplayMouseTime(NULL, 0);
+		TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
+		TrackWindow()->SetVerticalPositionInfo("");
 		return;
 	}
 	
-	TrackWindow()->DisplayMouseTime(Track(), ViewCoordsToTime(point.x));
+	TrackWindow()->SetHorizontalPositionInfo(Track(), ViewCoordsToTime(point.x));
+	DisplayPitchInfo(point);
 
 	StSubjectLock trackLock(*Track(), Lock_Shared);
 	EventMarker marker(Track()->Events());
@@ -433,6 +435,34 @@ CLinearEditor::CalcZoom()
 {
 	m_octaveStep = 7 * m_whiteKeyStep;
 	m_stripLogicalHeight = 75 * m_whiteKeyStep - 1;
+}
+
+void
+CLinearEditor::DisplayPitchInfo(
+	BPoint point)
+{
+	int32 pitch = ViewCoordsToPitch(point.y, false);
+	int32 octave = pitch / 12;
+	int32 note = pitch % 12;
+	BString text;
+	switch (note)
+	{
+		case 0:		text = "C";		break;
+		case 1:		text = "C#";	break;
+		case 2:		text = "D";		break;
+		case 3:		text = "D#";	break;
+		case 4:		text = "E";		break;
+		case 5:		text = "F";		break;
+		case 6:		text = "F#";	break;
+		case 7:		text = "G";		break;
+		case 8:		text = "G#";	break;
+		case 9:		text = "A";		break;
+		case 10:	text = "A#";	break;
+		case 11:	text = "B";		break;
+	}
+	text << octave - 2 << "(" << pitch << ")";
+
+	TrackWindow()->SetVerticalPositionInfo(text);
 }
 
 long

@@ -21,6 +21,7 @@
 #include "StdEventOps.h"
 #include "StripFrameView.h"
 #include "StripView.h"
+#include "TextDisplay.h"
 #include "Tool.h"
 #include "ToolBar.h"
 
@@ -77,6 +78,46 @@ CTrackWindow::~CTrackWindow()
 
 	CRefCountObject::Release(trackOp);
 	CRefCountObject::Release(track);
+}
+
+// ---------------------------------------------------------------------------
+// Hook Functions
+
+void
+CTrackWindow::AddFrameView(
+	BRect frame,
+	CTrack *track)
+{
+	BRect scrollRect(stripScroll->Frame());
+	stripScroll->ResizeTo(scrollRect.Width() - 120.0, scrollRect.Height());
+	stripScroll->MoveTo(scrollRect.left + 120.0, scrollRect.top);
+
+	BRect infoRect(scrollRect);
+	infoRect.top = infoRect.bottom - B_H_SCROLL_BAR_HEIGHT;
+	infoRect.right = 119.0;
+	BView *view = new CBorderView(infoRect, "", B_FOLLOW_LEFT | B_FOLLOW_BOTTOM,
+								  B_WILL_DRAW);
+
+	// Add the vertical position info view
+	infoRect = view->Bounds();
+	infoRect.right = 59.0;
+	m_vPosInfoView = new CTextDisplay(infoRect.InsetByCopy(1.0, 1.0),
+									  "", false);
+	m_vPosInfoView->SetAlignment(B_ALIGN_RIGHT);
+	m_vPosInfoView->SetFont(be_fixed_font);
+	m_vPosInfoView->SetFontSize(10);
+	view->AddChild(m_vPosInfoView);
+
+	// Add the horizontal position info view
+	infoRect.OffsetBy(infoRect.Width(), 0.0);
+	m_hPosInfoView = new CTextDisplay(infoRect.InsetByCopy(1.0, 1.0),
+									  "", false );
+	m_hPosInfoView->SetAlignment(B_ALIGN_RIGHT);
+	m_hPosInfoView->SetFont(be_fixed_font);
+	m_hPosInfoView->SetFontSize(10);
+	view->AddChild(m_hPosInfoView);
+
+	AddChild(view);
 }
 
 // ---------------------------------------------------------------------------
@@ -156,6 +197,56 @@ CTrackWindow::FinishTrackOperation(
 		CRefCountObject::Release( trackOp );
 	}
 	trackOp = NULL;
+}
+
+void
+CTrackWindow::SetHorizontalPositionInfo(
+	BString text)
+{
+	PRINT(("CTrackWindow::SetHorizontalPositionInfo(%s)\n",
+			text.String()));
+
+	m_hPosInfoView->SetText(text.String());
+	m_hPosInfoView->Invalidate();
+}
+
+void
+CTrackWindow::SetHorizontalPositionInfo(
+	CTrack *track,
+	int32 time)
+{
+	if (track == NULL)
+	{
+		SetHorizontalPositionInfo("");
+	}
+	else
+	{
+		BString text;
+		long majorUnit, minorUnit, extraTime;
+		track->SigMap().DecomposeTime(time, majorUnit, minorUnit, extraTime);
+		if (track->ClockType() == ClockType_Real)
+		{
+			int32 hours = majorUnit / 60;
+			text << hours << ":" << majorUnit - (hours * 60) << ":";
+			text << minorUnit << ":" << extraTime;
+		}
+		else
+		{
+			text << majorUnit + 1 << ":" << minorUnit << ":" << extraTime;
+		}
+		SetHorizontalPositionInfo(text);
+	}
+}
+
+void
+CTrackWindow::SetVerticalPositionInfo(
+	BString text)
+{
+	PRINT(("CTrackWindow::SetVerticalPositionInfo(%s)\n",
+			text.String()));
+
+	m_vPosInfoView->SetText(text.String());
+	m_vPosInfoView->Invalidate();
 }
 
 // ---------------------------------------------------------------------------

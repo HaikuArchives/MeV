@@ -74,6 +74,10 @@ public:							// CTrackWindow Implementation
 
 protected:
 
+	virtual void				AddFrameView(
+									BRect frame,
+									CTrack *track);
+
 	virtual bool				AddStrip(
 									BString type,
 									float proportion = 0.3);
@@ -86,10 +90,6 @@ protected:						// Internal Operations
 	void						AddMenuBar();
 
 	void						AddToolBar();
-
-	void						AddFrameView(
-									BRect frame,
-									CTrack *track);
 
 private:						// Instance Data
 

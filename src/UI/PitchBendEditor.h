@@ -48,8 +48,9 @@ protected:
 
 	friend class	CPitchBendEventHandler;
 
-	void MessageReceived( BMessage *msg );
-	void OnUpdate( BMessage *inMsg );
+	virtual void MessageReceived( BMessage *msg );
+	virtual void MouseMoved(BPoint point, uint32 transit, const BMessage *message);
+	virtual void OnUpdate( BMessage *inMsg );
 	
 public:
 		// ---------- Constructor

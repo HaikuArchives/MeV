@@ -173,8 +173,9 @@ CEventEditor::DoDrag(
 			m_timeDelta = newTimeDelta;
 			m_valueDelta = newValueDelta;
 	
-			TrackWindow()->DisplayMouseTime(Track(),
-											dragEvent->Start() + m_timeDelta);
+			TrackWindow()->SetHorizontalPositionInfo(Track(),
+													 dragEvent->Start()
+													 + m_timeDelta);
 			break;
 		}
 		case DragType_Erase:
@@ -196,8 +197,8 @@ CEventEditor::DoDrag(
 				DrawSelectRect();
 				m_cursorPos = point;
 				DrawSelectRect();
-				TrackWindow()->DisplayMouseTime(Track(),
-												ViewCoordsToTime(point.x));
+				TrackWindow()->SetHorizontalPositionInfo(Track(),
+														 ViewCoordsToTime(point.x));
 			}
 			break;
 		}
@@ -207,8 +208,8 @@ CEventEditor::DoDrag(
 			{
 				AddLassoPoint(point);
 				m_cursorPos = point;
-				TrackWindow()->DisplayMouseTime(Track(),
-												ViewCoordsToTime(point.x));
+				TrackWindow()->SetHorizontalPositionInfo(Track(),
+														 ViewCoordsToTime(point.x));
 			}
 			break;
 		}
@@ -361,7 +362,7 @@ CEventEditor::FinishDrag(
 	CRefCountObject::Release(m_dragOp);
 	m_dragOp = NULL;
 	m_dragType = DragType_None;
-	TrackWindow()->DisplayMouseTime(NULL, 0);
+	TrackWindow()->SetHorizontalPositionInfo(NULL, 0);
 }
 
 void
@@ -473,7 +474,7 @@ CEventEditor::StartDrag(
 				m_dragType = DragType_Events;
 			m_clickPart = partCode;
 
-			TrackWindow()->DisplayMouseTime(Track(), ev->Start());
+			TrackWindow()->SetHorizontalPositionInfo(Track(), ev->Start());
 	
 			if (partCode == 0 || wasSelected == false)
 				DoEventFeedback(*ev);
@@ -526,7 +527,8 @@ CEventEditor::StartDrag(
 			m_cursorPos = m_anchorPos = point;
 			m_dragType = DragType_Select;
 			DrawSelectRect();
-			TrackWindow()->DisplayMouseTime(Track(), ViewCoordsToTime(point.x));
+			TrackWindow()->SetHorizontalPositionInfo(Track(),
+													 ViewCoordsToTime(point.x));
 		}
 	}
 }

@@ -69,10 +69,6 @@ public:							// Accessors
 
 public:							// CTrackWindow Implementation
 
-	virtual void				DisplayMouseTime(
-									CTrack *track,
-									int32 time);
-
 	virtual void				MenusBeginning();
 
 	virtual void				MessageReceived(
@@ -82,6 +78,10 @@ public:							// CTrackWindow Implementation
 									BMessage *message);
 
 protected:
+
+	virtual void				AddFrameView(
+									BRect frame,
+									CTrack *track);
 
 	virtual bool				AddStrip(
 									BString type,
@@ -96,10 +96,6 @@ protected:						// Internal Operations
 
 	void						AddToolBar();
 
-	void						AddFrameView(
-									BRect frame,
-									CTrack *track);
-
 private:						// Instance Data
 
 	char						m_timeBuf[16];
@@ -107,8 +103,6 @@ private:						// Instance Data
 	CToolBar *					m_toolBar;
 
 	uint8						m_toolStates[1];
-
-	CTextDisplay *				m_timeView;
 };
 
 #endif /* __C_LinearWindow_H__ */
