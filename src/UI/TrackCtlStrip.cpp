@@ -20,23 +20,35 @@
 #include <stdio.h>
 // Interface Kit
 #include <Bitmap.h>
+#include <Region.h>
+// Support Kit
+#include <Debug.h>
+
+// Debugging Macros
+#define D_ALLOC(x) PRINT(x)		// Constructor/Destructor
 
 extern const uint8	*resizeCursor,
 					*crossCursor;
 
-static rgb_color	greys[] = {	{ 0xff, 0xff, 0xff },
-							{ 0xee, 0xee, 0xee },
-							{ 0xdd, 0xdd, 0xdd },
-							{ 0xcc, 0xcc, 0xcc },
-							{ 0xbb, 0xbb, 0xbb },
-							{ 0x77, 0x77, 0x77 } };
+static rgb_color GREY_PALETTE [] =
+{
+	{0xff, 0xff, 0xff},
+	{0xee, 0xee, 0xee},
+	{0xdd, 0xdd, 0xdd},
+	{0xcc, 0xcc, 0xcc},
+	{0xbb, 0xbb, 0xbb},
+	{0x77, 0x77, 0x77}
+};
 
-static rgb_color	ltBlues[] = {	{ 0xff, 0xff, 0xff },
-								{ 0xdd, 0xff, 0xff },
-								{ 0xcc, 0xcc, 0xff },
-								{ 0xbb, 0xbb, 0xff },
-								{ 0x88, 0x88, 0xff },
-								{ 0x66, 0x66, 0xff } };
+static rgb_color BLUE_PALETTE [] =
+{
+	{0xff, 0xff, 0xff},
+	{0xdd, 0xff, 0xff},
+	{0xcc, 0xcc, 0xff},
+	{0xbb, 0xbb, 0xff},
+	{0x88, 0x88, 0xff},
+	{0x66, 0x66, 0xff}
+};
 
 // ---------------------------------------------------------------------------
 // Event handler class for repeats
@@ -203,109 +215,111 @@ EventOp *CTrackEventHandler::CreateTimeOp(
 // ---------------------------------------------------------------------------
 // Event handler class for repeats
 
-class CRepeatEventHandler : public CTrackEventHandler {
+class CRepeatEventHandler
+	:	public CTrackEventHandler
+{
 
-		// No constructor
+public:							// CTrackEventHandler Implementation
 
-		// Draw the event (or an echo)
-	void Draw(			CEventEditor	&editor,
-						const Event		&ev,
-						bool 			shadowed ) const;
+	/** Draw the event (or an echo) */
+	void						Draw(
+									CEventEditor &editor,
+									const Event &ev,
+									bool shadowed) const;
 };
 
-	// Draw the event (or an echo)
-void CRepeatEventHandler::Draw(
-	CEventEditor	&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
+void
+CRepeatEventHandler::Draw(
+	CEventEditor &editor,
+	const Event &ev,
+	bool shadowed ) const
 {
-	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	BRect			r;
-	rgb_color			*grad = greys;
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
 
-	r.left	= editor.TimeToViewCoords( ev.Start() );
-	r.right	= editor.TimeToViewCoords( ev.Stop()  );
-	r.top	= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.right = editor.TimeToViewCoords(ev.Stop());
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	r.bottom = r.top + rEditor.barHeight - 2.0;
 
-	rEditor.SetDrawingMode( B_OP_COPY );
-
-	if (shadowed && rEditor.m_dragOp != NULL)
+	rgb_color *color;
+	if (shadowed && (editor.DragOperation() != NULL))
 	{
-		rEditor.SetDrawingMode( B_OP_BLEND );
-		grad = ltBlues;
+		editor.SetDrawingMode(B_OP_BLEND);
+		color = BLUE_PALETTE;
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
-		grad = ltBlues;
+		editor.SetDrawingMode(B_OP_COPY);
+		color = BLUE_PALETTE;
 	}
-	
-	rEditor.SetHighColor( grad[ 5 ] );
-
-	rEditor.StrokeRect( r );
-	
-	if (r.Width() > 2)
+	else
 	{
-		r.InsetBy( 1.0, 1.0 );
-		rEditor.SetHighColor( grad[ 0 ] );
-		rEditor.FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
-		rEditor.FillRect( BRect( r.left, r.top, r.right, r.top ) );
-
-		rEditor.SetHighColor( grad[ 4 ] );
-		rEditor.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-		rEditor.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom ) );
+		editor.SetDrawingMode(B_OP_COPY);
+		color = GREY_PALETTE;
 	}
 
-	r.InsetBy( 1.0, 1.0 );
-	rEditor.SetHighColor( grad[ shadowed ? 3 : 2 ] );
-	rEditor.FillRect( r );
-	
+	editor.BeginLineArray(8);
+	editor.AddLine(r.RightBottom(), r.LeftBottom(), color[5]);
+	editor.AddLine(r.RightBottom(), r.RightTop(), color[5]);
+	editor.AddLine(r.LeftTop(), r.LeftBottom(), color[5]);
+	editor.AddLine(r.LeftTop(), r.RightTop(), color[5]);
+	r.InsetBy(1.0, 1.0);
+	editor.AddLine(r.RightBottom(), r.LeftBottom(), color[4]);
+	editor.AddLine(r.RightBottom(), r.RightTop(), color[4]);
+	editor.AddLine(r.LeftTop(), r.LeftBottom(), color[0]);
+	editor.AddLine(r.LeftTop(), r.RightTop(), color[0]);
+	editor.EndLineArray();
+
+	r.InsetBy(1.0, 1.0);
+	editor.SetHighColor(color[shadowed ? 3 : 2 ]);
+	editor.FillRect(r);
+
 	// Now, for the little dots...
-	
 	if (r.Width() > 6)
 	{
-		char		text[ 16 ];
-		int32	pWidth;
-		
+		BString repeatText = "";
 		if (ev.repeat.repeatCount == 0)
-		{
-			strcpy( text, "*" );
-		}
+			repeatText << "oo";
 		else
+			repeatText << ev.repeat.repeatCount;
+	
+		editor.SetFont(be_plain_font);
+
+		editor.SetDrawingMode(B_OP_OVER);
+		if (shadowed)
+			editor.SetHighColor(128, 128, 128, 255);
+		else
+			editor.SetHighColor(0, 0, 0, 255);
+		font_height fh;
+		be_plain_font->GetHeight(&fh);
+		float textWidth = be_plain_font->StringWidth(repeatText.String());
+		editor.MovePenTo((r.left + r.right - textWidth) / 2.0,
+						 (r.top + r.bottom - fh.descent + fh.ascent) / 2 );
+		editor.DrawString(repeatText.String());
+
+		BPoint offset;
+		editor.BeginLineArray(20);
+		for (int32 i = 0; i < 4; i++)
 		{
-			sprintf( text, "%d", ev.repeat.repeatCount );
+			if (i == 0)
+				offset = r.LeftTop() + BPoint(1.0, 1.0);
+			else if (i == 1)
+				offset = r.LeftBottom() + BPoint(1.0, -4.0);
+			else if (i == 2)
+				offset = r.RightTop() + BPoint(-4.0, 1.0);
+			else
+				offset = r.RightBottom() + BPoint(-4.0, -4.0);
+			editor.AddLine(offset, offset + BPoint(1.0, 0.0), color[0]);
+			editor.AddLine(offset, offset + BPoint(0.0, 1.0), color[0]);
+			offset += BPoint(1.0, 1.0);
+			editor.AddLine(offset, offset, color[2]);
+			offset += BPoint(0.0, 1.0);
+			editor.AddLine(offset, offset + BPoint(1.0, 0.0), color[5]);
+			editor.AddLine(offset + BPoint(1.0, 0.0),
+						   offset + BPoint(1.0, -1.0), color[5]);
 		}
-		
-		rEditor.SetFont( be_plain_font );
-		rEditor.SetFontSize( 10 );
-		pWidth = rEditor.StringWidth( text );
-
-		rEditor.SetHighColor( grad[ 0 ] );
-		rEditor.FillRect( BRect( r.left + 1, r.top + 1, r.left + 2, r.top + 2 ) );
-		rEditor.FillRect( BRect( r.left + 1, r.bottom - 3, r.left + 2, r.bottom - 2 ) );
-		rEditor.FillRect( BRect( r.right - 3, r.top + 1, r.right - 2, r.top + 2 ) );
-		rEditor.FillRect( BRect( r.right - 3, r.bottom - 3, r.right - 2, r.bottom - 2 ) );
-
-		rEditor.SetHighColor( grad[ 5 ] );
-		rEditor.FillRect( BRect( r.left + 2, r.top + 2, r.left + 3, r.top + 3 ) );
-		rEditor.FillRect( BRect( r.left + 2, r.bottom - 2, r.left + 3, r.bottom - 1 ) );
-		rEditor.FillRect( BRect( r.right - 2, r.top + 2, r.right - 1, r.top + 3 ) );
-		rEditor.FillRect( BRect( r.right - 2, r.bottom - 2, r.right - 1, r.bottom - 1 ) );
-
-		rEditor.SetHighColor( grad[ 2 ] );
-		rEditor.FillRect( BRect( r.left + 2, r.top + 2, r.left + 2, r.top + 2 ) );
-		rEditor.FillRect( BRect( r.left + 2, r.bottom - 2, r.left + 2, r.bottom - 2 ) );
-		rEditor.FillRect( BRect( r.right - 2, r.top + 2, r.right - 2, r.top + 2 ) );
-		rEditor.FillRect( BRect( r.right - 2, r.bottom - 2, r.right - 2, r.bottom - 2 ) );
-
-		if (r.Width() > 6 + pWidth && r.Height() >= 6 && !shadowed)
-		{
-			rEditor.SetDrawingMode( B_OP_OVER );
-			rEditor.SetHighColor( 0, 0, 0 );
-			rEditor.MovePenTo(	(r.left + r.right - pWidth) / 2,
-								(r.top + r.bottom - rEditor.fontSpec.descent + rEditor.fontSpec.ascent) / 2 );
-			rEditor.DrawString( text );
-		}
+		editor.EndLineArray();
 	}
 }
 
@@ -322,95 +336,76 @@ class CSequenceEventHandler : public CTrackEventHandler {
 					bool 		shadowed ) const;
 };
 
-	// Draw the event (or an echo)
-void CSequenceEventHandler::Draw(
-	CEventEditor	&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
+void
+CSequenceEventHandler::Draw(
+	CEventEditor &editor,
+	const Event &ev,
+	bool shadowed) const
 {
-	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	BRect			r;
-	rgb_color			*grad = greys;
-	CTrack			*track = editor.Track()->Document().FindTrack( ev.sequence.sequence );
+	CTrackCtlStrip &rEditor = (CTrackCtlStrip &)editor;
 
-	r.left	= editor.TimeToViewCoords( ev.Start() );
-	r.right	= editor.TimeToViewCoords( ev.Stop()  );
-	r.top	= rEditor.VPosToViewCoords( ev.repeat.vPos ) + 1.0;
-	r.bottom	= r.top + rEditor.barHeight - 2;
+	BRect r;
+	r.left = editor.TimeToViewCoords(ev.Start());
+	r.right = editor.TimeToViewCoords(ev.Stop());
+	r.top = rEditor.VPosToViewCoords(ev.repeat.vPos) + 1.0;
+	r.bottom = r.top + rEditor.barHeight - 2.0;
 
-	rEditor.SetDrawingMode( B_OP_COPY );
-
-	if (shadowed && rEditor.m_dragOp != NULL)
+	rgb_color *color;
+	if (shadowed && (editor.DragOperation() != NULL))
 	{
-		rEditor.SetDrawingMode(B_OP_BLEND);
-		grad = ltBlues;
+		editor.SetDrawingMode(B_OP_BLEND);
+		color = BLUE_PALETTE;
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
-		grad = ltBlues;
+		editor.SetDrawingMode(B_OP_COPY);
+		color = BLUE_PALETTE;
 	}
-	
-	rEditor.SetHighColor( grad[ 5 ] );
-
-	rEditor.StrokeRect( r );
-	
-	r.InsetBy( 1.0, 1.0 );
-	rEditor.SetHighColor( grad[ 0 ] );
-	rEditor.FillRect( BRect( r.left, r.top, r.left, r.bottom ) );
-	rEditor.FillRect( BRect( r.left, r.top, r.right, r.top ) );
-
-	rEditor.SetHighColor( grad[ 4 ] );
-	rEditor.FillRect( BRect( r.left + 1, r.bottom, r.right, r.bottom ) );
-	rEditor.FillRect( BRect( r.right, r.top + 1, r.right, r.bottom ) );
-
-	r.InsetBy( 1.0, 1.0 );
-	rEditor.SetHighColor( grad[ shadowed ? 3 : 2 ] );
-	rEditor.FillRect( r );
-	
-	if (track != NULL)
+	else
 	{
-		int32	l = track->LogicalLength();
-		for (int32 t = ev.Start() + l; t < ev.Stop(); t += l)
-		{
-			float	p = editor.TimeToViewCoords( t );
-		
-			if (p <= r.left + 4) break;
-
-			rEditor.SetHighColor( grad[ 4 ] );
-			rEditor.FillRect( BRect( p - 1, r.top, p - 1, r.bottom ) );
-	
-			rEditor.SetHighColor( grad[ 0 ] );
-			rEditor.FillRect( BRect( p, r.top, p, r.bottom ) );
-		}
+		editor.SetDrawingMode(B_OP_COPY);
+		color = GREY_PALETTE;
 	}
+
+	editor.BeginLineArray(8);
+	editor.AddLine(r.RightBottom(), r.LeftBottom(), color[5]);
+	editor.AddLine(r.RightBottom(), r.RightTop(), color[5]);
+	editor.AddLine(r.LeftTop(), r.LeftBottom(), color[5]);
+	editor.AddLine(r.LeftTop(), r.RightTop(), color[5]);
+	r.InsetBy(1.0, 1.0);
+	editor.AddLine(r.RightBottom(), r.LeftBottom(), color[4]);
+	editor.AddLine(r.RightBottom(), r.RightTop(), color[4]);
+	editor.AddLine(r.LeftTop(), r.LeftBottom(), color[0]);
+	editor.AddLine(r.LeftTop(), r.RightTop(), color[0]);
+	editor.EndLineArray();
+
+	r.InsetBy(1.0, 1.0);
+	editor.SetHighColor(color[shadowed ? 3 : 2 ]);
+	editor.FillRect(r);
 	
-	char		text[ 80 ],
-			ttext[ 80 ];
-	const char	*t1 = text;
-	char		*t2 = ttext;
-		
-	if (track)
+	if (r.Width() >= 6.0)
 	{
-		if (ev.sequence.transposition != 0)
-			sprintf( text, "%s [%d]", track->Name(), ev.sequence.transposition );
-		else strcpy( text, track->Name() );
-	}
-	else strcpy( text, "### Error Invalid Track" );
+		CTrack *track = editor.Track()->Document().FindTrack(ev.sequence.sequence);
+		BString trackName;
+		if (track)
+			trackName = track->Name();
+		else
+			trackName = "(None)";
+	
+		editor.SetFont(be_plain_font);
+		be_plain_font->TruncateString(&trackName, B_TRUNCATE_END,
+									  r.Width() - 8.0);
 
-	rEditor.SetFont( be_plain_font );
-	rEditor.SetFontSize( 10 );
-
-	be_plain_font->GetTruncatedStrings(
-		&t1, 1, B_TRUNCATE_END, r.Width() - 8.0, &t2 );
-
-	if (r.Height() >= 6)
-	{
-		if (!shadowed) rEditor.SetDrawingMode( B_OP_OVER );
-		if (track == NULL)	rEditor.SetHighColor( 255, 0, 0 );
-		else					rEditor.SetHighColor( 0, 0, 0 );
-		rEditor.MovePenTo(	r.left + 4,
-							(r.top + r.bottom - rEditor.fontSpec.descent + rEditor.fontSpec.ascent) / 2 );
-		rEditor.DrawString( ttext );
+		editor.SetDrawingMode(B_OP_OVER);
+		if ((track == NULL) || shadowed)
+			editor.SetHighColor(128, 128, 128, 255);
+		else
+			editor.SetHighColor(0, 0, 0, 255);
+		font_height fh;
+		be_plain_font->GetHeight(&fh);
+		editor.MovePenTo(r.left + 4,
+						 (r.top + r.bottom - fh.descent + fh.ascent) / 2 );
+		editor.DrawString(trackName.String());
 	}
 }
 
@@ -477,8 +472,8 @@ void CTimeSigEventHandler::Draw(
 {
 	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
-	rgb_color		*grad = greys;
-	int32			pWidth;
+	rgb_color		*grad = GREY_PALETTE;
+	float			pWidth;
 	char				text[ 32 ];
 
 	rEditor.SetFont( be_plain_font );
@@ -498,12 +493,12 @@ void CTimeSigEventHandler::Draw(
 	{
 		rEditor.SetHighColor( 128, 0, 128 );
 		rEditor.SetDrawingMode( B_OP_BLEND );
-		grad = ltBlues;
+		grad = BLUE_PALETTE;
 	}
 	else if (ev.IsSelected() && editor.IsSelectionVisible())
 	{
 		rEditor.SetHighColor( 64, 64, 255 );
-		grad = ltBlues;
+		grad = BLUE_PALETTE;
 	}
 	else
 	{
@@ -523,7 +518,7 @@ BRect CTimeSigEventHandler::Extent(
 {
 	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
-	int32			pWidth;
+	float			pWidth;
 	char				text[ 32 ];
 
 	rEditor.SetFont( be_plain_font );
@@ -551,10 +546,10 @@ long CTimeSigEventHandler::Pick(
 //	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r( Extent( editor, ev ) );
 	
-	if (r.Contains( pickPt ))
+	if (r.Contains(pickPt))
 	{
 		partCode = 0;
-		return abs( (r.top + r.bottom) - pickPt.y*2 );
+		return static_cast<long>(fabs((r.top + r.bottom) - pickPt.y * 2));
 	}
 
 	return LONG_MAX;
@@ -667,8 +662,7 @@ void CProgramChangeEventHandler::Draw(
 	bool				locked = 	editor.Track()->IsChannelLocked( ev.GetVChannel() );
 	char				patchNameBuf[ 64 ];
 	const char		*patchName;
-	int32			x, y;
-//	int32			radius = rEditor.barHeight / 2 - 1;
+	float			x, y;
 	BBitmap			*horn;
 	BRect			hornRect;
 	
@@ -739,10 +733,9 @@ BRect CProgramChangeEventHandler::Extent(
 	CEventEditor		&editor,
 	const Event		&ev ) const
 {
-	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
-	char				patchNameBuf[ 64 ];
+	char			patchNameBuf[ 64 ];
 	const char		*patchName;
 	BBitmap			*horn;
 	BRect			hornRect;
@@ -752,14 +745,15 @@ BRect CProgramChangeEventHandler::Extent(
 	
 	patchName = GetPatchName( editor, ev, patchNameBuf );
 
-	int32			pWidth;
-	static int32		maxPWidth = 0;
+	float			pWidth;
+	static float	maxPWidth = 0.0;
 
 	rEditor.SetFont( be_plain_font );
 	rEditor.SetFontSize( 10 );
 
-	pWidth = rEditor.StringWidth( patchName );
-	if (pWidth > maxPWidth) maxPWidth = pWidth;
+	pWidth = rEditor.StringWidth(patchName);
+	if (pWidth > maxPWidth)
+		maxPWidth = pWidth;
 
 	r.left		= editor.TimeToViewCoords( ev.Start() );
 	r.right	= r.left + maxPWidth + 9.0 + hornRect.Width();
@@ -788,7 +782,7 @@ long CProgramChangeEventHandler::Pick(
 	if (r.Contains( pickPt ))
 	{
 		partCode = 0;
-		return abs( (r.top + r.bottom) - pickPt.y*2 );
+		return static_cast<long>(fabs((r.top + r.bottom) - pickPt.y * 2));
 	}
 
 	return LONG_MAX;
@@ -918,17 +912,15 @@ void CTempoEventHandler::Invalidate(
 	rEditor.Invalidate( Extent( editor, ev ) );
 }
 
-	// Draw the event (or an echo)
-void CTempoEventHandler::Draw(
-	CEventEditor		&editor,
-	const Event		&ev,
-	bool 			shadowed ) const
+void
+CTempoEventHandler::Draw(
+	CEventEditor &editor,
+	const Event &ev,
+	bool shadowed) const
 {
-	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
-	char				tempoText[ 64 ];
-	int32			x, y;
-	int32			radius = rEditor.barHeight / 2 - 1;
+	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
+	char			tempoText[ 64 ];
+	float			x, y;
 	BBitmap			*icon;
 	
 	icon = ResourceUtils::LoadImage("SmallClock");
@@ -980,8 +972,7 @@ BRect CTempoEventHandler::Extent(
 	CEventEditor		&editor,
 	const Event		&ev ) const
 {
-	CTrackCtlStrip		&rEditor = (CTrackCtlStrip &)editor;
-	VChannelEntry		*vce = editor.Track()->Document().GetVChannel( ev.GetVChannel() );
+	CTrackCtlStrip	&rEditor = (CTrackCtlStrip &)editor;
 	BRect			r;
 	BBitmap			*metro;
 	BRect			metroRect;
@@ -1029,13 +1020,13 @@ long CTempoEventHandler::Pick(
 	result = editor.PickDurationEvent( ev, r.top, r.bottom, pickPt, partCode );
 	if (result == LONG_MAX)
 	{
-		long			left = rEditor.TimeToViewCoords( ev.Start()  );
-		long			right = rEditor.TimeToViewCoords( ev.Stop()  );
+		float left = rEditor.TimeToViewCoords( ev.Start()  );
+		float right = rEditor.TimeToViewCoords( ev.Stop()  );
 		
-		if (	pickPt.y > r.top
-			&& pickPt.y < r.bottom
-			&& pickPt.x > right
-			&& pickPt.x < left + 80.0)
+		if (pickPt.y > r.top
+		 && pickPt.y < r.bottom
+		 && pickPt.x > right
+		 && pickPt.x < left + 80.0)
 		{
 			partCode = 0;
 			result = 0;
@@ -1141,7 +1132,7 @@ CTrackCtlStrip::CTrackCtlStrip(
 	SetZoomTarget( (CObserver *)this );
 
 		// Make the label view on the left-hand side
-	SetLabelView(new CStripLabelView(BRect(-1.0, -1.0, 20.0, rect.Height() + 1),
+	SetLabelView(new CStripLabelView(BRect(-1.0, 0.0, 20.0, rect.Height()),
 									 inName, B_FOLLOW_TOP_BOTTOM,
 									 B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 
@@ -1340,10 +1331,9 @@ void CTrackCtlStrip::CalcZoom()
 	stripLogicalHeight = barHeight * 64 - 1;
 }
 
-void CTrackCtlStrip::AttachedToWindow()
+void
+CTrackCtlStrip::AttachedToWindow()
 {
-	BRect		r( Frame() );
-
 	SetViewColor( B_TRANSPARENT_32_BIT );
 	SetScrollRange(	scrollRange.x, scrollValue.x, stripLogicalHeight, 0.0 );
 
@@ -1359,8 +1349,6 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 
 		if (barHeight < 32)
 		{
-			BRect		r( Frame() );
-
 			barHeight++;
 			CalcZoom();
 			Hide();
@@ -1374,8 +1362,6 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 
 		if (barHeight > 10)
 		{
-			BRect		r( Frame() );
-
 			barHeight--;
 			CalcZoom();
 			Hide();
@@ -1507,7 +1493,7 @@ void CTrackCtlStrip::MouseMoved(
 					if (time < 0) time = 0;
 					dragEv.SetStart( time );
 					dragEv.SetVChannel( 0 );
-					dragEv.sequence.vPos = point.y / barHeight;
+					dragEv.sequence.vPos = static_cast<uint8>(point.y / barHeight);
 							// Rem: Change this to the logical length of the track we are ADDING. */
 					dragEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
 					dragEv.sequence.sequence		= trackID;
@@ -1547,7 +1533,6 @@ void CTrackCtlStrip::MouseMoved(
 		{
 			if (crossCursor == NULL)
 			{
-				size_t		size;
 				crossCursor = ResourceUtils::LoadCursor(1);
 			}
 
@@ -1587,48 +1572,62 @@ bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
 	m_newEv.SetDuration( TrackWindow()->NewEventDuration() );
 	m_newEv.SetVChannel( 0 );
 
-	switch (m_newEv.Command()) {
-	case EvtType_End:
-		m_newEv.SetDuration( 0 );
-		break;
-
-	case EvtType_Sequence:
-		m_newEv.sequence.vPos = point.y / barHeight;
-		m_newEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
-		m_newEv.sequence.sequence		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_SequenceNumber );
-		m_newEv.sequence.flags			= 0;
-		tk = TrackWindow()->Document()->FindTrack( m_newEv.sequence.sequence );
-		if (tk == NULL) tk = Track();
-		m_newEv.SetDuration( tk->LogicalLength() );
-		break;
-
-	case EvtType_TimeSig:
-		m_newEv.sigChange.vPos = point.y / barHeight;
-		m_newEv.sigChange.numerator		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatCount );
-		m_newEv.sigChange.denominator	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatSize );
-		break;
-
-	case EvtType_Repeat:
-		m_newEv.repeat.vPos = point.y / barHeight;
-		m_newEv.repeat.repeatCount		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_RepeatCount );
-		break;
-
-	case EvtType_ProgramChange:
-		m_newEv.SetVChannel( TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Channel ) );
-		m_newEv.programChange.vPos		= point.y / barHeight;
-		m_newEv.programChange.program	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Program );
-		m_newEv.SetAttribute( EvAttr_ProgramBank, TrackWindow()->Document()->GetDefaultAttribute( EvAttr_ProgramBank ) );
-		break;
-
-	case EvtType_Tempo:
-		m_newEv.SetVChannel( 0 );
-		m_newEv.tempo.vPos		= point.y / barHeight;
-		m_newEv.tempo.newTempo	= CPlayerControl::Tempo(TrackWindow()->Document()) * 1000.0;
-		break;
-
-	default:
-		return false;
-	};
+	switch (m_newEv.Command())
+	{
+		case EvtType_End:
+		{
+			m_newEv.SetDuration( 0 );
+			break;
+		}
+		case EvtType_Sequence:
+		{
+			m_newEv.sequence.vPos = static_cast<uint8>(point.y / barHeight);
+			m_newEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
+			m_newEv.sequence.sequence		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_SequenceNumber );
+			m_newEv.sequence.flags			= 0;
+			tk = TrackWindow()->Document()->FindTrack( m_newEv.sequence.sequence );
+			if (tk == NULL) tk = Track();
+			m_newEv.SetDuration( tk->LogicalLength() );
+			break;
+		}
+		case EvtType_TimeSig:
+		{
+			m_newEv.sigChange.vPos = static_cast<uint8>(point.y / barHeight);
+			m_newEv.sigChange.numerator		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatCount );
+			m_newEv.sigChange.denominator	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatSize );
+			break;
+		}
+		case EvtType_Repeat:
+		{
+			m_newEv.repeat.vPos = static_cast<uint8>(point.y / barHeight);
+			m_newEv.repeat.repeatCount		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_RepeatCount );
+			break;
+		}
+		case EvtType_ProgramChange:
+		{
+			// check if destination is set
+			int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
+			if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
+				return false;
+	
+			m_newEv.SetVChannel( TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Channel ) );
+			m_newEv.programChange.vPos		= static_cast<uint8>(point.y / barHeight);
+			m_newEv.programChange.program	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Program );
+			m_newEv.SetAttribute( EvAttr_ProgramBank, TrackWindow()->Document()->GetDefaultAttribute( EvAttr_ProgramBank ) );
+			break;
+		}
+		case EvtType_Tempo:
+		{
+			m_newEv.SetVChannel( 0 );
+			m_newEv.tempo.vPos		= static_cast<uint8>(point.y / barHeight);
+			m_newEv.tempo.newTempo	= static_cast<uint32>(CPlayerControl::Tempo(TrackWindow()->Document()) * 1000.0);
+			break;
+		}
+		default:
+		{
+			return false;
+		}
+	}
 
 	return true;
 }

@@ -35,7 +35,7 @@ CAssemblyRulerView::CAssemblyRulerView(
 	D_ALLOC(("CAssemblyRulerView::CAssemblyRulerView()\n"));
 
 	m_markerBitmap = ResourceUtils::LoadImage("SectionMarker");
-	SetViewColor(B_TRANSPARENT_32_BIT);
+	SetViewColor(B_TRANSPARENT_COLOR);
 }
 	
 // ---------------------------------------------------------------------------
@@ -46,12 +46,11 @@ CAssemblyRulerView::Draw(
 	BRect updateRect)
 {
 	CEventTrack	*track = (CEventTrack *)subject;
-	TClockType	clockType = track->ClockType();
-	long startTime = m_frameView->ViewCoordsToTime( updateRect.left - 48.0, clockType );
+	TClockType clockType = track->ClockType();
+	long startTime = m_frameView->ViewCoordsToTime(updateRect.left - 48.0,
+												   clockType );
 	if (startTime < 0)
-	{
 		startTime = 0;
-	}
 
 	CSignatureMap::Iterator timeIter(track->SigMap(), startTime);
 	long time;
@@ -75,9 +74,13 @@ CAssemblyRulerView::Draw(
 	}
 
 	SetHighColor(255, 255, 220, 255);
-	FillRect(BRect(updateRect.left, rect.top, updateRect.right, rect.bottom - 1));
+	FillRect(BRect(updateRect.left, rect.top, updateRect.right,
+				   rect.bottom - 1),
+			 B_SOLID_HIGH);
 	SetHighColor(0, 0, 0, 255);
-	FillRect(BRect(updateRect.left, rect.bottom, updateRect.right, rect.bottom));
+	StrokeLine(BPoint(updateRect.left, rect.bottom),
+			   BPoint(updateRect.right, rect.bottom),
+			   B_SOLID_HIGH);
 
 	for (time = timeIter.First(major); ; time = timeIter.Next(major))
 	{
@@ -93,7 +96,7 @@ CAssemblyRulerView::Draw(
 			{
 				continue;
 			}
-			SetHighColor( 160, 160, 140 );
+			SetHighColor(160, 160, 140, 255);
 		}
 		else if (steps > 1)
 		{
@@ -101,7 +104,7 @@ CAssemblyRulerView::Draw(
 		}
 		else
 		{
-			SetHighColor( 210, 210, 180 );
+			SetHighColor(210, 210, 180, 255);
 		}
 
 		if (x > 0.0)
@@ -142,14 +145,14 @@ CAssemblyRulerView::Draw(
 	if (m_showMarkers)
 	{
 		// Now, draw the track section markers...
-		double	x;
-	
+		BPoint offset(0.0, 0.0);
 		SetDrawingMode(B_OP_OVER);
-		x = m_frameView->TimeToViewCoords(track->SectionStart(), clockType);
-		DrawBitmapAsync(m_markerBitmap, BPoint(x - 4.0, 0.0));
-		x = m_frameView->TimeToViewCoords(track->SectionEnd(), clockType);
-		DrawBitmap(m_markerBitmap, BPoint(x - 4.0, 0.0));
-//		SetDrawingMode(B_OP_COPY);
+		offset.x = m_frameView->TimeToViewCoords(track->SectionStart(),
+												 clockType) - 4.0;
+		DrawBitmapAsync(m_markerBitmap, offset);
+		offset.x = m_frameView->TimeToViewCoords(track->SectionEnd(),
+												 clockType) - 4.0;
+		DrawBitmapAsync(m_markerBitmap, offset);
 	}
 }
 

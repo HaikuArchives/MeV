@@ -4,6 +4,8 @@
 
 #include "LinearWindow.h"
 
+#include "AssemblyRulerView.h"
+#include "BorderButton.h"
 #include "EventTrack.h"
 #include "PlayerControl.h"
 #include "Idents.h"
@@ -54,7 +56,13 @@ CLinearWindow::CLinearWindow(
 
 	rect.top = ToolBar()->Frame().bottom + 1.0;
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
-	CreateFrames(rect, track);
+	AddFrameView(rect, track);
+
+	stripFrame->AddType("Piano Roll");
+	stripFrame->AddType("Velocity");
+	stripFrame->AddType("Pitch Bend");
+	stripFrame->AddType("Sequence");
+
 	BRect scrollFrame(stripScroll->Frame());
 	stripScroll->ResizeTo(scrollFrame.Width() - 100.0, scrollFrame.Height());
 	stripScroll->MoveTo(scrollFrame.left + 100.0, scrollFrame.top);
@@ -73,16 +81,10 @@ CLinearWindow::CLinearWindow(
 	view->AddChild(m_timeView);
 
 	// Now, create some strips for test purposes
-	CStripView *sv;
-	rect.top += CTrackWindow::DEFAULT_RULER_HEIGHT;
-	sv = new CLinearEditor(*this, *stripFrame, rect);
-	stripFrame->AddChildView(sv->TopView(), 80);
-	sv = new CVelocityEditor(*this, *stripFrame, rect);
-	stripFrame->AddChildView(sv->TopView(), 15);
-	sv = new CPitchBendEditor(*this, *stripFrame, rect);
-	stripFrame->AddChildView(sv->TopView(), 15);
-	sv = new CTrackCtlStrip(*this, *stripFrame, rect, track);
-	stripFrame->AddChildView(sv->TopView(), 15);
+	AddStrip("Piano Roll", 0.5);
+	AddStrip("Velocity", 0.25);
+	AddStrip("Sequence", 0.25);
+	stripFrame->PackStrips();
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +122,10 @@ void
 CLinearWindow::MenusBeginning()
 {
 	CTrackWindow::MenusBeginning();
-	BMenuItem *item = KeyMenuBar()->FindItem("Set Section");
+
+	BMenuItem *item;
+
+	item = KeyMenuBar()->FindItem("Set Section");
 	item->SetEnabled(Track()->SelectionType() != CTrack::Select_None);
 }
 
@@ -272,21 +277,6 @@ CLinearWindow::MessageReceived(
 			((CMeVApp *)be_app)->ShowPrefs();
 			break;
 		}
-		case MENU_MIDI_CONFIG:
-		{
-			((CMeVApp *)be_app)->ShowMidiConfig();
-			break;
-		}
-		case MENU_VIEW_SETTINGS:
-		{
-			ShowPrefs();
-			break;
-		}
-		case MENU_VIRTUAL_CHANNELS:
-		{
-			Document()->ShowWindow( CMeVDoc::VChannel_Window );
-			break;
-		}
 		case MENU_PLAY:
 		{
 			if (CPlayerControl::IsPlaying(Document()))
@@ -363,7 +353,7 @@ CLinearWindow::AddMenuBar()
 {
 	D_INTERNAL(("CLinearWindow::AddMenuBar()\n"));
 
-	BMenu *menu;
+	BMenu *menu, *subMenu;
 	BMenuBar *menuBar = new BMenuBar(Bounds(), NULL);
 
 	// Create the 'File' menu
@@ -380,9 +370,6 @@ CLinearWindow::AddMenuBar()
 	menu->AddItem(new CQuickKeyMenuItem("Clear", new BMessage(MENU_CLEAR), 
 										B_DELETE, "Del"));
 	menu->AddItem(new BMenuItem("Select All", new BMessage(B_SELECT_ALL), 'A'));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("View Settings...", new BMessage(MENU_VIEW_SETTINGS)));
-	menu->AddItem(new BMenuItem("Virtual Channels...", new BMessage(MENU_VIRTUAL_CHANNELS)));
 	menuBar->AddItem(menu);
 
 	// Create the 'Play' menu
@@ -395,6 +382,12 @@ CLinearWindow::AddMenuBar()
 	menu->AddItem(new BMenuItem("Set Section", new BMessage(MENU_SET_SECTION), 'S', B_SHIFT_KEY));
 	menuBar->AddItem(menu);
 	
+	// Create the 'View' menu
+	menu = new BMenu("View");
+	subMenu = new BMenu("Add Strip");
+	menu->AddItem(subMenu);
+	menuBar->AddItem(menu);
+
 	// Create the 'Window' menu
 	menu = new BMenu("Window");
 	menu->AddItem(new BMenuItem("New Window",
@@ -485,6 +478,113 @@ CLinearWindow::AddToolBar()
 	toolBar->MakeRadioGroup("Select", "Text", true);
 
 	SetToolBar(toolBar);
+}
+
+void
+CLinearWindow::AddFrameView(
+	BRect frame,
+	CTrack *track)
+{
+	// Create the frame for the strips, and the scroll bar
+	stripFrame = new CTrackEditFrame(BRect(frame.left,
+										   frame.top + DEFAULT_RULER_HEIGHT,
+										   frame.right, frame.bottom),
+									 (char *)NULL, track, B_FOLLOW_ALL);
+
+	CScrollerTarget	*ruler;
+	ruler = new CAssemblyRulerView(*this, stripFrame, (CEventTrack *)track,
+								   BRect(frame.left + 21, frame.top,
+										 frame.right - 14, 
+										 frame.top + DEFAULT_RULER_HEIGHT - 1),
+								   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
+								   B_WILL_DRAW);
+
+	BView *pad;
+	rgb_color fill = ui_color(B_PANEL_BACKGROUND_COLOR);
+	pad = new CBorderView(BRect(frame.left - 1, frame.top - 1,
+								frame.left + 20, 
+								frame.top + DEFAULT_RULER_HEIGHT - 1),
+						  "", B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW, 
+						  &fill);
+	AddChild(pad);
+
+	pad = new CBorderView(BRect(frame.right - 13, frame.top - 1,
+								frame.right + 1, 
+								frame.top + DEFAULT_RULER_HEIGHT - 1),
+						  "", B_FOLLOW_RIGHT | B_FOLLOW_TOP, B_WILL_DRAW,
+						  &fill);
+	AddChild(pad);
+
+	stripScroll = new CScroller(BRect(frame.left - 1, frame.bottom + 1,
+									  frame.right - 41, frame.bottom + 15),
+								NULL, stripFrame, 0.0, 0.0, B_HORIZONTAL);
+
+	BControl *magButton;
+	magButton = new CBorderButton(BRect(frame.right - 27, frame.bottom + 1,
+										frame.right - 13, frame.bottom + 15),
+								  NULL, ResourceUtils::LoadImage("SmallPlus"),
+								  new BMessage(ZoomIn_ID),
+								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
+								  B_WILL_DRAW);
+	magButton->SetTarget((CDocWindow *)this);
+	AddChild(magButton);
+
+	magButton = new CBorderButton(BRect(frame.right - 41, frame.bottom + 1,
+										frame.right - 27, frame.bottom + 15),
+								  NULL, ResourceUtils::LoadImage("SmallMinus"),
+								  new BMessage(ZoomOut_ID),
+								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
+								  B_WILL_DRAW);
+	magButton->SetTarget((CDocWindow *)this);
+	AddChild(magButton);
+
+	// add views to window
+	AddChild(ruler);
+	AddChild(stripScroll);
+	AddChild(stripFrame);
+}
+
+bool
+CLinearWindow::AddStrip(
+	BString type,
+	float proportion)
+{
+	BRect rect(Bounds());
+	rect.top = ToolBar()->Frame().bottom
+			   + CTrackWindow::DEFAULT_RULER_HEIGHT + 1.0;
+	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
+
+	CStripView *strip = NULL;
+
+	if (type == "Piano Roll")
+	{
+		strip = new CLinearEditor(*this, *stripFrame, rect);
+	}
+	else if (type == "Velocity")
+	{
+		strip = new CVelocityEditor(*this, *stripFrame, rect);
+	}
+	else if (type == "Pitch Bend")
+	{
+		strip = new CPitchBendEditor(*this, *stripFrame, rect);
+	}
+	else if (type == "Control Change")
+	{
+		// nyi
+	}
+	else if (type == "Sequence")
+	{
+		strip = new CTrackCtlStrip(*this, *stripFrame, rect, Track(),
+								   "Sequence");
+	}
+
+	if (strip)
+	{
+		stripFrame->AddStrip(strip, proportion);
+		return true;
+	}
+
+	CTrackWindow::AddStrip(type, proportion);
 }
 
 // END - LinearWindow.cpp

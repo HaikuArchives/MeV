@@ -5,6 +5,7 @@
 #include "AssemblyWindow.h"
 
 #include "AssemblyRulerView.h"
+#include "BorderButton.h"
 #include "EventTrack.h"
 #include "LinearWindow.h"
 #include "PlayerControl.h"
@@ -52,32 +53,16 @@ CAssemblyWindow::CAssemblyWindow(
 	BRect rect(Bounds());
 	rect.top = ToolBar()->Frame().bottom + 1.0;
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
-	CreateFrames(rect, (CTrack *)Document()->FindTrack(1));
 
-	// Now, create some strips for test purposes
-	CStripView *sv;
-	CAssemblyRulerView *realRuler;
-	CScrollerTarget	*oldRuler = stripFrame->Ruler();
+	AddFrameView(rect, (CTrack *)Document()->FindTrack(1));
+	stripFrame->AddType("Metered");
+	stripFrame->AddType("Real");
 
-	sv = new CTrackCtlStrip(*this, *stripFrame, rect,
-							(CEventTrack *)Document()->FindTrack(1), "Metrical");
-	sv->SetRemovable(false);
-	stripFrame->AddChildView(sv->TopView(), 50);
+	AddStrip("Metered", 0.7);
+	AddStrip("Real", 0.3);
 
-	realRuler = new CAssemblyRulerView(*this, stripFrame,
-									   (CEventTrack *)Document()->FindTrack((int32)0),
-									   BRect(0.0, 0.0, rect.Width() - 14, 
-									   CTrackWindow::DEFAULT_RULER_HEIGHT - 1),
-									   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
-									   B_WILL_DRAW);
-	realRuler->ShowMarkers(false);
-	stripFrame->SetRuler(oldRuler);
-
-	CEventEditor *ee;
-	ee = new CTrackCtlStrip(*this, *stripFrame, frame,
-							(CEventTrack *)Document()->FindTrack((int32)0), "Real");
-	ee->SetRuler(realRuler);
-	stripFrame->AddChildView(ee->TopView(), 8);
+	// Finish the strip configuration
+	stripFrame->PackStrips();
 
 	newEventType = EvtType_Sequence;
 }
@@ -171,11 +156,6 @@ CAssemblyWindow::MessageReceived(
 		case MENU_MIDI_CONFIG:
 		{
 			((CMeVApp *)be_app)->ShowMidiConfig();
-			break;
-		}
-		case MENU_VIEW_SETTINGS:
-		{
-			ShowPrefs();
 			break;
 		}
 		case MENU_VIRTUAL_CHANNELS:
@@ -279,7 +259,7 @@ CAssemblyWindow::OnUpdate(
 void
 CAssemblyWindow::AddMenuBar()
 {
-	BMenu *menu;
+	BMenu *menu, *subMenu;
 	BMenuItem *item;
 
 	BMenuBar *menuBar = new BMenuBar(Bounds(), "General");
@@ -300,8 +280,6 @@ CAssemblyWindow::AddMenuBar()
 	item->SetEnabled(false);
 	menu->AddItem(new CQuickKeyMenuItem("Clear", new BMessage(MENU_CLEAR), B_DELETE, "Del"));
 	menu->AddItem(new BMenuItem("Select All", new BMessage(B_SELECT_ALL), 'A'));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("View Settings...", new BMessage(MENU_VIEW_SETTINGS)));
 	menuBar->AddItem(menu);
 
 	// Create the 'Play' menu
@@ -314,6 +292,12 @@ CAssemblyWindow::AddMenuBar()
 	menu->AddItem(new BMenuItem("Set Section", new BMessage(MENU_SET_SECTION), 'S', B_SHIFT_KEY));
 	menuBar->AddItem(menu);
 	
+	// Create the 'View' menu
+	menu = new BMenu("View");
+	subMenu = new BMenu("Add Strip");
+	menu->AddItem(subMenu);
+	menuBar->AddItem(menu);
+
 	// Create the 'Window' menu
 	menu = new BMenu("Window");
 	menu->AddItem(new BMenuItem("New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
@@ -361,6 +345,92 @@ CAssemblyWindow::AddToolBar()
 	toolBar->MakeRadioGroup("Select", "Eraser", true);
 	
 	SetToolBar(toolBar);
+}
+
+void
+CAssemblyWindow::AddFrameView(
+	BRect frame,
+	CTrack *track)
+{
+	// Create the frame for the strips, and the scroll bar
+	stripFrame = new CTrackEditFrame(BRect(frame), (char *)NULL,
+									 track, B_FOLLOW_ALL);
+
+	stripScroll = new CScroller(BRect(frame.left - 1, frame.bottom + 1,
+									  frame.right - 41, frame.bottom + 15),
+								NULL, stripFrame, 0.0, 0.0, B_HORIZONTAL);
+
+	BControl *magButton;
+	magButton = new CBorderButton(BRect(frame.right - 27, frame.bottom + 1,
+										frame.right - 13, frame.bottom + 15),
+								  NULL, ResourceUtils::LoadImage("SmallPlus"),
+								  new BMessage(ZoomIn_ID),
+								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
+								  B_WILL_DRAW);
+	magButton->SetTarget((CDocWindow *)this);
+	AddChild(magButton);
+
+	magButton = new CBorderButton(BRect(frame.right - 41, frame.bottom + 1,
+										frame.right - 27, frame.bottom + 15),
+								  NULL, ResourceUtils::LoadImage("SmallMinus"),
+								  new BMessage(ZoomOut_ID),
+								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
+								  B_WILL_DRAW);
+	magButton->SetTarget((CDocWindow *)this);
+	AddChild(magButton);
+
+	// add views to window
+	AddChild(stripScroll);
+	AddChild(stripFrame);
+}
+
+bool
+CAssemblyWindow::AddStrip(
+	BString type,
+	float proportion)
+{
+	BRect rect(Bounds());
+	rect.top = ToolBar()->Frame().bottom + 1.0;
+	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
+
+	CAssemblyRulerView *ruler = NULL;
+	CStripView *strip = NULL;
+
+	if (type == "Metered")
+	{
+		strip = new CTrackCtlStrip(*this, *stripFrame, rect,
+								   (CEventTrack *)Document()->FindTrack(1),
+								   "Metered");
+		ruler = new CAssemblyRulerView(*this, stripFrame,
+									   (CEventTrack *)Document()->FindTrack(1),
+									   BRect(0.0, -1.0, rect.Width(),
+									   		 CTrackWindow::DEFAULT_RULER_HEIGHT),
+									   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
+									   B_WILL_DRAW);
+	}
+	else if (type == "Real")
+	{
+		strip = new CTrackCtlStrip(*this, *stripFrame, rect,
+								   (CEventTrack *)Document()->FindTrack((int32)0),
+								   "Real");
+		ruler = new CAssemblyRulerView(*this, stripFrame,
+									   (CEventTrack *)Document()->FindTrack((int32)0),
+									   BRect(0.0, -1.0, rect.Width(), 
+									   		 CTrackWindow::DEFAULT_RULER_HEIGHT),
+									   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
+									   B_WILL_DRAW);
+		ruler->ShowMarkers(false);
+	}
+
+	if (strip)
+	{
+		if (ruler)
+			strip->SetRulerView(ruler);
+		stripFrame->AddStrip(strip, proportion);
+		return true;
+	}
+
+	CTrackWindow::AddStrip(type, proportion);
 }
 
 // END - AssemblyWindow.cpp

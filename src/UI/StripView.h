@@ -6,7 +6,7 @@
  *  License Version 1.1 (the "License"); you may not use this file
  *  except in compliance with the License. You may obtain a copy of
  *  the License at http://www.mozilla.org/MPL/
- *
+  *
  *  Software distributed under the License is distributed on an "AS
  *  IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
  *  implied. See the License for the specific language governing
@@ -41,13 +41,12 @@
 #define __C_StripView_H__
 
 #include "Scroller.h"
-#include "StripFrameView.h"
 #include "StripLabelView.h"
 
 // Interface Kit
 #include <Control.h>
 
-class CStripLabelView;
+class CStripFrameView;
 
 class CStripView :
 	public CScrollerTarget
@@ -58,7 +57,13 @@ public:							// Constants
 
 	enum messages
 	{
-								HIDE = 'stvA'
+								ADD_STRIP = 'stvA',
+
+								REMOVE_STRIP,
+
+								PROPORTIONS_CHANGED,
+
+								REARRANGE_STRIPS
 	};
 
 public:							// Constructor/Destructor
@@ -82,19 +87,30 @@ public:							// Hook Functions
 	virtual void				OnLoseSelection()
 								{ Invalidate(); }
 
+	virtual float				MinimumHeight() const;
+
 public:							// Accessors
+
+	CStripFrameView *			FrameView() const
+								{ return &frame; }
 
 	CStripLabelView *			LabelView() const
 								{ return m_labelView; }
 	void						SetLabelView(
 									CStripLabelView *labelView);
 
+	// Individual strips can have rulers as well
+	CScrollerTarget *			RulerView() const
+								{ return m_rulerView; }
+	void						SetRulerView(
+									CScrollerTarget *rulerView);
+
 	CScrollerTarget *			TopView()
 								{ return m_container; }
 
 	// Returns true if this view should display the selection highlight.
 	bool						IsSelectionVisible()
-								{ return selectionVisible; }
+								{ return m_selectionVisible; }
 
 	bool						IsRemovable() const
 								{ return m_removable; }
@@ -124,9 +140,6 @@ public:							// CScrollerTarget Implementation
 
 	virtual void				AttachedToWindow();
 
-	virtual void				Draw(
-									BRect updateRect);
-
 	virtual void				FrameResized(
 									float width,
 									float height);
@@ -147,6 +160,8 @@ private:
 
 	CStripLabelView *			m_labelView;
 
+	CScrollerTarget *			m_rulerView;
+	
 	CScroller *					rightScroller;
 
 	BView *						rightSpacer;
@@ -156,7 +171,7 @@ private:
 	BControl *					magDecButton;
 
 	// true if selection should be shown
-	bool						selectionVisible;
+	bool						m_selectionVisible;
 
 	// defaults to true; false will disable the 'Hide' option
 	bool						m_removable;

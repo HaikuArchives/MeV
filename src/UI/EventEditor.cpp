@@ -17,6 +17,10 @@
 
 // Support Kit
 #include <Beep.h>
+#include <Debug.h>
+
+// Debugging Macros
+#define D_HOOK(x) //PRINT(x)		// CStripView Implementation
 
 CNullEventHandler		gNullEventHandler;
 CEndEventHandler		gEndEventHandler;
@@ -35,8 +39,6 @@ CEventEditor::CEventEditor(
 		CObserver(looper, frame.Track()),
 		m_track((CEventTrack *)frame.Track()),
 		m_frame(frame),
-		m_labelView(NULL),
-		m_ruler(NULL),
 		m_lasso(NULL),
 		m_dragType(DragType_None),
 		m_pbCount(0),
@@ -57,8 +59,6 @@ CEventEditor::CEventEditor(
 		CObserver(looper, track),
 		m_track(track),
 		m_frame(frame),
-		m_labelView(NULL),
-		m_ruler(NULL),
 		m_lasso(NULL),
 		m_dragType(DragType_None),
 		m_pbCount(0),
@@ -454,6 +454,7 @@ CEventEditor::StartDrag(
 			{
 				if (!(modifierKeys & B_SHIFT_KEY))
 					Track()->DeselectAll(this);
+
 				((Event *)ev)->SetSelected(true);
 				HandlerFor(*ev)->Invalidate(*this, *ev);
 	
@@ -542,36 +543,6 @@ CEventEditor::HandlerFor(
 		return (*i).second;
 	}
 	return &gNullEventHandler;
-}
-
-void
-CEventEditor::SetRuler(
-	CScrollerTarget *ruler)
-{
-	BRect rect(Frame());
-	int32 rulerHeight = static_cast<int32>(ruler->Bounds().Height());
-
-	m_ruler = ruler;
-
-	MoveTo(rect.left, rect.top + rulerHeight + 1.0);
-	ResizeBy(0.0, - rulerHeight - 1.0);
-
-	if (LabelView())
-	{
-		BView *pad;
-		LabelView()->MoveTo(-1.0, rulerHeight);
-		LabelView()->ResizeBy(0.0, - rulerHeight);
-
-		rgb_color fill = {128, 128, 128, 128};
-		pad = new CBorderView(BRect(-1.0, -1.0, 20.0, rulerHeight), "",
-							  B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW,
-							  &fill);
-		TopView()->AddChild(pad);
-	}
-
-	m_ruler->MoveTo(rect.left, 0.0);
-	m_ruler->ResizeTo(rect.Width(), rulerHeight);
-	TopView()->AddChild(m_ruler);
 }
 
 // ---------------------------------------------------------------------------
@@ -988,6 +959,8 @@ void
 CEventEditor::MouseDown(
 	BPoint point)
 {
+	D_HOOK(("CEventEditor::MouseDown(%.2f, %.2f)\n", point.x, point.y));
+
 	int32 buttons = B_PRIMARY_MOUSE_BUTTON;
 	Window()->CurrentMessage()->FindInt32("buttons", &buttons);
 
@@ -1005,6 +978,8 @@ CEventEditor::MouseMoved(
 	uint32 transit,
 	const BMessage *message)
 {
+	D_HOOK(("CEventEditor::MouseMoved(%.2f, %.2f)\n", point.x, point.y));
+
 	if (m_dragging)
 	{
 		int32 buttons = B_PRIMARY_MOUSE_BUTTON;
@@ -1013,10 +988,10 @@ CEventEditor::MouseMoved(
 		// Implement dragging		
 		if (DoDrag(point, buttons) == false)
 		{
-			FinishDrag( point, buttons, false );
+			FinishDrag(point, buttons, false);
 			return;
 		}
-	
+
 		// Implement auto-scrolling (horizontal for frame)
 		BRect r(ViewBounds());
 		if (point.x > r.right)
@@ -1036,6 +1011,8 @@ void
 CEventEditor::MouseUp(
 	BPoint point)
 {
+	D_HOOK(("CEventEditor::MouseUp(%.2f, %.2f)\n", point.x, point.y));
+
 	if (m_dragging)
 	{
 		int32 buttons = B_PRIMARY_MOUSE_BUTTON;
@@ -1052,8 +1029,8 @@ CEventEditor::SetScrollValue(
 	orientation inOrient)
 {
 	CStripView::SetScrollValue(inScrollValue, inOrient);
-	if (m_ruler)
-		m_ruler->ScrollTo(scrollValue.x, 0.0);
+	if (RulerView())
+		RulerView()->ScrollTo(scrollValue.x, 0.0);
 }
 
 // ---------------------------------------------------------------------------

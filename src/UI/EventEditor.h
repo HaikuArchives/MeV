@@ -176,10 +176,6 @@ public:							// Accessors
 	EventOp *					PendingOperation()
 								{ return TrackWindow()->PendingOperation(); }
 
-	// Add an individual ruler to this strip
-	void						SetRuler(
-									CScrollerTarget *ruler);
-	
 	CTrackEditFrame	&			TrackEditFrame() const
 								{ return m_frame; }
 
@@ -303,11 +299,6 @@ protected:						// Instance Data
 
 	CTrackEditFrame	&			m_frame;
 
-	BView *						m_labelView;
-
-	// Individual strips can have rulers as well
-	CScrollerTarget *			m_ruler;
-	
 	// Array of handlers for each event type
 	typedef map<TEventType, CAbstractEventHandler *> handler_map;
 	handler_map					m_handlers;

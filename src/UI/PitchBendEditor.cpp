@@ -621,6 +621,11 @@ void CPitchBendEditor::OnUpdate( BMessage *inMsg )
 
 bool CPitchBendEditor::ConstructEvent( BPoint point )
 {
+	// check if destination is set
+	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
+	if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
+		return false;
+
 	// Initialize a new event
 	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_PitchBend));
 
@@ -634,7 +639,7 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(0);
-	m_newEv.SetVChannel(TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel));
+	m_newEv.SetVChannel(destination);
 
 	switch (m_newEv.Command())
 	{

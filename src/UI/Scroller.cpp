@@ -21,8 +21,6 @@ CScrollerTarget::CScrollerTarget(
 		scrollValue(0.0, 0.0),
 		redirect(NULL)
 {
-//	SetViewColor(255, 255, 255, 255);
-	SetViewColor(B_TRANSPARENT_COLOR);
 }
 
 // ---------------------------------------------------------------------------

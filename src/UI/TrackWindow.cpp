@@ -24,6 +24,8 @@
 
 // Gnu C Library
 #include <stdio.h>
+// Application Kit
+#include <MessageFilter.h>
 // Interface Kit
 #include <MenuBar.h>
 // Support Kit
@@ -56,8 +58,7 @@ CTrackWindow::CTrackWindow(
 		stripFrame(NULL),
 		stripScroll(NULL),
 		trackOp(NULL),
-		newEventType(EvtType_Count),
-		prefsWinState(BRect(40.0, 40.0, 500.0, 300.0))
+		newEventType(EvtType_Count)
 {
 	D_ALLOC(("TrackWindow::TrackWindow()\n"));
 
@@ -98,32 +99,24 @@ void
 CTrackWindow::SetPendingOperation(
 	EventOp *inOp)
 {
-		// Forward messages about changing selection to child views.
-	int		ct = stripFrame->CountStrips();
-	StSubjectLock			stLock( *ActiveTrack(), Lock_Shared );
+	// Forward messages about changing selection to child views.
+	StSubjectLock stLock(*ActiveTrack(), Lock_Shared);
 
-	for (int i = 0; i < ct; i++)
+	for (int32 i = 0; i < stripFrame->CountStrips(); i++)
 	{
-		BView		*strip = stripFrame->StripAt( i ),
-					*view;
-						
-		for (view = strip->ChildAt( 0 ); view != NULL; view = view->NextSibling())
+		CEventEditor *ee = dynamic_cast<CEventEditor *>(stripFrame->StripAt(i));
+		if (ee && ee->SupportsShadowing())
 		{
-			CEventEditor		*ee;
-	
-			if ((ee = dynamic_cast<CEventEditor *>(view)))
-			{
-				if (ee->SupportsShadowing())
-				{
-					if (trackOp)	ee->InvalidateSelection( *trackOp );
-					if (inOp)	ee->InvalidateSelection( *inOp );
-				}
-			}
+			if (trackOp)
+				ee->InvalidateSelection(*trackOp);
+			if (inOp)
+				ee->InvalidateSelection(*inOp);
 		}
 	}
-	
-	if (inOp)	inOp->Acquire();
-	CRefCountObject::Release( trackOp );
+
+	if (inOp)
+		inOp->Acquire();
+	CRefCountObject::Release(trackOp);
 	trackOp = inOp;
 }
 
@@ -131,29 +124,22 @@ void
 CTrackWindow::FinishTrackOperation(
 	int32 inCommit)
 {
-		// Forward messages about changing selection to child views.
-	int		ct = stripFrame->CountStrips();
-	StSubjectLock			stLock( *ActiveTrack(), Lock_Exclusive );
+	// Forward messages about changing selection to child views.
+	StSubjectLock stLock(*ActiveTrack(), Lock_Exclusive);
 
-	for (int i = 0; i < ct; i++)
+	for (int32 i = 0; i < stripFrame->CountStrips(); i++)
 	{
-		BView		*strip = stripFrame->StripAt( i ),
-					*view;
-						
-		for (view = strip->ChildAt( 0 ); view != NULL; view = view->NextSibling())
+		CEventEditor *ee = dynamic_cast<CEventEditor *>(stripFrame->StripAt(i));
+		if (ee && ee->SupportsShadowing())
 		{
-			CEventEditor		*ee;
-	
-			if ((ee = dynamic_cast<CEventEditor *>(view)))
-			{
-				if (trackOp)	ee->InvalidateSelection( *trackOp );
-			}
+			if (trackOp)
+				ee->InvalidateSelection(*trackOp);
 		}
 	}
-	
+
 	if (trackOp)
 	{
-			/**	Apply an operator to the selected events. */
+		/**	Apply an operator to the selected events. */
 		if (inCommit)
 		{
 			ActiveTrack()->ModifySelectedEvents( NULL, *trackOp, trackOp->UndoDescription() );
@@ -161,20 +147,6 @@ CTrackWindow::FinishTrackOperation(
 		CRefCountObject::Release( trackOp );
 	}
 	trackOp = NULL;
-}
-
-void
-CTrackWindow::ShowPrefs()
-{
-	prefsWinState.Lock();
-	if (!prefsWinState.Activate())
-	{
-		BWindow		*w;
-	
-		w = new CLEditorPrefsWindow( prefsWinState, Track() );
-		w->Show();
-	}
-	prefsWinState.Unlock();
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +208,23 @@ CTrackWindow::MenusBeginning()
 	// Set up Clear menu
 	item = KeyMenuBar()->FindItem(MENU_CLEAR);
 	item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
+
+	// Set up 'View' menu
+	item = KeyMenuBar()->FindItem("Add Strip");
+	if (item)
+	{
+		BMenu *subMenu = item->Submenu();
+		if (subMenu->CountItems() == 0)
+		{
+			for (int32 i = 0; i < stripFrame->CountTypes(); i++)
+			{
+				BMessage *message = new BMessage(CStripView::ADD_STRIP);
+				message->AddString("type", stripFrame->TypeAt(i));
+				subMenu->AddItem(new BMenuItem(stripFrame->TypeAt(i).String(),
+											   message));
+			}
+		}
+	}
 
 	// Set up Window menu
 	CMeVApp *app = dynamic_cast<CMeVApp *>(be_app);
@@ -299,6 +288,16 @@ CTrackWindow::MessageReceived(
 		case MENU_EXPORT:
 		{
 			Document()->Export(message);
+			break;
+		}
+		case CStripView::ADD_STRIP:
+		{
+			BString type;
+			if (message->FindString("type", &type) == B_OK)
+			{
+				if (AddStrip(type))
+					stripFrame->PackStrips();
+			}
 			break;
 		}
 		case MENU_TRACKLIST:
@@ -543,25 +542,12 @@ CTrackWindow::OnUpdate(
 
 void
 CTrackWindow::UpdateActiveSelection(
-	bool inActive)
+	bool active)
 {
-		// Forward messages about changing selection to child views.
-	int		ct = stripFrame->CountStrips();
-	
-	for (int i = 0; i < ct; i++)
+	// Forward messages about changing selection to child views.
+	for (int32 i = 0; i < stripFrame->CountStrips(); i++)
 	{
-		BView		*strip = stripFrame->StripAt( i ),
-					*view;
-						
-		for (view = strip->ChildAt( 0 ); view != NULL; view = view->NextSibling())
-		{
-			CStripView	*sv;
-	
-			if ((sv = dynamic_cast<CStripView *>(view)))
-			{
-				sv->SetSelectionVisible( inActive );
-			}
-		}
+		stripFrame->StripAt(i)->SetSelectionVisible(active);
 	}
 }
 
@@ -589,77 +575,13 @@ CTrackWindow::CreateFileMenu(
 	menu->AddItem(new BMenuItem("Import...", new BMessage(MENU_IMPORT)));
 	menu->AddItem(new BMenuItem(submenu));
 	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("About MeV", new BMessage(MENU_ABOUT), 0));
+	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT), 0));
 	menu->AddItem(new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS), 'P'));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));
 	menus->AddItem(menu);
 }
 	
-void
-CTrackWindow::CreateFrames(
-	BRect frame,
-	CTrack *inTrack)
-{
-	// Create the frame for the strips, and the scroll bar
-	stripFrame = new CTrackEditFrame(BRect(frame.left,
-										   frame.top + DEFAULT_RULER_HEIGHT,
-										   frame.right, frame.bottom),
-									 (char *)NULL, inTrack, B_FOLLOW_ALL);
-
-	CScrollerTarget	*ruler;
-	ruler = new CAssemblyRulerView(*this, stripFrame, (CEventTrack *)inTrack,
-								   BRect(frame.left + 21, frame.top,
-										 frame.right - 14, 
-										 frame.top + DEFAULT_RULER_HEIGHT - 1),
-								   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
-								   B_WILL_DRAW);
-
-	BView *pad;
-	rgb_color fill = ui_color(B_PANEL_BACKGROUND_COLOR);
-	pad = new CBorderView(BRect(frame.left - 1, frame.top - 1,
-								frame.left + 20, 
-								frame.top + DEFAULT_RULER_HEIGHT - 1),
-						  "", B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW, 
-						  &fill);
-	AddChild(pad);
-
-	pad = new CBorderView(BRect(frame.right - 13, frame.top - 1,
-								frame.right + 1, 
-								frame.top + DEFAULT_RULER_HEIGHT - 1),
-						  "", B_FOLLOW_RIGHT | B_FOLLOW_TOP, B_WILL_DRAW,
-						  &fill);
-	AddChild(pad);
-
-	stripScroll = new CScroller(BRect(frame.left - 1, frame.bottom + 1,
-									  frame.right - 41, frame.bottom + 15),
-								NULL, stripFrame, 0.0, 0.0, B_HORIZONTAL);
-
-	BControl *magButton;
-	magButton = new CBorderButton(BRect(frame.right - 27, frame.bottom + 1,
-										frame.right - 13, frame.bottom + 15),
-								  NULL, ResourceUtils::LoadImage("SmallPlus"),
-								  new BMessage(ZoomIn_ID),
-								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
-								  B_WILL_DRAW);
-	magButton->SetTarget((CDocWindow *)this);
-	AddChild(magButton);
-
-	magButton = new CBorderButton(BRect(frame.right - 41, frame.bottom + 1,
-										frame.right - 27, frame.bottom + 15),
-								  NULL, ResourceUtils::LoadImage("SmallMinus"),
-								  new BMessage(ZoomOut_ID),
-								  B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
-								  B_WILL_DRAW);
-	magButton->SetTarget((CDocWindow *)this);
-	AddChild(magButton);
-
-	// add views to window
-	AddChild(ruler);
-	AddChild(stripScroll);
-	AddChild(stripFrame);
-}
-
 filter_result
 DefocusTextFilterFunc(
 	BMessage *msg,

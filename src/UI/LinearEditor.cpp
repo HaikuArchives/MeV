@@ -53,10 +53,10 @@ CLinearEditor::CLinearEditor(
 	SetHandlerFor(EvtType_End, &gEndEventHandler);
 
 	CalcZoom();
-	SetZoomTarget( (CObserver *)this );
+	SetZoomTarget((CObserver *)this);
 
 	// Make the label view on the left-hand side
-	SetLabelView(new CPianoKeyboardView(BRect(0.0, 0.0, 20.0, rect.Height()),
+	SetLabelView(new CPianoKeyboardView(BRect(-1.0, 0.0, 20.0, rect.Height()),
 										this, B_FOLLOW_TOP_BOTTOM,
 										B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE));
 
@@ -80,9 +80,14 @@ bool
 CLinearEditor::ConstructEvent(
 	BPoint point)
 {
+	// check if destination is set
+	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
+	if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
+		return false;
+
 	// Initialize a new event
 	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_Note));
-			
+
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
 	int32 time;
@@ -93,7 +98,7 @@ CLinearEditor::ConstructEvent(
 
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
-	m_newEv.SetVChannel(TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel));
+	m_newEv.SetVChannel(destination);
 
 	switch (m_newEv.Command())
 	{
@@ -730,10 +735,11 @@ CPianoKeyboardView::SetSelectedKey(
 // BView Implementation
 
 void
-CPianoKeyboardView::Draw(
+CPianoKeyboardView::DrawInto(
+	BView *view,
 	BRect updateRect)
 {
-	BRect r(Bounds()), rect;
+	BRect r(view->Bounds()), rect;
 	BRegion wRegion(updateRect), bRegion;
 	int32 yPos;
 	int32 lineCt;
@@ -743,15 +749,16 @@ CPianoKeyboardView::Draw(
 	static int8	black[7] = {1, 1, 0, 1, 1, 1, 0};
 
 	if (updateRect.right >= r.right) {
-		SetHighColor(128, 128, 128, 255);
-		StrokeLine(BPoint(updateRect.right, r.top), BPoint(updateRect.right, r.bottom),
-				   B_SOLID_HIGH);
-		updateRect.right -= 1.0;
-		wRegion.Exclude(BRect(r.right, updateRect.top, r.right, updateRect.bottom));
+		view->SetHighColor(128, 128, 128, 255);
+		view->StrokeLine(BPoint(r.right, updateRect.top),
+						 BPoint(r.right, updateRect.bottom),
+						 B_SOLID_HIGH);
+		wRegion.Exclude(BRect(r.right, updateRect.top, 
+							  r.right, updateRect.bottom));
 	}
 
-	SetHighColor(255, 255, 255, 255);
-	SetLowColor(128, 128, 128, 255);
+	view->SetHighColor(255, 255, 255, 255);
+	view->SetLowColor(128, 128, 128, 255);
 
 	// Draw horizontal grid lines.
 	// REM: This needs to be faster.
@@ -766,14 +773,14 @@ CPianoKeyboardView::Draw(
 		if (yPos <= (updateRect.bottom + wh + bl))
 		{
 			rect = BRect(updateRect.left, yPos, updateRect.right, yPos);
-			StrokeLine(rect.LeftTop(), rect.RightTop(), B_SOLID_LOW);
+			view->StrokeLine(rect.LeftTop(), rect.RightTop(), B_SOLID_LOW);
 			wRegion.Exclude(rect);
 
 			if (m_selectedKey == key)
 			{
-				SetHighColor(148, 148, 255, 255);
+				view->SetHighColor(148, 148, 255, 255);
 				rect = BRect(r.left, yPos - wh + 1, r.right - 1, yPos - 1);
-				FillRect(rect, B_SOLID_HIGH);
+				view->FillRect(rect, B_SOLID_HIGH);
 				wRegion.Exclude(rect);
 			}
 		}
@@ -783,7 +790,7 @@ CPianoKeyboardView::Draw(
 
 	// Draw black keys
 	// REM: This needs to be faster.
-	SetLowColor(148, 148, 255, 255);
+	view->SetLowColor(148, 148, 255, 255);
 	for (yPos = m_editor->m_stripLogicalHeight, lineCt = 0, key = 0;
 		 yPos >= updateRect.top;
 		 yPos -= wh, lineCt++, key++ )
@@ -806,7 +813,7 @@ CPianoKeyboardView::Draw(
 				{
 					rect = BRect(r.left, yPos - wh - bl + 1,
 								 r.left + 10, yPos - wh + bl - 1);
-					FillRect(rect, B_SOLID_LOW);
+					view->FillRect(rect, B_SOLID_LOW);
 					bRegion.Exclude(rect);
 					wRegion.Exclude(rect);
 				}
@@ -814,11 +821,11 @@ CPianoKeyboardView::Draw(
 		}
 	}
 
-	SetHighColor(96, 96, 96, 255);
-	FillRegion(&bRegion, B_SOLID_HIGH);
-	SetHighColor(255, 255, 255, 255);
+	view->SetHighColor(96, 96, 96, 255);
+	view->FillRegion(&bRegion, B_SOLID_HIGH);
+	view->SetHighColor(255, 255, 255, 255);
 	wRegion.Exclude(&bRegion);
-	FillRegion(&wRegion, B_SOLID_HIGH);
+	view->FillRegion(&wRegion, B_SOLID_HIGH);
 }
 
 // END - LinearEditor.cpp

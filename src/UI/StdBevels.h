@@ -40,6 +40,8 @@
 #ifndef __StdBevels_H__
 #define __StdBevels_H__
 
+#include <InterfaceDefs.h>
+
 class BRect;
 class BView;
 
@@ -47,9 +49,37 @@ namespace StdBevels
 {
 	// Constants
 	enum bevel_state {
+
 		NORMAL_BEVEL,
+
 		DEPRESSED_BEVEL,
+
 		DIMMED_BEVEL
+	};
+
+	static const rgb_color		NORMAL_GREY[4] =
+	{
+		{128, 128, 128, 255},
+		{255, 255, 255, 255},
+		{190, 190, 190, 255},
+		{220, 220, 220, 255}
+	};
+
+
+	static const rgb_color		DEPRESSED_GREY[4] =
+	{
+		{128, 128, 128, 255},
+		{140, 140, 140, 255},
+		{200, 200, 200, 255},
+		{180, 180, 180, 255}
+	};
+
+	static const rgb_color		DIMMED_GREY[4] =
+	{
+		{180, 180, 180, 255},
+		{230, 230, 230, 255},
+		{210, 210, 210, 255},
+		{220, 220, 220, 255}
 	};
 
 	// Bevels with coloration similar to Be Scrollbars, for placing in

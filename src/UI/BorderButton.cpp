@@ -15,6 +15,7 @@
 #define D_ALLOC(x) //PRINT (x)		// Constructor/Destructor
 #define D_HOOK(x) //PRINT (x)		// BControl Implementation
 
+
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
@@ -53,7 +54,7 @@ CBorderButton::Draw(
 		SetDrawingMode(B_OP_OVER);
 		BPoint offset((Bounds().Width() - bitmap->Bounds().Width()) / 2,
 					  (Bounds().Height() - bitmap->Bounds().Height()) / 2);
-		DrawBitmapAsync(bitmap, offset);
+		DrawBitmapAsync(bitmap,offset);
 	}
 }
 

@@ -3,21 +3,20 @@
  * ===================================================================== */
 
 #include "StripView.h"
-// General
-#include "Idents.h"
-// User Interface
+
 #include "BorderView.h"
 #include "BorderButton.h"
-// Support
+#include "Idents.h"
 #include "ResourceUtils.h"
+#include "StripFrameView.h"
 
 // Support Kit
 #include <Debug.h>
 
 // Debugging Macros
-#define D_ALLOC(x) PRINT(x)			// Constructor/Destructor
+#define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)			// CScrollTarget Implementation
-#define D_MESSAGE(x) PRINT(x)			// MessageReceived()
+#define D_MESSAGE(x) //PRINT(x)			// MessageReceived()
 #define D_OPERATION(x) //PRINT(x)		// Operations
 
 // ---------------------------------------------------------------------------
@@ -30,77 +29,92 @@ CStripView::CStripView(
 	bool makeScroller,
 	bool makeMagButtons)
 	:	CScrollerTarget(frame.OffsetToCopy(B_ORIGIN),
-	  					name, B_FOLLOW_ALL,
+	  					name, B_FOLLOW_ALL_SIDES,
 	  					B_WILL_DRAW | B_FRAME_EVENTS),
 		frame(inFrame),
 		m_labelView(NULL),
+		m_rulerView(NULL),
 		rightScroller(NULL),
 		rightSpacer(NULL),
 		magIncButton(NULL),
 		magDecButton(NULL),
 		m_removable(true)
 {
-	D_ALLOC(("CStripView::CStripView()\n"));
-
+	D_ALLOC(("CStripView::CStripView('%s')\n", name));
+	
 	BRect rect(Bounds());
 
 	m_container = new CScrollerTarget(rect, NULL,
-									  B_FOLLOW_LEFT_RIGHT, B_FRAME_EVENTS );
+									  B_FOLLOW_LEFT_RIGHT,
+									  B_FRAME_EVENTS);
 	m_container->AddChild(this);
+
+	BRect scrollerRect(rect);
+	scrollerRect.InsetBy(-1.0, -1.0);
+	scrollerRect.left = scrollerRect.right - B_V_SCROLL_BAR_WIDTH;
 
 	if (makeScroller)
 	{
-		ResizeBy(-14.0, 0.0);
-		float bottom = Bounds().bottom + 1;
+		ResizeBy(- B_V_SCROLL_BAR_WIDTH, 0.0);
 
 		if (makeMagButtons)
 		{
-			magIncButton = new CBorderButton(BRect(rect.right - 13,
-												   rect.bottom - 27,
-												   rect.right + 1,
-												   rect.bottom - 13),
-											 NULL, 
-											 ResourceUtils::LoadImage("SmallPlus"),
-											 new BMessage(ZoomOut_ID),
-											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
-											 B_WILL_DRAW);
-			m_container->AddChild(magIncButton);
-
-			magDecButton = new CBorderButton(BRect(rect.right - 13,
-												   rect.bottom - 13,
-												   rect.right + 1,
-												   rect.bottom + 1),
-											 NULL,
+			BRect magRect(scrollerRect);
+			magRect.top = magRect.bottom - B_H_SCROLL_BAR_HEIGHT;
+			magDecButton = new CBorderButton(magRect, NULL,
 											 ResourceUtils::LoadImage("SmallMinus"),
 											 new BMessage(ZoomIn_ID),
 											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
 											 B_WILL_DRAW);
 			m_container->AddChild(magDecButton);
+
+			magRect.OffsetBy(0.0, - B_H_SCROLL_BAR_HEIGHT);
+			magIncButton = new CBorderButton(magRect, NULL, 
+											 ResourceUtils::LoadImage("SmallPlus"),
+											 new BMessage(ZoomOut_ID),
+											 B_FOLLOW_BOTTOM | B_FOLLOW_RIGHT,
+											 B_WILL_DRAW);
+			m_container->AddChild(magIncButton);
 			
-			bottom = Bounds().bottom - 27;
+			scrollerRect.bottom = magRect.top - 1.0;
 		}
 
-		rightScroller = new CScroller(BRect(rect.right - 13,
-											rect.top - 1,
-											rect.right + 1,
-											bottom),
-									  NULL, this, 0.0, 50.0, B_VERTICAL);
+		rightScroller = new CScroller(scrollerRect, NULL, this,
+									  0.0, 50.0, B_VERTICAL);
 		m_container->AddChild(rightScroller);
 	}
 	else
 	{
-		ResizeBy(-14.0, 0.0);
-		rightSpacer = new CBorderView(BRect(rect.right - 13,
-											rect.top - 1,
-											rect.right + 1,
-											rect.bottom + 1), NULL,
+		ResizeBy(- B_V_SCROLL_BAR_WIDTH, 0.0);
+		rightSpacer = new CBorderView(scrollerRect, NULL,
 									  B_FOLLOW_RIGHT | B_FOLLOW_TOP_BOTTOM,
-									  B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE );
+									  B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE);
 		m_container->AddChild(rightSpacer);
 	}
 
 	m_container->SetTarget(this);
 	SetZoomTarget(this);
+}
+
+// ---------------------------------------------------------------------------
+// Hook Functions
+
+float
+CStripView::MinimumHeight() const
+{
+	float height = 0.0;
+	if (rightScroller)
+		height += 3 * B_H_SCROLL_BAR_HEIGHT + 1.0;
+	if (magIncButton)
+		height += B_H_SCROLL_BAR_HEIGHT;
+	if (magDecButton)
+		height += B_H_SCROLL_BAR_HEIGHT;
+	if (magIncButton && magDecButton)
+		height += 1.0;
+	if (RulerView())
+		height += RulerView()->Bounds().Height() + 1.0;
+
+	return height;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,16 +125,54 @@ CStripView::SetLabelView(
 	CStripLabelView *labelView) {	
 
 	if (m_labelView) {
+		TopView()->RemoveChild(m_labelView);
+		ResizeBy(m_labelView->Bounds().Width(), 0.0);
+		MoveBy(- m_labelView->Bounds().Width(), 0.0);
 		delete m_labelView;
 		m_labelView = NULL;
 	}
 
 	if (labelView) {
-		ResizeBy(-labelView->Frame().Width(), 0.0);
-		MoveBy(labelView->Frame().Width(), 0.0);
+		ResizeBy(- labelView->Bounds().Width(), 0.0);
+		MoveBy(labelView->Bounds().Width(), 0.0);
 		TopView()->AddChild(labelView);
 		m_labelView = labelView;
 		m_labelView->attach(this);
+	}
+}
+
+void
+CStripView::SetRulerView(
+	CScrollerTarget *rulerView)
+{
+	if (m_rulerView) {
+		TopView()->RemoveChild(m_rulerView);
+		if (rightScroller)
+		{
+			rightScroller->MoveBy(0.0, - m_rulerView->Bounds().Height() - 1.0);
+			rightScroller->ResizeBy(0.0, m_rulerView->Bounds().Height() + 1.0);
+		}
+		MoveBy(0.0, - m_rulerView->Bounds().Height());
+		ResizeBy(0.0, m_rulerView->Bounds().Height());
+		delete m_rulerView;
+		m_rulerView = NULL;
+	}
+
+	if (rulerView)
+	{
+		MoveBy(0.0, rulerView->Bounds().Height());
+		ResizeBy(0.0, - rulerView->Bounds().Height());
+		TopView()->AddChild(rulerView);
+		m_rulerView = rulerView;
+		if (LabelView())
+		{
+			m_rulerView->MoveBy(LabelView()->Bounds().Width(), 0.0);
+		}
+		if (rightScroller)
+		{
+			rightScroller->MoveBy(0.0, m_rulerView->Bounds().Height() + 1.0);
+			rightScroller->ResizeBy(0.0, - m_rulerView->Bounds().Height() - 1.0);
+		}
 	}
 }
 
@@ -140,9 +192,9 @@ void
 CStripView::SetSelectionVisible(
 	bool visible)
 {
-	if (visible != selectionVisible)
+	if (visible != m_selectionVisible)
 	{
-		selectionVisible = visible;
+		m_selectionVisible = visible;
 		if (visible)
 			OnGainSelection();
 		else
@@ -176,18 +228,12 @@ CStripView::AttachedToWindow()
 }
 
 void
-CStripView::Draw(
-	BRect updateRect)
-{
-	StrokeLine(BPoint(0.0, 0.0), BPoint(300.0, 100.0));
-	StrokeLine(BPoint(300.0, 0.0), BPoint(0.0, 100.0));
-}
-
-void
 CStripView::FrameResized(
 	float width,
 	float height)
 {
+	D_HOOK(("CStripView<%s>::FrameResized()\n", Name()));
+
 	AdjustScrollers();
 }
 
@@ -199,10 +245,12 @@ CStripView::MessageReceived(
 
 	switch (message->what)
 	{
-		case HIDE:
+		case REMOVE_STRIP:
 		{
-			D_MESSAGE((" -> HIDE\n"));
-			frame.RemoveChildView(m_container);
+			D_MESSAGE((" -> REMOVE_STRIP\n"));
+			if (FrameView()->RemoveStrip(this))
+				delete m_container;
+			FrameView()->PackStrips();
 			break;
 		}
 		default:

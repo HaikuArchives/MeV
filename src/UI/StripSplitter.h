@@ -1,5 +1,5 @@
 /* ===================================================================== *
- * AboutWindow.h (MeV/User Interface)
+ * StripSplitter.h (MeV/UI)
  * ---------------------------------------------------------------------
  * License:
  *  The contents of this file are subject to the Mozilla Public
@@ -23,33 +23,58 @@
  *
  * ---------------------------------------------------------------------
  * Purpose:
- *  MeV 'About' window
+ *	Specializes CSplitter to take the minimum height of CStripViews into
+ *  account.
  * ---------------------------------------------------------------------
  * History:
- *	1997		Talin
- *		Original implementation
- *	04/08/2000	cell
- *		General cleanup in preparation for initial SourceForge checkin
- *	04/24/2000	cell
- *		Separated from MeVApp files
+ *	07/23/2000	cell
+ *		Initial version
  * ---------------------------------------------------------------------
  * To Do:
  *
  * ===================================================================== */
 
-#ifndef __C_AboutWindow_H__
-#define __C_AboutWindow_H__
+#ifndef __C_StripSplitter_H__
+#define __C_StripSplitter_H__
 
-#include "WindowState.h"
+#include "Splitter.h"
 
-class CAboutWindow :
-	public CAppWindow
+class CStripView;
+
+class CStripSplitter
+	:	public CSplitter
 {
 
-	public:						// Constructor/Destructor
+public:							// Constructor/Destructor
 
-								CAboutWindow(
-									CWindowState &state);
+								CStripSplitter(
+									BRect frame,
+									CStripView *primaryStrip,
+									CStripView *secondaryStrip);
+
+	virtual						~CStripSplitter();
+
+public:							// Accessors
+
+	CStripView *				PrimaryStrip() const
+								{ return m_primaryStrip; }
+	void						SetPrimaryStrip(
+									CStripView *strip);
+
+	CStripView *				SecondaryStrip() const
+								{ return m_secondaryStrip; }
+	void						SetSecondaryStrip(
+									CStripView *strip);
+
+public:							// CSplitter Implementation
+
+	virtual void				MoveRequested(
+									float diff);
+
+private:						// Instance Data
+
+	CStripView *				m_primaryStrip;
+	CStripView *				m_secondaryStrip;
 };
 
-#endif /* __C_AboutWindow_H__ */
+#endif /* __C_StripSplitter_H__ */

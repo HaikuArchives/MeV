@@ -39,10 +39,8 @@
 // Interface Kit
 #include <View.h>
 
-#define SPLITPANE_STATE 'spst'
-
-class CSplitter :
-	public BView
+class CSplitter
+	:	public BView
 {
 
 public:							// Constants
@@ -60,9 +58,31 @@ public:							// Constructor/Destructor
 									orientation posture = B_VERTICAL,
 									uint32 resizingMode = B_FOLLOW_ALL_SIDES);
 
-public:							// BView Implementation
+	virtual						~CSplitter();
 
-	virtual void				AllAttached();
+public:							// Hook Functions
+
+	virtual void				MoveRequested(
+									float diff);
+
+public:							// Accessors
+
+	BView *						PrimaryTarget() const
+								{ return m_primaryTarget; }
+	void						SetPrimaryTarget(
+									BView *target)
+								{ m_primaryTarget = target; }
+
+	BView *						SecondaryTarget() const
+								{ return m_secondaryTarget; }
+	void						SetSecondaryTarget(
+									BView *target)
+								{ m_secondaryTarget = target; }
+
+	orientation					Posture() const
+								{ return m_posture; }
+
+public:							// BView Implementation
 
 	virtual void				Draw(
 									BRect updateRect);
@@ -86,6 +106,10 @@ private:						// Instance Data
 	orientation					m_posture;
 
 	bool						m_dragging;
+	float						m_offset;
+	bigtime_t					m_lastDragTime;
+
+	BCursor *					m_cursor;
 
 private:						// Class Data
 
@@ -93,6 +117,8 @@ private:						// Class Data
 	static const rgb_color		GRAY_COLOR;
 	static const rgb_color		MEDIUM_GRAY_COLOR;
 	static const rgb_color		DARK_GRAY_COLOR;
+
+	static const bigtime_t		DRAG_LAG_TIME;
 };
 
 #endif /* __C_Splitter_H__ */

@@ -170,12 +170,13 @@ public:							// CObserver Implementation
 
 protected:						// Internal Operations
 
+	virtual bool				AddStrip(
+									BString type,
+									float proportion = 0.3)
+								{ return false; }
+
 	void						UpdateActiveSelection(
 									bool active);
-
-	void						CreateFrames(
-									BRect frame,
-									CTrack *track);
 
 	void						CreateFileMenu(
 									BMenuBar *menuBar);
@@ -192,8 +193,6 @@ protected:						// Instance Data
 
 	// Type of newly created events
 	enum E_EventType			newEventType;
-
-	CWindowState				prefsWinState;
 };
 
 #endif /* __C_TrackWindow_H__ */

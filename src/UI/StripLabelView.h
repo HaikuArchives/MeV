@@ -40,26 +40,20 @@
 #ifndef __C_StripLabelView_H__
 #define __C_StripLabelView_H__
 
-// User Interface
-#include "BorderView.h"
+// Interface Kit
+#include <View.h>
 
+class CStripFrameView;
 class CStripView;
 
 class BPopUpMenu;
 
 class CStripLabelView
-	:	public CBorderView
+	:	public BView
 {
 	friend class CStripView;
 
 public:							// Constructor/Destructor
-
-								CStripLabelView(
-									BRect rect,
-									const char *name,
-									const rgb_color	&fillColor,
-									uint32 resizingMode,
-									uint32 flags);
 
 								CStripLabelView(
 									BRect rect,
@@ -69,12 +63,32 @@ public:							// Constructor/Destructor
 
 								~CStripLabelView();
 
-public:							// CBorderView Implementation
+public:							// Hook Functions
+
+	virtual void				DrawInto(
+									BView *view,
+									BRect updateRect);
+
+public:							// Accessors
+
+	CStripFrameView *			FrameView() const;
+
+public:							// BView Implementation
+
+	virtual void				AttachedToWindow();
 
 	virtual void				Draw(
 									BRect updateRect);
 
 	virtual void				MouseDown(
+									BPoint point);
+
+	virtual void				MouseMoved(
+									BPoint point,
+									uint32 transit,
+									const BMessage *message);
+
+	virtual void				MouseUp(
 									BPoint point);
 
 protected:						// Internal Methods
@@ -93,11 +107,17 @@ private:						// Internal Operations
 	void						attach(
 									CStripView *stripView);
 
+	BBitmap *					make_drag_bitmap();
+
 private:						// Instance Data
 
 	CStripView *				m_stripView;
 
+	BBitmap *					m_bitmap;
+
 	BPopUpMenu *				m_contextMenu;
+
+	bool						m_dragging;
 };
 
 #endif /* __C_StripLabelView_H__ */

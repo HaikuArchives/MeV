@@ -38,99 +38,117 @@
 #ifndef __C_StripFrameView_H__
 #define __C_StripFrameView_H__
 
-#include <AppKit.h>
-#include <View.h>
 #include "Scroller.h"
 
-class CStripFrameView :
-	public CScrollerTarget
+// Support Kit
+#include <List.h>
+#include <String.h>
+
+class CStripSplitter;
+class CStripView;
+
+class CStripFrameView
+	:	public CScrollerTarget
 {
 
-public:								// Constructor/Destructor
+public:							// Constructor/Destructor
 
-									CStripFrameView(
-										BRect frame,
-										char *name,
-										ulong resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP);
+								CStripFrameView(
+									BRect frame,
+									char *name,
+									uint32 resizingMode = B_FOLLOW_LEFT | B_FOLLOW_TOP);
 
-									~CStripFrameView();
+								~CStripFrameView();
 
-public:								// CScrollerTarget Implementation
+public:							// Accessors
 
-	virtual void					AttachedToWindow();
-
-	virtual void					Draw(
-										BRect updateRect);
-
-	virtual void					FrameResized(
-										float width,
-										float height);
-
-	virtual void					MouseDown(
-										BPoint point);
-	virtual void					MouseMoved(
-										BPoint point,
-										ulong transit,
-										const BMessage *message);
-	
-public:							// Operations
-
-	bool						AddChildView(
-									BView *inView,
-									int inHeight,
-									int inIndex = -1,
-									bool inFixed = false);
-
-	void						RemoveChildView(
-									BView *view );
-
-	void						SetScrollValue(
-									float inScrollValue,
-									orientation inOrient);
-
+	CScrollerTarget *			Ruler() const
+								{ return m_ruler; }
 	void						SetRuler(
 									CScrollerTarget *ruler)
 								{ m_ruler = ruler; }
 
-public:							// Accessors
-
-	virtual ulong				MinimumViewSize(
-									BView *inChild)
-								{ return 0; }
-
-	CScrollerTarget *			Ruler() const
-								{ return m_ruler; }
-
 	// REM: This is kludged, there should be a parameter.
 	BPoint						FrameSize()
-								{ return BPoint(Frame().Width() - 14.0 - 20.0, Frame().Height()); }
-	
-	int32						CountStrips() const
-								{ return m_childViews.CountItems(); }
+								{ return BPoint(Frame().Width() - 14.0 - 20.0,
+												Frame().Height()); }
 
-	BView *						StripAt(
-									int32 index) const
-								{ return (BView *)m_childViews.ItemAt(index); }
-								
+public:							// Operations
+
+	int32						CountTypes() const
+								{ return m_types.CountItems(); }
+	BString						TypeAt(
+									int32 index) const;
+	void						AddType(
+									BString name);
+
+	bool						AddStrip(
+									CStripView *view,
+									float proportion = 0.0,
+									int32 index = -1,
+									bool fixedSize = false);									
+	int32						CountStrips() const
+								{ return m_strips.CountItems(); }
+	int32						IndexOf(
+									CStripView *view) const;
+	void						PackStrips();
+	bool						RemoveStrip(
+									CStripView *view);
+	CStripView *				StripAt(
+									int32 index) const;
+	void						SwapStrips(
+									CStripView *strip1,
+									CStripView *strip2);
+
+public:							// CScrollerTarget Implementation
+
+	virtual void				AttachedToWindow();
+
+	virtual void				FrameResized(
+									float width,
+									float height);
+
+	virtual void				MessageReceived(
+									BMessage *message);
+
+	virtual void				SetScrollValue(
+									float position,
+									orientation posture);
+
 protected:						// Internal Operations
 
 	void						ArrangeViews();
 
+	void						UpdateProportions();
+
+	void						UpdateSplitters();
+
 protected:						// Instance Data
 
-	BList						m_childViews;
+	// contains strip_info objects
+	BList						m_strips;
 
-	BList						m_childInfoList;
+	// a list of available strips
+	BList						m_types;
 
 	// Optional horizontal ruler frame
 	CScrollerTarget *			m_ruler;
-	
+
 private:						// Internal Types
 
-	struct ChildInfo {
-		int32		y, h;
-		int32		proportion;		// Ideal proportion
-		bool		fixedSize;		// true if size of item is fixed
+	struct strip_info {
+		CStripView *		strip;
+		BView *				container;
+		CStripSplitter *	splitter;		// splitter above the strip
+		float				vertical_offset;
+		float				height;
+		float				proportion;		// Ideal proportion
+		bool				fixed_size;		// true if size of item is fixed
+	};
+
+	struct strip_type {
+		BString				name;
+		BBitmap *			icon;
 	};
 };
 

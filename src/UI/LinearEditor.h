@@ -164,9 +164,10 @@ public:							// Operations
 	void						SetSelectedKey(
 									int32 key);
 
-public:							// BView Implementation
+public:							// CStripLabelView Implementation
 
-	virtual void				Draw(
+	virtual void				DrawInto(
+									BView *view,
 									BRect updateRect);
 
 private:						// Instance Data

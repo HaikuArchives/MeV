@@ -23,40 +23,22 @@ StdBevels::DrawBorderBevel(
 {
 	D_OPERATION(("StdBevels::DrawBorderBevel()\n"));
 
-	static rgb_color normal_greys[] = 
-	{{128, 128, 128},
-	 {255, 255, 255},
-	 {190, 190, 190},
-	 {220, 220, 220}};
-
-	static rgb_color depressed_greys[] =
-	{{128, 128, 128},
-	 {140, 140, 140},
-	 {200, 200, 200},
-	 {180, 180, 180}};
-
-	static rgb_color dimmed_greys[] =
-	{{180, 180, 180},
-	 {230, 230, 230},
-	 {210, 210, 210},
-	 {220, 220, 220}};
-
-	rgb_color		*colors;
+	const rgb_color *colors;
 	switch (state)
 	{
 		case DIMMED_BEVEL:
 		{
-			colors = dimmed_greys;
+			colors = DIMMED_GREY;
 			break;
 		}
 		case DEPRESSED_BEVEL:
 		{
-			colors = depressed_greys;
+			colors = DEPRESSED_GREY;
 			break;
 		}
 		default: // NORMAL_BEVEL
 		{
-			colors = normal_greys;
+			colors = NORMAL_GREY;
 			break;
 		}
 	}

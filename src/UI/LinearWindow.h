@@ -93,6 +93,14 @@ protected:						// Internal Operations
 
 	void						AddToolBar();
 
+	void						AddFrameView(
+									BRect frame,
+									CTrack *track);
+
+	virtual bool				AddStrip(
+									BString type,
+									float proportion = 0.3);
+
 private:						// Instance Data
 
 	char						m_timeBuf[16];

@@ -41,7 +41,9 @@
 #include "StripFrameView.h"
 #include "Track.h"
 
-class CTrackEditFrame : public CStripFrameView {
+class CTrackEditFrame
+	:	public CStripFrameView
+{
 
 	enum {
 		Max_Zoom		= 24,
