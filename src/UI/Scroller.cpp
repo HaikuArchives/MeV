@@ -8,7 +8,28 @@
 // Gnu C Library
 #include <algobase.h>
 
-void CScrollerTarget::AdjustScrollers()
+// ---------------------------------------------------------------------------
+// Constructor/Destructor
+
+CScrollerTarget::CScrollerTarget(
+	BRect frame,
+	const char *name,
+	uint32 resizingMode,
+	uint32 flags)
+	:	BView(frame, name, resizingMode, flags),
+		scrollRange(0.0, 0.0),
+		scrollValue(0.0, 0.0),
+		redirect(NULL)
+{
+//	SetViewColor(255, 255, 255, 255);
+	SetViewColor(B_TRANSPARENT_COLOR);
+}
+
+// ---------------------------------------------------------------------------
+// Internal Operations
+
+void
+CScrollerTarget::AdjustScrollers()
 {
 	BScrollBar		*sBar;
 	StWindowLocker	svLock   ( Window() );

@@ -42,73 +42,85 @@
 
 class CScroller;
 
-class CScrollerTarget : public BView {
-protected:
+class CScrollerTarget
+	:	public BView
+{
 
-		// Total range of scrollbar
-	BPoint			scrollRange;
-	BPoint			scrollValue;		// Current scroll value
-	CScrollerTarget	*redirect;			// Redirect to 2nd target
+public:							// Constructor/Destructor
 
-	void AdjustScrollers();
+								CScrollerTarget(
+									BRect frame,
+									const char *name,
+									uint32 resizeMask,
+									uint32 flags);
 
-	void AdjustScroller(
-		BScrollBar		*sBar,
-		float			range,
-		float			*value,
-		float			smallStep,
-		float			frameSize );
+public:							// Accessors
 
-public:
-	CScrollerTarget(	BRect frame,
-						const char *name,
-						ulong resizeMask,
-						ulong flags)
-		:	BView( frame, name, resizeMask, flags ),
-			scrollRange( 0.0, 0.0 ),
-			scrollValue( 0.0, 0.0 )
-	{
-		redirect = NULL;
-	}
+	float						ScrollValue(
+									orientation posture)
+								{
+									return (posture == B_HORIZONTAL) ?
+											scrollValue.x :
+											scrollValue.y;
+								}
 
-	float ScrollValue( orientation inOrient )
-		{ return inOrient == B_HORIZONTAL ? scrollValue.x : scrollValue.y; }
+	virtual void				SetScrollValue(
+									float inScrollValue,
+									orientation posture);
 
-	virtual void SetScrollValue( float inScrollValue, orientation inOrient );
+	float						ScrollRange(
+									orientation posture)
+								{
+									return (posture == B_HORIZONTAL) ?
+											scrollRange.x :
+											scrollRange.y;
+								}
 
-	float ScrollRange( orientation inOrient )
-		{ return inOrient == B_HORIZONTAL ? scrollRange.x : scrollRange.y; }
+	virtual void				SetScrollRange(
+									float inHorizontalRange,
+									float inHotizontalValue,
+									float inVerticalRange,
+									float inVerticalValue);
 
-	virtual void SetScrollRange(	float	inHorizontalRange,
-								float	inHotizontalValue,
-								float	inVerticalRange,
-								float	inVerticalValue );
+	void						SetTarget(
+									CScrollerTarget *target)
+								{ redirect = target; }	
 
-	void SetTarget( CScrollerTarget *target )
-	{
-		redirect = target;
-	}
+	// Adjust the current scroll value by a delta amount
+	void						ScrollBy(
+									float amount,
+									orientation posture);
 	
-		/**	Adjust the current scroll value by a delta amount. */
-	void ScrollBy( float inAmount, orientation inOrient );
-	
-		/**	Adjust the current scroll value to an absolute amount. */
-// void SetScrollValueScrollTo( float inAmount, orientation inOrient, bool inAdjustScrollers = true );
-	
-		/**	Return the actual size of the frame being scrolled,
-			which might not be this frame.
-		*/
-	virtual BPoint FrameSize()
-	{
-		return BPoint( Frame().Width(), Frame().Height() );
-	}
+	// Return the actual size of the frame being scrolled,
+	// which might not be this frame.
+	virtual BPoint				FrameSize()
+								{ return BPoint(Frame().Width(), Frame().Height()); }
 
-		/**	Return the amount of scrolling overlap
-		*/
-	virtual BPoint StepSize()
-	{
-		return BPoint( 10.0, 10.0 );
-	}
+	// Return the amount of scrolling overlap
+	virtual BPoint				StepSize()
+								{ return BPoint(10.0, 10.0); }
+
+protected:						// Internal Operations
+
+	void						AdjustScrollers();
+
+	void						AdjustScroller(
+									BScrollBar *scrollBar,
+									float range,
+									float *value,
+									float smallStep,
+									float frameSize );
+
+protected:						// Instance Data
+
+	// Total range of scrollbar
+	BPoint						scrollRange;
+
+	// Current scroll value
+	BPoint						scrollValue;
+
+	// Redirect to 2nd target
+	CScrollerTarget *			redirect;
 };
 
 class CScroller : public BScrollBar {
