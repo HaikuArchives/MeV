@@ -20,7 +20,7 @@ extern void CheckBeError( status_t errCode );
 	/**	An abstract class representing a writeable stream of bytes.
 		You make subclasses for files, strings, packets, etc.
 	*/
-class CBeFileWriter : public CAbstractWriter {
+class CBeFileWriter : public CWriter {
 	BFile			&file;
 
 public:
@@ -46,7 +46,7 @@ public:
 	}
 	
 		/**	Returns the current write position. */
-	uint32 Position()
+	uint32 Position() const
 	{
 		return file.Position();
 	}

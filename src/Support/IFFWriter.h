@@ -47,7 +47,7 @@
 	/**	An output stream handle for IFF files which is also an AbstractWriter (i.e.
 		it can use the stream operators.)
 	*/
-class CIFFWriter : public CAbstractWriter {
+class CIFFWriter : public CWriter {
 
 	struct ChunkState {
 		ChunkState	*parent;		// pointer to parent chunk.
@@ -57,7 +57,7 @@ class CIFFWriter : public CAbstractWriter {
 	};
 	
 	ChunkState		*stack;
-	CAbstractWriter	&writer;
+	CWriter	&writer;
 	int32			limit;		// File position beyond which no writing occurs.
 	int32			pos;
 	bool			m_allowOddLengthChunks;	// IFF standard does not allow odd-length
@@ -69,7 +69,7 @@ public:
 		/**	Constructor
 			@param inWriter Stream handle to write data to.
 		*/
-	CIFFWriter( CAbstractWriter &inWriter );
+	CIFFWriter( CWriter &inWriter );
 	~CIFFWriter();
 
 		/**	Begin a new chunk nested within the current one. */
@@ -82,12 +82,12 @@ public:
 	int32 ChunkLength();
 
 		/**	Returns the how many bytes of chunk data we have written. */
-	int32 ChunkPos();
+	int32 ChunkPos() const;
 
 		/**	Returns the ID of the current chunk. */
 	int32 ChunkID();
 
-		/**	Write out data into a chunk (Overrides the CAbstractWriter function).
+		/**	Write out data into a chunk (Overrides the CWriter function).
 		*/
 	bool Write( void *buffer, int32 length );
 
@@ -101,7 +101,7 @@ public:
 	bool Seek( uint32 inFilePos ) { return false; }
 	
 		/** Position does same as chunk pos( 0 ) */
-	uint32 Position() { return ChunkPos(); }
+	uint32 Position() const { return ChunkPos(); }
 	
 		/**	Do not pad odd-length chunks to make them even length.
 		 *	IFF standard requires that odd-length chunks be padded

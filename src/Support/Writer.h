@@ -30,241 +30,252 @@
  *		Original implementation
  *	05/15/2000	malouin
  *		Updated byte-swapping code, fixed bugs, and cleaned up warnings
+ *	10/16/2000	cell
+ *		Cleaned up style & added ReadStr255() method
  * ---------------------------------------------------------------------
  * To Do:
  *
  * ===================================================================== */
   
-#ifndef WRITER_H
-#define WRITER_H
+#ifndef __C_Writer_H__
+#define __C_Writer_H__
 
 // Kernel Kit
 #include <OS.h>
 
+// Interface Kit
+#include <InterfaceDefs.h>
 // Support Kit
 #include <ByteOrder.h>
 #include <String.h>
-	/**	An abstract class representing a writeable stream of bytes.
-		You make subclasses for files, strings, packets, etc.
+
+/**	An abstract class representing a writeable stream of bytes.
+	You make subclasses for files, strings, packets, etc.
+*/
+class CWriter
+{
+
+public:							// Constructor/Destructor
+
+	/**	Default constructor. */
+								CWriter()
+									:	m_convertByteOrder(true)
+								{ }
+
+	/**	Virtual destructors are always a good idea, even if they don't
+		do anything.
 	*/
-class CAbstractWriter {
-protected:
+	virtual						~CWriter() {}
 
-		// This flag is TRUE if we want to convert all bytes to network order
-	bool				convertByteOrder;
+public:							// Accessors
 
-public:
+	/**	Indicate if we want the stream to automatically convert bytes
+		to network byte order upon writing. Defaults to true. This setting
+		has no effect on systems that are already big-endian.
+	*/
+	void						ConvertByteOrder(
+									bool convert)
+								{ m_convertByteOrder = convert; }
 
-		/**	Default constructor. */
-	CAbstractWriter()
-	{
-		convertByteOrder = true;
-	}
+	/**	Returns the current write position. */
+	virtual uint32				Position() const = 0;
 
-		/**	Virtual destructors are always a good idea, even if they don't
-			do anything.
-		*/
-	virtual ~CAbstractWriter() {}
+public:							// Operations
 
-		/**	Indicate if we want the stream to automatically convert bytes
-			to network byte order upon writing. Defaults to true. This setting
-			has no effect on systems that are already big-endian.
-		*/
-	void ConvertByteOrder( bool inConvert ) { convertByteOrder = inConvert; }
+	/**	Main writing function. This is pure virtual, and must be
+		implemented by subclasses.
+	*/
+	virtual bool				Write(
+									void *buffer,
+									int32 length) = 0;
 
-		/**	Main writing function. This is pure virtual, and must be
-			implemented by subclasses.
-		*/
-	virtual bool Write( void *buffer, int32 inLength ) = 0;
+	void						WriteStr255(
+									char *buffer,
+									int32 length);
 
-		/**	Write exactly 'inLength' bytes, or toss an exception. */
-	virtual void MustWrite( void *buffer, int32 inLength )
-	{
-		Write( buffer, inLength );
-	}
-	
-		/**	Writes a 16-bit integer, or throws an exception.
-			Also byte-swaps the integer if requested.
-		*/
-	void MustWriteInt16( int16 inValue )
-	{
-#if __LITTLE_ENDIAN
-		if (convertByteOrder)
-			inValue = htons( inValue );
-#endif
-		MustWrite( &inValue, sizeof inValue );
-	}
+	/**	Write exactly 'inLength' bytes, or toss an exception. */
+	virtual void				MustWrite(
+									void *buffer,
+									int32 length)
+								{ Write(buffer, length); }
 
-		/**	Writes a 32-bit integer, or throws an exception.
-			Also byte-swaps the integer if requested.
-		*/
-	void MustWriteInt32( int32 inValue )
-	{
-#if __LITTLE_ENDIAN
-		if (convertByteOrder)
-			inValue = htonl( inValue );
-#endif
-		MustWrite( &inValue, sizeof inValue );
-	}
+	/**	Writes a 16-bit integer, or throws an exception.
+		Also byte-swaps the integer if requested.
+	*/
+	void						MustWriteInt16(
+									int16 value);
 
-private:
-	void MustSwapAndWrite( void *ptr, long bytes )
-	{
-#if __LITTLE_ENDIAN
-		if (convertByteOrder)
-		{
-			for (int i = 0, j = bytes - 1; i < j; i++, j--)
-			{
-				uint8		t = ((uint8*)ptr)[ i ];
-				((uint8*)ptr)[ i ] = ((uint8*)ptr)[ j ];
-				((uint8*)ptr)[ j ] = t;
-			}
-		}
-#endif
-		MustWrite( ptr, bytes );
-	}
-public:
-	
-		/**	Returns the current write position. */
-	virtual uint32 Position() = 0;
+	/**	Writes a 32-bit integer, or throws an exception.
+		Also byte-swaps the integer if requested.
+	*/
+	void						MustWriteInt32(
+									int32 value);
 
-		/**	Seek to a specific position in the file.
-			Not supported by all stream types.
-		*/
-	virtual bool Seek( uint32 inFilePos ) = 0;
+	/**	Seek to a specific position in the file.
+		Not supported by all stream types.
+	*/
+	virtual bool				Seek(
+									uint32 filePos) = 0;
 
-		/**	Stream output operator to write an int8 */
-	CAbstractWriter &operator<<( int8    d ) { MustWrite( &d, sizeof d ); return *this; }
+public:							// Overloaded Operators
 
-		/**	Stream output operator to write a uint8 */
-	CAbstractWriter &operator<<( uint8   d ) { MustWrite( &d, sizeof d ); return *this; }
+	/**	Stream output operator to write an int8 */
+	CWriter &					operator<<(
+									int8 d)
+								{ MustWrite(&d, sizeof(d)); return *this; }
 
-		/**	Stream output operator to write an int16 */
-	CAbstractWriter &operator<<( int16   d ) { MustWriteInt16( d ); return *this; }
+	/**	Stream output operator to write a uint8 */
+	CWriter &					operator<<(
+									uint8 d)
+								{ MustWrite(&d, sizeof(d)); return *this; }
 
-		/**	Stream output operator to write a uint16 */
-	CAbstractWriter &operator<<( uint16  d ) { MustWriteInt16( (int16)d ); return *this; }
+	/**	Stream output operator to write an int16 */
+	CWriter &					operator<<(
+									int16 d)
+								{ MustWriteInt16(d); return *this; }
 
-		/**	Stream output operator to write an int32 */
-	CAbstractWriter &operator<<( int32 d ) { MustWriteInt32( d ); return *this; }
+	/**	Stream output operator to write a uint16 */
+	CWriter &					operator<<(
+									uint16 d)
+								{ MustWriteInt16((int16)d); return *this; }
 
-		/**	Stream output operator to write a uint32 */
-	CAbstractWriter &operator<<( uint32 d ) { MustWriteInt32( (int32)d ); return *this; }
+	/**	Stream output operator to write an int32 */
+	CWriter &					operator<<(
+									int32 d)
+								{ MustWriteInt32(d); return *this; }
 
-		/**	Stream output operator to write a float */
-	CAbstractWriter &operator<<( float d ) { MustSwapAndWrite( &d, sizeof d ); return *this; }
+	/**	Stream output operator to write a uint32 */
+	CWriter &					operator<<(
+									uint32 d)
+								{ MustWriteInt32((int32)d); return *this; }
 
-		/**	Stream output operator to write a double */
-	CAbstractWriter &operator<<( double d ) { MustSwapAndWrite( &d, sizeof d ); return *this; }
-		/** Stream output operator to write a BString */
-	CAbstractWriter &operator<<( BString d) { MustWrite( &d, d.Length() ); return *this; }
+	/**	Stream output operator to write an int64 */
+	CWriter &					operator<<(
+									int64 d)
+								{ MustWrite(&d, sizeof(uint64)); return *this; }
+
+	/**	Stream output operator to write a uint64 */
+	CWriter &					operator<<(
+									uint64 d)
+								{ MustWrite(&d, sizeof(uint64)); return *this; }
+
+	/**	Stream output operator to write a float */
+	CWriter &					operator<<(
+									float d)
+								{ MustSwapAndWrite(&d, sizeof(d)); return *this; }
+
+	/**	Stream output operator to write a double */
+	CWriter &					operator<<(
+									double d)
+								{ MustSwapAndWrite(&d, sizeof(d)); return *this; }
+
+	/** Stream output operator to write a rgb_color */
+	CWriter &					operator<<(
+									rgb_color color);
+
+	/** Stream output operator to write a BString */
+	CWriter &					operator<<(
+									BString d)
+								{ MustWrite(&d, d.Length()); return *this; }
+
+private:						// Internal Operations
+
+	void						MustSwapAndWrite(
+									void *ptr,
+									long bytes);
+
+protected:						// Instance Data
+
+	/** This flag is true if we want to convert all bytes to network order. */
+	bool						m_convertByteOrder;
 };
 
-	/**	A Writer which writes to a fixed array of bytes. */
-class CFixedByteArrayWriter : public CAbstractWriter {
-	uint8			*byteArray;
-	uint32			pos;
-	uint32			len;
+/**	A Writer which writes to a fixed array of bytes. */
+class CFixedByteArrayWriter
+	:	public CWriter
+{
 
-public:
+public:							// Constructor/Destructor
 
-		/**	Constructor. */
-	CFixedByteArrayWriter( void *inByteArray, int32 inLen )
-	{
-		byteArray = (uint8 *)inByteArray;
-		pos = 0;
-		len = inLen;
-	}
+	/**	Constructor. */
+								CFixedByteArrayWriter(
+									void *byteArray,
+									int32 length)
+									:	m_bytes((uint8 *)byteArray),
+										m_pos(0),
+										m_len(length)
+								{ }
 
-		/**	Main writing function. */
-	bool Write( void *buffer, int32 inLength )
-	{
-		if (inLength < 0 || uint32(inLength) > len - pos)
-			return false;
+public:							// CWriter Implementation
 
-		memcpy( &byteArray[ pos ], buffer, inLength );
-		pos += inLength;
-		return inLength;
-	}
+	/**	Main writing function. */
+	
+	bool						Write(
+									void *buffer,
+									int32 length);
 
-		/**	Returns the current write position. */
-	uint32 Position() { return pos; }
+	/**	Returns the current write position. */
+	uint32						Position()
+								{ return m_pos; }
 
-		/**	Seek to a specific position in the file.
-			Not supported by all stream types.
-		*/
-	bool Seek( uint32 inFilePos )
-	{
-		if (inFilePos > len)
-			return false;
-		pos = inFilePos;
-		return true;
-	}
+	/**	Seek to a specific position in the file.
+		Not supported by all stream types.
+	*/
+	bool						Seek(
+									uint32 filePos);
+
+private:						// Instance Data
+
+	uint8 *						m_bytes;
+
+	uint32						m_pos;
+
+	uint32						m_len;
 };
 
-	/**	A Writer which writes to a dynamic array of bytes. */
-class CDynamicByteArrayWriter {
-	uint8			*byteArray;
-	uint32			pos;
-	uint32			len;
+/**	A Writer which writes to a dynamic array of bytes. */
+class CDynamicByteArrayWriter
+	:	public CWriter
+{
 
-public:
+public:							// Constructor/Destructor
 
-		/**	Constructor. */
-	CDynamicByteArrayWriter( uint32 inInitialLen = 0 )
-	{
-		pos = 0;
+	/**	Constructor. */
+								CDynamicByteArrayWriter(
+									uint32 initialLength = 0);
 
-		if (inInitialLen > 0)
-			byteArray = new uint8[ inInitialLen ];
-		else
-			byteArray = NULL;
+	/** Destructor. Deletes the internal array of data. */
+								~CDynamicByteArrayWriter()
+								{ delete [] m_bytes; }
 
-		len = inInitialLen;
-	}
-	
-		/** Destructor. Deletes the internal array of data. */
-	~CDynamicByteArrayWriter() { delete[] byteArray; }
+	/** Returns the array of bytes written. 
+		Pointer is not stable between writes.
+	 */
+	void *						Buffer() const
+								{ return m_bytes; }
 
-		/**	Main writing function. */
-	bool Write( void *buffer, int32 inLength )
-	{
-		if (inLength < 0)
-		{
-			return false;
-		}
-		else if (uint32(inLength) > len - pos)
-		{
-			int32	newSize = len + len / 4 + 256;
-			uint8	*newBuf = new uint8[ newSize ];
-			
-			memcpy( newBuf, byteArray, len );
-			delete[] byteArray;
-			byteArray = newBuf;
-			len = newSize;
-		}
+	/**	Main writing function. */
+	bool						Write(
+									void *buffer,
+									int32 length);
 
-		memcpy( &byteArray[ pos ], buffer, inLength );
-		pos += inLength;
-		return inLength;
-	}
+	/**	Returns the current write position. */
+	uint32						Position() const
+								{ return m_pos; }
 
-		/**	Returns the current write position. */
-	uint32 Position() { return pos; }
+	/**	Seek to a specific position in the file.
+		Not supported by all stream types.
+	*/
+	bool						Seek(
+									uint32 filePos);
 
-		/**	Seek to a specific position in the file.
-			Not supported by all stream types.
-		*/
-	bool Seek( uint32 inFilePos )
-	{
-		if (inFilePos > len)
-			return false;
-		pos = inFilePos;
-		return true;
-	}
-	
-		/** Returns the array of bytes written. Pointer is not stable between writes. */
-	void *Buffer() { return byteArray; }
+private:						// Instance Data
+
+	uint8 *						m_bytes;
+
+	uint32						m_pos;
+
+	uint32						m_len;
 };
 
 #endif /* WRITER_H */

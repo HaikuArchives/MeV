@@ -47,7 +47,7 @@
 	/**	An input stream handle for IFF files which is also an AbstractReader (i.e.
 		it can use the stream operators.)
 	*/
-class CIFFReader : public CAbstractReader {
+class CIFFReader : public CReader {
 
 	struct ChunkState {
 		ChunkState	*parent;
@@ -59,7 +59,7 @@ class CIFFReader : public CAbstractReader {
 	};
 	
 	ChunkState		*stack;
-	CAbstractReader	&reader;
+	CReader	&reader;
 	int32			pos;
 	
 public:
@@ -67,7 +67,7 @@ public:
 		/**	Constructor
 			@param inReader Stream handle to read data from.
 		*/
-	CIFFReader( CAbstractReader &inReader );
+	CIFFReader( CReader &inReader );
 	~CIFFReader();
 	
 		/**	Returns the length of the chunk being read */
@@ -95,7 +95,7 @@ public:
 	bool Pop();
 	
 		/**	Read data from chunk. Will not read past the logical end of the chunk.
-			Overrides the Read() function from CAbstractReader.
+			Overrides the Read() function from CReader.
 		*/
 	int32 Read( void *buffer, int32 length, bool inPartialOK );
 	

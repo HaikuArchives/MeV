@@ -7,8 +7,8 @@
  
 #include "IFFWriter.h"
 
-CIFFWriter::CIFFWriter( CAbstractWriter &inWriter )
-	: writer(inWriter), stack(0), limit(0), pos(0), m_allowOddLengthChunks(false)
+CIFFWriter::CIFFWriter( CWriter &inWriter )
+	: stack(0), writer(inWriter), limit(0), pos(0), m_allowOddLengthChunks(false)
 {
 }
 
@@ -109,7 +109,7 @@ int32 CIFFWriter::ChunkLength()
 	return pos - stack->startPos;
 }
 
-int32 CIFFWriter::ChunkPos()
+int32 CIFFWriter::ChunkPos() const
 {
 	return pos - stack->startPos;
 }

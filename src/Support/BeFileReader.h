@@ -44,7 +44,7 @@
 	@authors	Talin, Curt Malouin, Christopher Lenz
  */
 class CBeFileReader
-	:	public CAbstractReader
+	:	public CReader
 {
 
 public:							// Constructor/Destructor
@@ -53,7 +53,7 @@ public:							// Constructor/Destructor
 								CBeFileReader(
 									BFile &file);
 
-public:							// CAbstractReader Implementation
+public:							// CReader Implementation
 
 	/**	Main reading function. This is pure virtual, and must be
 		implemented by subclasses.

@@ -7,7 +7,7 @@
  
 #include "IFFReader.h"
 
-CIFFReader::CIFFReader( CAbstractReader &inReader )
+CIFFReader::CIFFReader( CReader &inReader )
 	: reader( inReader )
 {
 	pos = 0;

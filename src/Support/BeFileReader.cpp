@@ -41,7 +41,7 @@ CBeFileReader::CBeFileReader(
 }
 
 // ---------------------------------------------------------------------------
-// CAbstractReader Implementation
+// CReader Implementation
 
 int32
 CBeFileReader::Read(
