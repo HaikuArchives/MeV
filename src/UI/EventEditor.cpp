@@ -937,7 +937,7 @@ CEventEditor::DrawPlaybackMarkers(
 	int32 count,
 	BRect updateRect,
 	bool erase)
-{
+{	
 	if (count < 1)
 		return;
 
@@ -955,7 +955,8 @@ CEventEditor::DrawPlaybackMarkers(
 	{
 		if ((markers[i] >= startTime) && (markers[i] <= stopTime))
 		{
-			p1.x = p2.x = TimeToViewCoords(markers[i]);
+			//
+			p1.x = p2.x = TimeToViewCoords(markers[i]-Track()->Document().MaxDestinationLatency(Track()->ClockType()));
 			AddLine(p1, p2, black);
 		}
 	}
@@ -995,6 +996,12 @@ CEventEditor::UpdatePBMarkers()
 	count = CPlayerControl::GetPlaybackMarkerTimes(Track(),
 												   newPBMarkers,
 												   MAX_PLAYBACK_MARKERS);
+	
+	
+	if (m_pbMarkers[0]<0)
+	{
+		m_pbMarkers[0]=0;
+	}
 	if (count != m_pbCount
 	 || memcmp(m_pbMarkers, newPBMarkers, count * sizeof(m_pbMarkers[0])) != 0)
 	{
@@ -1002,11 +1009,65 @@ CEventEditor::UpdatePBMarkers()
 
 		memcpy(m_pbMarkers, newPBMarkers, count * sizeof(m_pbMarkers[0]));
 		m_pbCount = count;
-
 		DrawPlaybackMarkers(m_pbMarkers, m_pbCount, Bounds(), false);
 	}
 }
+/*
+void
+CEventEditor::DoRectangleSelection()
+{
+	BRect		r;
+	DrawSelectRect();
+	long			minTime,
+				maxTime;
+	EventMarker	marker( Track()->Events() );
+	const Event	*ev;
+	
+	r.left			= MIN(m_cursorPos.x, m_anchorPos.x );
+	r.right			= MAX(m_cursorPos.x, m_anchorPos.x );
+	r.top			= MIN(m_cursorPos.y, m_anchorPos.y );
+	r.bottom		= MAX(m_cursorPos.y, m_anchorPos.y );
 
+	if (r.Width()  == 0.0)
+		r.right += 1.0;
+	if (r.Height() == 0.0)
+		r.bottom += 1.0;
+
+	minTime = ViewCoordsToTime(r.left);
+	maxTime = ViewCoordsToTime(r.right);
+
+	// Now, select all events in the rectangle...
+	// For each event that overlaps the current view, draw it.
+	for (ev = marker.FirstItemInRange(minTime, maxTime);
+		 ev;
+		 ev = marker.NextItemInRange(minTime, maxTime))
+	{
+		// Don't allow picking of events on locked channels...
+		if (Track()->IsChannelLocked(*ev)) continue;
+
+		if (!ev->IsSelected())
+		{
+			const CAbstractEventHandler	&handler(*HandlerFor(*ev));
+			if (&handler == &gNullEventHandler)
+				continue;
+
+			if (r.Contains(handler.Extent(*this, *ev))
+				|| (gPrefs.inclusiveSelection
+					&& r.Intersects(handler.Extent(*this, *ev))))
+			{
+				((Event *)ev)->SetSelected(true);
+				handler.Invalidate(*this, *ev);
+			}
+		}
+	}
+
+	Track()->SummarizeSelection();
+
+	// Let the world know the selection has changed
+	CEventSelectionUpdateHint hint(*Track(), true);
+	PostUpdate(&hint, true);
+}
+*/
 void
 CEventEditor::DrawCreateEcho(
 	int32 startTime,

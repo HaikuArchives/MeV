@@ -372,7 +372,6 @@ CPlayer::ControlThread()
 						break;
 					CRefCountObject::Release(songGroup->doc);
 					songGroup->doc = args.document;
-					songGroup->m_destlist = args.document->GetDestinationList(  );
 					// Reset all channel state records...
 					InitChannelStates();
 	

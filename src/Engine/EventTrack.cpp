@@ -10,7 +10,7 @@
 #include "MeVFileID.h"
 #include "IFFWriter.h"
 #include "IFFReader.h"
-
+#include <Debug.h>
 // ---------------------------------------------------------------------------
 // Event track constructor
 
@@ -747,7 +747,9 @@ void CEventTrack::CreateEvent(
 
 	undoAction = new EventListUndoAction( events, *this, inActionLabel );
 
-		// Creating a new event
+		// Creating a new event..
+		// dan: I don't like events starting as selected when using mouse. but currently
+		//they will not be drawn properly unless selected.
 	newEv.SetSelected( true );
 	events.Merge( &newEv, 1, undoAction );
 

@@ -530,7 +530,7 @@ CVelocityNoteEventHandler::Draw(
 	const Event &ev,
 	bool shadowed) const
 {
-	Destination	*dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+	CDestination	*dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
 
 	BRect rect(Editor()->Bounds());
 	rect.left = Editor()->TimeToViewCoords(ev.Start());
@@ -559,13 +559,13 @@ CVelocityNoteEventHandler::Draw(
 		
 		Editor()->StrokeRect(rect);
 		rect.InsetBy(1.0, 1.0);
-		Editor()->SetHighColor(dest->fillColor);
+		Editor()->SetHighColor(dest->GetFillColor());
 		Editor()->SetDrawingMode(B_OP_BLEND);
 		Editor()->FillRect(rect);
 	}
 	else
 	{
-		Editor()->SetHighColor(dest->fillColor);
+		Editor()->SetHighColor(dest->GetFillColor());
 		Editor()->SetDrawingMode(B_OP_BLEND);
 		Editor()->FillPolygon(points, 4, rect);
 

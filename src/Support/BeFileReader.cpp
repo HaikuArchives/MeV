@@ -34,10 +34,6 @@ int32 CBeFileReader::Read( void *buffer, int32 inLength, bool inPartialOK )
 		return result;
 	}
 }
-
-	/**	Read exactly 'inLength' bytes, or toss an exception. */
-void CBeFileReader::MustRead( void *buffer, int32 inLength )
-{
 	class EndOfFile :
 		public IError
 	{
@@ -45,6 +41,10 @@ void CBeFileReader::MustRead( void *buffer, int32 inLength )
 		virtual	const char*		Description() const
 									{ return "File is incomplete or corrupt"; }
 	};
+	/**	Read exactly 'inLength' bytes, or toss an exception. */
+void CBeFileReader::MustRead( void *buffer, int32 inLength )
+{
+
 
 	int32 bytesRead = file.Read( buffer, inLength );
 	CheckBeError( bytesRead );

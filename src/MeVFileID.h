@@ -49,7 +49,7 @@ enum MeVFileIDs
 	MeV_ID				= 'MeV ',		// Idenfies a MeV file
 
 	// Document chunk headers
-	VCTable_ID			= 'vctb',		// Virtual channel table
+	DESTINATION_ID			= 'vctb',		// Destination
 	FMasterRealTrack	= 'mrTk',		// Master real track embedded form
 	FMasterMeteredTrack	= 'mmTk',		// Master metered track embedded form
 	DocTempo_ID			= 'dTem',		// Overall document tempo

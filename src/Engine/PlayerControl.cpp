@@ -29,9 +29,9 @@ CPlayerControl::DoAudioFeedback(
 		int32 channel = (feedbackAttribute == EvAttr_Channel)
 						? attributeValue
 						: demoEvent->GetVChannel();
-		Destination	*dest = doc->GetVChannel(channel);
-		modEvent->stack.actualPort = dest->m_producer;	
-		modEvent->stack.actualChannel = dest->channel;
+		CDestination	*dest = doc->FindDestination(channel);
+		modEvent->stack.actualPort = dest->GetProducer();	
+		modEvent->stack.actualChannel = dest->Channel();
 	}
 	else
 	{

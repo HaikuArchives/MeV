@@ -75,8 +75,9 @@ CEventTask::PlayEvent(
 	CEventStack &stack,
 	long origin)
 {
+
 	CPlayer::ChannelState *chState = NULL;
-	Destination *dest = NULL;
+	CDestination *dest = NULL;
 
 	Event stackedEvent(ev);
 
@@ -84,18 +85,19 @@ CEventTask::PlayEvent(
 	int32 duration = stackedEvent.common.duration;
 
 	// filter event though virtual channel table
-	if (group.m_destlist->IsDefined(ev.note.vChannel))
+	if  (group.Document()->IsDefinedDest(ev.note.vChannel))
 	{
-		// assign actual destination
-		dest = group.m_destlist->get(ev.common.vChannel);
-		stackedEvent.stack.actualPort = dest->m_producer;
+		dest = group.Document()->FindDestination(ev.common.vChannel);
+		chState = &thePlayer.m_portInfo[0].channelStates[dest->Channel()];
+		
+		// Process a copy of the event event through the filters...
+		((CEventTrack *)track)->FilterEvent(stackedEvent);
 
-		if (ev.HasProperty(Event::Prop_Channel))
-		{
-			// assign actual channel
-			stackedEvent.stack.actualChannel = dest->channel;
-			chState = &thePlayer.m_portInfo[0].channelStates[dest->channel];
-		}
+		// assign actual port
+		stackedEvent.stack.actualPort =(BMidiLocalProducer *) dest->GetProducer();
+		stackedEvent.stack.actualChannel = dest->Channel();
+		//stackedEvent.stack.start+=(Track()->Document().MaxDestinationLatency(clockType)-dest->Latency(clockType));
+
 	}
 	else
 	{
@@ -116,21 +118,24 @@ CEventTask::PlayEvent(
 		{
 			// Ignore the note event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
-			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
 			
+			if (dest->Muted()) 
+			{
+				break;
+			}
 			// Apply task-specific transposition.
-			if (transposition != 0 && dest->flags & Destination::transposable)
+			/*if (transposition != 0 && dest->Transposable())
 			{
 				stackedEvent.note.pitch += transposition;
 	
 					// If pitch went out of bounds, then don't play the note.
 					// +++++ CLIPPING WOULD BE MUCH NICER!
 				if (stackedEvent.note.pitch & 0x80) break;
-			}
+			}*/
 			
 			// REM: Here we would apply velocity contour.
 			// REM: Here we would do the VU meter code...
-				
+			
 			// If there was room on the stack to push the note-off, then
 			// play the note-on
 			stackedEvent.stack.start		+= duration;
@@ -147,7 +152,7 @@ CEventTask::PlayEvent(
 		case EvtType_PitchBend:						// pitch bend
 		{
 				// Play nothing if muted
-			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
+			if (dest->Muted()) break;
 			
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -184,13 +189,13 @@ CEventTask::PlayEvent(
 		case EvtType_ProgramChange:					// program change
 		{
 				// Play nothing if muted
-			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
+			if (dest->Muted()) break;
 	
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
 			{
 				//dest->port - > 0
-				MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( 0, dest->channel );
+				MIDIDeviceInfo	*mdi = ((CMeVApp *)be_app)->LookupInstrument( 0, dest->Channel() );
 	
 					// (Only update the channel bank state if this device supports banks)
 				if (	mdi != NULL
@@ -213,7 +218,7 @@ CEventTask::PlayEvent(
 		case EvtType_ChannelATouch:					// channel aftertouch
 		{
 				// Play nothing if muted
-			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
+			if (dest->Muted()) break;
 	
 				// If locating, update channel state table but don't stack the event
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating)
@@ -228,7 +233,7 @@ CEventTask::PlayEvent(
 		case EvtType_Controller:						// controller change
 		{
 				// Play nothing if muted
-			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
+			if (dest->Muted()) break;
 			
 				// REM: Data entry controls should probably be passed through, since they
 				// can't be summarized in a simple way.
@@ -271,7 +276,7 @@ CEventTask::PlayEvent(
 		{
 				// Ignore the event if locating
 			if (group.flags & CPlaybackTaskGroup::Clock_Locating) break;
-			if (dest->flags & (Destination::mute | Destination::muteFromSolo)) break;
+			if (dest->Muted()) break;
 	
 			stack.Push( stackedEvent );
 			break;
@@ -553,8 +558,9 @@ void CEventTask::Play()
 
 		if (IsTimeGreater(actualEndTime, t))
 		{
+			flags |= Task_Finished;
 			// past end of task
-			break;
+			return;
 		}
 
 		if (IsTimeGreater(targetTime, t))

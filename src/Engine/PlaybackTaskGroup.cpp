@@ -8,6 +8,7 @@
 #include "EventTask.h"
 #include "Idents.h"
 
+#include <stdio.h>
 #include <Debug.h>
 
 #define D_EXECUTE(x) //PRINT (x)
@@ -15,13 +16,13 @@
 // ---------------------------------------------------------------------------
 // Constructor for playback context
 
-CPlaybackTaskGroup::CPlaybackTaskGroup( CMeVDoc *d )
+CPlaybackTaskGroup::CPlaybackTaskGroup( CMeVDoc *inDocument )
 {
 	LOCK_PLAYER;
 	
 		// Initialize what fields need it
-	doc			= d;
-	m_destlist	= d ? d->GetDestinationList(  ) : NULL;
+	doc			= inDocument;
+	//m_destlist	= inDocument ? inDocument->GetDestinationList(  ) : NULL;
 	flags			= Clock_Stopped;
 	origin		= thePlayer.m_internalTimerTick; // +++++ REMOVE THIS DEPENDANCY +++++
 	real.time		= real.start = 0;
@@ -114,15 +115,13 @@ void CPlaybackTaskGroup::Update( long internalTicks )
 	{
 		long			next;
 		bool			done = true;
-
 			// Record what time our track is positioned to.
 		real.seekTime			= real.time;
 		metered.seekTime		= metered.time;
 
 			// Pop events off of the stack which are ready to go
 		while (real.stack.Pop   ( ev, real.seekTime ))		ExecuteEvent( ev, real );
-		while (metered.stack.Pop( ev, metered.seekTime ))	ExecuteEvent( ev, metered );
-
+		while (metered.stack.Pop( ev, metered.seekTime ))	{ ExecuteEvent( ev, metered );}
 			// Compute next event time as min of all track times
 		if (	real.stack.NextTime( next ))
 		{
@@ -565,7 +564,7 @@ void CPlaybackTaskGroup::Start(
 		flags |= Clock_AwaitingSync;
 
 		// Set the default tempo
-	tempo.SetInitialTempo( RateToPeriod( doc ? doc->InitialTempo() : 100.0 ) );
+	tempo.SetInitialTempo( RateToPeriod( doc ? doc->InitialTempo() : 100.0 ) ); 
 
 	if (flags & (Locator_Reset|Locator_Find))
 	{

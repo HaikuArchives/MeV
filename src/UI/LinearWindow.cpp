@@ -22,6 +22,14 @@
 #include "ToolBar.h"
 #include "TrackCtlStrip.h"
 #include "VelocityEditor.h"
+//#include "RecordStrip.h"
+// User Interface
+//#include "BitmapTool.h"
+//#include "IconMenuItem.h"
+//#include "MenuTool.h"
+//#include "ToolBar.h"
+//=======
+
 
 // Gnu C Library
 #include <stdio.h>
@@ -65,13 +73,14 @@ CLinearWindow::CLinearWindow(
 	stripFrame->AddType("Velocity");
 	stripFrame->AddType("Pitch Bend");
 	stripFrame->AddType("Sequence");
-
+	stripFrame->AddType("Record Strip");
 	if (!hasSettings)
 	{
 		// create default strips
 		AddStrip("Piano Roll", 0.5);
 		AddStrip("Velocity", 0.25);
 		AddStrip("Sequence", 0.25);
+		//AddStrip("Record Strip", 0.10);
 		stripFrame->PackStrips();
 	}
 }
@@ -256,7 +265,10 @@ CLinearWindow::AddStrip(
 		strip = new CTrackCtlStrip(*this, *stripFrame, rect, Track(),
 								   "Sequence");
 	}
-
+	else if (type == "Record Strip")
+	{
+		//strip = new CRecordStrip (*this, *stripFrame, rect,Track());
+	}
 	if (strip)
 	{
 		stripFrame->AddStrip(strip, proportion);

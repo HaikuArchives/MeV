@@ -34,7 +34,7 @@
  *		Original implementation
  *		added to the repository...
  *	8/13/2000		dwalton
- *		modified to support one producer per destination.
+ *		modified to support one producer per CDestination.
  * ---------------------------------------------------------------------
  * To Do:
  * I imagine that this could be used for all the midi port management including
@@ -72,6 +72,8 @@
 class CMidiManager : public BLooper,public CObservableSubject{
 	public:
 		static CMidiManager * Instance();
+		BMidiProducer * NextProducer(int32 *id);
+		BMidiProducer * FindProducer(int32 id);
 		BMidiConsumer * NextConsumer(int32 *id);
 		BMidiConsumer * FindConsumer (int32 id);
 		

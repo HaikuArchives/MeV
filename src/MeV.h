@@ -41,5 +41,5 @@
 #include "AppHelp.h"
 
 const uint32			Max_MidiPorts = 16;
-
+const int			Max_Destinations = 64;		
 #endif /* __Mev_H__ */

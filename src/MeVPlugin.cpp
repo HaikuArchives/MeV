@@ -268,29 +268,30 @@ int MeVDocRef::GetInternalSynthConsumerID()
 
 int MeVDocRef::NewDestination(const char* name, int consumerID, int channel)
 {
-	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
-	CDestinationList* list = doc->GetDestinationList();
-
-	int id = list->NewDest();
-	list->SetNameFor(id, name);
-	list->SetChannelFor(id, channel - 1); // MeV uses [0,15]
-	
-	BMidiConsumer* consumer = CMidiManager::Instance()->FindConsumer(consumerID);
+	CMeVDoc* doc=reinterpret_cast<CMeVDoc*>(data);
+	CDestination *dest=doc->NewDestination();
+	dest->SetName(name);
+	dest->SetChannel(channel-1);
+	BMidiConsumer *consumer = CMidiManager::Instance()->FindConsumer(consumerID);
 	if (consumer)
-		list->ToggleConnectFor(id, consumer);
-	
-	return id;
+		dest->SetConnect(consumer,true);
+	return dest->GetID();
+
 }
 
 int MeVDocRef::GetChannelForDestination(int destinationID)
 {
 	CMeVDoc* doc = reinterpret_cast<CMeVDoc*>(data);
-	CDestinationList* list = doc->GetDestinationList();
-	
-	if (!list->IsDefined(destinationID))
+	//CDestinationList* list = doc->GetDestinationList();
+	if (doc->IsDefinedDest(destinationID))
+	{
+		CDestination *dest=doc->FindDestination(destinationID);
+		return dest->Channel();
+	}
+	else 
+	{
 		return -1;
-	else
-		return list->get(destinationID)->channel;
+	}
 }
 
 void MeVDocRef::AddEventOperator( EventOp *inOper )

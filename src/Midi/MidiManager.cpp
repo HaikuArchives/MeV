@@ -43,6 +43,14 @@ CMidiManager::CMidiManager() : BLooper("MidiHandler"),CObservableSubject()
 	m_internalSynth=NULL;
 	AddInternalSynth();
 }
+BMidiProducer * CMidiManager::NextProducer(int32 *id)
+{
+	return (m_roster->NextProducer(id));
+}
+BMidiProducer * CMidiManager::FindProducer (int32 id)
+{
+	return (m_roster->FindProducer(id));
+}
 BMidiConsumer * CMidiManager::NextConsumer(int32 *id)
 {
 	return (m_roster->NextConsumer(id));
@@ -392,7 +400,15 @@ void CMidiManager::_handleMidiEvent(BMessage *msg)
 		}
 		break;
 	case B_MIDI_CHANGED_NAME:
+		{
+		//change the name of the destination.
+		break;
+		}
 	case B_MIDI_CHANGED_LATENCY:
+		{
+		//update latency if highest
+		break;
+		}
 	case B_MIDI_CONNECTED:
 		{
 			int32 prod;

@@ -39,7 +39,7 @@
 
 #ifndef __C_InspectorWindow_H__
 #define __C_InspectorWindow_H__
-
+#include "BorderView.h"
 #include "Event.h"
 #include "WindowState.h"
 #include "Observer.h"
@@ -87,9 +87,10 @@ public:						// Operations
 								CEventTrack *track);
 
 	void					Clear();
-
+	
 private:					// Instance Data
-
+	
+	CBorderView *m_bgView;
 	CMeVDoc *				m_doc;
 	CEventTrack *			m_track;
 

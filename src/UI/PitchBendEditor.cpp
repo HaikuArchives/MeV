@@ -202,7 +202,7 @@ CPitchBendEventHandler::Draw(
 	bool shadowed) const
 {
 	bool locked = Editor()->Track()->IsChannelLocked(ev.GetVChannel());
-	Destination *dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
+	CDestination *dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
 	BRect r;
 
 	if (shadowed)
@@ -215,7 +215,7 @@ CPitchBendEventHandler::Draw(
 	if (locked)
 		Editor()->SetHighColor(192, 192, 192);
 	else
-		Editor()->SetHighColor(dest->fillColor);
+		Editor()->SetHighColor(dest->GetFillColor());
 		
 	if ((ev.Duration() > 0) && (ev.pitchBend.updatePeriod > 0))
 	{
@@ -256,7 +256,7 @@ CPitchBendEventHandler::Draw(
 	if (locked)
 		Editor()->SetHighColor(192, 192, 192);
 	else
-		Editor()->SetHighColor(dest->fillColor);
+		Editor()->SetHighColor(dest->GetFillColor());
 	Editor()->FillEllipse(r);
 	
 	if (locked)
@@ -631,7 +631,7 @@ CPitchBendEditor::ConstructEvent(
 {
 	// check if destination is set
 	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
-	if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
+	if (TrackWindow()->Document()->FindDestination(destination) == NULL)
 		return false;
 
 	// Initialize a new event

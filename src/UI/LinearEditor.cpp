@@ -161,10 +161,13 @@ CLinearEditor::ConstructEvent(
 	BPoint point)
 {
 	// check if destination is set
-	int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
-	if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
+	//int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
+	int32 destination=TrackWindow()->Document()->SelectedDestination();
+	if (!TrackWindow()->Document()->IsDefinedDest(destination))
+	{
+		printf("not defined\n");
 		return false;
-
+	}
 	// Initialize a new event
 	m_newEv.SetCommand(TrackWindow()->NewEventType(EvtType_Note));
 
@@ -628,34 +631,34 @@ CLinearNoteEventHandler::Draw(
 		return;
 	}
 
-	Destination *dest = Editor()->TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
-	if (dest->flags & Destination::deleted)
+	CDestination *dest = Editor()->TrackWindow()->Document()->FindDestination(ev.GetVChannel());
+	if (dest->Deleted())
 	{
 		DrawNoteShape(Editor(), r, DISABLED_BORDER_COLOR,
 					  DISABLED_FILL_COLOR, DEFAULT_HIGHLIGHT_COLOR, false);
 	}
-	else if ((dest->flags & Destination::mute)
-		  || (dest->flags & Destination::disabled))
+	else if (dest->Muted())
+		  
 	{
-		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, dest->fillColor,
-					  dest->highlightColor, true, MIXED_COLORS);
+		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, dest->GetFillColor(),
+					  dest->GetHighlightColor(), true, MIXED_COLORS);
 	}
 	else if (shadowed)
 	{
 		Editor()->SetDrawingMode(B_OP_BLEND);
 		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR, 
-					  dest->fillColor, dest->highlightColor, true);
+					  dest->GetFillColor(), dest->GetHighlightColor(), true);
 		Editor()->SetDrawingMode(B_OP_COPY);
 	}
 	else if (ev.IsSelected() && Editor()->IsSelectionVisible())
 	{
 		DrawNoteShape(Editor(), r, SELECTED_BORDER_COLOR,
-					  dest->fillColor, dest->highlightColor, true);
+					  dest->GetFillColor(), dest->GetHighlightColor(), true);
 	}
 	else 
 	{
 		DrawNoteShape(Editor(), r, DEFAULT_BORDER_COLOR,
-					  dest->fillColor, dest->highlightColor, true);
+					  dest->GetFillColor(), dest->GetHighlightColor(), true);
 	}
 
 }

@@ -44,7 +44,7 @@
 #include "EventStack.h"
 #include "PlayerControl.h"
 #include "TempoMap.h"
-#include "DestinationList.h"
+//#include "DestinationList.h"
 // ---------------------------------------------------------------------------
 // A playback task group represents a set of related tasks, such as a song.
 
@@ -104,8 +104,6 @@ private:
 		// Pointer to document (only one document per context, or NULL)
 	CMeVDoc			*doc;
 
-		// Pointer to document's virtual channel table
-	CDestinationList	*m_destlist;
 
 		// The start time of this group, in absolute real time
 	int32			origin;
@@ -196,6 +194,10 @@ public:
 	bool ClockRunning() { return (flags & Clock_Halted) == 0; }
 	
 	int32 CurrentTempoPeriod();
+
+	CMeVDoc * Document()
+	{ return doc; }
+	
 };
 
 #endif /* __C_PlaybackTaskGroup_H__ */

@@ -730,7 +730,7 @@ CProgramChangeEventHandler::Draw(
 					 + be_plain_font->StringWidth(patchName.String());
 	textRect.top = textRect.bottom - fh.ascent;
 
-	Destination *dest = Editor()->Track()->Document().GetVChannel(ev.GetVChannel());
+	CDestination *dest = Editor()->Track()->Document().FindDestination(ev.GetVChannel());
 	rgb_color lightColor, darkColor;
 	if (Editor()->Track()->IsChannelLocked(ev.GetVChannel()))
 	{
@@ -739,8 +739,8 @@ CProgramChangeEventHandler::Draw(
 	}
 	else
 	{
-		lightColor = dest->highlightColor;
-		darkColor = dest->fillColor;
+		lightColor = dest->GetHighlightColor();
+		darkColor = dest->GetFillColor();
 	}
 
 	BRect frameRect(textRect.InsetByCopy(-1.0, -2.0));
@@ -865,8 +865,8 @@ CProgramChangeEventHandler::GetPatchName(
 {
 	CMeVDoc *doc = &Editor()->Track()->Document();
 
-	Destination *dest = doc->GetVChannel(ev.GetVChannel());
-	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,dest->channel);
+	CDestination *dest = doc->FindDestination(ev.GetVChannel());
+	MIDIDeviceInfo *info = doc->Application()->LookupInstrument(1,dest->Channel());
 	info=NULL;
 	if (info == NULL)
 	{
@@ -1679,7 +1679,7 @@ CTrackCtlStrip::ConstructEvent(
 		{
 			// check if destination is set
 			int32 destination = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel);
-			if (TrackWindow()->Document()->GetVChannel(destination) == NULL)
+			if (TrackWindow()->Document()->FindDestination(destination) == NULL)
 				return false;
 			m_newEv.SetVChannel(TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Channel ) );
 			m_newEv.programChange.vPos = static_cast<uint8>(ViewCoordsToVPos(point.y));

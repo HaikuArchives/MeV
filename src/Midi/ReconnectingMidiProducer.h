@@ -34,6 +34,8 @@
  * To Do:
  *
  * ===================================================================== */
+#ifndef __C_ReconnectingMidiProducer_H__
+#define __C_ReconnectingMidiProducer_H__
 #include <MidiProducer.h>
 #include <Bitmap.h>
 #include <GraphicsDefs.h>
@@ -53,3 +55,4 @@ class CReconnectingMidiProducer: public BMidiLocalProducer
 	private:
 		BBitmap * _createIcon(const BMessage* msg, icon_size which) const;
 }; 
+#endif

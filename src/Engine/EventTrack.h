@@ -70,7 +70,7 @@ private:
 					maxSelectTime;			// end time of selection
 					
 	long				sectionStart,			// Start of playback section
-					sectionEnd;				// End of playback section.
+						sectionEnd;				// End of playback section.
 
 	long				timeGridSize;			// gridsnap size for time
 	bool				gridSnapEnabled;			// grid snap is enabled.
