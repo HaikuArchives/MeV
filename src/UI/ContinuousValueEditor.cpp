@@ -77,7 +77,7 @@ CContinuousValueEditor::Draw(
 		 ev != NULL;
 		 ev = marker.NextItemInRange(startTime, stopTime))
 	{
-		if (!ev->HasProperty(Event::Prop_Channel))
+		if (ev->Command() == EvtType_PitchBend)
 			RendererFor(*ev)->Draw(*ev, false);
 	}
 
