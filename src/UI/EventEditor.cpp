@@ -1071,7 +1071,7 @@ CEventEditor::MouseMoved(
 		}
 
 		// Implement auto-scrolling (horizontal for frame)
-		BRect r(ViewBounds());
+		BRect r(Bounds());
 		if (point.x > r.right)
 			m_frame.ScrollBy(MIN((point.x - r.right) / 4, 10.0), B_HORIZONTAL);
 		else if (point.x < r.left)
