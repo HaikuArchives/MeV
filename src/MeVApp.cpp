@@ -177,7 +177,7 @@ CMeVApp::CMeVApp()
 	m_exportPanel = NULL;
 	m_importPanel = NULL;
 
-	CMidiManager *mm = CMidiManager::Instance();
+	CMidiManager::Instance();
 	CPlayerControl::InitPlayer();
 
 	// Load in add-ons
