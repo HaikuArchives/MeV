@@ -86,7 +86,7 @@ public:							// CAppWindow Implementation
 protected:						// Internal Operations
 
 	BView *						AddPanel(
-									char *name);
+									const char *name);
 
 	int32						CurrentPanel() const
 								{ return m_currentPanel; }

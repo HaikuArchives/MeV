@@ -19,12 +19,12 @@ unsigned char Event::propTable[ EvtType_Count ];
 // ---------------------------------------------------------------------------
 // Event Names Table ~~~EVENTLIST
 
-char *Event::nameTable[ EvtType_Count ];
+const char *Event::nameTable[ EvtType_Count ];
 
 // ---------------------------------------------------------------------------
 // Define table of events
 
-inline void Event::DefineEvent( enum E_EventType type, char *name, int32 properties )
+inline void Event::DefineEvent( enum E_EventType type, const char *name, int32 properties )
 {
 	propTable[ type ] = properties;
 	nameTable[ type ] = name;
@@ -762,164 +762,164 @@ void Event::ExtDataPtr::SetLength( size_t length )
 // A table of information about controllers
 
 ControllerInfo	controllerInfoTable[ 128 ] = {
-	32, EvAttr_BankSelect,			"Bank Select",			// 0
-	33, EvAttr_Modulation,			"Modulation wheel",		// 1
-	34, EvAttr_BreathController,		"Breath Controller",		// 2
-	35, EvAttr_ControllerValue16,		"Controller 3",			// 3
+	{ 32, EvAttr_BankSelect,			"Bank Select"		},	// 0
+	{ 33, EvAttr_Modulation,			"Modulation wheel"	},	// 1
+	{ 34, EvAttr_BreathController,		"Breath Controller" },	// 2
+	{ 35, EvAttr_ControllerValue16,		"Controller 3" 		},	// 3
 
-	36, EvAttr_FootController,		"Foot Controller",		// 4
-	37, EvAttr_PortamentoTime,		"Portamento Time",		// 5
-	38, EvAttr_DataEntry,			"Data Entry",			// 6
-	39, EvAttr_ChannelVolume,		"Channel Volume",		// 7
+	{ 36, EvAttr_FootController,		"Foot Controller"	},	// 4
+	{ 37, EvAttr_PortamentoTime,		"Portamento Time"	},	// 5
+	{ 38, EvAttr_DataEntry,				"Data Entry" 		},	// 6
+	{ 39, EvAttr_ChannelVolume,			"Channel Volume"	},	// 7
 
-	40, EvAttr_Balance,				"Balance",			// 8
-	41, EvAttr_ControllerValue16,		"Controller 9",			// 9
-	42, EvAttr_Pan,				"Pan",				// 10
-	43, EvAttr_ExpressionCtl,		"Expression Ctl.",		// 11
+	{ 40, EvAttr_Balance,				"Balance"			},	// 8
+	{ 41, EvAttr_ControllerValue16,		"Controller 9"		},	// 9
+	{ 42, EvAttr_Pan,					"Pan"				},	// 10
+	{ 43, EvAttr_ExpressionCtl,			"Expression Ctl."	},	// 11
 
-	44, EvAttr_ControllerValue16,		"Effect Control 1",		// 12
-	45, EvAttr_ControllerValue16,		"Effect Control 2",		// 13
-	46, EvAttr_ControllerValue16,		"Controller 14",		// 14
-	47, EvAttr_ControllerValue16,		"Controller 15",		// 15
+	{ 44, EvAttr_ControllerValue16,		"Effect Control 1"	},	// 12
+	{ 45, EvAttr_ControllerValue16,		"Effect Control 2"	},	// 13
+	{ 46, EvAttr_ControllerValue16,		"Controller 14"		},	// 14
+	{ 47, EvAttr_ControllerValue16,		"Controller 15"		},	// 15
 
-	48, EvAttr_ControllerValue16,		"General Purpose #1",	// 16
-	49, EvAttr_ControllerValue16,		"General Purpose #2",	// 17
-	50, EvAttr_ControllerValue16,		"General Purpose #3",	// 18
-	51, EvAttr_ControllerValue16,		"General Purpose #4",	// 19
+	{ 48, EvAttr_ControllerValue16,		"General Purpose #1" },	// 16
+	{ 49, EvAttr_ControllerValue16,		"General Purpose #2" },	// 17
+	{ 50, EvAttr_ControllerValue16,		"General Purpose #3" },	// 18
+	{ 51, EvAttr_ControllerValue16,		"General Purpose #4" },	// 19
 
-	52, EvAttr_ControllerValue16,		"Controller 20",		// 20
-	53, EvAttr_ControllerValue16,		"Controller 21",		// 21
-	54, EvAttr_ControllerValue16,		"Controller 22",		// 22
-	55, EvAttr_ControllerValue16,		"Controller 23",		// 23
+	{ 52, EvAttr_ControllerValue16,		"Controller 20"	},		// 20
+	{ 53, EvAttr_ControllerValue16,		"Controller 21"	},		// 21
+	{ 54, EvAttr_ControllerValue16,		"Controller 22" },		// 22
+	{ 55, EvAttr_ControllerValue16,		"Controller 23" },		// 23
 
-	56, EvAttr_ControllerValue16,		"Controller 24",		// 24
-	57, EvAttr_ControllerValue16,		"Controller 25",		// 25
-	58, EvAttr_ControllerValue16,		"Controller 26",		// 26
-	59, EvAttr_ControllerValue16,		"Controller 27",		// 27
+	{ 56, EvAttr_ControllerValue16,		"Controller 24" },		// 24
+	{ 57, EvAttr_ControllerValue16,		"Controller 25" },		// 25
+	{ 58, EvAttr_ControllerValue16,		"Controller 26" },		// 26
+	{ 59, EvAttr_ControllerValue16,		"Controller 27" },		// 27
 
-	60, EvAttr_ControllerValue16,		"Controller 28",		// 28
-	61, EvAttr_ControllerValue16,		"Controller 29",		// 29
-	62, EvAttr_ControllerValue16,		"Controller 30",		// 30
-	63, EvAttr_ControllerValue16,		"Controller 31",		// 31
+	{ 60, EvAttr_ControllerValue16,		"Controller 28" },		// 28
+	{ 61, EvAttr_ControllerValue16,		"Controller 29" },		// 29
+	{ 62, EvAttr_ControllerValue16,		"Controller 30" },		// 30
+	{ 63, EvAttr_ControllerValue16,		"Controller 31" },		// 31
 	
-	255,EvAttr_BankSelect,			"Bank Select LSB",		// 32
-	255,EvAttr_Modulation,			"Modulation wheel LSB",	// 33
-	255,EvAttr_BreathController,		"Breath Controller LSB",	// 34
-	255,EvAttr_ControllerValue16,	"Controller 3 LSB",		// 35
+	{ 255,EvAttr_BankSelect,			"Bank Select LSB"		},	// 32
+	{ 255,EvAttr_Modulation,			"Modulation wheel LSB"	},	// 33
+	{ 255,EvAttr_BreathController,		"Breath Controller LSB"	},	// 34
+	{ 255,EvAttr_ControllerValue16,		"Controller 3 LSB"		},	// 35
 
-	255,EvAttr_FootController,		"Foot Controller LSB",	// 36
-	255,EvAttr_PortamentoTime,		"Portamento Time LSB",	// 37
-	255,EvAttr_DataEntry,			"Data Entry LSB",		// 38
-	255,EvAttr_ChannelVolume,		"Channel Volume LSB",	// 39
+	{ 255,EvAttr_FootController,		"Foot Controller LSB"	},	// 36
+	{ 255,EvAttr_PortamentoTime,		"Portamento Time LSB"	},	// 37
+	{ 255,EvAttr_DataEntry,				"Data Entry LSB"		},	// 38
+	{ 255,EvAttr_ChannelVolume,			"Channel Volume LSB"	},	// 39
 
-	255,EvAttr_Balance,			"Balance LSB",			// 40
-	255,EvAttr_ControllerValue16,	"Controller 9 LSB",		// 41
-	255,EvAttr_Pan,				"Pan LSB",			// 42
-	255,EvAttr_ExpressionCtl,		"Expression Ctl. LSB",	// 43
+	{ 255,EvAttr_Balance,				"Balance LSB"			},	// 40
+	{ 255,EvAttr_ControllerValue16,		"Controller 9 LSB"		},	// 41
+	{ 255,EvAttr_Pan,					"Pan LSB"				},	// 42
+	{ 255,EvAttr_ExpressionCtl,			"Expression Ctl. LSB"	},	// 43
 
-	255,EvAttr_ControllerValue16,	"Effect Control 1 LSB",	// 44
-	255,EvAttr_ControllerValue16,	"Effect Control 2 LSB",	// 45
-	255,EvAttr_ControllerValue16,	"Controller 14 LSB",		// 46
-	255,EvAttr_ControllerValue16,	"Controller 15 LSB",		// 47
+	{ 255,EvAttr_ControllerValue16,		"Effect Control 1 LSB"	},	// 44
+	{ 255,EvAttr_ControllerValue16,		"Effect Control 2 LSB"	},	// 45
+	{ 255,EvAttr_ControllerValue16,		"Controller 14 LSB"		},	// 46
+	{ 255,EvAttr_ControllerValue16,		"Controller 15 LSB"		},	// 47
 
-	255,EvAttr_ControllerValue16,	"General Purpose #1 LSB",// 48
-	255,EvAttr_ControllerValue16,	"General Purpose #2 LSB",// 49
-	255,EvAttr_ControllerValue16,	"General Purpose #3 LSB",// 50
-	255,EvAttr_ControllerValue16,	"General Purpose #4 LSB",// 51
+	{ 255,EvAttr_ControllerValue16,		"General Purpose #1 LSB" },	// 48
+	{ 255,EvAttr_ControllerValue16,		"General Purpose #2 LSB" },	// 49
+	{ 255,EvAttr_ControllerValue16,		"General Purpose #3 LSB" },	// 50
+	{ 255,EvAttr_ControllerValue16,		"General Purpose #4 LSB" },	// 51
 
-	255,EvAttr_ControllerValue16,	"Controller 20 LSB",		// 52
-	255,EvAttr_ControllerValue16,	"Controller 21 LSB",		// 53
-	255,EvAttr_ControllerValue16,	"Controller 22 LSB",		// 54
-	255,EvAttr_ControllerValue16,	"Controller 23 LSB",		// 55
+	{ 255,EvAttr_ControllerValue16,		"Controller 20 LSB" },		// 52
+	{ 255,EvAttr_ControllerValue16,		"Controller 21 LSB" },		// 53
+	{ 255,EvAttr_ControllerValue16,		"Controller 22 LSB" },		// 54
+	{ 255,EvAttr_ControllerValue16,		"Controller 23 LSB" },		// 55
 
-	255,EvAttr_ControllerValue16,	"Controller 24 LSB",		// 56
-	255,EvAttr_ControllerValue16,	"Controller 25 LSB",		// 57
-	255,EvAttr_ControllerValue16,	"Controller 26 LSB",		// 58
-	255,EvAttr_ControllerValue16,	"Controller 27 LSB",		// 59
+	{ 255,EvAttr_ControllerValue16,		"Controller 24 LSB" },		// 56
+	{ 255,EvAttr_ControllerValue16,		"Controller 25 LSB" },		// 57
+	{ 255,EvAttr_ControllerValue16,		"Controller 26 LSB" },		// 58
+	{ 255,EvAttr_ControllerValue16,		"Controller 27 LSB" },		// 59
 
-	255,EvAttr_ControllerValue16,	"Controller 28 LSB",		// 60
-	255,EvAttr_ControllerValue16,	"Controller 29 LSB",		// 61
-	255,EvAttr_ControllerValue16,	"Controller 30 LSB",		// 62
-	255,EvAttr_ControllerValue16,	"Controller 31 LSB",		// 63
+	{ 255,EvAttr_ControllerValue16,		"Controller 28 LSB" },		// 60
+	{ 255,EvAttr_ControllerValue16,		"Controller 29 LSB" },		// 61
+	{ 255,EvAttr_ControllerValue16,		"Controller 30 LSB" },		// 62
+	{ 255,EvAttr_ControllerValue16,		"Controller 31 LSB" },		// 63
 	
-	64, EvAttr_DamperPedal,		"Damper Pedal",		// 64
-	65, EvAttr_PortamentoOnOff,		"Portamento On/Off",	// 65
-	66, EvAttr_Sostenuto,			"Sostenuto",			// 66
-	67, EvAttr_SoftPedal,			"Soft Pedal",			// 67
+	{ 64, EvAttr_DamperPedal,			"Damper Pedal" },			// 64
+	{ 65, EvAttr_PortamentoOnOff,		"Portamento On/Off" },		// 65
+	{ 66, EvAttr_Sostenuto,				"Sostenuto" },				// 66
+	{ 67, EvAttr_SoftPedal,				"Soft Pedal" },				// 67
 
-	68, EvAttr_LegatoFootswitch,		"Legato Footswitch", 	// 68
-	69, EvAttr_Hold2,				"Hold 2",				// 69
-	70, EvAttr_ControllerValue8,		"Sound Controller #1",	// 70
-	71, EvAttr_ControllerValue8,		"Sound Controller #2",	// 71
+	{ 68, EvAttr_LegatoFootswitch,		"Legato Footswitch" },	 	// 68
+	{ 69, EvAttr_Hold2,					"Hold 2" },					// 69
+	{ 70, EvAttr_ControllerValue8,		"Sound Controller #1" },	// 70
+	{ 71, EvAttr_ControllerValue8,		"Sound Controller #2" },	// 71
 
-	72, EvAttr_ControllerValue8,		"Sound Controller #3",	// 72
-	73, EvAttr_ControllerValue8,		"Sound Controller #4",	// 73
-	74, EvAttr_ControllerValue8,		"Sound Controller #5",	// 74
-	75, EvAttr_ControllerValue8,		"Sound Controller #6",	// 75
+	{ 72, EvAttr_ControllerValue8,		"Sound Controller #3" },	// 72
+	{ 73, EvAttr_ControllerValue8,		"Sound Controller #4" },	// 73
+	{ 74, EvAttr_ControllerValue8,		"Sound Controller #5" },	// 74
+	{ 75, EvAttr_ControllerValue8,		"Sound Controller #6" },	// 75
 
-	76, EvAttr_ControllerValue8,		"Sound Controller #7",	// 76
-	77, EvAttr_ControllerValue8,		"Sound Controller #8",	// 77
-	78, EvAttr_ControllerValue8,		"Sound Controller #9",	// 78
-	79, EvAttr_ControllerValue8,		"Sound Controller #10",	// 79
+	{ 76, EvAttr_ControllerValue8,		"Sound Controller #7" },	// 76
+	{ 77, EvAttr_ControllerValue8,		"Sound Controller #8" },	// 77
+	{ 78, EvAttr_ControllerValue8,		"Sound Controller #9" },	// 78
+	{ 79, EvAttr_ControllerValue8,		"Sound Controller #10" },	// 79
 	
-	80, EvAttr_ControllerValue8,		"General Purpose #5",	// 80
-	81, EvAttr_ControllerValue8,		"General Purpose #6",	// 81
-	82, EvAttr_ControllerValue8,		"General Purpose #7",	// 82
-	83, EvAttr_ControllerValue8,		"General Purpose #8",	// 83
+	{ 80, EvAttr_ControllerValue8,		"General Purpose #5" },		// 80
+	{ 81, EvAttr_ControllerValue8,		"General Purpose #6" },		// 81
+	{ 82, EvAttr_ControllerValue8,		"General Purpose #7" },		// 82
+	{ 83, EvAttr_ControllerValue8,		"General Purpose #8" },		// 83
 	
-	84, EvAttr_PortamentoControl,	"Portamento Control",	// 84
-	85, EvAttr_ControllerValue8,		"Controller 85",		// 85
-	86, EvAttr_ControllerValue8,		"Controller 86",		// 86
-	87, EvAttr_ControllerValue8,		"Controller 87",		// 87
+	{ 84, EvAttr_PortamentoControl,		"Portamento Control" },		// 84
+	{ 85, EvAttr_ControllerValue8,		"Controller 85" },			// 85
+	{ 86, EvAttr_ControllerValue8,		"Controller 86" },			// 86
+	{ 87, EvAttr_ControllerValue8,		"Controller 87" },			// 87
 
-	88, EvAttr_ControllerValue8,		"Controller 88",		// 88
-	89, EvAttr_ControllerValue8,		"Controller 89",		// 89
-	90, EvAttr_ControllerValue8,		"Controller 90",		// 90
-	91, EvAttr_EffectsDepth,			"Effects 1 Depth",		// 91
+	{ 88, EvAttr_ControllerValue8,		"Controller 88" },			// 88
+	{ 89, EvAttr_ControllerValue8,		"Controller 89" },			// 89
+	{ 90, EvAttr_ControllerValue8,		"Controller 90" },			// 90
+	{ 91, EvAttr_EffectsDepth,			"Effects 1 Depth" },		// 91
 
-	92, EvAttr_EffectsDepth,			"Effects 2 Depth",		// 92
-	93, EvAttr_EffectsDepth,			"Effects 3 Depth",		// 93
-	94, EvAttr_EffectsDepth,			"Effects 4 Depth",		// 94
-	95, EvAttr_EffectsDepth,			"Effects 5 Depth",		// 95
+	{ 92, EvAttr_EffectsDepth,			"Effects 2 Depth" },		// 92
+	{ 93, EvAttr_EffectsDepth,			"Effects 3 Depth" },		// 93
+	{ 94, EvAttr_EffectsDepth,			"Effects 4 Depth" },		// 94
+	{ 95, EvAttr_EffectsDepth,			"Effects 5 Depth" },		// 95
 
-	96, EvAttr_DataIncrement,		"Data Increment",		// 96
-	97, EvAttr_DataDecrement,		"Data Decrement",		// 97
-	255,EvAttr_ParamNumber,		"Non Reg. Param LSB",	// 98
-	98, EvAttr_ParamNumber,		"Non Registered Param",	// 99
+	{ 96, EvAttr_DataIncrement,			"Data Increment" },			// 96
+	{ 97, EvAttr_DataDecrement,			"Data Decrement" },			// 97
+	{ 255,EvAttr_ParamNumber,			"Non Reg. Param LSB" },		// 98
+	{ 98, EvAttr_ParamNumber,			"Non Registered Param" },	// 99
+	
+	{ 255,EvAttr_ParamNumber,			"Registered Param LSB" },	// 100
+	{ 100,EvAttr_ParamNumber,			"Registered Param" },		// 101
+	{ 102, EvAttr_ControllerValue8,		"Controller 102" },			// 102
+	{ 103, EvAttr_ControllerValue8,		"Controller 103" },			// 103
 
-	255,EvAttr_ParamNumber,		"Registered Param LSB",	// 100
-	100,EvAttr_ParamNumber,		"Registered Param",	// 101
-	102, EvAttr_ControllerValue8,		"Controller 102",		// 102
-	103, EvAttr_ControllerValue8,		"Controller 103",		// 103
+	{ 104, EvAttr_ControllerValue8,		"Controller 104" },		// 104
+	{ 105, EvAttr_ControllerValue8,		"Controller 105" },		// 105
+	{ 106, EvAttr_ControllerValue8,		"Controller 106" },		// 106
+	{ 107, EvAttr_ControllerValue8,		"Controller 107" },		// 107
 
-	104, EvAttr_ControllerValue8,		"Controller 104",		// 104
-	105, EvAttr_ControllerValue8,		"Controller 105",		// 105
-	106, EvAttr_ControllerValue8,		"Controller 106",		// 106
-	107, EvAttr_ControllerValue8,		"Controller 107",		// 107
+	{ 108, EvAttr_ControllerValue8,		"Controller 108" },		// 108
+	{ 109, EvAttr_ControllerValue8,		"Controller 109" },		// 109
+	{ 110, EvAttr_ControllerValue8,		"Controller 110" },		// 110
+	{ 111, EvAttr_ControllerValue8,		"Controller 111" },		// 111
 
-	108, EvAttr_ControllerValue8,		"Controller 108",		// 108
-	109, EvAttr_ControllerValue8,		"Controller 109",		// 109
-	110, EvAttr_ControllerValue8,		"Controller 110",		// 110
-	111, EvAttr_ControllerValue8,		"Controller 111",		// 111
+	{ 112, EvAttr_ControllerValue8,		"Controller 112" },		// 112
+	{ 113, EvAttr_ControllerValue8,		"Controller 113" },		// 113
+	{ 114, EvAttr_ControllerValue8,		"Controller 114" },		// 114
+	{ 115, EvAttr_ControllerValue8,		"Controller 115" },		// 115
 
-	112, EvAttr_ControllerValue8,		"Controller 112",		// 112
-	113, EvAttr_ControllerValue8,		"Controller 113",		// 113
-	114, EvAttr_ControllerValue8,		"Controller 114",		// 114
-	115, EvAttr_ControllerValue8,		"Controller 115",		// 115
+	{ 116, EvAttr_ControllerValue8,		"Controller 116" },		// 116
+	{ 117, EvAttr_ControllerValue8,		"Controller 117" },		// 117
+	{ 118, EvAttr_ControllerValue8,		"Controller 118" },		// 118
+	{ 119, EvAttr_ControllerValue8,		"Controller 119" },		// 119
 
-	116, EvAttr_ControllerValue8,		"Controller 116",		// 116
-	117, EvAttr_ControllerValue8,		"Controller 117",		// 117
-	118, EvAttr_ControllerValue8,		"Controller 118",		// 118
-	119, EvAttr_ControllerValue8,		"Controller 119",		// 119
-
-	120, EvAttr_None,				"All Sound Off",		// 120
-	121, EvAttr_None,				"Reset All Controllers",	// 121
-	122, EvAttr_LocalControl,		"Local Control",		// 122
-	123, EvAttr_None,				"All Notes Off",			// 123
-
-	124, EvAttr_None,				"Omni Mode Off",		// 124
-	125, EvAttr_None,				"Omni Mode On",		// 125
-	126, EvAttr_MonoNumChannels,	"Mono Mode On",		// 126
-	127, EvAttr_None,				"Poly Mode On",		// 127
+	{ 120, EvAttr_None,					"All Sound Off" },		// 120
+	{ 121, EvAttr_None,					"Reset All Controllers" },	// 121
+	{ 122, EvAttr_LocalControl,			"Local Control" },		// 122
+	{ 123, EvAttr_None,					"All Notes Off" },		// 123
+	
+	{ 124, EvAttr_None,					"Omni Mode Off" },		// 124
+	{ 125, EvAttr_None,					"Omni Mode On" },		// 125
+	{ 126, EvAttr_MonoNumChannels,		"Mono Mode On" },		// 126
+	{ 127, EvAttr_None,					"Poly Mode On" }, 		// 127
 };
 

@@ -77,7 +77,7 @@ public:							// Constructor/Destructor
 									const char *label,
 									BMessage *message,
 									char shortcutKey,
-									char *shortcutLabel);
+									const char *shortcutLabel);
 
 public:							// BMenuItem Implementation
 

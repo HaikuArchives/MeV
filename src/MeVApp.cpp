@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-static bool ReadWindowState( BMessage &msg, char *prefsName, CWindowState &ioState, bool defaultOpen )
+static bool ReadWindowState( BMessage &msg, const char *prefsName, CWindowState &ioState, bool defaultOpen )
 {
 	BPoint		p;
 	bool			b;
@@ -89,7 +89,7 @@ static bool ReadWindowState( BMessage &msg, char *prefsName, CWindowState &ioSta
 	else return defaultOpen;
 }
 
-static void WriteWindowState( BMessage &msg, char *prefsName, CWindowState &wState )
+static void WriteWindowState( BMessage &msg, const char *prefsName, CWindowState &wState )
 {
 	char			oName[ 48 ];
 
@@ -811,7 +811,7 @@ CMeVApp::NewDocument(
 		status_t error = file.InitCheck();
 		if (error)
 		{
-			char *msg;
+			const char *msg;
 			switch (error)
 			{
 				case B_BAD_VALUE:

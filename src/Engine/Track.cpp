@@ -26,7 +26,7 @@ CTrack::CTrack(
 	CMeVDoc &inDoc,
 	TClockType &cType,
 	int32 inID,
-	char *name)
+	const char *name)
 	:	lastEventTime(0),
 		logicalLength(0),
 		clockType(cType),

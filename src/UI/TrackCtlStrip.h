@@ -55,7 +55,7 @@ public:							// Constructor/Destructor
 									CStripFrameView &frame,
 									BRect rect,
 									CEventTrack *track,
-									char *name = "Part");
+									const char *name = "Part");
 
 	virtual						~CTrackCtlStrip();
 

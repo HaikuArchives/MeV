@@ -48,14 +48,14 @@ public:
 		return 2;
 	}
 
-	/*const*/ char *GetFieldStringData( int32 inIndex )
+	const char *GetFieldStringData( int32 inIndex )
 	{
 		if (inIndex == 2)
 		{
-			if (op->Name()) return (char *)op->Name();
-			else return (char *)op->UndoDescription();
+			if (op->Name()) return op->Name();
+			else return op->UndoDescription();
 		}
-		else if (inIndex == 3) return (char *)op->CreatorName();
+		else if (inIndex == 3) return op->CreatorName();
 
 		return NULL;
 	}

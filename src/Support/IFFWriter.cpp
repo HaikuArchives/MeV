@@ -75,7 +75,7 @@ bool CIFFWriter::Pop()
 			// Write pad byte at end of chunk
 		if ((currentLength & 1) && !m_allowOddLengthChunks)
 		{
-			writer.MustWrite( (void *)"\0",  1 );
+			writer.MustWrite( (const void *)"\0",  1 );
 			pos ++;
 			currentLength++;
 		}
@@ -88,7 +88,7 @@ bool CIFFWriter::Pop()
 		{
 			int32	len = MIN( 16, idealLength - currentLength );
 
-			writer.MustWrite( (void *)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",  len );
+			writer.MustWrite( (const void *)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",  len );
 			pos += len;
 			currentLength += len;
 		}
@@ -152,7 +152,7 @@ bool CIFFWriter::WriteChunk( int32 chunkID, const void *buffer, int32 length )
 	if ((length & 1) && !m_allowOddLengthChunks)
 	{
 		length++;
-		writer.MustWrite( (void *)"\0", 1 );
+		writer.MustWrite( (const void *)"\0", 1 );
 	}
 	pos += length + 8;
 	return true;

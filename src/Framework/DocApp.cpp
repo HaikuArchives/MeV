@@ -81,7 +81,7 @@ CDocApp::RemoveDocument(
 
 void
 CDocApp::Error(
-	char *errorMsg)
+	const char *errorMsg)
 {
 	BAlert *alert;
 	alert = new BAlert(NULL, errorMsg, "OK", NULL, NULL,

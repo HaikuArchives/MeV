@@ -88,7 +88,7 @@ public:							// Operations
 
 	/**	Global error message function.	*/
 	static void					Error(
-									char *errorMsg);
+									const char *errorMsg);
 
 public:							// BApplication Implementation
 

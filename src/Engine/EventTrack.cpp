@@ -21,7 +21,7 @@ CEventTrack::CEventTrack(
 	CMeVDoc &inDoc,
 	TClockType cType,
 	int32 inID,
-	char *inName)
+	const char *inName)
 	: CTrack(inDoc, cType, inID, inName)
 {
 	StSubjectLock		lock( *this, Lock_Exclusive );

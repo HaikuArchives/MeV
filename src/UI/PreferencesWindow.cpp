@@ -127,7 +127,7 @@ CPreferencesWindow::MessageReceived(
 
 BView *
 CPreferencesWindow::AddPanel(
-	char *name)
+	const char *name)
 {
 	BRect r(m_bgView->Frame());
 
@@ -209,8 +209,8 @@ CPreferencesWindow::WritePrefs()
 void
 CPreferencesWindow::AddFeedbackPanel()
 {
-	static char	*labels[] = {"Note Pitch", "Note Velocity",
-							 "Program Change", "Controller Value"};
+	static const char	*labels[] = {"Note Pitch", "Note Velocity",
+									 "Program Change", "Controller Value"};
 
 	float y = 20.0;
 

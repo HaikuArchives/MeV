@@ -106,7 +106,7 @@ public:
 		/**	Constructor */
 	CTextSlider(	BRect 		inFrame,
 				BMessage		*inMessage,
-				char			*inName,
+				const char		*inName,
 				uint32		inResizingMode = B_FOLLOW_LEFT | B_FOLLOW_RIGHT,
 				uint32		inFlags = B_WILL_DRAW );
 	~CTextSlider();

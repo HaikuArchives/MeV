@@ -119,7 +119,7 @@ public:							// Constructor/Destructor
 									CMeVDoc &doc,
 									TClockType &cType,
 									int32 inID = -1,
-									char *inName = NULL);
+									const char *inName = NULL);
 
 	/** Destructor */
 								~CTrack();

@@ -252,7 +252,7 @@ struct ControllerInfo {
 		// If it is a single byte controller, it will be the number of the controller itself.
 	uint8			LSBNumber;
 	uint8			attrID;					// Event attribute ID for this controller
-	char			*controllerName;		// string name of the controller
+	const char		*controllerName;		// string name of the controller
 };
 
 	// A table of information about controllers
@@ -280,7 +280,7 @@ class Event {
 
 		// Static tables for calculating event properties
 	static unsigned char		propTable[];
-	static char				*nameTable[];
+	static const char			*nameTable[];
 
 		// Some events require a variable amount of data. The extra data
 		// is store in this structure.
@@ -314,7 +314,7 @@ class Event {
 		}
 	};
 
-	static void DefineEvent( enum E_EventType type, char *name, int32 properties );
+	static void DefineEvent( enum E_EventType type, const char *name, int32 properties );
 
 public:
 
@@ -708,8 +708,8 @@ public:
 		{ return (propTable[ Command() ] & inPropertyMask) != 0; }
 
 		// Event name query function
-	char *NameText() const { return nameTable[ Command() ]; }
-	static char *NameText( int inCommand ) { return nameTable[ inCommand ]; }
+	const char *NameText() const { return nameTable[ Command() ]; }
+	static const char *NameText( int inCommand ) { return nameTable[ inCommand ]; }
 
 		// Functions dealing with extra data
 	size_t ExtendedDataSize() const
@@ -810,7 +810,7 @@ typedef const Event	*ConstEventPtr;
 class UEventAttributeTable {
 
 	struct EvAttr {
-		char			*name;				// name of attribute
+		const char	*name;				// name of attribute
 		int32		offset;				// 0-based, 1-based, etc.
 		int32		minVal,				// minimum legal value (w/o offset)
 					maxVal;				// maximum legal value (w/o offset)
@@ -820,7 +820,7 @@ class UEventAttributeTable {
 
 public:
 		/**	Returns the ascii name of the attribute */
-	static char *Name( enum E_EventAttribute inAttr )
+	static const char *Name( enum E_EventAttribute inAttr )
 	{
 		return attrTable[ (int)inAttr ].name;
 	}

@@ -70,7 +70,7 @@ public:							// Constructor/Destructor
 									CMeVDoc &doc,
 									TClockType clockType,
 									int32 id,
-									char *name);
+									const char *name);
 
 public:							// Accessors
 

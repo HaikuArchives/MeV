@@ -19,7 +19,7 @@ CQuickKeyMenuItem::CQuickKeyMenuItem(
 	const char *label,
 	BMessage *message,
 	char shortcutKey,
-	char *shortcutLabel)
+	const char *shortcutLabel)
 	:	BMenuItem(label, message, 0, 0),
 		m_shortcutKey(shortcutKey),
 		m_shortcutLabel(shortcutLabel)

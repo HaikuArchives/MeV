@@ -59,11 +59,11 @@ protected:
 					useHighlight,
 					selectable,
 					draggable;
-	char				*title;
+	const char			*title;
 	alignment		align;
 	
 	int32 Justify( int32 totalWidth, int32 contentWidth );
-	void DrawString( BView *drawView, BRect bounds, char *str );
+	void DrawString( BView *drawView, BRect bounds, const char *str );
 
 protected:
 
@@ -79,7 +79,7 @@ public:
 	CColumnField(	CMultiColumnListView	&inList,
 					int32				inMinWidth,
 					int32				inElasticity,
-					char					*inTitle );
+					const char				*inTitle );
 
 		/**	Change the justification of this columns contents. */					
 	void SetAlignment( alignment inAlign ) { align = inAlign; }
@@ -106,7 +106,7 @@ public:
 	CNumericColumnField(	CMultiColumnListView	&inList,
 						int32				inBaseWidth,
 						int32				inElasticity,
-						char					*inTitle )
+						const char				*inTitle )
 		: CColumnField( inList, inBaseWidth, inElasticity, inTitle ) {}
 };
 
@@ -125,7 +125,7 @@ public:
 	CStringColumnField(	CMultiColumnListView	&inList,
 						int32				inBaseWidth,
 						int32				inElasticity,
-						char					*inTitle )
+						const char				*inTitle )
 		: CColumnField( inList, inBaseWidth, inElasticity, inTitle ) {}
 };
 
@@ -145,7 +145,7 @@ public:
 	CCheckmarkColumnField(	CMultiColumnListView	&inList,
 							int32				inBaseWidth,
 							int32				inElasticity,
-							char					*inTitle )
+							const char				*inTitle )
 		: CColumnField( inList, inBaseWidth, inElasticity, inTitle )
 	{
 		selectable = false;
@@ -167,7 +167,7 @@ public:
 	CColorSwatchColumnField(	CMultiColumnListView	&inList,
 							int32				inBaseWidth,
 							int32				inElasticity,
-							char					*inTitle )
+							const char				*inTitle )
 		: CColumnField( inList, inBaseWidth, inElasticity, inTitle ) {}
 };
 
@@ -199,7 +199,7 @@ public:
 	virtual int32 GetFieldIntData( int32 inIndex ) { return 0; }
 	
 		/**	Get the string value of the Nth field. */
-	virtual char *GetFieldStringData( int32 inIndex ) { return NULL; }
+	virtual const char *GetFieldStringData( int32 inIndex ) { return NULL; }
 	
 		/**	Get the binary pointer value of the Nth field. */
 	virtual void *GetFieldData( int32 inIndex ) { return NULL; }

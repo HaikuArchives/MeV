@@ -411,8 +411,8 @@ CMidiDestination::_createIcon(
 		contrast.green = (Color().green + 128) % 255;
 		contrast.blue = (Color().blue + 128) % 255;
 		iconView->SetLowColor(contrast);
-		pattern mixedColors = { 0xf0, 0xf0, 0xf0, 0xf0,
-								0x0f, 0x0f, 0x0f, 0x0f };
+		pattern mixedColors = { { 0xf0, 0xf0, 0xf0, 0xf0,
+								  0x0f, 0x0f, 0x0f, 0x0f } };
 		iconView->FillEllipse(r, mixedColors);
 	}
 	else

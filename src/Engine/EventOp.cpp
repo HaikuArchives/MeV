@@ -8,7 +8,7 @@
 #include "StdEventOps.h"
 #include "MathUtils.h"
 #include <stdio.h>
-#pragma export on
+
 EventOp::EventOp( MeVPlugIn *inCreator )
 {
 	creator = inCreator;
@@ -18,7 +18,6 @@ const char *EventOp::CreatorName() const
 {
 	return creator ? creator->Name() : "MeV";
 }
-#pragma export off
 
 // ---------------------------------------------------------------------------
 // A null operation

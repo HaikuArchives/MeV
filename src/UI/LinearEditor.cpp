@@ -473,8 +473,8 @@ CLinearNoteEventRenderer::DISABLED_BORDER_COLOR = {128, 128, 128, 255};
 const rgb_color
 CLinearNoteEventRenderer::DISABLED_FILL_COLOR = {192, 192, 192, 255};
 const pattern
-CLinearNoteEventRenderer::MIXED_COLORS = { 0xf0, 0xf0, 0xf0, 0xf0, 
-										  0x0f, 0x0f, 0x0f, 0x0f };
+CLinearNoteEventRenderer::MIXED_COLORS = { { 0xf0, 0xf0, 0xf0, 0xf0, 
+										     0x0f, 0x0f, 0x0f, 0x0f } };
 
 // ---------------------------------------------------------------------------
 // CAbstractEventRenderer Implementation

@@ -27,7 +27,7 @@ void CTextDisplay::Draw( BRect updateRect )
 
 	if (text)
 	{
-		int32	length = StringWidth( text ),
+		float	length = StringWidth( text ),
 				x;
 
 		GetFontHeight( &fh );

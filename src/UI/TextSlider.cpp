@@ -24,7 +24,7 @@ inline const int32 CLAMP( const int32 a, const int32 b, const int32 c )
 CTextSlider::CTextSlider(
 	BRect 		inFrame,
 	BMessage		*inMessage,
-	char			*inName,
+	const char		*inName,
 	uint32		inResizingMode,
 	uint32		inFlags )
 	: BControl( inFrame, inName, NULL, inMessage, inResizingMode, inFlags )
@@ -111,7 +111,7 @@ void CTextSlider::DrawContents( const BRect &inContentRect )
 	GetFontHeight( &fh );
 
 	if (textHook) textHook->FormatText( text, currentVal, sizeof text );
-	else sprintf( text, "%d", currentVal );
+	else sprintf( text, "%ld", currentVal );
 	
 	x = inContentRect.left + (inContentRect.Width() - StringWidth( text )) / 2 + 1;
 

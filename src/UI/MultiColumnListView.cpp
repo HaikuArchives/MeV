@@ -511,7 +511,7 @@ void CMultiColumnListItem::DrawItem(
 CColumnField::CColumnField(	CMultiColumnListView	&inList,
 							int32				inMinWidth,
 							int32				inElasticity,
-							char					*inTitle )
+							const char				*inTitle )
 	: list( inList )
 {
 	title		= inTitle;
@@ -538,7 +538,7 @@ int32 CColumnField::Justify( int32 totalWidth, int32 contentWidth )
 	return 0;
 }
 
-void CColumnField::DrawString( BView *drawView, BRect bounds, char *str )
+void CColumnField::DrawString( BView *drawView, BRect bounds, const char *str )
 {
 	if (str != NULL)
 	{

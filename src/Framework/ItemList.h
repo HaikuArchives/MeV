@@ -211,7 +211,7 @@ private:
 	uint8			array[ cnt * sizeof( K ) ];		// Array of items in the block
 
 protected:
-	const K *ItemAddress( int num ) const { return (K *)&array[ num * sizeof( K ) ]; }
+	const K *ItemAddress( int num ) const { return (const K *)&array[ num * sizeof( K ) ]; }
 
 	ItemBlock *Next() const { return (ItemBlock *)ItemBlock_Base::Next(); }
 	ItemBlock *Prev() const { return (ItemBlock *)ItemBlock_Base::Prev(); }

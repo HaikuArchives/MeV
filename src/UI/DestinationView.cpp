@@ -249,7 +249,7 @@ CDestinationView::MessageReceived(
 			ssize_t size;
 			if (message->FindData("color", B_RGB_COLOR_TYPE, &data, &size) != B_OK)
 				return;
-			rgb_color *color = (rgb_color *)data;
+			const rgb_color *color = (const rgb_color *)data;
 			Destination()->SetColor(*color);
 			m_colorWell->SetColor(*color);
 			m_colorWell->Invalidate();
