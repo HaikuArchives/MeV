@@ -60,8 +60,7 @@ CAssemblyWindow::CAssemblyWindow(
 	stripFrame->AddType("Metered");
 	stripFrame->AddType("Real");
 
-	AddStrip("Metered", 0.7);
-	AddStrip("Real", 0.3);
+	AddStrip("Metered", 1.0);
 	stripFrame->PackStrips();
 
 	SetNewEventType(EvtType_Sequence);
@@ -390,13 +389,13 @@ CAssemblyWindow::AddMenuBar()
 	menu = new BMenu("Window");
 	menu->AddItem(new BMenuItem("New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
 	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Show Tracks Window",
+	menu->AddItem(new BMenuItem("Show Tracks",
 								new BMessage(MENU_TRACKLIST), 'L'));
-	menu->AddItem(new BMenuItem("Show Event Inspector",
+	menu->AddItem(new BMenuItem("Show Inspector",
 								new BMessage(MENU_INSPECTOR), 'I'));
-	menu->AddItem(new BMenuItem("Show Grid Window",
+	menu->AddItem(new BMenuItem("Show Grid",
 								new BMessage(MENU_GRIDWINDOW), 'G'));
-	menu->AddItem(new BMenuItem("Show Transport Controls",
+	menu->AddItem(new BMenuItem("Show Transport",
 								new BMessage(MENU_TRANSPORT), 'T'));
 	menu->AddSeparatorItem();
 	SetWindowMenu(menu);

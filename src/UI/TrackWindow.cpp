@@ -601,8 +601,8 @@ CTrackWindow::CreateFileMenu(
 	menu->AddItem(new BMenuItem("Import...", new BMessage(MENU_IMPORT)));
 	menu->AddItem(new BMenuItem(submenu));
 	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS)));
 	menu->AddItem(new BMenuItem("About MeV...", new BMessage(MENU_ABOUT), 0));
-	menu->AddItem(new BMenuItem("Preferences..", new BMessage(MENU_PROGRAM_SETTINGS), 'P'));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Quit", new BMessage(MENU_QUIT), 'Q'));
 	menus->AddItem(menu);
