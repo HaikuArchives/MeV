@@ -9,6 +9,7 @@
 #include "TimeIntervalControl.h"
 
 // Support Kit
+#include <Autolock.h>
 #include <Debug.h>
 
 // ---------------------------------------------------------------------------
@@ -114,6 +115,8 @@ void
 CGridWindow::WatchTrack(
 	CEventTrack *track)
 {
+	BAutolock lock(this);
+
 	if (track != m_track)
 	{
 		if (m_track != NULL)

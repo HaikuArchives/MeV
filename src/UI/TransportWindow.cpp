@@ -21,6 +21,7 @@
 // Interface Kit
 #include <StringView.h>
 // Support Kit
+#include <Autolock.h>
 #include <Debug.h>
 
 enum {
@@ -277,27 +278,25 @@ void
 CTransportWindow::WatchTrack(
 	CEventTrack *track)
 {
-	if (Lock())
+	BAutolock lock(this);
+
+	if (track != m_track)
 	{
-		if (track != m_track)
+		if (m_track)
+			m_track->RemoveObserver(this);
+
+		CMeVDoc *oldDoc = m_document;
+		m_track = track;
+
+		m_document = track ? &track->Document() : NULL;
+		if (m_document != oldDoc)
 		{
-			if (m_track)
-				m_track->RemoveObserver(this);
-
-			CMeVDoc *oldDoc = m_document;
-			m_track = track;
-
-			m_document = track ? &track->Document() : NULL;
-			if (m_document != oldDoc)
-			{
-				if (oldDoc != NULL)
-					oldDoc->RemoveObserver(this);
-				SetButtons();
-			}
-
-			m_track->AddObserver(this);
+			if (oldDoc != NULL)
+				oldDoc->RemoveObserver(this);
+			SetButtons();
 		}
-		Unlock();
+
+		m_track->AddObserver(this);
 	}
 }
 

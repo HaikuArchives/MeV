@@ -20,6 +20,7 @@
 // Interface Kit
 #include <StringView.h>
 // Support Kit
+#include <Autolock.h>
 #include <Debug.h>
 
 // ---------------------------------------------------------------------------
@@ -269,6 +270,8 @@ void
 CInspectorWindow::WatchTrack(
 	CEventTrack *track)
 {
+	BAutolock lock(this);
+
 	if (track != m_track)
 	{
 		if (m_track)
