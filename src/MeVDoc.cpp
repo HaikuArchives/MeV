@@ -351,8 +351,14 @@ CMeVDoc::ShowWindowFor(
 			window->ImportSettings(settings);
 	}
 
-	window->Show();
-	window->Activate();
+	if (window->Lock())
+	{
+		if (window->IsHidden())
+			window->Show();
+		else
+			window->Activate();
+		window->Unlock();
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -649,8 +655,6 @@ CMeVDoc::SaveDocument()
 	iffWriter << (long)FMasterMeteredTrack;
 	m_masterMeterTrack->WriteTrack(iffWriter);
 	iffWriter.Pop();
-
-	// REM: Save AssemblyWindow settings
 
 	for (int i = 0; i < CountTracks(); i++)
 	{
