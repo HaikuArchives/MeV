@@ -47,13 +47,15 @@ bool CIFFWriter::Push( int32 chunkID, int32 length )
 	stack = newState;
 	
 		// Write out the header, and keep track of file position.
-	chunkHeader[ 0 ] = chunkID; //HToNL( chunkID );
-	chunkHeader[ 1 ] = length; //HToNL( length );
+	chunkHeader[ 0 ] = htonl( chunkID );
+	chunkHeader[ 1 ] = htonl( length );
 	writer.MustWrite( chunkHeader, 8 );
 	pos += 8;
 	
 		// Calculate the limit beyond which we cannot write without exceeding constraints
 	CalcLimit();
+
+	return true;
 }
 
 bool CIFFWriter::Pop()
@@ -68,7 +70,7 @@ bool CIFFWriter::Pop()
 	{
 			// Go back and fix chunk length in chunk header.
 		writer.Seek( stack->startPos - 4 );
-		int32	len = currentLength; //HToNL( currentLength );
+		int32	len = htonl( currentLength );
 		writer.MustWrite( &len, 4 );
 		
 			// Seek to current file position.
@@ -147,8 +149,8 @@ bool CIFFWriter::WriteChunk( int32 chunkID, void *buffer, int32 length )
 	if (length + 8 > limit - pos) return false;
 
 		// Write out the header and entire chunk body. Don't bother to push/pop.
-	chunkHeader[ 0 ] = chunkID; //HToNL( chunkID );
-	chunkHeader[ 1 ] = length; //HToNL( length );
+	chunkHeader[ 0 ] = htonl( chunkID );
+	chunkHeader[ 1 ] = htonl( length );
 	writer.MustWrite( chunkHeader, 8 );
 	writer.MustWrite( buffer, length );
 	if (length & 1)

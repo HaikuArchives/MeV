@@ -1,15 +1,48 @@
 /* ===================================================================== *
- * Sylvan Technical Arts Class Library, Copyright © 1997 Talin.
- * Writer.h -- Defines abstract base for writer classes.
+ * Reader.h (MeV/Support)
  * ---------------------------------------------------------------------
- * $NoKeywords: $
+ * License:
+ *  The contents of this file are subject to the Mozilla Public
+ *  License Version 1.1 (the "License"); you may not use this file
+ *  except in compliance with the License. You may obtain a copy of
+ *  the License at http://www.mozilla.org/MPL/
+ *
+ *  Software distributed under the License is distributed on an "AS
+ *  IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ *  implied. See the License for the specific language governing
+ *  rights and limitations under the License.
+ *
+ *  The Original Code is MeV (Musical Environment) code.
+ *
+ *  The Initial Developer of the Original Code is Sylvan Technical 
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  Technical Arts. All Rights Reserved.
+ *
+ *  Contributor(s): 
+ *		Curt Malouin (malouin)
+ *
+ * ---------------------------------------------------------------------
+ * Purpose:
+ *  Defines abstract base for writer classes.
+ * ---------------------------------------------------------------------
+ * History:
+ *	1997		Talin
+ *		Original implementation
+ *	05/15/2000	malouin
+ *		Updated byte-swapping code, fixed bugs, and cleaned up warnings
+ * ---------------------------------------------------------------------
+ * To Do:
+ *
  * ===================================================================== */
- 
+  
 #ifndef WRITER_H
 #define WRITER_H
 
 // Kernel Kit
 #include <OS.h>
+
+// Support Kit
+#include <ByteOrder.h>
 
 	/**	An abstract class representing a writeable stream of bytes.
 		You make subclasses for files, strings, packets, etc.
@@ -55,8 +88,9 @@ public:
 		*/
 	void MustWriteInt16( int16 inValue )
 	{
-#if _LITTLE_ENDIAN
-		if (convertByteOrder) inValue = SwapByteOrder( (uint16)inValue );
+#if __LITTLE_ENDIAN
+		if (convertByteOrder)
+			inValue = htons( inValue );
 #endif
 		MustWrite( &inValue, sizeof inValue );
 	}
@@ -66,8 +100,9 @@ public:
 		*/
 	void MustWriteInt32( int32 inValue )
 	{
-#if _LITTLE_ENDIAN
-		if (convertByteOrder) inValue = SwapByteOrder( (uint32)inValue );
+#if __LITTLE_ENDIAN
+		if (convertByteOrder)
+			inValue = htonl( inValue );
 #endif
 		MustWrite( &inValue, sizeof inValue );
 	}
@@ -75,7 +110,7 @@ public:
 private:
 	void MustSwapAndWrite( void *ptr, long bytes )
 	{
-#if _LITTLE_ENDIAN
+#if __LITTLE_ENDIAN
 		if (convertByteOrder)
 		{
 			for (int i = 0, j = bytes - 1; i < j; i++, j--)
@@ -126,8 +161,8 @@ public:
 	/**	A Writer which writes to a fixed array of bytes. */
 class CFixedByteArrayWriter : public CAbstractWriter {
 	uint8			*byteArray;
-	int32			pos;
-	int32			len;
+	uint32			pos;
+	uint32			len;
 
 public:
 
@@ -142,7 +177,8 @@ public:
 		/**	Main writing function. */
 	bool Write( void *buffer, int32 inLength )
 	{
-		if (inLength > len - pos) return false;
+		if (inLength < 0 || uint32(inLength) > len - pos)
+			return false;
 
 		memcpy( &byteArray[ pos ], buffer, inLength );
 		pos += inLength;
@@ -157,7 +193,8 @@ public:
 		*/
 	bool Seek( uint32 inFilePos )
 	{
-		if (inFilePos < 0 || inFilePos > len) return false;
+		if (inFilePos > len)
+			return false;
 		pos = inFilePos;
 		return true;
 	}
@@ -166,42 +203,41 @@ public:
 	/**	A Writer which writes to a dynamic array of bytes. */
 class CDynamicByteArrayWriter {
 	uint8			*byteArray;
-	int32			pos;
-	int32			len;
+	uint32			pos;
+	uint32			len;
 
 public:
 
 		/**	Constructor. */
-	CDynamicByteArrayWriter( int32 inInitialLen = 0 )
+	CDynamicByteArrayWriter( uint32 inInitialLen = 0 )
 	{
 		pos = 0;
 
 		if (inInitialLen > 0)
-		{
 			byteArray = new uint8[ inInitialLen ];
-			len = inInitialLen;
-		}
+		else
+			byteArray = NULL;
 
-		byteArray = NULL;
 		len = inInitialLen;
 	}
 	
 		/** Destructor. Deletes the internal array of data. */
-	~CDynamicByteArrayWriter() { delete byteArray; }
+	~CDynamicByteArrayWriter() { delete[] byteArray; }
 
 		/**	Main writing function. */
 	bool Write( void *buffer, int32 inLength )
 	{
-		if (inLength > len - pos)
+		if (inLength < 0)
+		{
+			return false;
+		}
+		else if (uint32(inLength) > len - pos)
 		{
 			int32	newSize = len + len / 4 + 256;
 			uint8	*newBuf = new uint8[ newSize ];
 			
-			if (newBuf)
-			{
-				memcpy( newBuf, byteArray, len );
-				delete byteArray;
-			}
+			memcpy( newBuf, byteArray, len );
+			delete[] byteArray;
 			byteArray = newBuf;
 			len = newSize;
 		}
@@ -219,7 +255,8 @@ public:
 		*/
 	bool Seek( uint32 inFilePos )
 	{
-		if (inFilePos < 0 || inFilePos > len) return false;
+		if (inFilePos > len)
+			return false;
 		pos = inFilePos;
 		return true;
 	}

@@ -87,8 +87,8 @@ bool CIFFReader::NextChunk()
 	reader.MustRead( chunkHeader, 8 );
 	pos += 8;
 	
-	stack->id = chunkHeader[ 0 ]; //NToHL( chunkHeader[ 0 ] );
-	stack->size = chunkHeader[ 1 ]; //NToHL( chunkHeader[ 1 ] );
+	stack->id = ntohl( chunkHeader[ 0 ] );
+	stack->size = ntohl( chunkHeader[ 1 ]);
 	stack->filePos = pos;
 	stack->subID = 0;
 	
@@ -98,7 +98,7 @@ bool CIFFReader::NextChunk()
 	
 		reader.MustRead( &id, 4 );
 		pos += 4;
-		stack->subID = id; //NToHL( id );
+		stack->subID = ntohl( id );
 	}
 	return true;
 }
@@ -158,8 +158,8 @@ uint32 CIFFReader::Skip( uint32 length )
 
 bool CIFFReader::Seek( uint32 inFilePos )
 {
-	if (inFilePos < 0) inFilePos = 0;
-	if (inFilePos > stack->size) inFilePos = stack->size;
+	if (inFilePos > uint32(stack->size))
+		inFilePos = stack->size;
 	
 	inFilePos += stack->filePos;
 	if (reader.Seek( inFilePos ) == false) return false;

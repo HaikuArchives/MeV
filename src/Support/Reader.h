@@ -1,8 +1,38 @@
 /* ===================================================================== *
- * Sylvan Technical Arts Class Library, Copyright © 1997 Talin.
- * Reader.h -- Defines abstract base for reader classes.
+ * Reader.h (MeV/Support)
  * ---------------------------------------------------------------------
- * $NoKeywords: $
+ * License:
+ *  The contents of this file are subject to the Mozilla Public
+ *  License Version 1.1 (the "License"); you may not use this file
+ *  except in compliance with the License. You may obtain a copy of
+ *  the License at http://www.mozilla.org/MPL/
+ *
+ *  Software distributed under the License is distributed on an "AS
+ *  IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ *  implied. See the License for the specific language governing
+ *  rights and limitations under the License.
+ *
+ *  The Original Code is MeV (Musical Environment) code.
+ *
+ *  The Initial Developer of the Original Code is Sylvan Technical 
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  Technical Arts. All Rights Reserved.
+ *
+ *  Contributor(s): 
+ *		Curt Malouin (malouin)
+ *
+ * ---------------------------------------------------------------------
+ * Purpose:
+ *  Defines abstract base for reader classes.
+ * ---------------------------------------------------------------------
+ * History:
+ *	1997		Talin
+ *		Original implementation
+ *	05/15/2000	malouin
+ *		Updated byte-swapping code and cleaned up warnings
+ * ---------------------------------------------------------------------
+ * To Do:
+ *
  * ===================================================================== */
  
 #ifndef STREAMLIB_READER_H
@@ -10,6 +40,9 @@
 
 // Kernel Kit
 #include <OS.h>
+
+// Support Kit
+#include <ByteOrder.h>
 
 	/**	An abstract class representing a readable stream of bytes.
 		You make subclasses for files, strings, packets, etc.
@@ -56,12 +89,13 @@ public:
 		*/
 	int16 MustReadInt16()
 	{
-		uint16		v;
+		int16		v;
 		
 		MustRead( &v, sizeof v );
 
-#if _LITTLE_ENDIAN
-		if (convertByteOrder) v = SwapByteOrder( v );
+#if __LITTLE_ENDIAN
+		if (convertByteOrder)
+			v = ntohs( v );
 #endif
 		return v;
 	}
@@ -71,12 +105,13 @@ public:
 		*/
 	int32 MustReadInt32()
 	{
-		uint32		v;
+		int32		v;
 		
 		MustRead( &v, sizeof v );
 
-#if _LITTLE_ENDIAN
-		if (convertByteOrder) v = SwapByteOrder( v );
+#if __LITTLE_ENDIAN
+		if (convertByteOrder)
+			v = ntohl( v );
 #endif
 		return v;
 	}
@@ -85,7 +120,7 @@ private:
 	void MustReadAndSwap( void *ptr, long bytes )
 	{
 		MustRead( ptr, bytes );
-#if _LITTLE_ENDIAN
+#if __LITTLE_ENDIAN
 		if (convertByteOrder)
 		{
 			for (int i = 0, j = bytes - 1; i < j; i++, j--)
@@ -148,8 +183,8 @@ public:
 class CByteArrayReader : public CAbstractReader {
 
 	uint8			*byteArray;
-	int32			pos;
-	int32			len;
+	uint32			pos;
+	uint32			len;
 
 public:
 
@@ -165,12 +200,17 @@ public:
 		*/
 	int32 Read( void *buffer, int32 inLength, bool inPartialOK )
 	{
-		int32		avail = len - pos;
+		uint32		avail = len - pos;
 		
-		if (inLength > avail)
+		if (inLength < 0)
+		{
+			return -1;
+		}
+		else if (uint32(inLength) > avail)
 		{
 				//	REM: Should we toss instead?
-			if (inPartialOK == false) return -1;
+			if (inPartialOK == false)
+				return -1;
 			inLength = avail;
 		}
 		memcpy( buffer, &byteArray[ pos ], inLength );
@@ -209,7 +249,8 @@ public:
 		*/
 	bool Seek( uint32 inFilePos )
 	{
-		if (inFilePos < 0 || inFilePos > len) return false;
+		if (inFilePos > len)
+			return false;
 		pos = inFilePos;
 		return true;
 	}
