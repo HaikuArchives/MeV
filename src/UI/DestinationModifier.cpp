@@ -67,7 +67,7 @@ CDestinationModifier::_buildUI()
 		BMenuItem *item=new BMenuItem(cname.String(),msg);
 		m_channels->AddItem(item);
 	}
-	(m_channels->ItemAt((m_vc->channel-1)))->SetMarked(true);
+	(m_channels->ItemAt((m_vc->channel)))->SetMarked(true);
 	BMenuField *port;
 	BMenuField *channel;
 
