@@ -44,6 +44,7 @@
 #include "WindowState.h"
 #include "Observer.h"
 #include "EventEditor.h"
+#include "EventTrack.h"
 #include "MeVApp.h"
 
 class CTextDisplay;

@@ -79,10 +79,10 @@ void MeVPlugIn::NotifyOperatorChanged( EventOp *inOper )
 
 	app.Lock();
 
-	for (int i = 0; i < app.documents.CountItems(); i++)
+	for (int i = 0; i < app.CountDocuments(); i++)
 	{
-		CMeVDoc	*doc = (CMeVDoc *)app.documents.ItemAt( i );
-		doc->NotifyOperatorChanged( inOper );
+		CMeVDoc	*doc = (CMeVDoc *)app.DocumentAt(i);
+		doc->NotifyOperatorChanged(inOper);
 	}
 
 	app.Unlock();
@@ -117,9 +117,9 @@ MeVDocHandle MeVPlugIn::FindDocument( int32 inDocID )
 	
 	app.Lock();
 
-	for (int i = 0; i < app.documents.CountItems(); i++)
+	for (int i = 0; i < app.CountDocuments(); i++)
 	{
-		CMeVDoc	*doc = (CMeVDoc *)app.documents.ItemAt( i );
+		CMeVDoc	*doc = (CMeVDoc *)app.DocumentAt(i);
 		
 		if ((int32)doc == inDocID)
 		{
@@ -143,9 +143,9 @@ MeVDocHandle MeVPlugIn::FindDocument( char *inDocName )
 	
 	app.Lock();
 
-	for (int i = 0; i < app.documents.CountItems(); i++)
+	for (int i = 0; i < app.CountDocuments(); i++)
 	{
-		CMeVDoc	*doc = (CMeVDoc *)app.documents.ItemAt( i );
+		CMeVDoc	*doc = (CMeVDoc *)app.DocumentAt( i );
 		char		name[ B_FILE_NAME_LENGTH ];
 		
 		doc->GetName( name );
@@ -172,9 +172,9 @@ MeVDocHandle MeVPlugIn::FirstDocument()
 	
 	app.Lock();
 
-	if (app.documents.CountItems() > 0)
+	if (app.CountDocuments() > 0)
 	{
-		CMeVDoc	*doc = (CMeVDoc *)app.documents.ItemAt( 0 );
+		CMeVDoc	*doc = (CMeVDoc *)app.DocumentAt( 0 );
 		MeVDocRef		*ref = new MeVDocRef();
 			
 		doc->Acquire();
@@ -216,12 +216,12 @@ bool MeVDocRef::NextDocument()
 	int32		index;
 	
 	app.Lock();
-	index = app.documents.IndexOf( doc );
+	index = app.IndexOf( doc );
 
-	if (app.documents.CountItems() > index + 1)
+	if (app.CountDocuments() > index + 1)
 	{
 		CRefCountObject::Release( doc );
-		doc = (CMeVDoc *)app.documents.ItemAt( index + 1 );
+		doc = (CMeVDoc *)app.DocumentAt( index + 1 );
 		doc->Acquire();
 		data = doc;
 		

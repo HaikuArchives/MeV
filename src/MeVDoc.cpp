@@ -178,7 +178,7 @@ CMeVDoc::CMeVDoc( CMeVApp &inApp )
 	masterMeterTrack = new CEventTrack( *this, ClockType_Metered, 1, "Master Metric" );
 	activeMaster = masterMeterTrack;
 	NewTrack( TrackType_Event, ClockType_Metered );
-	valid = true;
+	SetValid();
 }
 
 CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
@@ -253,7 +253,7 @@ CMeVDoc::CMeVDoc( CMeVApp &inApp, entry_ref &inRef )
 		masterMeterTrack = new CEventTrack( *this, ClockType_Metered, 1, "Master Metric" );
 
 	activeMaster = masterMeterTrack;
-	valid = true;
+	SetValid();
 }
 
 CMeVDoc::~CMeVDoc()
@@ -438,7 +438,8 @@ BWindow *CMeVDoc::ShowWindow( enum EWindowTypes inType )
 			break;
 
 		case Assembly_Window:
-			bw = new CAssemblyWindow( UScreenUtils::StackOnScreen( 540, 300 ), *this );
+			bw = new CAssemblyWindow(UScreenUtils::StackOnScreen(540, 300),
+									 this);
 			bw->Show();
 			break;
 

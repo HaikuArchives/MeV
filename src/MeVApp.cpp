@@ -386,7 +386,6 @@ CMeVApp::CMeVApp()
 
 CMeVApp::~CMeVApp()
 {
-	if (openPanel) openPanel->SetRefFilter( NULL );
 	delete filter;
 	delete importFilter;
 
@@ -1738,11 +1737,8 @@ BFilePanel *CMeVApp::GetImportPanel( BMessenger *msngr )
 {
 	if (importPanel == NULL)
 	{
-		entry_ref			ref;
-		appDir.GetRef( &ref );
-		
 			// Create a new import panel
-		importPanel = new BFilePanel(	B_OPEN_PANEL, msngr, &ref, B_FILE_NODE, false );
+		importPanel = new BFilePanel(	B_OPEN_PANEL, msngr, NULL, B_FILE_NODE, false );
 	}
 	else if (importPanel->IsShowing()) return NULL;
 	
@@ -1757,11 +1753,8 @@ BFilePanel *CMeVApp::GetExportPanel( BMessenger *msngr )
 {
 	if (exportPanel == NULL)
 	{
-		entry_ref			ref;
-		appDir.GetRef( &ref );
-		
-			// Create a new export panel
-		exportPanel = new BFilePanel( B_SAVE_PANEL, msngr, &ref, B_FILE_NODE, false );
+		// Create a new export panel
+		exportPanel = new BFilePanel(B_SAVE_PANEL, msngr, NULL, B_FILE_NODE, false );
 	}
 	else if (exportPanel->IsShowing()) return NULL;
 	

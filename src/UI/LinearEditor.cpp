@@ -3,6 +3,9 @@
  * ===================================================================== */
 
 #include "LinearEditor.h"
+
+#include "EventTrack.h"
+#include "Idents.h"
 #include "VChannel.h"
 #include "PlayerControl.h"
 #include "MeVApp.h"
@@ -77,14 +80,12 @@ bool
 CLinearEditor::ConstructEvent(
 	BPoint point)
 {
-	int32 time;
-	CMeVDoc &doc = Document();
-
 	// Initialize a new event
 	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_Note));
 			
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
+	int32 time;
 	time = HandlerFor(m_newEv)->QuantizeDragTime(*this, m_newEv, 0,
 												 BPoint(0.0, 0.0), point,
 												 true);
@@ -92,7 +93,7 @@ CLinearEditor::ConstructEvent(
 
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(TrackWindow()->NewEventDuration() - 1);
-	m_newEv.SetVChannel(doc.GetDefaultAttribute(EvAttr_Channel));
+	m_newEv.SetVChannel(TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel));
 
 	switch (m_newEv.Command())
 	{
@@ -104,8 +105,8 @@ CLinearEditor::ConstructEvent(
 		case EvtType_Note:
 		{
 			m_newEv.note.pitch = ViewCoordsToPitch(point.y, true);
-			m_newEv.note.attackVelocity = doc.GetDefaultAttribute(EvAttr_AttackVelocity);
-			m_newEv.note.releaseVelocity = doc.GetDefaultAttribute(EvAttr_ReleaseVelocity);
+			m_newEv.note.attackVelocity = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_AttackVelocity);
+			m_newEv.note.releaseVelocity = TrackWindow()->Document()->GetDefaultAttribute(EvAttr_ReleaseVelocity);
 			break;
 		}
 		default:
@@ -561,7 +562,7 @@ CLinearNoteEventHandler::Draw(
 		return;
 	}
 
-	VChannelEntry &vce = lEditor.Document().GetVChannel(ev.GetVChannel());
+	VChannelEntry &vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 
 	if (shadowed)
 	{

@@ -39,7 +39,6 @@
 #define __C_AssemblyWindow_H__
 
 #include "TrackWindow.h"
-#include "MeVDoc.h"
 
 //class CTextDisplay;
 class CToolBar;
@@ -53,7 +52,7 @@ public:							// Constructor/Destructor
 
 								CAssemblyWindow(
 									BRect frame,
-									CMeVDoc &inDocument);
+									CMeVDoc *document);
 
 								~CAssemblyWindow();
 
@@ -62,7 +61,7 @@ public:							// CTrackWindow Implementation
 	// For windows which edit dual tracks, select which one
 	// has selected events
 	CEventTrack *				ActiveTrack()
-								{ return Document().ActiveMaster(); }
+								{ return Document()->ActiveMaster(); }
 
 	// Returns current toolbar setting
 	int32						CurrentTool()
@@ -81,8 +80,6 @@ protected:						// Internal Operations
 	void						AddToolBar();
 
 private:						// Instance Data
-
-	CToolBar *					m_toolBar;
 
 	uint8						m_toolStates[1];
 };

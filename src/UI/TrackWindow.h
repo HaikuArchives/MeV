@@ -43,15 +43,17 @@
 #define __C_TrackWindow_H__
 
 #include "DocWindow.h"
-#include "TrackEditFrame.h"
-#include "EventOp.h"
-#include "DynamicMenu.h"
-#include "Idents.h"
-#include "EventTrack.h"
-#include "ResourceUtils.h"
+#include "MeVDoc.h"
+
+//#include "TrackEditFrame.h"
+//#include "EventOp.h"
+//#include "DynamicMenu.h"
+//#include "Idents.h"
+//#include "EventTrack.h"
+//#include "ResourceUtils.h"
 
 class CScroller;
-class CMeVDoc;
+class CTrackEditFrame;
 class CTrackOperation;
 
 // ---------------------------------------------------------------------------
@@ -80,7 +82,7 @@ public:							// Constructor/Destructor
 
 								CTrackWindow(
 									BRect frame,
-									CMeVDoc &inDocument,
+									CMeVDoc *document,
 									CEventTrack *inTrack);
 
 	virtual						~CTrackWindow();
@@ -145,9 +147,10 @@ public:							// Operations
 public:							// CDocWindow Implementation
 
 	// Returns a pointer to the current document
-	CMeVDoc &					Document()
-								{ return (CMeVDoc &)document; }
-	
+	virtual CMeVDoc *			Document()
+								{ return static_cast<CMeVDoc *>
+										 (CDocWindow::Document()); }
+
 	virtual void				MenusBeginning();
 
 	virtual void				MessageReceived(
@@ -187,12 +190,8 @@ protected:						// Instance Data
 
 	EventOp *					trackOp;
 
-//	CDynamicMenuInstance		plugInMenuInstance;
-
 	// Type of newly created events
 	enum E_EventType			newEventType;
-
-//	int32						newEventDuration;
 
 	CWindowState				prefsWinState;
 };

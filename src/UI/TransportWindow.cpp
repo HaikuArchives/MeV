@@ -12,6 +12,7 @@
 #include "StdButton.h"
 #include "Junk.h"
 #include "PlayerControl.h"
+#include "ResourceUtils.h"
 
 // Gnu C Library
 #include <stdio.h>

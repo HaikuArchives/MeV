@@ -39,6 +39,7 @@
 #define __C_MevDoc_H__
 
 #include "MeV.h"
+#include "MeVApp.h"
 #include "Document.h"
 #include "VChannel.h"
 #include "Event.h"
@@ -232,7 +233,11 @@ public:
 
 		/** Save the document to it's current location */
 	void SaveDocument();
-	
+
+	virtual CMeVApp *			Application() const
+								{ return static_cast<CMeVApp *>
+										 (CDocument::Application()); }
+
 		/** Export the document */
 	void Export( BMessage *msg );
 

@@ -5,12 +5,14 @@
 #include "PitchBendEditor.h"
 
 // Application
+#include "Idents.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
 // Engine
-#include "VChannel.h"
+#include "EventTrack.h"
 #include "PlayerControl.h"
 #include "StdEventOps.h"
+#include "VChannel.h"
 // StripView
 #include "StripLabelView.h"
 // Support
@@ -170,7 +172,7 @@ void CPitchBendEventHandler::Draw(
 {
 	CPitchBendEditor	&lEditor = (CPitchBendEditor &)editor;
 	bool				locked = 	editor.Track()->IsChannelLocked( ev.GetVChannel() );
-	VChannelEntry		&vce = lEditor.Document().GetVChannel( ev.GetVChannel() );
+	VChannelEntry &vce = lEditor.TrackWindow()->Document()->GetVChannel(ev.GetVChannel());
 	BRect			r;
 
 	if (shadowed)
@@ -619,14 +621,12 @@ void CPitchBendEditor::OnUpdate( BMessage *inMsg )
 
 bool CPitchBendEditor::ConstructEvent( BPoint point )
 {
-	int32		time;
-	CMeVDoc		&doc = Document();
-
 	// Initialize a new event
 	m_newEv.SetCommand(TrackWindow()->GetNewEventType(EvtType_PitchBend));
 
 	// Compute the difference between the original
 	// time and the new time we're dragging the events to.
+	int32 time;
 	time = Handler(m_newEv).QuantizeDragTime(*this, m_newEv, 0,
 											 BPoint(0.0, 0.0), point,
 											 true);
@@ -634,14 +634,14 @@ bool CPitchBendEditor::ConstructEvent( BPoint point )
 
 	m_newEv.SetStart(time);
 	m_newEv.SetDuration(0);
-	m_newEv.SetVChannel(doc.GetDefaultAttribute(EvAttr_Channel));
+	m_newEv.SetVChannel(TrackWindow()->Document()->GetDefaultAttribute(EvAttr_Channel));
 
 	switch (m_newEv.Command())
 	{
 		case EvtType_PitchBend:
 		{
 			m_newEv.pitchBend.targetBend = m_newEv.pitchBend.startBend = ViewCoordsToValue(point.y, true) + 0x2000;
-			m_newEv.pitchBend.updatePeriod =  doc.GetDefaultAttribute(EvAttr_UpdatePeriod);
+			m_newEv.pitchBend.updatePeriod =  TrackWindow()->Document()->GetDefaultAttribute(EvAttr_UpdatePeriod);
 			break;
 		}
 		default:

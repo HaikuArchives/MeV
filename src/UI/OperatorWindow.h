@@ -54,8 +54,6 @@ class COperatorWindow : public CDocWindow, public CObserver {
 	CEventTrack			*watchTrack;
 	BButton				*editButton,
 						*applyButton;
-	CDynamicMenuInstance	plugInMenuInstance;
-//	BMenu				*plugInMenu;
 	
 	enum EControlIDs {
 		Select_ID 		= 'selc',
@@ -64,7 +62,6 @@ class COperatorWindow : public CDocWindow, public CObserver {
 	};
 	
 	void MessageReceived( BMessage *msg );
-	void MenusBeginning();
 	void OnUpdate( BMessage *inMsg );
 
 public:
@@ -73,6 +70,11 @@ public:
 	
 		// Set which track we are currently viewing
 	void SetTrack( CEventTrack *inViewTrack );
+								
+	virtual CMeVDoc *			Document()
+								{ return static_cast<CMeVDoc *>
+										 (CDocWindow::Document()); }
+
 };
 
 #endif /* __C_OperatorWindow_H__ */

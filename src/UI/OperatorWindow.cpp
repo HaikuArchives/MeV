@@ -3,11 +3,12 @@
  * ===================================================================== */
 
 #include "OperatorWindow.h"
+
+#include "MeVPlugin.h"
 #include "MultiColumnListView.h"
 #include "Idents.h"
 #include "EventOp.h"
 #include "EventTrack.h"
-#include "MeVPlugin.h"
 #include "StWindowUtils.h"
 #include "MeVApp.h"
 
@@ -64,10 +65,11 @@ public:
 	}
 };
 
-COperatorWindow::COperatorWindow( CWindowState &inState, CMeVDoc &inDocument )
-	: CDocWindow( inState, inDocument, "Event Operators", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
-	  CObserver( *this, &inDocument ),
-	  plugInMenuInstance( ((CMeVApp *)be_app)->operWindowPlugIns )
+COperatorWindow::COperatorWindow(
+	CWindowState &inState,
+	CMeVDoc &inDocument )
+	: CDocWindow( inState, &inDocument, "Event Operators", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
+	  CObserver( *this, &inDocument )
 {
 	BRect			r( inState.Rect() );
 	int32			x, y;
@@ -78,38 +80,25 @@ COperatorWindow::COperatorWindow( CWindowState &inState, CMeVDoc &inDocument )
 	
 	SetSizeLimits( r.Width(), r.Width(), 100.0, 5000.0 );
 	
-		// view rect should be same size as window rect but with left top at (0, 0)
+	// view rect should be same size as window rect but with left top at (0, 0)
+	BMenuBar *menuBar = new BMenuBar( BRect( 0,0,0,0 ), NULL );
 
-	menus = new BMenuBar( BRect( 0,0,0,0 ), NULL );
-
-		// Create the file menu
+	// Create the file menu
 	menu = new BMenu( "File" );
-#if 0
-	menu->AddItem( new BMenuItem( "Load Virtual Channels...", new BMessage( MENU_ABOUT ), 'L' ) );
-	menu->AddItem( new BMenuItem( "Save Virtual Channels...", new BMessage( MENU_ABOUT ), 'S' ) );
-	menu->AddItem( new BMenuItem( "Save As Default", new BMessage( MENU_ABOUT ) ) );
-#endif
 	menu->AddItem( new BMenuItem( "Close Window", new BMessage( B_QUIT_REQUESTED ), 'W' ) );
-	menus->AddItem( menu );
+	menuBar->AddItem( menu );
 
 		// Create the edit menu
 	menu = new BMenu( "Edit" );
 	menu->AddItem( new BMenuItem( "Copy", new BMessage( B_COPY ), 'C' ) );
 	menu->AddItem( new BMenuItem( "Paste", new BMessage( B_COPY ), 'V' ) );
-	menus->AddItem( menu );
+	menuBar->AddItem( menu );
 
-	BMessage		*trackMsg = new BMessage( '0000' );
-	trackMsg->AddInt32( "DocumentID", (int32)&inDocument );
+//	BMessage		*trackMsg = new BMessage( '0000' );
+//	trackMsg->AddInt32( "DocumentID", (int32)&inDocument );
 
-//	plugInMenu = new BMenu( "Plug-Ins" );
-//	plugInMenuInstance.SetBaseMenu( plugInMenu );
-//	plugInMenuInstance.SetMessageAttributes( trackMsg );
-//	menus->AddItem( plugInMenu );
-
-		// REM: Create the windows menu here (to be able to re-open track windows...)
-
-		// Add the menus
-	AddChild( menus );
+	// Add the menus
+	AddChild(menuBar);
 
 	r.OffsetTo( B_ORIGIN );
 
@@ -187,7 +176,6 @@ COperatorWindow::~COperatorWindow()
 
 void COperatorWindow::MessageReceived( BMessage *msg )
 {
-	CMeVDoc			*doc = (CMeVDoc *)&document;
 	int32			index;
 	COperatorListItem	*li;
 
@@ -254,7 +242,7 @@ void COperatorWindow::MessageReceived( BMessage *msg )
 		{
 				// Add this operator to global track list, and recompile lists.
 			li->listenAll = !li->listenAll;
-			doc->SetOperatorActive( li->op, li->listenAll );
+			Document()->SetOperatorActive( li->op, li->listenAll );
 			operList->InvalidateItem( row );
 
 				// Notify everyone that things have changed.
@@ -272,17 +260,10 @@ void COperatorWindow::MessageReceived( BMessage *msg )
 	}
 }
 
-void COperatorWindow::MenusBeginning()
-{
-	plugInMenuInstance.CheckMenusChanged();
-	CDocWindow::MenusBeginning();
-}
-
 void COperatorWindow::SetTrack( CEventTrack *inViewTrack )
 {
 	StSubjectLock	lock( *inViewTrack, Lock_Shared );
 	StWindowLocker	wLock( this );
-	CMeVDoc			*doc = (CMeVDoc *)&document;
 
 	if (watchTrack != inViewTrack)
 	{
@@ -306,7 +287,7 @@ void COperatorWindow::SetTrack( CEventTrack *inViewTrack )
 				li->listen = li->trackPtr = false;
 			}
 			
-			li->listenAll = doc->ActiveOperatorIndex( li->op ) >= 0;
+			li->listenAll = Document()->ActiveOperatorIndex( li->op ) >= 0;
 			
 			if (		li->saveListen	!= li->listen
 				||	li->saveListenAll!= li->listenAll

@@ -3,11 +3,12 @@
  * ===================================================================== */
 
 #include "VelocityEditor.h"
+
+#include "EventTrack.h"
 #include "VChannel.h"
 #include "MeVDoc.h"
 #include "MathUtils.h"
 #include "ResourceUtils.h"
-// StripView
 #include "StripLabelView.h"
 
 // ---------------------------------------------------------------------------
@@ -36,7 +37,7 @@ void CVelocityNoteEventHandler::Draw(
 	bool 			shadowed ) const
 {
 	CVelocityEditor	&vEditor = (CVelocityEditor &)editor;
-	VChannelEntry	&vce = vEditor.Document().GetVChannel( ev.GetVChannel() );
+	VChannelEntry	&vce = vEditor.TrackWindow()->Document()->GetVChannel( ev.GetVChannel() );
 	BRect			r( vEditor.ViewBounds() );
 	BPoint			points[ 4 ] = { BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ), BPoint( 0.0, 0.0 ) };
 	

@@ -3,6 +3,8 @@
  * ===================================================================== */
 
 #include "ContinuousValueEditor.h"
+
+#include "EventTrack.h"
 #include "VChannel.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"

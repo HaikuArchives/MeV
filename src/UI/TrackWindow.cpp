@@ -3,6 +3,8 @@
  * ===================================================================== */
 
 #include "TrackWindow.h"
+
+#include "EventTrack.h"
 #include "MeVApp.h"
 #include "Idents.h"
 #include "PlayerControl.h"
@@ -44,13 +46,13 @@ CTrackWindow::DEFAULT_RULER_HEIGHT = 12.0;
 
 CTrackWindow::CTrackWindow(
 	BRect frame,
-	CMeVDoc &inDocument,
+	CMeVDoc *document,
 	CEventTrack *inTrack)
-	:	CDocWindow(frame, (CDocument &)inDocument,
+	:	CDocWindow(frame, document,
 				   (inTrack && inTrack->GetID() > 1) ? inTrack->Name() : NULL,
 				   B_DOCUMENT_WINDOW,
 				   B_ASYNCHRONOUS_CONTROLS),
-		CObserver(*this, &inDocument),
+		CObserver(*this, document),
 		stripFrame(NULL),
 		stripScroll(NULL),
 		trackOp(NULL),
@@ -64,7 +66,7 @@ CTrackWindow::CTrackWindow(
 	
 	BMessage *trackMsg = new BMessage('0000');
 	trackMsg->AddInt32("TrackID", track->GetID());
-	trackMsg->AddInt32("DocumentID", (int32)&inDocument);
+	trackMsg->AddInt32("DocumentID", (int32)document);
 
 	SetPulseRate(100000);
 }
@@ -281,12 +283,12 @@ CTrackWindow::MessageReceived(
 		}
 		case MENU_SAVE:
 		{
-			document.Save();
+			Document()->Save();
 			break;
 		}
 		case MENU_SAVE_AS:
 		{
-			document.SaveAs();
+			Document()->SaveAs();
 			break;
 		}
 		case MENU_IMPORT:
@@ -296,7 +298,7 @@ CTrackWindow::MessageReceived(
 		}
 		case MENU_EXPORT:
 		{
-			Document().Export( message );
+			Document()->Export(message);
 			break;
 		}
 		case MENU_TRACKLIST:
@@ -341,13 +343,14 @@ CTrackWindow::MessageReceived(
 		case MENU_PAUSE:
 		{
 			// Start playing a song.
-			CPlayerControl::TogglePauseState( (CMeVDoc *)&document );
+			CPlayerControl::TogglePauseState(Document());
 			break;
 		}
 		case LoseFocus_ID:
 		{
 			// Remove focus from pesky controls.
-			if (CurrentFocus()) CurrentFocus()->MakeFocus( false );
+			if (CurrentFocus())
+				CurrentFocus()->MakeFocus(false);
 			break;
 		}
 		case B_KEY_DOWN:
@@ -428,11 +431,10 @@ CTrackWindow::MessageReceived(
 							if (gPrefs.FeedbackEnabled( attr, false )
 								&&	tk->SelectionCount() == 1)
 							{
-								CPlayerControl::DoAudioFeedback(
-									&Document(),
-									attr,
-									tk->CurrentEvent()->GetAttribute( attr ),
-									tk->CurrentEvent() );
+								CPlayerControl::DoAudioFeedback(Document(),
+																attr,
+																tk->CurrentEvent()->GetAttribute( attr ),
+																tk->CurrentEvent() );
 							}
 						}
 					}
@@ -448,10 +450,10 @@ CTrackWindow::MessageReceived(
 				item->SetEnabled(ActiveTrack()->SelectionType() != CTrack::Select_None);
 	
 				if (key == B_BACKSPACE) key = B_DELETE;
-				if (CQuickKeyMenuItem::TriggerShortcutMenu( menus, key ))
+				if (CQuickKeyMenuItem::TriggerShortcutMenu(KeyMenuBar(), key))
 					break;
 			}
-			CDocWindow::MessageReceived( message );
+			CDocWindow::MessageReceived(message);
 			break;
 		}			
 		case 'echo':
@@ -480,7 +482,7 @@ CTrackWindow::MessageReceived(
 		case 'oper':
 		{
 			BWindow *w;
-			w = ((CMeVDoc &)Document()).ShowWindow(CMeVDoc::Operator_Window);
+			w = Document()->ShowWindow(CMeVDoc::Operator_Window);
 			((COperatorWindow *)w)->SetTrack(track);
 			break;
 		}

@@ -92,7 +92,7 @@ public:
 	// REM: Give window a minimum size.
 
 CVChannelWindow::CVChannelWindow( CWindowState &inState, CMeVDoc &inDocument )
-	: CDocWindow( inState, inDocument, "Virtual Channels", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
+	: CDocWindow( inState, &inDocument, "Virtual Channels", B_TITLED_WINDOW, B_NOT_H_RESIZABLE ),
 	  messenger( this )
 {
 	BRect			r( inState.Rect() );
@@ -108,7 +108,7 @@ CVChannelWindow::CVChannelWindow( CWindowState &inState, CMeVDoc &inDocument )
 	
 		// view rect should be same size as window rect but with left top at (0, 0)
 
-	menus = new BMenuBar( BRect( 0,0,0,0 ), NULL );
+	BMenuBar *menuBar = new BMenuBar( BRect( 0,0,0,0 ), NULL );
 
 		// Create the file menu
 	menu = new BMenu( "File" );
@@ -118,18 +118,18 @@ CVChannelWindow::CVChannelWindow( CWindowState &inState, CMeVDoc &inDocument )
 	menu->AddItem( new BMenuItem( "Save As Default", new BMessage( 'sdef' ) ) );
 	menu->AddSeparatorItem();
 	menu->AddItem( new BMenuItem( "Close Window", new BMessage( B_QUIT_REQUESTED ), 'W' ) );
-	menus->AddItem( menu );
+	menuBar->AddItem( menu );
 
 		// Create the edit menu
 	menu = new BMenu( "Edit" );
 	menu->AddItem( new BMenuItem( "Copy", new BMessage( B_COPY ), 'C' ) );
 	menu->AddItem( new BMenuItem( "Paste", new BMessage( B_COPY ), 'V' ) );
-	menus->AddItem( menu );
+	menuBar->AddItem( menu );
 
 		// REM: Create the windows menu here (to be able to re-open track windows...)
 
 		// Add the menus
-	AddChild( menus );
+	AddChild(menuBar);
 
 	r.OffsetTo( B_ORIGIN );
 

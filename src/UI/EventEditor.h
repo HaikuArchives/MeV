@@ -55,6 +55,7 @@ class CAbstractEventHandler;
 class CEventTrack;
 class CPolygon;
 class CTrackEditFrame;
+class EventMarker;
 class EventOp;
 
 const unsigned int MAX_PLAYBACK_MARKERS = 8;
@@ -190,10 +191,6 @@ public:							// Accessors
 	CTrackWindow *				TrackWindow() const
 								{ return dynamic_cast<CTrackWindow *>(Window()); }
 
-	// Returns the document associated with this editor
-	CMeVDoc &					Document() const
-								{ return TrackWindow()->Document(); }
-
 public:							// Operations
 
 	// Helps subclasses in picking events
@@ -270,8 +267,7 @@ protected:						// Internal Operations
 	BRect						LassoFrame() const;
 
 	// Adjust the scroll range of this frame to match track
-	void						RecalcScrollRangeH()
-								{ m_frame.RecalcScrollRange(); }
+	void						RecalcScrollRangeH();
 	
 	// Update the markers showing playback position
 	void						UpdatePBMarkers();

@@ -42,6 +42,8 @@
 #include "EventEditor.h"
 #include "DocWindow.h"
 
+class EventListUndoAction;
+
 // ---------------------------------------------------------------------------
 // Linear editor strip view
 

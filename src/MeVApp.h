@@ -55,10 +55,6 @@
 #include "Preferences.h"
 #include "VChannel.h"
 #include "MeV.h"
-#include "MeVPlugin.h"
-
-//class MeVSpec MeVPlugIn;
-//class MeVSpec MeVDocRef;
 
 class CDocWindow;
 class CStripFrameView;

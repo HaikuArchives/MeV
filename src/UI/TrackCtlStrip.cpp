@@ -3,9 +3,11 @@
  * ===================================================================== */
 
 #include "TrackCtlStrip.h"
+
 #include "Idents.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
+#include "EventTrack.h"
 #include "PlayerControl.h"
 #include "StdEventOps.h"
 #include "MidiDeviceInfo.h"
@@ -1404,7 +1406,6 @@ void CTrackCtlStrip::MessageReceived( BMessage *msg )
 			BPoint		point;
 			ulong		buttons;
 			int32		evtType;
-			CMeVDoc		&doc = Document();
 
 			if (msg->FindInt32( "EventType", 0, &evtType ) != B_OK) break;
 			GetMouse( &point, &buttons, TRUE );
@@ -1488,10 +1489,9 @@ void CTrackCtlStrip::MouseMoved(
 				
 				if (		dragMsg->FindInt32( "TrackID", 0, &trackID ) == B_OK
 					&&	dragMsg->FindPointer( "Document", 0, &dragDoc ) == B_OK
-					&&	dragDoc == &Document())
+					&&	dragDoc == TrackWindow()->Document())
 				{
 					int32		time;
-					CMeVDoc		&doc = Document();
 					Event		dragEv;
 					CTrack		*tk;
 		
@@ -1509,9 +1509,9 @@ void CTrackCtlStrip::MouseMoved(
 					dragEv.SetVChannel( 0 );
 					dragEv.sequence.vPos = point.y / barHeight;
 							// Rem: Change this to the logical length of the track we are ADDING. */
-					dragEv.sequence.transposition	= doc.GetDefaultAttribute( EvAttr_Transposition );
+					dragEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
 					dragEv.sequence.sequence		= trackID;
-					tk = doc.FindTrack( trackID );
+					tk = TrackWindow()->Document()->FindTrack(trackID);
 					if (tk == NULL) tk = Track();
 					dragEv.SetDuration( tk->LogicalLength() );
 					
@@ -1567,7 +1567,6 @@ bool CTrackCtlStrip::ConstructEvent( BPoint point )
 bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
 {
 	int32		time;
-	CMeVDoc		&doc = Document();
 	CTrack		*tk;
 
 		// Initialize a new event.
@@ -1595,36 +1594,36 @@ bool CTrackCtlStrip::ConstructEvent( BPoint point, TEventType inType )
 
 	case EvtType_Sequence:
 		m_newEv.sequence.vPos = point.y / barHeight;
-		m_newEv.sequence.transposition	= doc.GetDefaultAttribute( EvAttr_Transposition );
-		m_newEv.sequence.sequence		= doc.GetDefaultAttribute( EvAttr_SequenceNumber );
+		m_newEv.sequence.transposition	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Transposition );
+		m_newEv.sequence.sequence		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_SequenceNumber );
 		m_newEv.sequence.flags			= 0;
-		tk = doc.FindTrack( m_newEv.sequence.sequence );
+		tk = TrackWindow()->Document()->FindTrack( m_newEv.sequence.sequence );
 		if (tk == NULL) tk = Track();
 		m_newEv.SetDuration( tk->LogicalLength() );
 		break;
 
 	case EvtType_TimeSig:
 		m_newEv.sigChange.vPos = point.y / barHeight;
-		m_newEv.sigChange.numerator		= doc.GetDefaultAttribute( EvAttr_TSigBeatCount );
-		m_newEv.sigChange.denominator	= doc.GetDefaultAttribute( EvAttr_TSigBeatSize );
+		m_newEv.sigChange.numerator		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatCount );
+		m_newEv.sigChange.denominator	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_TSigBeatSize );
 		break;
 
 	case EvtType_Repeat:
 		m_newEv.repeat.vPos = point.y / barHeight;
-		m_newEv.repeat.repeatCount		= doc.GetDefaultAttribute( EvAttr_RepeatCount );
+		m_newEv.repeat.repeatCount		= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_RepeatCount );
 		break;
 
 	case EvtType_ProgramChange:
-		m_newEv.SetVChannel( doc.GetDefaultAttribute( EvAttr_Channel ) );
+		m_newEv.SetVChannel( TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Channel ) );
 		m_newEv.programChange.vPos		= point.y / barHeight;
-		m_newEv.programChange.program	= doc.GetDefaultAttribute( EvAttr_Program );
-		m_newEv.SetAttribute( EvAttr_ProgramBank, doc.GetDefaultAttribute( EvAttr_ProgramBank ) );
+		m_newEv.programChange.program	= TrackWindow()->Document()->GetDefaultAttribute( EvAttr_Program );
+		m_newEv.SetAttribute( EvAttr_ProgramBank, TrackWindow()->Document()->GetDefaultAttribute( EvAttr_ProgramBank ) );
 		break;
 
 	case EvtType_Tempo:
 		m_newEv.SetVChannel( 0 );
 		m_newEv.tempo.vPos		= point.y / barHeight;
-		m_newEv.tempo.newTempo	= CPlayerControl::Tempo( &doc ) * 1000.0;
+		m_newEv.tempo.newTempo	= CPlayerControl::Tempo(TrackWindow()->Document()) * 1000.0;
 		break;
 
 	default:

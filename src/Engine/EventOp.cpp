@@ -3,8 +3,9 @@
  * ===================================================================== */
 
 #include "EventOp.h"
-#include "StdEventOps.h"
+
 #include "MeVPlugin.h"
+#include "StdEventOps.h"
 #include "MathUtils.h"
 
 #pragma export on

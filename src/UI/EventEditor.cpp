@@ -6,13 +6,14 @@
 
 #include "DataSnap.h"
 #include "EventOp.h"
+#include "EventTrack.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "PlayerControl.h"
 #include "Polygon.h"
 #include "StdEventOps.h"
-// StripView
 #include "StripLabelView.h"
+#include "TrackEditFrame.h"
 
 // Support Kit
 #include <Beep.h>
@@ -305,7 +306,7 @@ CEventEditor::FinishDrag(
 
 	bounds = Bounds();
 
-	Document().SetActiveMaster(Track());
+	TrackWindow()->Document()->SetActiveMaster(Track());
 
 	if ((m_dragType == DragType_Events)
 	 || (m_dragType == DragType_CopyEvents)
@@ -423,7 +424,7 @@ CEventEditor::StartDrag(
 	if ((ev = PickEvent(marker, point, partCode)) != NULL)
 	{
 		bool wasSelected = false;
-		Document().SetActiveMaster( Track() );
+		TrackWindow()->Document()->SetActiveMaster(Track());
 
 		if (toolState == CTrackWindow::TOOL_ERASE)
 		{
@@ -680,6 +681,12 @@ BRect
 CEventEditor::LassoFrame() const
 {
 	return m_lasso->Frame();
+}
+
+void
+CEventEditor::RecalcScrollRangeH()
+{
+	m_frame.RecalcScrollRange();
 }
 
 double

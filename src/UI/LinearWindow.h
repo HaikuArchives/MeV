@@ -65,16 +65,14 @@ public:							// Constructor/Destructor
 
 								CLinearWindow(
 									BRect frame,
-									CMeVDoc &document,
+									CMeVDoc *document,
 									CEventTrack *track);
 
 public:							// Accessors
 
 	// Returns current toolbar setting
 	int32						CurrentTool()
-								{
-									return m_toolStates[0];
-								}
+								{ return m_toolStates[0]; }
 
 public:							// CTrackWindow Implementation
 
@@ -99,8 +97,6 @@ protected:						// Internal Operations
 private:						// Instance Data
 
 	char						m_timeBuf[16];
-
-	CToolBar *					m_toolBar;
 
 	uint8						m_toolStates[1];
 

@@ -3,9 +3,10 @@
  * ===================================================================== */
 
 #include "LinearWindow.h"
+
+#include "EventTrack.h"
 #include "PlayerControl.h"
 #include "Idents.h"
-#include "MeVDoc.h"
 #include "MeVApp.h"
 #include "ResourceUtils.h"
 #include "QuickKeyMenuItem.h"
@@ -42,16 +43,16 @@
 
 CLinearWindow::CLinearWindow(
 	BRect frame,
-	CMeVDoc &document,
-	CEventTrack *track )
-	:	CTrackWindow(frame, document, track )
+	CMeVDoc *document,
+	CEventTrack *track)
+	:	CTrackWindow(frame, document, track)
 {
 	BRect rect(Bounds());
 
 	AddMenuBar();
 	AddToolBar();
 
-	rect.top = m_toolBar->Frame().bottom + 1.0;
+	rect.top = ToolBar()->Frame().bottom + 1.0;
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
 	CreateFrames(rect, track);
 	BRect scrollFrame(stripScroll->Frame());
@@ -181,11 +182,12 @@ CLinearWindow::MessageReceived(
 					break;
 				}
 			}
-			CMenuTool *tool = dynamic_cast<CMenuTool *>(m_toolBar->FindTool("Create"));
+			CMenuTool *tool = dynamic_cast<CMenuTool *>
+							  (ToolBar()->FindTool("Create"));
 			if (tool && bitmap)
 			{
 				tool->SetBitmap(bitmap);
-				m_toolBar->Invalidate(tool->Frame());
+				ToolBar()->Invalidate(tool->Frame());
 			}
 			break;
 		}
@@ -246,19 +248,22 @@ CLinearWindow::MessageReceived(
 		case MENU_CLEAR:
 		{
 			Track()->DeleteSelection();
-			Document().SetModified();
+			Document()->SetModified();
 			break;
 		}
 		case B_SELECT_ALL:
 		{
-			if (CurrentFocus()) DispatchMessage( message, CurrentFocus() );
-			else Track()->SelectAll();
+			if (CurrentFocus())
+				DispatchMessage(message, CurrentFocus());
+			else
+				Track()->SelectAll();
 			break;
 		}
 		case MENU_NEW_WINDOW:
 		{
 			CLinearWindow *window;
-			window = new CLinearWindow( BRect( 60, 60, 340, 300 ), (CMeVDoc &)document, Track() );
+			window = new CLinearWindow(BRect(60, 60, 340, 300),
+									   Document(), Track() );
 			window->Show();
 			break;
 		}
@@ -279,35 +284,31 @@ CLinearWindow::MessageReceived(
 		}
 		case MENU_VIRTUAL_CHANNELS:
 		{
-			((CMeVDoc &)Document()).ShowWindow( CMeVDoc::VChannel_Window );
+			Document()->ShowWindow( CMeVDoc::VChannel_Window );
 			break;
 		}
 		case MENU_PLAY:
 		{
-			if (CPlayerControl::IsPlaying( (CMeVDoc *)&document ))
+			if (CPlayerControl::IsPlaying(Document()))
 			{
-				CPlayerControl::StopSong( (CMeVDoc *)&document );
+				CPlayerControl::StopSong(Document());
 				break;
 			}
-			//Start playing a song.
-	/*		CPlayerControl::PlaySong(	(CMeVDoc *)&document,
-									0, 0, LocateTarget_Real, -1,
-									SyncType_SongInternal, (app.GetLoopFlag() ? PB_Loop : 0) );
-	*/		CPlayerControl::PlaySong(	(CMeVDoc *)&document,
-									Track()->GetID(), 0, LocateTarget_Real, -1,
-									SyncType_SongInternal, (app.GetLoopFlag() ? PB_Loop : 0) );
+			CPlayerControl::PlaySong(Document(), Track()->GetID(), 0,
+									 LocateTarget_Real, -1,
+									 SyncType_SongInternal,
+									 (app.GetLoopFlag() ? PB_Loop : 0) );
 			break;
 		}		
 		case MENU_PLAY_SECTION:
 		{
 			// Start playing a song.
-			CPlayerControl::PlaySong(
-				(CMeVDoc *)&document,
-				Track()->GetID(),
-				Track()->SectionStart(), LocateTarget_Metered,
-				Track()->SectionEnd() - Track()->SectionStart(),
-				SyncType_SongInternal,
-				(app.GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
+			CPlayerControl::PlaySong(Document(), Track()->GetID(),
+									 Track()->SectionStart(),
+									 LocateTarget_Metered,
+									 Track()->SectionEnd() - Track()->SectionStart(),
+									 SyncType_SongInternal,
+									 (app.GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
 			break;
 		}
 		case MENU_SET_SECTION:
@@ -363,10 +364,10 @@ CLinearWindow::AddMenuBar()
 	D_INTERNAL(("CLinearWindow::AddMenuBar()\n"));
 
 	BMenu *menu;
-	menus = new BMenuBar(Bounds(), NULL);
+	BMenuBar *menuBar = new BMenuBar(Bounds(), NULL);
 
 	// Create the 'File' menu
-	CreateFileMenu(menus);
+	CreateFileMenu(menuBar);
 
 	// Create the 'Edit' menu
 	menu = new BMenu("Edit");
@@ -382,39 +383,38 @@ CLinearWindow::AddMenuBar()
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("View Settings...", new BMessage(MENU_VIEW_SETTINGS)));
 	menu->AddItem(new BMenuItem("Virtual Channels...", new BMessage(MENU_VIRTUAL_CHANNELS)));
-	menus->AddItem(menu);
+	menuBar->AddItem(menu);
 
 	// Create the 'Play' menu
 	menu = new BMenu("Play");
 	menu->AddItem(new CQuickKeyMenuItem("Pause", new BMessage(MENU_PAUSE), B_SPACE, "Space"));
 	menu->AddSeparatorItem();
 	menu->AddItem(new CQuickKeyMenuItem("Start", new BMessage(MENU_PLAY), B_ENTER, "Enter"));
-// menu->AddItem( playSelectMenu = new CQuickKeyMenuItem( "Play Selection", new BMessage( MENU_PLAY_SELECT ), B_ENTER, B_SHIFT_KEY ) );
 	menu->AddItem(new CQuickKeyMenuItem("Play Section", new BMessage(MENU_PLAY_SECTION), 'p', "p"));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Set Section", new BMessage(MENU_SET_SECTION), 'S', B_SHIFT_KEY));
-	menus->AddItem(menu);
+	menuBar->AddItem(menu);
 	
-	// Create the plug-ins menu
-//	menus->AddItem(plugInMenu);
-
 	// Create the 'Window' menu
-	windowMenu = new BMenu("Window");
-	windowMenu->AddItem(new BMenuItem( "New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
-	windowMenu->AddSeparatorItem();
-	windowMenu->AddItem(new BMenuItem("Show Tracks Window",
-									  new BMessage(MENU_TRACKLIST), 'L'));
-	windowMenu->AddItem(new BMenuItem("Show Event Inspector",
-									  new BMessage(MENU_INSPECTOR), 'I'));
-	windowMenu->AddItem(new BMenuItem("Show Grid Window",
-									  new BMessage(MENU_GRIDWINDOW), 'G'));
-	windowMenu->AddItem(new BMenuItem("Show Transport Controls",
-									  new BMessage(MENU_TRANSPORT), 'T'));
-	windowMenu->AddSeparatorItem();
-	menus->AddItem(windowMenu);
+	menu = new BMenu("Window");
+	menu->AddItem(new BMenuItem("New Window",
+								new BMessage(MENU_NEW_WINDOW), 'W',
+								B_SHIFT_KEY));
+	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Show Tracks Window",
+								new BMessage(MENU_TRACKLIST), 'L'));
+	menu->AddItem(new BMenuItem("Show Event Inspector",
+								new BMessage(MENU_INSPECTOR), 'I'));
+	menu->AddItem(new BMenuItem("Show Grid Window",
+								new BMessage(MENU_GRIDWINDOW), 'G'));
+	menu->AddItem(new BMenuItem("Show Transport Controls",
+								new BMessage(MENU_TRANSPORT), 'T'));
+	menu->AddSeparatorItem();
+	SetWindowMenu(menu);
+	menuBar->AddItem(menu);
 
 	// Add the menus
-	AddChild(menus);
+	AddChild(menuBar);
 }
 
 void
@@ -457,34 +457,34 @@ CLinearWindow::AddToolBar()
 
 
 	BRect rect(Bounds());
-	if (menus)
-		rect.top = menus->Frame().bottom + 1.0;
+	if (KeyMenuBar())
+		rect.top = KeyMenuBar()->Frame().bottom + 1.0;
 	rect.right += 1.0;
 
-	m_toolBar = new CToolBar(rect, "General");
+	CToolBar *toolBar = new CToolBar(rect, "General");
 	CBitmapTool *tool;
-	m_toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
+	toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
 											ResourceUtils::LoadImage("GridTool"),
 											new BMessage(TOOL_GRID)));
 	tool->SetValue(B_CONTROL_ON);
-	m_toolBar->AddSeparator();
+	toolBar->AddSeparator();
 
-	m_toolBar->AddTool(tool = new CBitmapTool("Select",
+	toolBar->AddTool(tool = new CBitmapTool("Select",
 											ResourceUtils::LoadImage("ArrowTool"),
 											new BMessage(TOOL_SELECT)));
 	tool->SetValue(B_CONTROL_ON);
-	m_toolBar->AddTool(new CMenuTool("Create", ResourceUtils::LoadImage("PencilTool"),
+	toolBar->AddTool(new CMenuTool("Create", ResourceUtils::LoadImage("PencilTool"),
 								   createMenu, new BMessage(TOOL_CREATE)));
-	m_toolBar->AddTool(tool = new CBitmapTool("Erase",
+	toolBar->AddTool(tool = new CBitmapTool("Erase",
 											ResourceUtils::LoadImage("EraserTool"),
 											new BMessage(TOOL_ERASE)));
-	m_toolBar->AddTool(tool = new CBitmapTool("Text",
+	toolBar->AddTool(tool = new CBitmapTool("Text",
 											ResourceUtils::LoadImage("TextTool"),
 											new BMessage(TOOL_TEXT)));
 	tool->SetEnabled(false);
-	m_toolBar->MakeRadioGroup("Select", "Text", true);
+	toolBar->MakeRadioGroup("Select", "Text", true);
 
-	AddChild(m_toolBar);
+	SetToolBar(toolBar);
 }
 
 // END - LinearWindow.cpp

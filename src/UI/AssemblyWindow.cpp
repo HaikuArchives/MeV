@@ -3,15 +3,16 @@
  * ===================================================================== */
 
 #include "AssemblyWindow.h"
+
 #include "AssemblyRulerView.h"
+#include "EventTrack.h"
 #include "LinearWindow.h"
 #include "PlayerControl.h"
 #include "Idents.h"
-#include "MeVDoc.h"
 #include "MeVApp.h"
+#include "ResourceUtils.h"
 #include "ScreenUtils.h"
 #include "QuickKeyMenuItem.h"
-#include "MultiColumnListView.h"
 #include "TrackCtlStrip.h"
 #include "DataSnap.h"
 // User Interface
@@ -40,8 +41,8 @@
 
 CAssemblyWindow::CAssemblyWindow(
 	BRect frame,
-	CMeVDoc &document )
-	:	CTrackWindow(frame, document, (CEventTrack *)document.FindTrack(1))
+	CMeVDoc *document)
+	:	CTrackWindow(frame, document, (CEventTrack *)document->FindTrack(1))
 {
 	D_ALLOC(("CAssemblyWindow::CAssemblyWindow()\n"));
 
@@ -49,9 +50,9 @@ CAssemblyWindow::CAssemblyWindow(
 	AddToolBar();
 
 	BRect rect(Bounds());
-	rect.top = m_toolBar->Frame().bottom + 1.0;
+	rect.top = ToolBar()->Frame().bottom + 1.0;
 	rect.bottom -= B_H_SCROLL_BAR_HEIGHT;
-	CreateFrames(rect, (CTrack *)document.FindTrack(1));
+	CreateFrames(rect, (CTrack *)Document()->FindTrack(1));
 
 	// Now, create some strips for test purposes
 	CStripView *sv;
@@ -59,12 +60,12 @@ CAssemblyWindow::CAssemblyWindow(
 	CScrollerTarget	*oldRuler = stripFrame->Ruler();
 
 	sv = new CTrackCtlStrip(*this, *stripFrame, rect,
-							(CEventTrack *)document.FindTrack(1), "Metrical");
+							(CEventTrack *)Document()->FindTrack(1), "Metrical");
 	sv->SetRemovable(false);
 	stripFrame->AddChildView(sv->TopView(), 50);
 
 	realRuler = new CAssemblyRulerView(*this, stripFrame,
-									   (CEventTrack *)document.FindTrack((int32)0),
+									   (CEventTrack *)Document()->FindTrack((int32)0),
 									   BRect(0.0, 0.0, rect.Width() - 14, 
 									   CTrackWindow::DEFAULT_RULER_HEIGHT - 1),
 									   (char *)NULL, B_FOLLOW_LEFT_RIGHT,
@@ -74,7 +75,7 @@ CAssemblyWindow::CAssemblyWindow(
 
 	CEventEditor *ee;
 	ee = new CTrackCtlStrip(*this, *stripFrame, frame,
-							(CEventTrack *)document.FindTrack((int32)0), "Real");
+							(CEventTrack *)Document()->FindTrack((int32)0), "Real");
 	ee->SetRuler(realRuler);
 	stripFrame->AddChildView(ee->TopView(), 8);
 
@@ -94,9 +95,6 @@ void
 CAssemblyWindow::MessageReceived(
 	BMessage* message)
 {
-	CMeVDoc &doc = (CMeVDoc &)Document();
-	CMeVApp	&app = *(CMeVApp *)be_app;
-
 	switch (message->what)
 	{
 		case MENU_UNDO:
@@ -148,7 +146,7 @@ CAssemblyWindow::MessageReceived(
 		case MENU_CLEAR:
 		{
 			ActiveTrack()->DeleteSelection();
-			doc.SetModified();
+			Document()->SetModified();
 			break;
 		}
 		case B_SELECT_ALL:
@@ -160,8 +158,8 @@ CAssemblyWindow::MessageReceived(
 		case MENU_NEW_WINDOW:
 		{
 			CAssemblyWindow *window;
-		
-			window = new CAssemblyWindow( UScreenUtils::StackOnScreen( 540, 300 ), doc );
+			window = new CAssemblyWindow(UScreenUtils::StackOnScreen(540, 300),
+										 Document() );
 			window->Show();
 			break;
 		}
@@ -182,41 +180,42 @@ CAssemblyWindow::MessageReceived(
 		}
 		case MENU_VIRTUAL_CHANNELS:
 		{
-			doc.ShowWindow( CMeVDoc::VChannel_Window );
+			Document()->ShowWindow(CMeVDoc::VChannel_Window);
 			break;
 		}
 		case MENU_PLAY:
 		{
-			if (CPlayerControl::IsPlaying( (CMeVDoc *)&document ))
+			if (CPlayerControl::IsPlaying(Document()))
 			{
-				CPlayerControl::StopSong( (CMeVDoc *)&document );
+				CPlayerControl::StopSong(Document());
 				break;
 			}
 			// Start playing a song.
-			CPlayerControl::PlaySong(	(CMeVDoc *)&doc,
-									0, 0, LocateTarget_Real, -1,
-									SyncType_SongInternal,
-									(app.GetLoopFlag() ? PB_Loop : 0) );
+			CMeVApp *app = (CMeVApp *)be_app;
+			CPlayerControl::PlaySong(Document(), 0, 0, LocateTarget_Real, -1,
+									 SyncType_SongInternal,
+									 (app->GetLoopFlag() ? PB_Loop : 0));
 			break;
 		}
 		case MENU_PLAY_SECTION:
 		{	
 			// Start playing a song.
-			CPlayerControl::PlaySong(
-				(CMeVDoc *)&document,
-				Track()->GetID(),
-				Track()->SectionStart(), LocateTarget_Metered,
-				Track()->SectionEnd() - Track()->SectionStart(),
-				SyncType_SongInternal,
-				(app.GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
+			CMeVApp *app = (CMeVApp *)be_app;
+			CPlayerControl::PlaySong(Document(), Track()->GetID(),
+									 Track()->SectionStart(),
+									 LocateTarget_Metered,
+									 Track()->SectionEnd() - Track()->SectionStart(),
+									 SyncType_SongInternal,
+									 (app->GetLoopFlag() ? PB_Loop : 0) | PB_Folded );
 			break;
 		}
 		case MENU_SET_SECTION:
 		{
 			if (Track()->SelectionType() != CTrack::Select_None)
 			{
-				Track()->SetSection( Track()->MinSelectTime(), Track()->MaxSelectTime() );
-				Track()->NotifyUpdate( CTrack::Update_Section, NULL );
+				Track()->SetSection(Track()->MinSelectTime(),
+									Track()->MaxSelectTime());
+				Track()->NotifyUpdate(CTrack::Update_Section, NULL);
 			}
 			break;
 		}
@@ -283,10 +282,10 @@ CAssemblyWindow::AddMenuBar()
 	BMenu *menu;
 	BMenuItem *item;
 
-	menus = new BMenuBar(Bounds(), "General");
+	BMenuBar *menuBar = new BMenuBar(Bounds(), "General");
 
 	// Create the 'File' menu
-	CreateFileMenu(menus);
+	CreateFileMenu(menuBar);
 
 	// Create the edit menu
 	menu = new BMenu("Edit");
@@ -304,7 +303,7 @@ CAssemblyWindow::AddMenuBar()
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("View Settings...", new BMessage(MENU_VIEW_SETTINGS)));
 	menu->AddItem(new BMenuItem("Virtual Channels...", new BMessage(MENU_VIRTUAL_CHANNELS)));
-	menus->AddItem(menu);
+	menuBar->AddItem(menu);
 
 	// Create the 'Play' menu
 	menu = new BMenu("Play");
@@ -314,54 +313,55 @@ CAssemblyWindow::AddMenuBar()
 	menu->AddItem(new CQuickKeyMenuItem("Play Section", new BMessage(MENU_PLAY_SECTION ), 'p', "p"));
 	menu->AddSeparatorItem();
 	menu->AddItem(new BMenuItem("Set Section", new BMessage(MENU_SET_SECTION), 'S', B_SHIFT_KEY));
-	menus->AddItem(menu);
+	menuBar->AddItem(menu);
 	
 	// Create the 'Window' menu
-	windowMenu = new BMenu("Window");
-	windowMenu->AddItem(new BMenuItem("New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
-	windowMenu->AddSeparatorItem();
-	windowMenu->AddItem(new BMenuItem("Show Tracks Window",
-									  new BMessage(MENU_TRACKLIST), 'L'));
-	windowMenu->AddItem(new BMenuItem("Show Event Inspector",
-									  new BMessage(MENU_INSPECTOR), 'I'));
-	windowMenu->AddItem(new BMenuItem("Show Grid Window",
-									  new BMessage(MENU_GRIDWINDOW), 'G'));
-	windowMenu->AddItem(new BMenuItem("Show Transport Controls",
-									  new BMessage(MENU_TRANSPORT), 'T'));
-	windowMenu->AddSeparatorItem();
-	menus->AddItem(windowMenu);
+	menu = new BMenu("Window");
+	menu->AddItem(new BMenuItem("New Window", new BMessage(MENU_NEW_WINDOW), 'W', B_SHIFT_KEY));
+	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Show Tracks Window",
+								new BMessage(MENU_TRACKLIST), 'L'));
+	menu->AddItem(new BMenuItem("Show Event Inspector",
+								new BMessage(MENU_INSPECTOR), 'I'));
+	menu->AddItem(new BMenuItem("Show Grid Window",
+								new BMessage(MENU_GRIDWINDOW), 'G'));
+	menu->AddItem(new BMenuItem("Show Transport Controls",
+								new BMessage(MENU_TRANSPORT), 'T'));
+	menu->AddSeparatorItem();
+	SetWindowMenu(menu);
+	menuBar->AddItem(menu);
 
 	// Add the menus
-	AddChild( menus );
+	AddChild(menuBar);
 }
 
 void
 CAssemblyWindow::AddToolBar()
 {
 	BRect rect(Bounds());
-	if (menus)
-		rect.top = menus->Frame().bottom + 1.0;
+	if (KeyMenuBar())
+		rect.top = KeyMenuBar()->Frame().bottom + 1.0;
 	rect.right += 1.0;
 
 	// add the tool bar
-	m_toolBar = new CToolBar(rect, "General");
+	CToolBar *toolBar = new CToolBar(rect, "General");
 	CBitmapTool *tool;
-	m_toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
-											  ResourceUtils::LoadImage("GridTool"),
-											  new BMessage(TOOL_GRID)));
+	toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
+											ResourceUtils::LoadImage("GridTool"),
+											new BMessage(TOOL_GRID)));
 	tool->SetValue(B_CONTROL_ON);
-	m_toolBar->AddSeparator();
+	toolBar->AddSeparator();
 
-	m_toolBar->AddTool(tool = new CBitmapTool("Select",
-											  ResourceUtils::LoadImage("ArrowTool"),
-											  new BMessage(TOOL_SELECT)));
+	toolBar->AddTool(tool = new CBitmapTool("Select",
+											ResourceUtils::LoadImage("ArrowTool"),
+											new BMessage(TOOL_SELECT)));
 	tool->SetValue(B_CONTROL_ON);
-	m_toolBar->AddTool(tool = new CBitmapTool("Eraser",
-											  ResourceUtils::LoadImage("EraserTool"),
-											  new BMessage(TOOL_ERASE)));
-	m_toolBar->MakeRadioGroup("Select", "Eraser", true);
+	toolBar->AddTool(tool = new CBitmapTool("Eraser",
+											ResourceUtils::LoadImage("EraserTool"),
+											new BMessage(TOOL_ERASE)));
+	toolBar->MakeRadioGroup("Select", "Eraser", true);
 	
-	AddChild(m_toolBar);
+	SetToolBar(toolBar);
 }
 
 // END - AssemblyWindow.cpp
