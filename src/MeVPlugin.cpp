@@ -82,26 +82,24 @@ void MeVPlugIn::NotifyOperatorChanged( EventOp *inOper )
 	app.Unlock();
 }
 
-MeVDocHandle MeVPlugIn::NewDocument( bool inShowWindow )
+MeVDocHandle
+MeVPlugIn::NewDocument(
+	const char *name,
+	bool showWindow)
 {
-	CMeVApp		&app = *(CMeVApp *)be_app;
-	CMeVDoc		*doc;
-	
-	app.Lock();
+	CMeVApp *app = (CMeVApp *)be_app;
+	app->Lock();
 
-	doc = (CMeVDoc *)app.NewDocument( inShowWindow );
+	CMeVDoc *doc = (CMeVDoc *)app->NewDocument(name, NULL, showWindow);
 	if (doc)
 	{
-		MeVDocRef		*ref = new MeVDocRef();
-			
-//		doc->Acquire();
+		MeVDocRef *ref = new MeVDocRef();
 		ref->data = doc;
-			
-		app.Unlock();
+		app->Unlock();
 		return ref;
 	}
 
-	app.Unlock();
+	app->Unlock();
 	return NULL;
 }
 

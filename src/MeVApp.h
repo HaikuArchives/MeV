@@ -51,9 +51,8 @@
 
 #include "AppWindow.h"
 #include "DocApp.h"
-#include "WindowState.h"
 #include "Preferences.h"
-#include "Destination.h"
+#include "WindowState.h"
 
 // Standard Template Library
 #include <map>
@@ -245,10 +244,11 @@ public:							// CDocApp Implementation
 	virtual void				MessageReceived(
 									BMessage *message);
 
-	/**	Create a new document. */
+	/**	Create a new document or load one from a file. */
 	virtual CDocument *			NewDocument(
-									bool showWindow = true,
-									entry_ref *ref = NULL);
+									const char *name,
+									entry_ref *ref = NULL,
+									bool showWindow = true);
 	
 	virtual void				RefsReceived(
 									BMessage *message);
@@ -288,10 +288,6 @@ private:						// Instance Data
 
 	BList						deviceList;
 
-	/** Menu lists for plug-ins */
-//	CDynamicMenuDef				assemWindowPlugIns,
-//								trackWindowPlugIns,
-//								operWindowPlugIns;
 	BList						importerList,
 								exporterList;
 

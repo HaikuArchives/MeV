@@ -63,7 +63,8 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CDocument(
-									CDocApp *app);
+									CDocApp *app,
+									const char *name = NULL);
 
 								CDocument(
 									CDocApp *app,

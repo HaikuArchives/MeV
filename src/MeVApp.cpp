@@ -16,7 +16,6 @@
 #include "LinearWindow.h"
 #include "MidiModule.h"
 #include "MeV.h"
-#include "MeVDoc.h"
 #include "MeVModule.h"
 #include "MeVPlugin.h"
 #include "PlayerControl.h"
@@ -795,7 +794,7 @@ CMeVApp::MessageReceived(
 		}		
 		case MENU_NEW:
 		{
-			NewDocument();
+			NewDocument(NULL);
 			break;
 		}
 		case MENU_OPEN:
@@ -857,12 +856,13 @@ CMeVApp::MessageReceived(
 
 CDocument *
 CMeVApp::NewDocument(
-	bool showWindow,
-	entry_ref *ref)
+	const char *name,
+	entry_ref *ref,
+	bool showWindow)
 {
-	CMeVDoc *doc;
+	CMeVDoc *doc = NULL;
 
-	if (ref)
+	if (ref != NULL)
 	{
 		BFile file(ref, B_READ_ONLY);
 		status_t error = file.InitCheck();
@@ -899,7 +899,7 @@ CMeVApp::NewDocument(
 			CDocApp::Error(msg);
 			return NULL;
 		}
-
+	
 		// Create reader and IFF reader.
 		CBeFileReader reader(file);
 		CIFFReader iffReader(reader);
@@ -907,7 +907,7 @@ CMeVApp::NewDocument(
 	}
 	else
 	{
-		doc = new CMeVDoc(this);
+		doc = new CMeVDoc(this, name);
 	}
 
 	// If document did not initialize OK, then fail.

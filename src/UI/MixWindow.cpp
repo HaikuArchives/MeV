@@ -5,6 +5,7 @@
 #include "MixWindow.h"
 
 #include "ConsoleContainerView.h"
+#include "Destination.h"
 #include "DestinationView.h"
 #include "Idents.h"
 #include "MeVDoc.h"

@@ -50,8 +50,9 @@ CMeVDoc::DEFAULT_TEMPO = 90.0;
 // Constructor/Destructor
 
 CMeVDoc::CMeVDoc(
-	CMeVApp *app)
-	:	CDocument(app),
+	CMeVApp *app,
+	const char *name)
+	:	CDocument(app, name),
 		m_newTrackID(2),
 		m_initialTempo(DEFAULT_TEMPO)
 {

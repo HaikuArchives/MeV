@@ -163,10 +163,11 @@ public:
 		*/
 	virtual void OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref ) {}
 
-		/**	Function to create a new document.
-		*/
-	MeVDocHandle NewDocument( bool inShowWindow );
-
+	/**	Function to create a new document. */
+	MeVDocHandle				NewDocument(
+									const char *name,
+									bool showWindow);
+								
 		/**	Function to gain access to a MeV document. You should
 			release the handle when you are done with it. If the document
 			was not found, it returns NULL.

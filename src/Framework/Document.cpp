@@ -29,7 +29,8 @@ CDocument::s_newDocCount = 0;
 //	Constructor/Destructor
 
 CDocument::CDocument(
-	CDocApp *app)
+	CDocApp *app,
+	const char *name)
 	:	m_app(app),
 		m_modified(false),
 		m_named(false),
@@ -39,19 +40,26 @@ CDocument::CDocument(
 {
 	D_ALLOC(("CDocument::CDocument()\n"));
 
-	char name[32];
+	BString entryName("./");
 
 	m_app->AddDocument(this);
 	
 	//	Get a unique name
-	if (++s_newDocCount == 1)
-		sprintf(name, "./Untitled");
+	if (name == NULL)
+	{
+		if (++s_newDocCount == 1)
+			entryName << "Untitled";
+		else
+			entryName << "Untitled-" << s_newDocCount;
+	}
 	else
-		sprintf(name, "./Untitled-%ld", s_newDocCount);
-	
+	{
+		entryName << name;
+	}
+
 	//	Um, where should the default directory be?
 	//	A preferences item?
-	m_entry.SetTo(name);
+	m_entry.SetTo(entryName.String());
 }
 
 CDocument::CDocument(

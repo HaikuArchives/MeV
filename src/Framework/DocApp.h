@@ -60,8 +60,9 @@ public:							// Constructor/Destructor
 public:							// Hook Functions
 
 	virtual	CDocument *			NewDocument(
-									bool showWindow = true,
-									entry_ref *ref = NULL) = 0;
+									const char *name,
+									entry_ref *ref = NULL,
+									bool showWindow = true) = 0;
 
 	// Override this to change the way the open file panel is created
 	virtual BFilePanel *		CreateOpenPanel();

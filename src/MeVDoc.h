@@ -51,7 +51,7 @@
 
 class CAssemblyWindow;
 class CDestinationList;
-class CMeVApp;
+class EventOp;
 class CTrack;
 class CEventTrack;
 class CIFFReader;
@@ -99,7 +99,8 @@ public:							// Constants
 public:							// Constructor/Destructor
 
 								CMeVDoc(
-									CMeVApp *app);
+									CMeVApp *app,
+									const char *name = NULL);
 
 								CMeVDoc(
 									CMeVApp *app,
@@ -313,8 +314,7 @@ public:							// Operations
 public:							// CDocument Implementation
 
 	virtual CMeVApp *			Application() const
-								{ return static_cast<CMeVApp *>
-										 (CDocument::Application()); }
+								{ return (CMeVApp *)CDocument::Application(); }
 
 	/** Save the document to it's current location */
 	virtual void				SaveDocument();

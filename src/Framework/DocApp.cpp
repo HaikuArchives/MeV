@@ -130,7 +130,7 @@ void
 CDocApp::ReadyToRun()
 {
 	if (CountDocuments() == 0)
-		NewDocument(true, NULL);
+		NewDocument(NULL, NULL, true);
 }
 
 void
@@ -147,7 +147,7 @@ CDocApp::RefsReceived(
 		for (int32 i = 0; i < count; i++)
 		{
 			if (message->FindRef("refs", i, &ref) == B_OK)
-				NewDocument(true, &ref);
+				NewDocument(NULL, &ref, true);
 		}
 	}
 }
