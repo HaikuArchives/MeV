@@ -133,7 +133,7 @@ void CMidiManager::AddInternalSynth()
 {
 	if (m_internalSynth==NULL)
 	{
-		m_internalSynth=new CInternalSynth("Internal Synth");
+		m_internalSynth=new CInternalSynth();
 		m_internalSynth->Register();
 		D_ROSTER(("adding %s\n",m_internalSynth->Name()));
 	}
@@ -300,11 +300,6 @@ CMidiManager::MessageReceived(BMessage *msg)
 		case B_MIDI_EVENT:
 		{
 			_handleMidiEvent(msg);
-			break;
-		}
-		case CInternalSynth::INIT_INTERNAL_SYNTH:
-		{
-			m_internalSynth->Init();
 			break;
 		}
 		default:

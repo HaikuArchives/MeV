@@ -16,14 +16,13 @@
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
 
-CInternalSynth::CInternalSynth(
-	char *name)
-	:	BMidiLocalConsumer(name),
+CInternalSynth::CInternalSynth()
+	:	BMidiLocalConsumer("Internal Synth"),
 		m_midiSynth(NULL)
 {
 	BMessage props;
 	GetProperties(&props);
-	props.AddBool("mev:internalSynth",true);
+	props.AddBool("mev:internal_synth",true);
 
 	BBitmap *largeIcon = GetIcon(B_LARGE_ICON);
 	if (largeIcon)

@@ -47,17 +47,9 @@ class CInternalSynth
 	:	public BMidiLocalConsumer
 {
 
-public:							// Constants
-
-	enum messages
-	{
-								INIT_INTERNAL_SYNTH = 'isyA'
-	};
-
 public:							// Constructor/Destructor
 
-								CInternalSynth(
-									char *name);
+								CInternalSynth();
 
 								~CInternalSynth();
 
