@@ -64,7 +64,9 @@ public:							// Constants
 
 	enum messages
 	{
-								NEW_EVENT_TYPE_CHANGED = 'trwA'
+								NEW_EVENT_TYPE_CHANGED = 'trwA',
+
+								SELECT_MODE_CHANGED
 	};
 
 	static const float			DEFAULT_RULER_HEIGHT;
@@ -129,6 +131,9 @@ public:							// Accessors
 	/**	Returns the default event duration.	*/
 	int32						NewEventDuration() const;
 	
+	/** Returns the current selection mode. */
+	long						SelectionMode() const;
+
 	/**	Returns the type of new events to be created.	*/
 	event_type					NewEventType(
 									event_type defaultType) const;
@@ -216,6 +221,8 @@ private:
 
 	/**	Type of newly created events.	*/
 	event_type					m_newEventType;
+
+	long						m_selectMode;
 
 	/**	The horizontal position info display in the lower left 
 			corner of the window.		*/

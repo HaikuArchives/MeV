@@ -11,6 +11,7 @@
 #include "Idents.h"
 #include "IFFReader.h"
 #include "IFFWriter.h"
+#include "MenuTool.h"
 #include "MeVApp.h"
 #include "MeVDoc.h"
 #include "MeVFileID.h"
@@ -71,7 +72,8 @@ CTrackWindow::CTrackWindow(
 		track(track),
 		stripScroll(NULL),
 		trackOp(NULL),
-		m_newEventType(EvtType_Count)
+		m_newEventType(EvtType_Count),
+		m_selectMode(CEventEditor::RECTANGLE_SELECTION)
 {
 	D_ALLOC(("TrackWindow::TrackWindow(new)\n"));
 
@@ -144,6 +146,12 @@ CTrackWindow::NewEventType(
 		return defaultType;
 
 	return m_newEventType;
+}
+
+long
+CTrackWindow::SelectionMode() const
+{
+	return m_selectMode;
 }
 
 // ---------------------------------------------------------------------------
@@ -495,6 +503,37 @@ CTrackWindow::MessageReceived(
 				if (AddStrip(type))
 					stripFrame->PackStrips();
 			}
+			break;
+		}
+		case SELECT_MODE_CHANGED:
+		{
+			int32 mode;
+			if (message->FindInt32("mev:mode", &mode) != B_OK)
+				return;
+			CMenuTool *tool = dynamic_cast<CMenuTool *>
+							  (ToolBar()->FindTool("Select"));
+			if (tool == NULL)
+				return;
+			if (mode != m_selectMode)
+			{
+				BBitmap *bitmap = NULL;
+				switch (mode)
+				{
+					case CEventEditor::RECTANGLE_SELECTION:
+					{
+						bitmap = ResourceUtils::LoadImage("SelRectTool");
+						break;
+					}
+					case CEventEditor::LASSO_SELECTION:
+					{
+						bitmap = ResourceUtils::LoadImage("SelLassoTool");
+						break;
+					}
+				}
+				m_selectMode = mode;
+				tool->SetBitmap(bitmap);
+			}
+			tool->SetValue(B_CONTROL_ON);
 			break;
 		}
 		case NEW_EVENT_TYPE_CHANGED:

@@ -5,6 +5,7 @@
 #include "VelocityEditor.h"
 
 #include "CursorCache.h"
+#include "EventRenderer.h"
 #include "EventTrack.h"
 #include "Destination.h"
 #include "MeVDoc.h"

@@ -5,6 +5,7 @@
 #include "LinearEditor.h"
 
 #include "CursorCache.h"
+#include "EventRenderer.h"
 #include "EventTrack.h"
 #include "Idents.h"
 #include "MidiDestination.h"

@@ -6,6 +6,7 @@
 
 #include "CursorCache.h"
 #include "Destination.h"
+#include "EventRenderer.h"
 #include "EventTrack.h"
 #include "Idents.h"
 #include "MathUtils.h"

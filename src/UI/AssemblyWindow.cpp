@@ -305,10 +305,25 @@ CAssemblyWindow::AddMenuBar()
 void
 CAssemblyWindow::AddToolBar()
 {
+	BMessage *message;
+
+	// make the pop up menu for 'Select' tool
+	BPopUpMenu *selectMenu = new BPopUpMenu("", false, false);
+	selectMenu->SetFont(be_plain_font);	
+	message = new BMessage(SELECT_MODE_CHANGED);
+	message->AddInt32("mev:mode", CEventEditor::RECTANGLE_SELECTION);
+	selectMenu->AddItem(new CIconMenuItem("Rectangle", message,
+										  ResourceUtils::LoadImage("SelRectTool")));
+	message = new BMessage(*message);
+	message->ReplaceInt32("mev:mode", CEventEditor::LASSO_SELECTION);
+	selectMenu->AddItem(new CIconMenuItem("Lasso", message,
+										  ResourceUtils::LoadImage("SelLassoTool")));
+	selectMenu->SetTargetForItems(this);
+
 	// make the pop up menu for 'Create' tool
 	BPopUpMenu *createMenu = new BPopUpMenu("", false, false);
 	createMenu->SetFont(be_plain_font);
-	BMessage *message = new BMessage(NEW_EVENT_TYPE_CHANGED);
+	message = new BMessage(NEW_EVENT_TYPE_CHANGED);
 	message->AddInt32("type", EvtType_Count);
 	createMenu->AddItem(new CIconMenuItem("Default", message,
 										  ResourceUtils::LoadImage("PencilTool")));
@@ -329,7 +344,7 @@ CAssemblyWindow::AddToolBar()
 	message->ReplaceInt32("type", EvtType_End);
 	createMenu->AddItem(new CIconMenuItem("Part End", message,
 										  ResourceUtils::LoadImage("EndTool")));
-	createMenu->SetTargetForItems((CDocWindow *)this);
+	createMenu->SetTargetForItems(this);
 
 	BRect rect(Bounds());
 	if (KeyMenuBar())
@@ -338,16 +353,17 @@ CAssemblyWindow::AddToolBar()
 
 	// add the tool bar
 	CToolBar *toolBar = new CToolBar(rect, "General");
-	CBitmapTool *tool;
+	CTool *tool;
 	toolBar->AddTool(tool = new CBitmapTool("Snap To Grid",
 											ResourceUtils::LoadImage("GridTool"),
 											new BMessage(CEventEditor::TOOL_GRID)));
 	tool->SetValue(B_CONTROL_ON);
 	toolBar->AddSeparator();
 
-	toolBar->AddTool(tool = new CBitmapTool("Select",
-											ResourceUtils::LoadImage("ArrowTool"),
-											new BMessage(CEventEditor::TOOL_SELECT)));
+	toolBar->AddTool(tool = new CMenuTool("Select",
+										  ResourceUtils::LoadImage("SelRectTool"),
+										  selectMenu,
+										  new BMessage(CEventEditor::TOOL_SELECT)));
 	tool->SetValue(B_CONTROL_ON);
 	toolBar->AddTool(new CMenuTool("Create", ResourceUtils::LoadImage("PencilTool"),
 								   createMenu, new BMessage(CEventEditor::TOOL_CREATE)));
@@ -355,7 +371,7 @@ CAssemblyWindow::AddToolBar()
 											ResourceUtils::LoadImage("EraserTool"),
 											new BMessage(CEventEditor::TOOL_ERASE)));
 	toolBar->MakeRadioGroup("Select", "Eraser", true);
-	
+
 	SetToolBar(toolBar);
 }
 
