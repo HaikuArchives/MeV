@@ -259,7 +259,7 @@ CTrack::WriteTrack(
 		// master real track doesn't have window settings!
 		return;
 
-	StSubjectLock lock(*this, Lock_Exclusive);
+	StSubjectLock lock(*this, Lock_Shared);
 
 	writer.Push(Track_Header_ID);
 	writer << m_trackID;
