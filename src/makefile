@@ -202,7 +202,7 @@ SYMBOLS =
 #	specify debug settings
 #	if TRUE will allow application to be run from a source-level
 #	debugger.  Note that this will disable all optimzation.
-DEBUGGER = TRUE
+DEBUGGER =
 
 #	specify additional compiler flags for all files
 COMPILER_FLAGS =
@@ -216,5 +216,7 @@ LINKER_FLAGS =
 APP_VERSION = 
 
 ## include local makefile-engine
-include makefile-engine
+DEVEL_DIRECTORY := \
+	$(shell findpaths -r "makefile_engine" B_FIND_PATH_DEVELOP_DIRECTORY)
+include $(DEVEL_DIRECTORY)/etc/makefile-engine
 
