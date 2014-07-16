@@ -38,6 +38,9 @@
 
 #include "Tool.h"
 
+// Interface Kit
+#include <PopUpMenu.h>
+
  /**
  *		Extends the CTool class to provide 'buttcons' including a pop-up
  *		menu.

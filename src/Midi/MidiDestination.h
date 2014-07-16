@@ -48,14 +48,15 @@
 #include <Messenger.h>
 // Support Kit
 #include <String.h>
+// MIDI Kit
+#include <MidiProducer.h>
+#include <MidiConsumer.h>
 
 #define CONTROLLER_NAME_LENGTH 128
 #define NOTE_NAME_LENGTH 128
 #define PROGRAM_NAME_LENGTH 128
 
 class CMeVDoc;
-
-class BMidiLocalProducer;
 
 namespace Midi {
 

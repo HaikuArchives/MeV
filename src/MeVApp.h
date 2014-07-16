@@ -54,6 +54,29 @@
 #include "Preferences.h"
 #include "WindowState.h"
 
+// Gnu C Library
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+// Application Kit
+#include <Roster.h>
+// Interface Kit
+#include <Alert.h>
+#include <Box.h>
+#include <MenuField.h>
+#include <MenuItem.h>
+#include <PopUpMenu.h>
+#include <ScrollView.h>
+#include <TextView.h>
+#include <ListView.h>
+// Storage Kit
+#include <AppFileInfo.h>
+#include <FilePanel.h>
+#include <NodeInfo.h>
+#include <Path.h>
+// Support Kit
+#include <Debug.h>
+
 // Standard Template Library
 #include <map>
 

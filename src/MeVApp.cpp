@@ -25,27 +25,8 @@
 #include "TrackListWindow.h"
 #include "TransportWindow.h"
 
-// Gnu C Library
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-// Application Kit
-#include <Roster.h>
-// Interface Kit
-#include <Alert.h>
-#include <Box.h>
-#include <MenuField.h>
-#include <MenuItem.h>
-#include <PopUpMenu.h>
-#include <ScrollView.h>
-#include <TextView.h>
-// Storage Kit
-#include <AppFileInfo.h>
-#include <FilePanel.h>
-#include <NodeInfo.h>
-#include <Path.h>
-// Support Kit
-#include <Debug.h>
+#include <sys/stat.h>
+#include <compat/sys/stat.h>
 
 // Debugging Macros
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
@@ -117,9 +98,9 @@ public:						// BRefFilter Implementation
 	bool					Filter(
 								const entry_ref *ref,
 								BNode *node,
-								struct stat *st,
-								const char *filetype)
-							{ return (strstr(filetype, "MeV") != NULL || node->IsDirectory()); }
+								struct stat_beos *st,
+								const char *mimetype)
+							{ return (strstr(mimetype, "MeV") != NULL || node->IsDirectory()); }
 };
 
 class CImportRefFilter
@@ -131,7 +112,7 @@ public:						// BRefFilter Implementation
 	bool					Filter(
 								const entry_ref *ref,
 								BNode *node,
-								struct stat *st,
+								struct stat_beos *st,
 								const char *filetype);
 };
 
@@ -139,16 +120,18 @@ bool
 CImportRefFilter::Filter(
 	const entry_ref *ref,
 	BNode *node,
-	struct stat *st,
+	struct stat_beos *st,
 	const char *fileType)
 {
 	BList &list = ((CMeVApp *)be_app)->importerList;
 
 	for (int i = 0; i < list.CountItems(); i++)
 	{
+		struct stat stat_posix;
+		convert_from_stat_beos(st, &stat_posix);
 		MeVPlugIn *plugin = (MeVPlugIn *)list.ItemAt(i);
 		if (node->IsDirectory()
-		 || (plugin->DetectFileType(ref, node, st, fileType) >= 0))
+		 || (plugin->DetectFileType(ref, node, &stat_posix, fileType) >= 0))
 			return true;
 	}
 	return false;

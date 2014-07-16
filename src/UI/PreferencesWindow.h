@@ -39,6 +39,8 @@
 #include "MeVApp.h"
 #include "AppWindow.h"
 
+#include <CheckBox.h>
+
 class CTextSlider;
 
 #define MAX_PREFERENCES_PANELS 32

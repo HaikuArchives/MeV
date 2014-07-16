@@ -46,6 +46,9 @@
 #include "Observable.h"
 #include "Observer.h"
 
+// Interface Kit
+#include <StringView.h>
+
 class CDestinationListView;
 class CEventTrack;
 class CMeVDoc;

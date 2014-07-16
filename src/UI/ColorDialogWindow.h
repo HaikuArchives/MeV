@@ -31,6 +31,8 @@
 
 #include "DialogWindow.h"
 
+// Interface Kit
+#include <ColorControl.h>
 // Application Kit
 #include <Message.h>
 #include <Messenger.h>

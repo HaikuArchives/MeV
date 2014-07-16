@@ -57,7 +57,7 @@ class MeVSpec MeVPlugIn;
 #pragma export on
 #endif
 
-class MeVSpec EventOp : public CRefCountObject {
+class EventOp : public CRefCountObject {
 protected:
 
 	MeVPlugIn			*creator;
@@ -73,7 +73,7 @@ public:
 	EventOp( MeVPlugIn *inCreator );
 
 		/**	The function call operater applies the function to the event. */
-	virtual void operator()( CEvent &, TClockType ) = 0;
+	virtual void operator()( CEvent &, TClockType ) { }
 	
 		/**	Returns the name of the plug-in that created this event operator.
 			This is used for archiving the state of the operator.
@@ -103,7 +103,7 @@ public:
 		/**	Return a text string describing the action. Used for setting the
 			Undo menu.
 		*/
-	virtual const char *UndoDescription() const = 0;
+	virtual const char *UndoDescription() const { return NULL; }
 
 		/**	For external operations created by plug-ins, return the user-readable
 			name of this operation. (Internal operators do not need this).

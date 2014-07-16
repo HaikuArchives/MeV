@@ -34,6 +34,7 @@
 #ifndef __C_Observer_H__
 #define __C_Observer_H__
 
+#include <Message.h>
 // Support Kit
 #include <SupportDefs.h>
 

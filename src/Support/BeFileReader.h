@@ -39,6 +39,9 @@
 // Gnu C Library
 #include <stdio.h>
 
+// Storage Kit
+#include <File.h>
+
 /**	An abstract class representing a readable stream of bytes.
 	You make subclasses for files, strings, packets, etc.
 	@authors	Talin, Curt Malouin, Christopher Lenz

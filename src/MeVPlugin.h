@@ -45,12 +45,15 @@
 #include "Event.h"
 #include "EventOp.h"
 
+#include <sys/stat.h>
 // Application Kit
 #include <app/Handler.h>
 // Interface Kit
 #include <interface/GraphicsDefs.h>
 // Kernel Kit
 #include <kernel/OS.h>
+// Storage Kit
+#include <Node.h>
 
 // ---------------------------------------------------------------------
 //	Forward declarations

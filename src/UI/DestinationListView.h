@@ -37,6 +37,8 @@
 
 // Interface Kit
 #include <View.h>
+#include <PopUpMenu.h>
+#include <MenuField.h>
 
 class CDestinationModifier;
 class CMeVDoc;

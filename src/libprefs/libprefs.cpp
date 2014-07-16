@@ -9,70 +9,25 @@
 /*	See below for various switches to control this behaviour				*/
 
 /*	include necessary files	*/
-#if !defined(LIBPREFS_H)
+
 #include "libprefs.h"
-#endif
 
-#if !defined(_OS_H)
 #include <OS.h>
-#endif
-
-#if !defined(_FIND_DIRECTORY_H)
 #include <FindDirectory.h>
-#endif
-
-#if !defined(_MESSAGE_H)
-#include <Message.h>	/*	requires C++	*/
-#endif
-
-#if !defined(_STRING_H)
-#include <string.h>
-#endif
-
-#if !defined(_SYS_STAT_H)
-#include <sys/stat.h>
-#endif
-
-#if !defined(_FCNTL_H)
-#include <fcntl.h>
-#endif
-
-#if !defined(_UNISTD_H)
-#include <unistd.h>
-#endif
-
-#if !defined(_DEBUG_H)
-#include <Debug.h>
-#endif
-
-#if !defined(_STDLIB_H)
-#include <stdlib.h>
-#endif
-
-#if !defined(_ERRNO_H)
-#include <errno.h>
-#endif
-
-#if !defined(_PATH_H)
-#include <Path.h>
-#endif
-
-#if !defined(_DIRECTORY_H)
+#include <Message.h>
 #include <Directory.h>
-#endif
+#include <Path.h>
+#include <Debug.h>
+#include <Entry.h>
 
-#if !defined(_IMAGE_H)
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <image.h>
-#endif
-
-#if !defined(_DIRENT_H)
 #include <dirent.h>
-#endif
-
-#if !defined(_IMAGE_H)
-#include <image.h>
-#endif
-
 
 /*	identifier for this implementation of the prefs library	*/
 #define	PREF_VERSION_STRING		"simple libprefs.so version 1.2.4"
@@ -440,7 +395,7 @@ _PREFMakePath(
 {
 	status_t err = B_OK;
 	BPath bpath;
-	err = find_directory(user_level ? B_USER_SETTINGS_DIRECTORY : B_COMMON_SETTINGS_DIRECTORY, &bpath, true, NULL);
+	err = find_directory(user_level ? B_USER_SETTINGS_DIRECTORY : B_SYSTEM_SETTINGS_DIRECTORY, &bpath, true, NULL);
 	if (err < B_OK) return err;
 	strncpy(path, bpath.Path(), path_max);
 	path[path_max-1] = 0;
@@ -1203,7 +1158,7 @@ typedef struct _PREFAppIterator {
 			curItem = 0;
 			item = new char*[block];
 			BPath bpath;
-			if (!find_directory(user_level ? B_USER_SETTINGS_DIRECTORY : B_COMMON_SETTINGS_DIRECTORY, &bpath, true, NULL))
+			if (!find_directory(user_level ? B_USER_SETTINGS_DIRECTORY : B_SYSTEM_SETTINGS_DIRECTORY, &bpath, true, NULL))
 			{
 				BDirectory dir(bpath.Path());
 				BEntry entry;
@@ -1325,7 +1280,7 @@ typedef struct _PREFSetIterator
 			curItem = 0;
 			item = new char*[block];
 			BPath bpath;
-			if (!find_directory(user_level ? B_USER_SETTINGS_DIRECTORY : B_COMMON_SETTINGS_DIRECTORY, &bpath, true, NULL))
+			if (!find_directory(user_level ? B_USER_SETTINGS_DIRECTORY : B_SYSTEM_SETTINGS_DIRECTORY, &bpath, true, NULL))
 			{
 				char str[B_FILE_NAME_LENGTH+20];
 				strcpy(str, LP_MAGIC);

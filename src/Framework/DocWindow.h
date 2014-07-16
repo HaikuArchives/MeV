@@ -36,6 +36,8 @@
 
 #include "AppWindow.h"
 
+// Interface Kit
+#include <Menu.h>
 // Support Kit
 #include <String.h>
 

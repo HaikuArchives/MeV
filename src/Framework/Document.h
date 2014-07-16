@@ -39,6 +39,7 @@
 
 // Storage Kit
 #include <Entry.h>
+#include <FilePanel.h>
 
 class CDocApp;
 class CDocWindow;

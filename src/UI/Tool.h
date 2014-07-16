@@ -37,6 +37,7 @@
 #define __C_Tool_H__
 
 // Interface Kit
+#include <View.h>
 #include <Rect.h>
 // Support Kit
 #include <Archivable.h>
