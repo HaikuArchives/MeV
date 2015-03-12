@@ -81,7 +81,7 @@ CRecentDocumentsMenu::_populateMenu(
 		BNode node(&entry);
 		BNodeInfo nodeInfo(&node);
 		BBitmap *icon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
-										  B_MINI_ICON - 1.0), B_CMAP8);
+										  B_MINI_ICON - 1.0), B_RGBA32);
 		if (nodeInfo.GetTrackerIcon(icon, B_MINI_ICON) != B_OK)
 		{
 			delete icon;
