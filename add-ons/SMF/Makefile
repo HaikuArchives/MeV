@@ -5,15 +5,15 @@
 ## architecture of Haiku.
 
 # The name of the binary.
-NAME = MeV
-TARGET_DIR = ../app
+NAME = StandardMidiFile
+TARGET_DIR = ../../app/add-ons
 
 # The type of binary, must be one of:
 #	APP:	Application
 #	SHARED:	Shared library or add-on
 #	STATIC:	Static library archive
 #	DRIVER: Kernel driver
-TYPE = APP
+TYPE = SHARED
 
 # 	If you plan to use localization, specify the application's MIME signature.
 APP_MIME_SIG = 
@@ -29,118 +29,7 @@ APP_MIME_SIG =
 #	means this Makefile will not work correctly if two source files with the
 #	same name (source.c or source.cpp) are included from different directories.
 #	Also note that spaces in folder names do not work well with this Makefile.
-SRCS = MeVApp.cpp \
-	MeVDoc.cpp \
-	MeVModule.cpp \
-	MeVPlugin.cpp \
-	Framework/AppWindow.cpp \
-	Framework/DialogWindow.cpp \
-	Framework/DocApp.cpp \
-	Framework/Document.cpp \
-	Framework/DocWindow.cpp \
-	Framework/ItemList.cpp \
-	Framework/Lockable.cpp \
-	Framework/Observable.cpp \
-	Framework/Observer.cpp \
-	Framework/RecentDocumentsMenu.cpp \
-	Framework/RefCount.cpp \
-	Framework/ScreenUtils.cpp \
-	Framework/Serializable.cpp \
-	Framework/Undo.cpp \
-	Framework/WindowState.cpp \
-	Engine/Destination.cpp \
-	Engine/Event.cpp \
-	Engine/EventList.cpp \
-	Engine/EventOp.cpp \
-	Engine/EventStack.cpp \
-	Engine/EventTask.cpp \
-	Engine/EventTrack.cpp \
-	Engine/PlaybackTask.cpp \
-	Engine/PlaybackTaskGroup.cpp \
-	Engine/Player.cpp \
-	Engine/PlayerControl.cpp \
-	Engine/SignatureMap.cpp \
-	Engine/TempoMap.cpp \
-	Engine/Time.cpp \
-	Engine/TimeSpan.cpp \
-	Engine/Track.cpp \
-	Midi/DestinationConfigView.cpp \
-	Midi/DestinationMonitorView.cpp \
-	Midi/GeneralMidi.cpp \
-	Midi/InternalSynth.cpp \
-	Midi/MidiDestination.cpp \
-	Midi/MidiDeviceInfo.cpp \
-	Midi/MidiModule.cpp \
-	Midi/MidiPortsMenu.cpp \
-	Midi/PortNameMap.cpp \
-	Support/BeError.cpp \
-	Support/BeFileReader.cpp \
-	Support/Dictionary.cpp \
-	Support/DList.cpp \
-	Support/IFFReader.cpp \
-	Support/IFFWriter.cpp \
-	Support/MathUtils.cpp \
-	Support/Reader.cpp \
-	Support/ResourceUtils.cpp \
-	Support/Writer.cpp \
-	UI/AssemblyWindow.cpp \
-	UI/BitmapTool.cpp \
-	UI/BorderButton.cpp \
-	UI/BorderView.cpp \
-	UI/ColorDialogWindow.cpp \
-	UI/ColorWell.cpp \
-	UI/ConsoleContainerView.cpp \
-	UI/ConsoleView.cpp \
-	UI/ContinuousValueEditor.cpp \
-	UI/CursorCache.cpp \
-	UI/DestinationListView.cpp \
-	UI/DestinationView.cpp \
-	UI/EventEditor.cpp \
-	UI/EventRenderer.cpp \
-	UI/GridWindow.cpp \
-	UI/IconMenuItem.cpp \
-	UI/InspectorWindow.cpp \
-	UI/LinearEditor.cpp \
-	UI/LinearWindow.cpp \
-	UI/LoopButton.cpp \
-	UI/MenuTool.cpp \
-	UI/MixWindow.cpp \
-	UI/MultiColumnListView.cpp \
-	UI/OperatorWindow.cpp \
-	UI/PitchBendEditor.cpp \
-	UI/PlayPauseButton.cpp \
-	UI/Polygon.cpp \
-	UI/PositionInfoBar.cpp \
-	UI/PreferencesWindow.cpp \
-	UI/QuickKeyMenuItem.cpp \
-	UI/RulerView.cpp \
-	UI/Scroller.cpp \
-	UI/Spinner.cpp \
-	UI/Splitter.cpp \
-	UI/StatusBar.cpp \
-	UI/StdBevels.cpp \
-	UI/StdButton.cpp \
-	UI/StringEditView.cpp \
-	UI/StripFrameView.cpp \
-	UI/StripLabelView.cpp \
-	UI/StripSplitter.cpp \
-	UI/StripView.cpp \
-	UI/TempoEditControl.cpp \
-	UI/TextDisplay.cpp \
-	UI/TextSlider.cpp \
-	UI/TimeEditControl.cpp \
-	UI/TimeIntervalControl.cpp \
-	UI/Tool.cpp \
-	UI/ToolBar.cpp \
-	UI/TrackCtlStrip.cpp \
-	UI/TrackListItem.cpp \
-	UI/TrackListView.cpp \
-	UI/TrackListWindow.cpp \
-	UI/TrackWindow.cpp \
-	UI/TransportButton.cpp \
-	UI/TransportWindow.cpp \
-	UI/VelocityEditor.cpp \
-	libprefs/libprefs.cpp
+SRCS = StandardMidiFile.cpp
 
 #	Specify the resource definition files to use. Full or relative paths can be
 #	used.
@@ -148,12 +37,7 @@ RDEFS =
 
 #	Specify the resource files to use. Full or relative paths can be used.
 #	Both RDEFS and RSRCS can be utilized in the same Makefile.
-RSRCS = ../resources/Bitmaps.rsrc \
-	../resources/Buttons.rsrc \
-	../resources/Cursors.rsrc \
-	../resources/Icons.rsrc \
-	../resources/MeV.rsrc \
-	../resources/Midi.rsrc
+RSRCS = 
 
 # End Pe/Eddie support.
 # @<-src@ 
@@ -171,7 +55,7 @@ RSRCS = ../resources/Bitmaps.rsrc \
 #	- 	if your library does not follow the standard library naming scheme,
 #		you need to specify the path to the library and it's name.
 #		(e.g. for mylib.a, specify "mylib.a" or "path/mylib.a")
-LIBS = be media midi midi2 tracker translation
+LIBS = 
 
 #	Specify additional paths to directories following the standard libXXX.so
 #	or libXXX.a naming scheme. You can specify full paths or paths relative
@@ -188,11 +72,14 @@ SYSTEM_INCLUDE_PATHS =
 #	Additional paths paths to look for local headers. These use the form
 #	#include "header". Directories that contain the files in SRCS are
 #	automatically included.
-LOCAL_INCLUDE_PATHS = 
+LOCAL_INCLUDE_PATHS = ../../src/ \
+	../../src/Support \
+	../../src/Engine \
+	../../src/Framework
 
 #	Specify the level of optimization that you want. Specify either NONE (O0),
 #	SOME (O1), FULL (O2), or leave blank (for the default optimization level).
-OPTIMIZE := SOME
+OPTIMIZE := 
 
 # 	Specify the codes for languages you are going to support in this
 # 	application. The default "en" one must be provided too. "make catkeys"
@@ -210,7 +97,7 @@ DEFINES =
 
 #	Specify the warning level. Either NONE (suppress all warnings),
 #	ALL (enable all warnings), or leave blank (enable default warnings).
-WARNINGS = ALL
+WARNINGS = 
 
 #	With image symbols, stack crawls in the debugger are meaningful.
 #	If set to "TRUE", symbols will be created.
