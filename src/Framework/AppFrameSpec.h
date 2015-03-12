@@ -38,14 +38,14 @@
 #ifndef __AppFrameSpec_H__
 #define __AppFrameSpec_H__
 
-#ifdef __INTEL__
+/*#ifdef __INTEL__
  #if defined( APPFRAME_SHARED_LIBRARY )
   #define AppFrameSpec __declspec(dllexport) 
  #else
   #define AppFrameSpec __declspec(dllimport) 
  #endif
-#else
+#else*/
  #define AppFrameSpec
-#endif
+/*#endif*/
 
 #endif /* __C_AppFrameSpec_H__ */
