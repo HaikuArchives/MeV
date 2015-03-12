@@ -144,16 +144,16 @@ SRCS = MeVApp.cpp \
 
 #	Specify the resource definition files to use. Full or relative paths can be
 #	used.
-RDEFS = 
+RDEFS = ../resources/Bitmaps.rdef \
+	../resources/Buttons.rdef \
+	../resources/Cursors.rdef \
+	../resources/Icons.rdef \
+	../resources/MeV.rdef \
+	../resources/Midi.rdef 
 
 #	Specify the resource files to use. Full or relative paths can be used.
 #	Both RDEFS and RSRCS can be utilized in the same Makefile.
-RSRCS = ../resources/Bitmaps.rsrc \
-	../resources/Buttons.rsrc \
-	../resources/Cursors.rsrc \
-	../resources/Icons.rsrc \
-	../resources/MeV.rsrc \
-	../resources/Midi.rsrc
+RSRCS =
 
 # End Pe/Eddie support.
 # @<-src@ 
