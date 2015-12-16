@@ -967,6 +967,7 @@ CMeVApp::QuitRequested()
 		WriteWindowState(prefMessage, ABOUT_PI_NAME, aboutPluginWinState );
 		winSettings.Save();
 	}
+	
 	return true;
 }
 

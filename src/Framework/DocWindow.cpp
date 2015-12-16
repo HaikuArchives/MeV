@@ -25,6 +25,7 @@
 // Support Kit
 #include <Debug.h>
 #include <String.h>
+#include <Locker.h>
 
 #define D_ALLOC(x) //PRINT(x)			// Constructor/Destructor
 #define D_HOOK(x) //PRINT(x)			// CAppWindow Implementation
@@ -34,6 +35,8 @@
 
 CDocWindow *
 CDocWindow::s_activeDocWin = NULL;
+
+static BLocker s_activeWinLocker("DocWindow locker");
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -98,11 +101,11 @@ CDocWindow::~CDocWindow()
 		m_document = NULL;
 	}
 
-	if (be_app->Lock())
+	if (s_activeWinLocker.Lock())
 	{
 		if (this == s_activeDocWin)
 			s_activeDocWin = NULL;
-		be_app->Unlock();
+		s_activeWinLocker.Unlock();
 	}
 }
 
@@ -161,7 +164,7 @@ CDocWindow::SetToolBar(
 void
 CDocWindow::AcquireSelectToken()
 {
-	if (be_app->Lock())
+	if (s_activeWinLocker.Lock())
 	{
 		if (this != ActiveDocWindow())
 		{
@@ -178,7 +181,7 @@ CDocWindow::AcquireSelectToken()
 			message.AddBool("active", true);
 			PostMessage(&message, this);
 		}
-		be_app->Unlock();
+		s_activeWinLocker.Unlock();
 	}
 }
 
