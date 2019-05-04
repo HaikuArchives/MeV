@@ -6,7 +6,7 @@
 #include "StWindowUtils.h"
 
 // Gnu C Library
-#include <algobase.h>
+#include <algorithm>
 
 // ---------------------------------------------------------------------------
 // Constructor/Destructor
@@ -62,9 +62,9 @@ void CScrollerTarget::AdjustScroller(
 
 	sBar->GetRange(	&rgMin, &rgMax );
 	sBar->GetSteps(	&stSmall, &stBig );
-		
-	range = max( (float)0.0, range - frameSize );
-	v = *value = min( *value, range );
+
+	range = std::max( (float)0.0, range - frameSize );
+	v = *value = std::min( *value, range );
 
 	if (stSmall != smallStep || stBig != frameSize)
 		sBar->SetSteps( smallStep, frameSize );
@@ -82,7 +82,7 @@ void CScrollerTarget::SetScrollRange(	float inHRange,
 	scrollValue.x = inHValue;
 	scrollRange.y = inVRange;
 	scrollValue.y = inVValue;
-	
+
 	AdjustScrollers();
 }
 
@@ -100,7 +100,7 @@ void CScrollerTarget::SetScrollValue(
 // 	scrollValue.y = MIN( scrollRange.y - FrameSize().y, MAX( 0.0, inScrollValue ) );
 		scrollValue.y = inScrollValue;
 	}
-	
+
 	if (redirect) redirect->SetScrollValue( inScrollValue, inOrient );
 }
 

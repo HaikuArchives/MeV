@@ -4,6 +4,8 @@
 
 #include "MathUtils.h"
 
+#include <math.h>
+
 float
 MathUtils::DistanceFromPointToLine(
 	BPoint point,

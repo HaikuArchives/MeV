@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  *  History:
@@ -42,6 +42,7 @@
 #include <Locker.h>
 
 class BCursor;
+class CAppWindow;
 class CWindowState;
 
 /**
@@ -108,6 +109,10 @@ public:							// Operations
 									CAppWindow *window);
 
 	void						WindowClosed();
+
+	CWindowState& 				operator=(const CWindowState& other)
+								{ m_window = other.m_window; m_frame = other.m_frame;
+									return *this; }
 
 private:						// Instance Data
 

@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
@@ -54,7 +54,7 @@ public:
 
 		//*	Copy constructor
 	BitSet( const BitSet &a ) { memcpy( bits, a.bits, sizeof bits ); }
-	
+
 		//*	Set a bit
 	void Set( int bit )
 		{	bits[ bit >> 5 ] |= (1 << ((~bit) & 0x1f)); }
@@ -62,7 +62,7 @@ public:
 		//*	Clear a bit
 	void Reset( int bit )
 		{	bits[ bit >> 5 ] &= ~(1 << ((~bit) & 0x1f)); }
-		
+
 		//*	Set a bit to a value
 	void Set( int bit, int val )
 		{	if (val) Set( bit ); else Reset( bit ); }
@@ -70,7 +70,7 @@ public:
 		//*	Return the state of the Nth bit
 	int Test( int bit ) const
 		{	return bits[ bit >> 5 ] & (1 << ((~bit) & 0x1f));	}
-	
+
 		//*	Return the state of the Nth bit
 	int operator[]( int bit ) const
 		{	return bits[ bit >> 5 ] & (1 << ((~bit) & 0x1f));	}
@@ -79,9 +79,9 @@ public:
 	BitSet operator&( const BitSet &a )
 	{
 		BitSet	result;
-	
+
 		for (int i = 0; i < size; i++)
-		{	
+		{
 			result.bits[ i ] = a.bits[ i ] & bits[ i ];
 		}
 		return result;
@@ -91,9 +91,9 @@ public:
 	BitSet operator|( const BitSet &a )
 	{
 		BitSet	result;
-	
+
 		for (int i = 0; i < size; i++)
-		{	
+		{
 			result.bits[ i ] = a.bits[ i ] | bits[ i ];
 		}
 		return result;
@@ -103,9 +103,9 @@ public:
 	BitSet operator^( const BitSet &a )
 	{
 		BitSet	result;
-	
+
 		for (int i = 0; i < size; i++)
-		{	
+		{
 			result.bits[ i ] = a.bits[ i ] ^ bits[ i ];
 		}
 		return result;
@@ -115,9 +115,9 @@ public:
 	BitSet operator~( void )
 	{
 		BitSet	result;
-	
+
 		for (int i = 0; i < size; i++)
-		{	
+		{
 			result.bits[ i ] = ~bits[ i ];
 		}
 		return result;
@@ -126,13 +126,13 @@ public:
 		//*	The '==' operator
 	int operator==( const BitSet &a )
 	{
-		return memcmp( a.bits, bits, sizeof bits ) ? FALSE : TRUE;
+		return memcmp( a.bits, bits, sizeof bits ) ? false : true;
 	}
 
 		//*	The '!=' operator
 	int operator!=( const BitSet &a )
 	{
-		return memcmp( a.bits, bits, sizeof bits ) ? TRUE : FALSE;
+		return memcmp( a.bits, bits, sizeof bits ) ? true : false;
 	}
 
 		//*	The '&amp;=' operator

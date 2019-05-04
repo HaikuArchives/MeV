@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  * History:
@@ -38,8 +38,10 @@
 
 #include <new>
 
-// Forward declare undo action.
+// Forward declarations.
 class ItemListUndoAction_Base;
+class ItemMarker_Base;
+class UndoItem;
 template<class Item> class ItemListUndoAction ;
 
 /**
@@ -94,7 +96,7 @@ class ItemBlock_Base : private DNode {
 protected:
 	uint16			count;					// number of items in block
 	DList			markers;				// markers pointing to this block
-	
+
 		// Member functions to iterate through list of blocks.
 	ItemBlock_Base *Next() const { return (ItemBlock_Base *)DNode::Next(); }
 	ItemBlock_Base *Prev() const { return (ItemBlock_Base *)DNode::Prev(); }
@@ -105,11 +107,11 @@ protected:
 		// in the derived template classes.
 };
 
-/**	
- *	A non-template base class representing a list of item blocks.	
+/**
+ *	A non-template base class representing a list of item blocks.
  *	@author		Talin
  */
- 
+
  class ItemList_Base {
 	friend class	UndoItem;
 	friend class	ItemBlock_Base;
@@ -133,7 +135,7 @@ protected:
 		// Block manipulation
 	void Compact(	ItemBlock_Base *inBlock );
 	bool Split(	ItemBlock_Base *inBlock, short inSplitPoint );
-	
+
 		// Item insertion and deletion
 	bool Insert(		ItemMarker_Base	*inListPos,			// Insertion point
 					void				*inItemArray,		// Items to insert
@@ -152,19 +154,19 @@ protected:
 	long Swap(		ItemMarker_Base *inListPos,			// Beginning of swap location
 					void				*inItemArray,		// List of items to swap
 					long				inItemCount );		// # of items in list
-	
+
 	ItemBlock_Base *FirstBlock() const
 		{ return (ItemBlock_Base *)blocks.First(); }
 	ItemBlock_Base *LastBlock() const
 		{ return (ItemBlock_Base *)blocks.Last(); }
-	
+
 		// Allocate a new block. Must be overridden.
 	virtual void *NewBlock() = 0;
-	
+
 		// Notifies subclasses that a block has changed. This can be used in case
 		// of extra information associated with a block that needs to be changed.
 	virtual void OnBlockChanged( ItemBlock_Base * ) {}
-		
+
 private:
 		// These functions are used in the management of items. Since we
 		// have problems using real destructors, these serve as "fake"
@@ -185,7 +187,7 @@ private:
 
 public:
 	long TotalItems() const { return count; }
-	
+
 		/**	Returns TRUE if item list is empty. */
 	bool IsEmpty() const ;
 
@@ -197,7 +199,7 @@ public:
  *	Template class representing a block of specific-sized items
  *	@author		Talin
  */
- 
+
 	// The parameters to the template are:
 	// K	--	the type of items stored in the block
 	// cnt	--	the number of items per block
@@ -224,12 +226,12 @@ public:
 	static ItemBlock_Base* Downcast( ItemBlock *b ) { return (ItemBlock_Base *)b; }
 };
 
-/**	
+/**
  *	A template container class which keeps an undo history of changes
  *	ItemList Template - A list of blocks
  *	@author		Talin
  */
- 
+
 template<class BK,class Item> class ItemList : public ItemList_Base {
 //	friend class	ItemMarker<BK,Item>;
 
@@ -260,7 +262,7 @@ template<class BK,class Item> class ItemList : public ItemList_Base {
 	{
 		ItemFuncs<Item>::Destroy( (Item *)outDst, inItemCount );
 	}
-	
+
 protected:
 	BK *FirstBlock() const
 		{ return (BK *)BK::Upcast( ItemList_Base::FirstBlock() ); }
@@ -272,11 +274,11 @@ public:
 	~ItemList();
 
 	long TotalItems() const { return ItemList_Base::TotalItems(); }
-	
+
 		/**	Returns TRUE if item list is empty. */
 	bool IsEmpty() const { return ItemList_Base::IsEmpty(); }
 
-#if 1
+#if 0
 	void Validate() { ItemList_Base::Validate(); }
 #endif
 };
@@ -300,11 +302,11 @@ ItemList<BK,Item>::~ItemList()
  *	ItemMarker_Base -- non-template base class for ItemMarker
  *	@author		Talin
  */
- 
+
 class ItemMarker_Base : private DNode {
 	friend class	ItemList_Base;
 	friend class ItemListUndoAction_Base;
-	
+
 public:
 
 		// If data is inserted at this position, it controls whether the
@@ -374,14 +376,14 @@ public:
 	ItemMarker_Base();						// NULL constructor
 
 	~ItemMarker_Base();						// destructor
-	
+
 		// indicate that the marker is pointing to "no item".
 	void Clear()
 		{ item = NULL; block = NULL; }
 
 		// Set the tracking type
 	void Track( short t ) { trackType = t; }	// set position
-	
+
 		// position query functions
 	bool IsAtStart();						// true if at start of list
 	bool IsAtEnd();						// true if at end of list
@@ -401,7 +403,7 @@ public:
  *	as edits are made.
  *	@author		Talin
  */
- 
+
 template<class BK,class Item> class ItemMarker : public ItemMarker_Base {
 protected:
 
@@ -506,24 +508,21 @@ protected:
 	void SetIndex( short inIndex )	{ ItemMarker_Base::SetIndex( inIndex ); }
 };
 
-/**	
+/**
  *	Document framework class.
  *	@author		Talin
  */
 
 class ItemListUndoAction_Base : public UndoAction {
-	class CUndoIterator;
-
 	friend class		ItemList_Base;
 	friend class		UndoItem;
-	friend class		CUndoIterator;
 
 	int32			size;
-	
+
 protected:
 	ItemList_Base	&list;
 	DList			editList;
-	
+
 		/**	An embedded class used by subclasses to iterate through the
 			undo data. The main purpose is to allow for smarter screen updates
 			by peeking at the undo data. */
@@ -539,7 +538,7 @@ protected:
 			index = 0;
 			itemSize = inItemSize;
 		}
-		
+
 			/**	Returns pointer to first item. */
 		void *First( ItemListUndoAction_Base &inBase )
 		{
@@ -549,23 +548,24 @@ protected:
 			index = 0;
 			return Item();
 		}
-		
+
 			/**	returns pointer to next item. */
 		void *Next();
-		
+
 			/**	Returns pointer to current item. */
 		void *Item();
 	};
-	
+	friend class		CUndoIterator;
+
 		/**	Return the estimated size of this undo action. */
 	virtual int32 Size() { return size; }
-	
+
 		/**	Apply this undo action. */
 	virtual void Undo();
-	
+
 		/**	Apply this redo action. */
 	virtual void Redo();
-	
+
 public:
 
 		/**	Constructor -- takes a list to apply changes to. */
@@ -579,7 +579,7 @@ public:
 	virtual ~ItemListUndoAction_Base()
 	{
 	}
-	
+
 	void Rollback() { Undo(); }
 };
 
@@ -597,7 +597,7 @@ class UndoItem : public DNode {
 		Action_Delete,
 		Action_Change
 	};
-	
+
 	short			actionType;				// add, delete, or change
 
 		// This field will be TRUE if this undo record represents the
@@ -639,7 +639,7 @@ public:
 	~ItemListUndoAction()
 	{
 		UndoItem		*ui;
-	
+
 			// Delete any remaining undo records
 		while (	(ui = (UndoItem *)editList.First() ) != NULL )
 		{

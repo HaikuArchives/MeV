@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  * ---------------------------------------------------------------------
@@ -44,6 +44,7 @@
 class CReader;
 class CWriter;
 class CObservable;
+class EventMarker;
 class EventListUndoAction;
 
 /* ============================================================================ *
@@ -79,7 +80,7 @@ private:
 	EventBlock *Prev( void ) const { return (EventBlock *)ItemBlock_Base::Prev(); }
 
 	void Summarize( void );
-	
+
 		// Private constructor
 	EventBlock()
 	{
@@ -151,10 +152,10 @@ public:
 
 		/** Insert a block of time */
 	void InsertTime( long startTime, long offset, EventListUndoAction *inAction );
-	
+
 		/** Delete a block of time. */
 	void DeleteTime( long startTime, long offset, EventListUndoAction *inAction );
-	
+
 		/** Append an event to a sequence, matching with earlier events if needed...
 			The list must be sorted....
 		*/
@@ -180,7 +181,7 @@ public:
 	// Member functions for??
 	// Selecting?
 	// Deselecting?
-	
+
 		/**	Default constructor */
 	EventMarker() : ItemMarker<EventBlock,CEvent>() {}
 
@@ -218,7 +219,7 @@ public:
 
 		/**	Replace the event with new data, and re-sort if needed. */
 	void Modify( CEvent &newEvent, EventListUndoAction *inUndoAction );
-	
+
 		/**	Return const pointer to event. */
 	operator ConstEventPtr()	{ return Peek( 0 ); }
 };
@@ -226,7 +227,7 @@ public:
 class EventListUndoAction : public ItemListUndoAction<CEvent> {
 	const char			*description;
 	CObservable	&subject;
-	
+
 	const char *Description() const { return description; }
 	void Undo();
 	void Redo();

@@ -68,7 +68,7 @@ CMeVDoc::CMeVDoc(
 										 "Master Metric");
 	m_activeMaster = m_masterMeterTrack;
 
-	SetValid(); 
+	SetValid();
 }
 
 CMeVDoc::CMeVDoc(
@@ -169,7 +169,7 @@ CMeVDoc::MimeType()
 
 	BBitmap *miniIcon = new BBitmap(BRect(0.0, 0.0, B_MINI_ICON - 1.0,
 										   B_MINI_ICON - 1.0),
-									 B_CMAP8); 
+									 B_CMAP8);
 	miniIcon->SetBits(SMALL_ICON_BITS, 256, 0, B_CMAP8);
 	type->SetIcon(miniIcon, B_MINI_ICON);
 
@@ -195,7 +195,7 @@ CMeVDoc::ActiveOperatorAt(
 
 	return op;
 }
-	
+
 EventOp *
 CMeVDoc::OperatorAt(
 	int32 index) const
@@ -206,7 +206,7 @@ CMeVDoc::OperatorAt(
 
 	return op;
 }
-	
+
 // ---------------------------------------------------------------------------
 // Window Management
 
@@ -327,7 +327,7 @@ long CMeVDoc::GetUniqueTrackID()
 		for (int i = 0; i < tracks.CountItems(); i++)
 		{
 			CTrack		*track = (CTrack *)tracks.ItemAt( i );
-			
+
 			if (trialID == track->GetID()) trialID++;
 		}
 	}
@@ -386,9 +386,9 @@ CTrack *CMeVDoc::FindTrack( char *inTrackName )
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
 		CTrack		*track = (CTrack *)tracks.ItemAt( i );
-		
+
 		if (track->Deleted()) continue;
-		
+
 		if (strcmp(track->Name(), inTrackName) == 0)
 			return track;
 	}
@@ -400,11 +400,11 @@ CTrack *CMeVDoc::FindNextHigherTrackID( int32 inID )
 {
 	CTrack		*bestTrack = NULL;
 	int32		bestID = LONG_MAX;
-	
+
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
 		CTrack		*track = (CTrack *)tracks.ItemAt( i );
-		
+
 		if (track->Deleted()) continue;
 
 		if (		track->GetID() < bestID
@@ -424,7 +424,7 @@ void CMeVDoc::PostUpdateAllTracks( CUpdateHint *inHint )
 	for (int i = 0; i < tracks.CountItems(); i++)
 	{
 		CTrack		*track = (CTrack *)tracks.ItemAt( i );
-		
+
 		track->PostUpdate( inHint );
 	}
 }
@@ -476,7 +476,7 @@ CMeVDoc::IndexOf(
 	int32 index = -1;
 	int32 destID = 0;
 	CDestination *dest = NULL;
-	do {	
+	do {
 		index++;
 	} while ((dest = GetNextDestination(&destID)) != destination);
 
@@ -516,7 +516,7 @@ void CMeVDoc::ReplaceTempoMap( CTempoMapEntry *entries, int length )
 	tempoMap.list = entries;
 	tempoMap.count = length;
 	validTempoMap = true;
-	
+
 	// REM: Deal with any playing tracks -- tell them about map change.
 }
 
@@ -585,7 +585,7 @@ void CMeVDoc::SetOperatorActive( EventOp *inOp, bool enabled )
 			{
 				CTrack		*track = (CTrack *)tracks.ItemAt( i );
 				CEventTrack	*eTrack = dynamic_cast<CEventTrack *>(track);
-				
+
 				if (eTrack) eTrack->CompileOperators();
 			}
 			m_masterRealTrack->CompileOperators();
@@ -606,7 +606,7 @@ void CMeVDoc::NotifyOperatorChanged( EventOp *inOp )
 			// Then inform all interested parties that there is an update.
 		hint.AddInt32( "DocAttrs", Update_Operator );
 		hint.AddPointer( "Op", inOp );
-	
+
 		PostUpdate( &hint, NULL );
 	}
 }
@@ -616,16 +616,16 @@ void CMeVDoc::NotifyOperatorChanged( EventOp *inOp )
 void CMeVDoc::NotifyUpdate( int32 inHintBits, CObserver *source )
 {
 	CUpdateHint		hint;
-	
+
 	hint.AddInt32( "DocAttrs", inHintBits );
-	
+
 	PostUpdate( &hint, source );
 }
 
 void CMeVDoc::SetActiveMaster( CEventTrack *inTrack )
 {
 	if (inTrack->GetID() >= 2) return;
-	
+
 	if (m_activeMaster != inTrack)
 	{
 		m_activeMaster->DeselectAll( NULL );
@@ -657,7 +657,7 @@ CMeVDoc::SaveDocument()
 	CIFFWriter iffWriter(writer);
 	Serialize(iffWriter);
 	SetModified(false);
-	
+
 	BNode node(&DocLocation());
 	if (node.InitCheck() == B_NO_ERROR)
 	{
@@ -758,7 +758,7 @@ CMeVDoc::Serialize(
 		if (track->Deleted())
 			continue;
 
-		// Push a seperate FORM per track	
+		// Push a seperate FORM per track
 		writer.Push(Form_ID);
 		writer << (long)track->TrackType();
 		track->Serialize(writer);
@@ -829,7 +829,7 @@ CMeVDoc::_readTrack(
 
 	if (track == NULL)
 		return;
-	
+
 	reader.Push();
 	while (reader.NextChunk())
 		track->ReadChunk(reader);
@@ -847,7 +847,7 @@ CMeVDoc::_readEnvironment(
 
 	reader.Push();
 	while (reader.NextChunk())
-	{	
+	{
 		int32 formType;
 		switch (reader.ChunkID(0, &formType))
 		{
@@ -872,7 +872,7 @@ CMeVDoc::_readEnvironment(
 				D_SERIALIZE((" -> SOURCE_CHUNK\n"));
 
 				uint32 type;
-				reader >> type;			
+				reader >> type;
 				break;
 			}
 		}
@@ -905,7 +905,7 @@ CMeVDoc::_addDefaultOperators()
 				break;
 			}
 		}
-		
+
 		if (found)
 			CRefCountObject::Release(op);
 		else
@@ -948,7 +948,7 @@ CMeVDoc::_init()
 	tempoMap.list = new CTempoMapEntry[2];
 	tempoMap.count = 2;
 	validTempoMap = false;
-	
+
 	tempoMap.list[0].SetInitialTempo(RateToPeriod(InitialTempo()));
 	tempoMap.list[1].SetTempo(tempoMap.list[0], RateToPeriod(256.0),
 							  Ticks_Per_QtrNote * 4, Ticks_Per_QtrNote * 4,

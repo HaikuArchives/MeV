@@ -6,6 +6,8 @@
 
 #include "TimeSpan.h"
 
+#include <netinet/in.h>
+
 // ---------------------------------------------------------------------------
 // CReader Implementation
 
@@ -146,7 +148,7 @@ CByteArrayReader::Read(
 	m_pos += length;
 	return length;
 }
-	
+
 uint32
 CByteArrayReader::Skip(
 	uint32 skipBytes)

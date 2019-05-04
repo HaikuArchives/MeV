@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *		Curt Malouin (malouin)
  *
@@ -53,6 +53,7 @@
 #include "DocApp.h"
 #include "Preferences.h"
 #include "WindowState.h"
+#include "MeVPlugin.h"
 
 // Gnu C Library
 #include <stdio.h>
@@ -79,6 +80,9 @@
 
 // Standard Template Library
 #include <map>
+
+using std::map;
+using std::vector;
 
 class CDocWindow;
 class CStripFrameView;
@@ -147,7 +151,7 @@ public:							// Accessors
 	void						SetLoopFlag(
 									bool loop)
 								{ loopFlag = loop; }
-	
+
 public:							// Operations
 
 	void						HelpRequested();
@@ -155,7 +159,7 @@ public:							// Operations
 	/**	Tell the inspector to watch the current event on this track. */
 	static void					WatchTrack(
 									CEventTrack *track);
-	
+
 public:							// Module Management
 
 	void						AddModule(
@@ -172,7 +176,7 @@ public:							// Device Management
 	/** Returns the number of devices in the instrument table. */
 	int32						CountDevices() const
 								{ return deviceList.CountItems(); }
-	
+
 	/** Return information about the Nth MIDI device */
 	MIDIDeviceInfo *			DeviceAt(
 									int32 index) const
@@ -195,11 +199,11 @@ public:							// Operator Management
 	/**	Return the number of operators. */
 	int32						CountOperators() const
 								{ return defaultOperatorList.CountItems(); }
-	
+
 	/**	Return the Nth operator (Increases reference count). */
 	EventOp *					OperatorAt(
 									int32 index);
-	
+
 	/**	Return the Nth operator (Increases reference count). */
 	int32						IndexOfOperator(
 									EventOp *op)
@@ -234,14 +238,14 @@ public:							// Window Management
 	/**	Return the address of the transport window. */
 	CTransportWindow *			TransportWindow() const
 								{ return (CTransportWindow *)transportState.Window(); }
-	
+
 	/**	Show or hide the transport window. */
 	void						ShowTransportWindow(
 									bool show);
 
 	/**	Show the application preferences window. */
 	void						ShowPrefs();
-	
+
 public:							// File Import/Export
 
 	/** Creates a file panel for import operations. */
@@ -263,7 +267,7 @@ public:							// CDocApp Implementation
 
 	/** Overrides file panel creation to install the ref filter */
 	virtual BFilePanel *		CreateOpenPanel();
-	
+
 	virtual void				MessageReceived(
 									BMessage *message);
 
@@ -272,7 +276,7 @@ public:							// CDocApp Implementation
 									const char *name,
 									entry_ref *ref = NULL,
 									bool showWindow = true);
-	
+
 	virtual void				RefsReceived(
 									BMessage *message);
 
@@ -316,7 +320,7 @@ private:						// Instance Data
 
 	BFilePanel *				m_exportPanel;
 	BFilePanel *				m_importPanel;
-	
+
 	static CTrack *				activeTrack;
 	BRefFilter *				filter;
 	BRefFilter *				m_importFilter;
@@ -376,14 +380,14 @@ struct CGlobalPrefs {
 	uint32				feedbackDragMask,
 						feedbackAdjustMask;
 	uint32				feedbackDelay;
-	
+
 	bool					inclusiveSelection;
 
 	uint8				firstMeasureNumber;		// first measure is 0 or 1
-	
+
 	int16				appPrefsPanel,				// which app prefs panel is selected,
 						lEditorPrefsPanel;			// which LEditor prefs panel is selected.
-	
+
 	bool FeedbackEnabled( int32 inAttribute, bool inDrag = true );
 };
 

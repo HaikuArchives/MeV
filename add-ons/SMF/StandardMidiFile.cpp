@@ -26,6 +26,8 @@
 #include <memory>
 #include <vector>
 
+using std::vector;
+
 enum {
 	Import_ID		= 3,
 	Export_ID		= 4,
@@ -76,7 +78,7 @@ public:
 
 			event.SetDuration(0);
 			event.SetAttribute(EvAttr_ReleaseVelocity, 64);
-			
+
 			track->Merge(&event, 1);
 		}
 
@@ -116,16 +118,16 @@ void CStandardMidiFile::ShowError( const char *msg, ... )
 	BAlert		*alert;
 	va_list		argptr;
 	char			msgBuf[ 256 ];
-	
+
 	va_start( argptr, msg );
 	vsprintf( msgBuf, msg, argptr );
 	va_end( argptr );
-	
+
 	alert = new BAlert(  NULL, msgBuf,
 					"Continue",
 					NULL,
 					NULL,
-					B_WIDTH_AS_USUAL, B_INFO_ALERT); 
+					B_WIDTH_AS_USUAL, B_INFO_ALERT);
 	alert->SetShortcut( 1, B_ESCAPE );
 	alert->Go();
 }
@@ -147,14 +149,14 @@ void CStandardMidiFile::OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetec
 	status_t			error;
 	char				name[ B_FILE_NAME_LENGTH ];
 	MeVDocHandle		doc = NULL;
-	
+
 	error = file.SetTo( ref, B_READ_ONLY );
 	if (error != B_NO_ERROR)
 	{
 		ShowError(LookupErrorText(error));
 		return;
 	}
-	
+
 	BEntry		entry( ref );
 	error = entry.GetName( name );
 	if (error < B_OK)
@@ -170,11 +172,11 @@ void CStandardMidiFile::OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetec
 		uint16			numTracks;
 		uint16			division;
 		smf_time_base	timeBase;
-	
+
 			// Establish a reader for this file. Note that the reader automatically takes care
 			// of endian-flipping on little-endian machines.
 		CBeFileReader	reader(file);
-		
+
 		reader >> chunkID >> chunkLength;
 
 		if (chunkID != 'MThd' || chunkLength < 6)
@@ -182,14 +184,14 @@ void CStandardMidiFile::OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetec
 			ShowError( "'%s' is not a Standard MIDI File.", name );
 			return;
 		}
-		
+
 		PRINT(("Importing standard MIDI file \"%s\"\n", name));
 
 			// Read in the header information
 		reader >> format >> numTracks >> division;
 
 		PRINT(("format %hu, %hu tracks, ", format, numTracks));
-	
+
 		switch (timeBase.format = (division & 0x8000))
 		{
 			case smf_time_base::METERED:
@@ -204,16 +206,16 @@ void CStandardMidiFile::OnImport( BMessage *inMsg, entry_ref *ref, int32 inDetec
 				       timeBase.base.timeCode.ticksPerFrame));
 				break;
 		}
-		
+
 			// Skip over any extra part of the header...
 		reader.Skip( chunkLength - (sizeof format + sizeof numTracks + sizeof division) );
-		
+
 			// At this point, it's time to create a new document.
 		BString docName(name);
 		docName << " (Converted)";
 		doc = NewDocument(docName.String(), false);
 		CreateDestinations(doc, name);
-		
+
 			// Read in each of the tracks.
 		for (int trackNum = 0; reader.BytesAvailable() >= 8; trackNum++)
 		{
@@ -251,7 +253,7 @@ void CStandardMidiFile::CreateDestinations(MeVDocHandle doc, const char* filenam
 		BString name(filename);
 		name << " " << ch + 1;
 		int internalSynth = doc->GetInternalSynthConsumerID();
-		
+
 		m_destinationID[ch] = doc->NewDestination(name.String(), internalSynth, ch + 1);
 	}
 }
@@ -278,7 +280,7 @@ CStandardMidiFile::ReadTrack(
 		PRINT(("\tNew %s track: ID=%ld\n",
 		       (clockType == ClockType_Metered) ? "metered" : "real-time",
 		       track->GetID()));
-	
+
 		while (fileTrack.GetNextEvent(event))
 		{
 			if (event.Command() == EvtType_Text && event.text.textType == 0x03)
@@ -287,7 +289,7 @@ CStandardMidiFile::ReadTrack(
 			if (event.Command() == EvtType_Note)
 			{
 				notesInProgress.push_back(event);
-			}		
+			}
 			else if (event.Command() == EvtType_NoteOff)
 			{
 				// find matching noteon
@@ -314,7 +316,7 @@ CStandardMidiFile::ReadTrack(
 				track->Merge(&event, 1);
 			}
 		}
-		
+
 		// shut off any hung notes
 		for_each(notesInProgress.begin(), notesInProgress.end(), HandleHungNote(track));
 
@@ -351,7 +353,7 @@ void CStandardMidiFile::SetInitialTempo(MeVDocHandle doc)
 {
 	// default tempo is 120 BPM.  For type 1 files, tempo map should be in first track
 	double tempo = 120.0;
-	
+
 	MeVTrackHandle track = doc->FirstTrack();
 	if (track)
 	{
@@ -371,7 +373,7 @@ void CStandardMidiFile::SetInitialTempo(MeVDocHandle doc)
 		track->ReleaseEventRef(pEvent);
 		doc->ReleaseTrack(track);
 	}
-	
+
 	doc->SetInitialTempo(tempo);
 }
 
@@ -383,11 +385,11 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 	BEntry				entry(ref);
 	BFile				file;
 	status_t			error;
-	
+
 	MeVDocHandle doc = FindDocument(inDocID);
 	if (!doc)
 		return;
-		
+
 	try
 	{
 		TClockType clockType;
@@ -400,29 +402,29 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 			ShowError(LookupErrorText(error));
 			return;
 		}
-		
+
 		if ((error = file.SetTo(&entry, B_WRITE_ONLY | B_CREATE_FILE | B_ERASE_FILE)) < B_OK)
 		{
 			ShowError(LookupErrorText(error));
 			return;
 		}
-		
+
 		CBeFileWriter	fileWriter(file);
 		CIFFWriter		writer(fileWriter);
-		
+
 		// write header
 		if (WriteHeaderChunk(writer, numTracks + 1, clockType) < B_OK)
 			return;
-		
+
 		// write tempo track
 		{
 			SMFTrackWriter tempoTrack(writer, doc);
-			
+
 			// sequence name
 			char name[B_FILE_NAME_LENGTH];
 			doc->GetName(name, B_FILE_NAME_LENGTH);
 			tempoTrack.WriteTrackName(name);
-			
+
 			// tempo
 			tempoTrack.WriteTempo(doc->GetInitialTempo());
 			tempoTrack.WriteEndOfTrack(0);
@@ -435,15 +437,15 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 			// skip non-MIDI tracks
 			if (track->GetClockType() != clockType)
 				continue;
-			
+
 			if (WriteTrack(writer, doc, track) < B_OK)
 			{
 				return;
 			}
 		}
-		
+
 		doc->ReleaseTrack(track);
-		
+
 		BNodeInfo nodeInfo(&file);
 		if (nodeInfo.InitCheck() == B_OK)
 			nodeInfo.SetType("audio/x-midi");
@@ -461,11 +463,11 @@ void CStandardMidiFile::OnExport( BMessage *inMsg, int32 inDocID, entry_ref *ref
 status_t CStandardMidiFile::WriteTrack(CIFFWriter& writer, MeVDocHandle doc, MeVTrackHandle track)
 {
 	SMFTrackWriter trackWriter(writer, doc);
-	
+
 	char name[B_FILE_NAME_LENGTH];
 	track->GetName(name, B_FILE_NAME_LENGTH);
 	trackWriter.WriteTrackName(name);
- 
+
 	MeVEventHandle pEvent;
 	CEvent event;
 	for (pEvent = track->FirstEvent(); pEvent->GetEvent(&event); pEvent->Seek(1))
@@ -494,7 +496,7 @@ status_t CStandardMidiFile::CountTracks(MeVDocHandle doc, uint16& numTracks, TCl
 			break;
 		}
 	}
-	
+
 	// count real-time or metered tracks
 	if (track)
 	{
@@ -512,7 +514,7 @@ status_t CStandardMidiFile::CountTracks(MeVDocHandle doc, uint16& numTracks, TCl
 			}
 		}
 	}
-	
+
 	return B_OK;
 }
 
@@ -532,7 +534,7 @@ status_t CStandardMidiFile::WriteHeaderChunk(CIFFWriter& writer, uint16 numTrack
 			ShowError("Unknown clock type");
 			return B_ERROR;
 	}
-	
+
 	writer.Push('MThd');
 	writer << uint16(1) << numTracks << division;
 	writer.Pop();
@@ -553,7 +555,7 @@ int32 CStandardMidiFile::DetectFileType(
 
 		// First, check MIME type
 	if (strstr( filetype, "audio/x-midi" ) != NULL) return 0;
-	
+
 		// If MIME type not set correctly, then check the filename for
 		// known common MIDI filename extensions
 	BEntry		entry( ref );
@@ -561,14 +563,14 @@ int32 CStandardMidiFile::DetectFileType(
 	{
 		char			*dot = strrchr( name, '.' );
 		if (dot == NULL) return 0;
-		
+
 			// Downcase the name, since we don't have stricmp()
 		for (char *p = dot; *p; p++) *p = tolower( *p );
-		
+
 		if (	strcmp( dot, ".mid" ) == 0
 			|| strcmp( dot, ".smf" ) == 0) return 0;
 	}
-	
+
 	return -1;
 }
 
@@ -598,7 +600,7 @@ bool CStandardMidiFile::SMFTrackReader::GetNextEvent(CEvent& outEvent)
 	{
 		if (m_pData >= m_pEnd)
 			return false;
-		
+
 		int64 mevTime = GetTime();
 		if (mevTime > 2147483647)
 		{
@@ -606,7 +608,7 @@ bool CStandardMidiFile::SMFTrackReader::GetNextEvent(CEvent& outEvent)
 			m_plugin.ShowError( "Track exceeds maximum length." );
 			return false;
 		}
-	
+
 		event.SetStart(mevTime);
 		PRINT(("\t\tEvent time=%ld\n", event.Start()));
 
@@ -616,31 +618,31 @@ bool CStandardMidiFile::SMFTrackReader::GetNextEvent(CEvent& outEvent)
 			case 0x80:
 				gotEvent = ReadNoteOff(status, event);
 				break;
-	
+
 			case 0x90:
 				gotEvent = ReadNoteOn(status, event);
 				break;
-	
+
 			case 0xA0:
 				gotEvent = ReadPolyPressure(status, event);
 				break;
-	
+
 			case 0xB0:
 				gotEvent = ReadControlChange(status, event);
 				break;
-	
+
 			case 0xC0:
 				gotEvent = ReadProgramChange(status, event);
 				break;
-	
+
 			case 0xD0:
 				gotEvent = ReadChannelPressure(status, event);
 				break;
-	
+
 			case 0xE0:
 				gotEvent = ReadPitchBend(status, event);
 				break;
-	
+
 			case 0xF0:			// sysex and meta
 				switch (status)
 				{
@@ -651,7 +653,7 @@ bool CStandardMidiFile::SMFTrackReader::GetNextEvent(CEvent& outEvent)
 					case 0xff:
 						gotEvent = ReadMetaEvent(status, event);
 						break;
-						
+
 					default:
 						m_plugin.ShowError("Error reading file: %x byte encountered at offset %d in track.",
 						                   status, Position());
@@ -665,7 +667,7 @@ bool CStandardMidiFile::SMFTrackReader::GetNextEvent(CEvent& outEvent)
 				return false;
 		}
 	}
-	
+
 	outEvent = event;
 	return true;
 }
@@ -677,7 +679,7 @@ int64 CStandardMidiFile::SMFTrackReader::GetTime()
 
 	uint32 deltaTime = GetVariableLengthNumber();
 	m_fileTime_ticks += deltaTime;
-	
+
 	if (m_timeBase.format == smf_time_base::METERED)
 	{
 		mevTime = (m_fileTime_ticks * Ticks_Per_QtrNote) / m_timeBase.base.metered.ticksPerQuarterNote;
@@ -709,7 +711,7 @@ int64 CStandardMidiFile::SMFTrackReader::GetTime()
 				realTime_usec = (m_fileTime_ticks * 1000000) / (30 * int64(m_timeBase.base.timeCode.ticksPerFrame));
 				break;
 		}
-		
+
 		// round to nearest millisecond
 		mevTime = (realTime_usec + 500) / 1000;
 	}
@@ -765,7 +767,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadNoteOn(uint8 status, CEvent& event)
 		event.SetAttribute(EvAttr_ReleaseVelocity, 64);
 		PRINT(("\t\t\t--->Converted to Note Off\n"));
 	}
-	
+
 	return true;
 }
 
@@ -789,7 +791,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadPolyPressure(uint8 status, CEvent& e
 	event.SetVChannel(m_destinationID[status & 0x0F]);
 	event.SetAttribute(EvAttr_Pitch,      GetByte());
 	event.SetAttribute(EvAttr_AfterTouch, GetByte());
-	
+
 	PRINT(("\t\t\tPoly Pressure vChannel=%-3d, pitch=%-3ld, value=%-3ld\n",
 	       event.GetVChannel(),
 	       event.GetAttribute(EvAttr_Pitch),
@@ -859,7 +861,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadSystemExclusive(uint8 status, CEvent
 	uint8 ch;
 
 	buf.reserve(256); // avoid reallocations for most messages
-	
+
 	while ((ch = GetByte()) != 0xF7)
 		buf.push_back(ch);
 
@@ -878,7 +880,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadMetaEvent(uint8 status, CEvent& even
 
 	uint8  type   = GetByte();
 	uint32 length = GetVariableLengthNumber();
-	
+
 	switch (type)
 	{
 		case 0x01:			// text
@@ -902,13 +904,13 @@ bool CStandardMidiFile::SMFTrackReader::ReadMetaEvent(uint8 status, CEvent& even
 			PRINT(("\t\t\tMeta Data text type=%d length=%lu\n",
 			       event.text.textType, length));
 			break;
-		
+
 		case 0x2f:			// End of track
 			event.SetCommand(EvtType_End);
 			SkipBytes(length); // should be 0
 			PRINT(("\t\t\tEnd Of Track\n"));
 			break;
-			
+
 		case 0x51:			// Set tempo
 			usecPerQtr  = GetByte() * 65536;
 			usecPerQtr += GetByte() *   256;
@@ -920,7 +922,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadMetaEvent(uint8 status, CEvent& even
 			       double(event.GetAttribute(EvAttr_TempoValue)) / 1000.0,
 			       usecPerQtr));
 			break;
-		
+
 		case 0x58:			// Time signaturee
 			event.SetCommand(EvtType_TimeSig);
 			event.SetAttribute(EvAttr_TSigBeatCount, GetByte());
@@ -931,7 +933,7 @@ bool CStandardMidiFile::SMFTrackReader::ReadMetaEvent(uint8 status, CEvent& even
 			       event.GetAttribute(EvAttr_TSigBeatCount),
 			       event.GetAttribute(EvAttr_TSigBeatSize)));
 			break;
-		
+
 		case 0x00:			// sequence ID 						(handled separately)
 		case 0x20:			// MIDI channel prefix				(not handled)
 		case 0x54:			// SMPTE Offset						(not handled)
@@ -950,7 +952,7 @@ uint8 CStandardMidiFile::SMFTrackReader::GetByte()
 {
 	if (m_pData >= m_pEnd)
 		throw PrematureEndOfTrack();
-	
+
 	return *m_pData++;
 }
 
@@ -958,7 +960,7 @@ uint8 CStandardMidiFile::SMFTrackReader::PeekByte() const
 {
 	if (m_pData >= m_pEnd)
 		throw PrematureEndOfTrack();
-	
+
 	return *m_pData;
 }
 
@@ -975,7 +977,7 @@ void CStandardMidiFile::SMFTrackReader::SkipBytes(int32 numBytes)
 {
 	if (m_pData + numBytes >= m_pEnd && numBytes > 0)
 		throw PrematureEndOfTrack();
-	
+
 	m_pData += numBytes;
 }
 
@@ -989,7 +991,7 @@ uint32 CStandardMidiFile::SMFTrackReader::GetVariableLengthNumber()
 		b = GetByte();
 		v = (v << 7) | (b & 0x7f);
 	} while (b & 0x80);
-	
+
 	return v;
 }
 
@@ -1033,7 +1035,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteEvent(CEvent& event)
 	WritePendingNoteOffs(event.Start());
 
 	uint32 deltaTime = CalculateDeltaTime(event.Start());
-	
+
 	switch (event.Command())
 	{
 		case EvtType_Note:
@@ -1079,7 +1081,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteEvent(CEvent& event)
 		case EvtType_TimeSig:
 			WriteTimeSigMetaEvent(event, deltaTime);
 			break;
-		
+
 		case EvtType_End:
 			WriteEndOfTrack(event.Start());
 			break;
@@ -1089,7 +1091,7 @@ void CStandardMidiFile::SMFTrackWriter::WriteEvent(CEvent& event)
 uint32 CStandardMidiFile::SMFTrackWriter::CalculateDeltaTime(int32 startTime)
 {
 	ASSERT(startTime >= m_lastEventTicks);
-	
+
 	int32 delta = startTime - m_lastEventTicks;
 	m_lastEventTicks = startTime;
 	return uint32(delta);
@@ -1239,7 +1241,7 @@ void CStandardMidiFile::SMFTrackWriter::WritePendingNoteOffs(int32 time)
 	{
 		const CEvent& noteOff = m_pendingNoteOffs.top();
 		WriteNoteOff(noteOff, CalculateDeltaTime(noteOff.Start()));
-		
+
 		m_pendingNoteOffs.pop();
 	}
 }

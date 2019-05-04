@@ -4,8 +4,10 @@
  * ---------------------------------------------------------------------
  * $NoKeywords: $
  * ===================================================================== */
- 
+
 #include "IFFWriter.h"
+
+#include <netinet/in.h>
 
 CIFFWriter::CIFFWriter( CWriter &inWriter )
 	: stack(0), writer(inWriter), limit(0), pos(0), m_allowOddLengthChunks(false)
@@ -34,20 +36,20 @@ bool CIFFWriter::Push( int32 chunkID, int32 length )
 {
 	ChunkState		*newState = new ChunkState;
 	uint32			chunkHeader[ 2 ];
-	
+
 		// Create a new chunk record and fill it in.
 	newState->parent		= stack;
 	newState->id			= chunkID;
 	newState->startPos		= pos + 8;
 	newState->maxSize	= length;
 	stack = newState;
-	
+
 		// Write out the header, and keep track of file position.
 	chunkHeader[ 0 ] = htonl( chunkID );
 	chunkHeader[ 1 ] = htonl( length );
 	writer.MustWrite( chunkHeader, 8 );
 	pos += 8;
-	
+
 		// Calculate the limit beyond which we cannot write without exceeding constraints
 	CalcLimit();
 
@@ -68,7 +70,7 @@ bool CIFFWriter::Pop()
 		writer.Seek( stack->startPos - 4 );
 		int32	len = htonl( currentLength );
 		writer.MustWrite( &len, 4 );
-		
+
 			// Seek to current file position.
 		writer.Seek( pos );
 
@@ -93,7 +95,7 @@ bool CIFFWriter::Pop()
 			currentLength += len;
 		}
 	}
-	
+
 		// Pop a chunk state off of the stack.
 	ChunkState *parent = stack->parent;
 	delete stack;
@@ -142,7 +144,7 @@ void CIFFWriter::MustWrite(const void *buffer, int32 inLength )
 bool CIFFWriter::WriteChunk( int32 chunkID, const void *buffer, int32 length )
 {
 	uint32			chunkHeader[ 2 ];
-	
+
 		// If chunk would exceed limit, then it can't be written
 	if (length + 8 > limit - pos) return false;
 

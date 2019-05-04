@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  * History:
@@ -39,8 +39,11 @@
 
 /**
  *		Defines a column in a multi-column list.
- *		@author	Talin, Christoper Lenz.   
+ *		@author	Talin, Christoper Lenz.
  */
+
+class CMultiColumnListView;
+class CMultiColumnListItem;
 
 class CColumnField {
 	friend class CMultiColumnListView;
@@ -59,7 +62,7 @@ protected:
 					draggable;
 	const char			*title;
 	alignment		align;
-	
+
 	int32 Justify( int32 totalWidth, int32 contentWidth );
 	void DrawString( BView *drawView, BRect bounds, const char *str );
 
@@ -79,14 +82,14 @@ public:
 					int32				inElasticity,
 					const char				*inTitle );
 
-		/**	Change the justification of this columns contents. */					
+		/**	Change the justification of this columns contents. */
 	void SetAlignment( alignment inAlign ) { align = inAlign; }
-	
+
 		/**	Set whether this column is draggable, i.e. don't return
 			the column click until we know a drag has occured.
 		*/
 	void SetDraggable( bool in ) { draggable = in; }
-	
+
 	int32 Width() { return actualWidth; }
 };
 
@@ -186,22 +189,22 @@ public:
 	{
 		rowData = inData;
 	}
-	
+
 	CMultiColumnListItem( void *inData, int32 inLevel, bool inExpanded = false )
 		: BListItem( inLevel, inExpanded )
 	{
 		rowData = inData;
 	}
-	
+
 		/**	Get the integer value of the Nth field. */
 	virtual int32 GetFieldIntData( int32 inIndex ) { return 0; }
-	
+
 		/**	Get the string value of the Nth field. */
 	virtual const char *GetFieldStringData( int32 inIndex ) { return NULL; }
-	
+
 		/**	Get the binary pointer value of the Nth field. */
 	virtual void *GetFieldData( int32 inIndex ) { return NULL; }
-	
+
 		/**	Get pointer to row data. */
 	void *RowData() { return rowData; }
 };
@@ -252,18 +255,18 @@ public:
 
 		/**	Destructor -- deletes all column information. */
 	~CMultiColumnListView();
-	
+
 		/**	Returns which column corresponds to this x-coordinate. */
 	int32 PickColumn( int32 inX );
-	
+
 		/**	returns true if this drag message is acceptable. Override
 			in subclass. All this does is to tell the list to hide the
 			dragged item and provide an insertion cursor. */
 	virtual bool IsDragAcceptable( const BMessage *inMsg ) { return false; }
-	
+
 		/** Handle an item dropped on the list. */
 	virtual void OnDrop( BMessage *inMsg, int32 inIndex ) {}
-	
+
 		/**	StayFocused -- TRUE if item should retain focus after operations.
 			Defaults to true.
 		*/
@@ -370,7 +373,7 @@ virtual	void			FrameResized(float newWidth, float newHeight);
 inline void DeleteListItems( CMultiColumnListView *inView )
 {
 	BListItem		*listItem;
-	
+
 	while ((listItem = inView->RemoveItem( (long)0 ))) delete listItem;
 }
 

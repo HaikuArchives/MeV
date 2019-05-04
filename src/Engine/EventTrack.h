@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *		Curt Malouin (malouin)
  *
@@ -49,6 +49,8 @@
 // Standard Template Library
 #include <map>
 
+using std::map;
+
 class CMeVDoc;
 class CEventEditor;
 class EventOp;
@@ -58,13 +60,13 @@ const ulong			TrackType_Event	= 'eTrk';
 const int			Max_Track_Filters = 8;
 
 /**
- *	A CTrack that contains events. Since many track types have event 
+ *	A CTrack that contains events. Since many track types have event
  *	lists, we'll define a subclass for that.
  *	@author	Talin, Christopher Lenz, Curt Malouin
- *	@todo	Move UI functionality (references to CEventEditor and 
+ *	@todo	Move UI functionality (references to CEventEditor and
  *			CEventRenderer) out of this class.
  */
-class CEventTrack : 
+class CEventTrack :
 	public CTrack
 {
 	friend class MeVTrackRef;
@@ -87,14 +89,14 @@ public:							// Accessors
 								{ return m_minSelectTime; }
 	long						MaxSelectTime() const
 								{ return m_maxSelectTime; }
-	
+
 	const CEvent *				CurrentEvent()
 								{ return m_currentEvent.Peek(0); }
 
 	/** Gain access to the event list. */
 	EventList &					Events()
 								{ return events; }
-								
+
 	uint32						TrackType() const
 								{ return TrackType_Event; }
 
@@ -109,30 +111,30 @@ public:							// Operations
 
 	/** Compute summary information for currently selected events. */
 	void						SummarizeSelection();
-	
+
 	/**	Indicates that a signature event has been moved. */
 	void						InvalidateSigMap()
 								{ m_validSigMap = false; }
-	
+
 	/**	Returns true if the signature map has not been invalidated */
 	bool						ValidSigMap()
 								{ return m_validSigMap; }
-	
+
 	/**	Indicates that a tempo event has been moved.
 	 *	(only applies to master tracks)
 	 */
 	void						InvalidateTempoMap();
-	
+
 	/**	This is used to synthesize a selection time when new events are being
 	 *	added.
 	 */
 	void						SetSelectTime(
 									long minTime,
 									long maxTime);
-								
+
 	void						SetCurrentEvent(
 									EventMarker &marker);
-	
+
 	/**	Undo the undoable action, if any. */
 	bool						Undo()
 								{
@@ -158,10 +160,10 @@ public:							// Operations
 									}
 									return false;
 								}
-	
+
 		/**	Select all events. */
 	void SelectAll(	CEventEditor *inEditor );		// Active editor window, or NULL
-	
+
 		/**	Select all events. */
 	void SelectAll( void ) { SelectAll( NULL ); }	// Active editor window, or NULL
 
@@ -212,22 +214,22 @@ public:							// Operations
 
 		// Filter an event through the filters assigned to this track
 	void FilterEvent( CEvent &ioEv );
-	
+
 		// Compile list of operators.
 	void CompileOperators();
 
 		/**	Return the number of operators associated with this track. */
 	int32 CountOperators() { return operators.CountItems(); }
-	
+
 		/**	Return the Nth operator (Increases reference count). */
 	EventOp *OperatorAt( int32 index )
 	{
 		void		*ptr = operators.ItemAt( index );
-		
+
 		if (ptr) return (EventOp *)((EventOp *)ptr)->Acquire();
 		return NULL;
 	}
-	
+
 		/**	Return the index of this operator in the list, or negative if none. */
 	int32 OperatorIndex( EventOp *op )
 	{
@@ -236,7 +238,7 @@ public:							// Operations
 
 		/**	Set an operator active / inactive. */
 	void SetOperatorActive( EventOp *inOp, bool enabled );
-	
+
 	/**	Returns the number of selected events. */
 	int32						SelectionCount() const
 								{ return m_selectionCount; }
@@ -244,7 +246,7 @@ public:							// Operations
 	/**	Return the current gridsnap size. */
 	long						TimeGridSize() const
 								{ return m_timeGridSize; }
-	
+
 	/**	Return true if gridsnap is enabled for this item. */
 	bool						GridSnapEnabled() const
 								{ return m_gridSnapEnabled; }
@@ -258,7 +260,7 @@ public:							// Operations
 	void						SetTimeGridSize(
 									int32 grid)
 								{ m_timeGridSize = grid; }
-	
+
 		/**	Overrides AddUndoAction from CObservable to deal with
 			master track issues. */
 	void AddUndoAction( UndoAction *inAction );
@@ -268,7 +270,7 @@ public:							// CSerializable Implementation
 	/** Read one chunk from the MeV file. */
 	virtual void				ReadChunk(
 									CIFFReader &reader);
-	
+
 	/**	Write the track to the MeV file. */
 	virtual void				Serialize(
 									CIFFWriter &writer);
@@ -306,7 +308,7 @@ private:						// Instance Data
 
 	/** End time of selection. */
 	long						m_maxSelectTime;
-					
+
 	/** Gridsnap size for time. */
 	long						m_timeGridSize;
 
@@ -329,8 +331,8 @@ private:						// Instance Data
 	EventOp *					m_filters[Max_Track_Filters];
 	int32						m_filterCount;
 
-	/**	A map of the destinations used by this part. The key is a 
-	 *	pointer to the destination, while the value contains the 
+	/**	A map of the destinations used by this part. The key is a
+	 *	pointer to the destination, while the value contains the
 	 *	number of events using that destination. */
 	typedef map<CDestination *, unsigned long> used_destinations_map;
 	used_destinations_map		m_destinations;

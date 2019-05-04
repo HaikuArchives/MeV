@@ -16,6 +16,8 @@
 // Standard Template Library
 #include <map>
 
+using std::map;
+
 // ---------------------------------------------------------------------------
 // Internal Class: CBitmapStash
 //
@@ -39,7 +41,7 @@ public:							// Accessors
 
 	BBitmap *					GetBitmap(
 									uint32 signature);
-	
+
 private:						// Instance Data
 
 	CTransportButton *			m_owner;
@@ -48,7 +50,7 @@ private:						// Instance Data
 };
 
 class SkipButtonKeypressFilter
-	:	public BMessageFilter 
+	:	public BMessageFilter
 {
 
 public:							// Constructor/Destructor
@@ -117,7 +119,7 @@ CTransportButton::~CTransportButton()
 // ---------------------------------------------------------------------------
 // Accessors
 
-void 
+void
 CTransportButton::SetStartPressingMessage(
 	BMessage *message)
 {
@@ -125,7 +127,7 @@ CTransportButton::SetStartPressingMessage(
 	m_startPressingMessage = message;
 }
 
-void 
+void
 CTransportButton::SetPressingMessage(
 	BMessage *message)
 {
@@ -133,7 +135,7 @@ CTransportButton::SetPressingMessage(
 	m_pressingMessage = message;
 }
 
-void 
+void
 CTransportButton::SetDonePressingMessage(
 	BMessage *message)
 {
@@ -141,7 +143,7 @@ CTransportButton::SetDonePressingMessage(
 	m_donePressingMessage = message;
 }
 
-void 
+void
 CTransportButton::SetPressingPeriod(
 	bigtime_t period)
 {
@@ -151,19 +153,19 @@ CTransportButton::SetPressingPeriod(
 // ---------------------------------------------------------------------------
 // BControl Implementation
 
-void 
+void
 CTransportButton::AttachedToWindow()
 {
 	BControl::AttachedToWindow();
 
 	if (m_keyPressFilter)
 		Window()->AddCommonFilter(m_keyPressFilter);
-	
+
 	// transparent to reduce flicker
 	SetViewColor(B_TRANSPARENT_COLOR);
 }
 
-void 
+void
 CTransportButton::DetachedFromWindow()
 {
 	if (m_keyPressFilter)
@@ -175,13 +177,13 @@ CTransportButton::DetachedFromWindow()
 	BControl::DetachedFromWindow();
 }
 
-void 
+void
 CTransportButton::Draw(BRect)
 {
 	DrawBitmapAsync(m_bitmaps->GetBitmap(ModeMask()));
 }
 
-void 
+void
 CTransportButton::MouseDown(
 	BPoint point)
 {
@@ -194,7 +196,7 @@ CTransportButton::MouseDown(
 	MouseStartPressing();
 }
 
-void 
+void
 CTransportButton::MouseMoved(
 	BPoint point,
 	uint32 transit,
@@ -209,7 +211,7 @@ CTransportButton::MouseMoved(
 	}
 }
 
-void 
+void
 CTransportButton::MouseUp(
 	BPoint point)
 {
@@ -223,7 +225,7 @@ CTransportButton::MouseUp(
 	}
 }
 
-void 
+void
 CTransportButton::WindowActivated(
 	bool active)
 {
@@ -233,14 +235,14 @@ CTransportButton::WindowActivated(
 		ShortcutKeyUp();
 }
 
-void 
+void
 CTransportButton::SetEnabled(
 	bool enabled)
 {
 	BControl::SetEnabled(enabled);
 
 	if (!enabled)
-		ShortcutKeyUp();	
+		ShortcutKeyUp();
 }
 
 // ---------------------------------------------------------------------------
@@ -261,25 +263,25 @@ CTransportButton::MakeBitmap(
 	}
 }
 
-uint32 
+uint32
 CTransportButton::ModeMask() const
 {
 	return (IsEnabled() ? 0 : DISABLED_MASK) | (Value() ? PRESSED_MASK : 0);
 }
 
-void 
+void
 CTransportButton::StartPressing()
 {
 	SetValue(B_CONTROL_ON);
 	if (m_startPressingMessage)
 		Invoke(m_startPressingMessage);
-	
+
 	if (m_pressingMessage)
 		m_messageSender = new BMessageRunner(Messenger(), m_pressingMessage,
 											 m_pressingPeriod);
 }
 
-void 
+void
 CTransportButton::MouseCancelPressing()
 {
 	if (!m_mouseDown || m_keyDown)
@@ -298,9 +300,9 @@ CTransportButton::MouseCancelPressing()
 	SetValue(B_CONTROL_OFF);
 }
 
-void 
+void
 CTransportButton::DonePressing()
-{	
+{
 	if (m_pressingMessage) {
 		delete m_messageSender;
 		m_messageSender = NULL;
@@ -310,29 +312,29 @@ CTransportButton::DonePressing()
 	SetValue(B_CONTROL_OFF);
 }
 
-void 
+void
 CTransportButton::MouseStartPressing()
 {
 	if (m_mouseDown)
 		return;
-	
+
 	m_mouseDown = true;
 	if (!m_keyDown)
 		StartPressing();
 }
 
-void 
+void
 CTransportButton::MouseDonePressing()
 {
 	if (!m_mouseDown)
 		return;
-	
+
 	m_mouseDown = false;
 	if (!m_keyDown)
 		DonePressing();
 }
 
-void 
+void
 CTransportButton::ShortcutKeyDown()
 {
 	if (!IsEnabled())
@@ -340,18 +342,18 @@ CTransportButton::ShortcutKeyDown()
 
 	if (m_keyDown)
 		return;
-	
+
 	m_keyDown = true;
 	if (!m_mouseDown)
 		StartPressing();
 }
 
-void 
+void
 CTransportButton::ShortcutKeyUp()
 {
 	if (!m_keyDown)
 		return;
-	
+
 	m_keyDown = false;
 	if (!m_mouseDown)
 		DonePressing();
@@ -386,7 +388,7 @@ CBitmapStash::GetBitmap(
 		ASSERT(newBits);
 		m_stash[signature] = newBits;
 	}
-	
+
 	return m_stash[signature];
 }
 
@@ -404,7 +406,7 @@ SkipButtonKeypressFilter::SkipButtonKeypressFilter(
 {
 }
 
-filter_result 
+filter_result
 SkipButtonKeypressFilter::Filter(
 	BMessage *message,
 	BHandler **handler)
@@ -415,7 +417,7 @@ SkipButtonKeypressFilter::Filter(
 		uint32 rawKeyChar = 0;
 		uint8 byte = 0;
 		int32 key = 0;
-		
+
 		if (message->FindInt32("modifiers", (int32 *)&modifiers) != B_OK
 			|| message->FindInt32("raw_char", (int32 *)&rawKeyChar) != B_OK
 			|| message->FindInt8("byte", (int8 *)&byte) != B_OK
@@ -431,7 +433,7 @@ SkipButtonKeypressFilter::Filter(
 				m_target->ShortcutKeyDown();
 			else
 				m_target->ShortcutKeyUp();
-			
+
 			return B_SKIP_MESSAGE;
 		}
 	}

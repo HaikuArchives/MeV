@@ -6,6 +6,8 @@
 
 #include "TimeSpan.h"
 
+#include <netinet/in.h>
+
 // ---------------------------------------------------------------------------
 // CWriter: Operations
 
@@ -146,7 +148,7 @@ CDynamicByteArrayWriter::CDynamicByteArrayWriter(
 	else
 		m_bytes = NULL;
 }
-	
+
 bool
 CDynamicByteArrayWriter::Write(
 	void *buffer,
@@ -181,5 +183,5 @@ CDynamicByteArrayWriter::Seek(
 	m_pos = filePos;
 	return true;
 }
-	
+
 // END - Writer.cpp

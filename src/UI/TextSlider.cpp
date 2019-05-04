@@ -51,14 +51,14 @@ int32 CTextSlider::LargestText()
 {
 	if (textHook) return textHook->Largest( this, minVal, maxVal );
 
-	int32		l = max( abs( minVal ), abs( maxVal ) );
+	int32		l = std::max( abs( minVal ), abs( maxVal ) );
 	int32		count = 1,
 				w;
 	while (l > 9) { count++; l /= 10; }
-	
+
 	w = count * StringWidth( "0" );
 	if (minVal < 0) w += StringWidth( "-" );
-	
+
 	return w;
 }
 
@@ -85,10 +85,10 @@ void CTextSlider::KnobPosition( int32 &outPos, int32 &outWidth )
 	BRect		r( Bounds() );
 	int32		kw = KnobSize();
 	int32		rg = maxVal - minVal;
-	
+
 	r.InsetBy( Arrow_Width, 0.0 );
 	r.right -= kw;
-	
+
 	if (rg > 0)
 	{
 		outPos = r.left + (r.Width() * (currentVal - minVal) + rg / 2) / rg;
@@ -97,22 +97,22 @@ void CTextSlider::KnobPosition( int32 &outPos, int32 &outWidth )
 	{
 		outPos = r.left;
 	}
-	
+
 	outWidth = kw;
 }
 
 void CTextSlider::DrawContents( const BRect &inContentRect )
 {
 	font_height	fh;
-		
+
 	char		text[ 32 ];
 	int		x;
-	
+
 	GetFontHeight( &fh );
 
 	if (textHook) textHook->FormatText( text, currentVal, sizeof text );
 	else sprintf( text, "%ld", currentVal );
-	
+
 	x = inContentRect.left + (inContentRect.Width() - StringWidth( text )) / 2 + 1;
 
 	MovePenTo( x, (inContentRect.top + inContentRect.bottom - fh.descent + fh.ascent) / 2 );
@@ -125,13 +125,13 @@ void CTextSlider::InvalidateKnob()
 				knob;
 	int32		kPos,
 				kWidth;
-				
+
 	KnobPosition( kPos, kWidth );
 	knob.left	= kPos;
 	knob.right	= kPos + kWidth + 1;		// Include shadow
 	knob.top		= r.top;
 	knob.bottom	= r.bottom;
-	
+
 	Invalidate( knob );
 }
 
@@ -153,14 +153,14 @@ void CTextSlider::Draw( BRect inInvalRect )
 
 	BRegion		knobTemp( knobRegion );
 
-	knobTemp.OffsetBy( kPos, 0 );	
+	knobTemp.OffsetBy( kPos, 0 );
 	clip.Include( r );
 //	clip.Exclude( &knobTemp );
 	ConstrainClippingRegion( &clip );
 
 	SetHighColor( backColor );
 	FillRect( r );
-	
+
 	if (IsEnabled())
 	{
 		DrawPicture( decLit ? decArrowLit : decArrow, BPoint( 0.0, vCenter ) );
@@ -172,9 +172,9 @@ void CTextSlider::Draw( BRect inInvalRect )
 		DrawPicture( incArrowDim, BPoint( r.right, vCenter ) );
 		dim = true;
 	}
-	
+
 	r.InsetBy( Arrow_Width + 2, 0.0 );
-	
+
 		// Do the shadows first
 	if (dim) SetHighColor( 190, 190, 190 );
 	else SetHighColor( 158, 158, 158 );
@@ -188,7 +188,7 @@ void CTextSlider::Draw( BRect inInvalRect )
 	else SetHighColor( 0, 0, 0 );
 	FillRect( BRect( r.left + 2.0, vCenter - 2.0, r.right - 1.0, vCenter - 2.0 ) );
 	FillRect( BRect( r.left + 1.0, vCenter - 1.0, r.left + 1.0, vCenter + 1.0 ) );
-	
+
 		// Now, the white parts
 	if (dim) SetHighColor( 235, 235, 235 );
 	else SetHighColor( 255, 255, 255 );
@@ -196,25 +196,25 @@ void CTextSlider::Draw( BRect inInvalRect )
 	FillRect( BRect( r.right, vCenter - 2.0, r.right, vCenter + 1.0 ) );
 
 //	ConstrainClippingRegion( &knobTemp );
-/* 
+/*
 	I simply removed the clipping between the knob and the backround.
 	Maybe an more elegant solution should be added later but it works now at least
 
 */
-		// And the knob shadows	
+		// And the knob shadows
 	if (dim) SetHighColor( 190, 190, 190 );
 	else SetHighColor( 148, 148, 148 );
 	FillRect( BRect( knob.right + 1.0, knob.top + 2.0, knob.right + 1, knob.bottom - 1.0 ) );
 	FillRect( BRect( knob.left + 2.0, knob.bottom, knob.right, knob.bottom ) );
 	FillRect( BRect( knob.right, knob.bottom - 1.0, knob.right, knob.bottom - 1.0 ) );
-	
+
 		// Black lines on knob
 	if (dim) SetHighColor( 127, 127, 127 );
 	else SetHighColor( 0, 0, 0 );
 	FillRect( BRect( knob.left + 1.0, knob.bottom - 1.0, knob.right - 1.0, knob.bottom - 1.0 ) );
 	FillRect( BRect( knob.right, knob.top + 1.0, knob.right, knob.bottom - 2.0 ) );
 	FillRect( BRect( knob.right + 1.0, vCenter - 2.0, knob.right + 1.0, vCenter - 2.0 ) );
-	
+
 		// White parts of the knob
 	if (dim) SetHighColor( 235, 235, 235 );
 	else SetHighColor( 255, 255, 255 );
@@ -257,7 +257,7 @@ void CTextSlider::AttachedToWindow()
 		for (int i = 0; i < 3; i++)
 		{
 			bool		dim = (i == 2);
-		
+
 			BeginPicture( new BPicture );
 
 			if (dim) SetHighColor( 180, 180, 180 );
@@ -276,11 +276,11 @@ void CTextSlider::AttachedToWindow()
 			if (i == 1)
 			{
 				static BPoint	p[ 3 ];
-				
+
 				p[ 0 ].x = 1.0; p[ 0 ].y = 0.0;
 				p[ 1 ].x = 8.0; p[ 1 ].y =-3.0;
 				p[ 2 ].x = 8.0; p[ 2 ].y = 3.0;
-				
+
 				FillPolygon( p, 3 );
 			}
 			else
@@ -315,11 +315,11 @@ void CTextSlider::AttachedToWindow()
 			if (i == 1)
 			{
 				static BPoint	p[ 3 ];
-				
+
 				p[ 0 ].x =-9.0; p[ 0 ].y =-3.0;
 				p[ 1 ].x =-2.0; p[ 1 ].y = 0.0;
 				p[ 2 ].x =-9.0; p[ 2 ].y = 3.0;
-				
+
 				FillPolygon( p, 3 );
 			}
 			else
@@ -327,7 +327,7 @@ void CTextSlider::AttachedToWindow()
 				StrokeLine( BPoint(-9.0,-3.0 ), BPoint(-2.0,  0.0 ) );
 				StrokeLine( BPoint(-9.0,-2.0 ), BPoint(-9.0,  3.0 ) );
 			}
-			
+
 			if (dim) SetHighColor( 127, 127, 127 );
 			else SetHighColor( 0, 0, 0 );
 			StrokeLine( BPoint(-9.0, 4.0 ), BPoint(-2.0, 1.0 ) );
@@ -372,7 +372,7 @@ void CTextSlider::UpdateValue( int32 inValue )
 
 void CTextSlider::SetRange( int32 inMIN, int32 inMAX )
 {
-	inMAX = max( inMAX, inMIN );
+	inMAX = std::max( inMAX, inMIN );
 	if (minVal != inMIN || maxVal != inMAX)
 	{
 		knobWidth = -1;			// Invalidate knob size
@@ -402,13 +402,13 @@ long CTextSlider::Drag()
 	BRect		r( Bounds() );
 	KnobPosition( kPos, kWidth );
 	UnlockLooper();
-				
+
 	if (mousePos.x < Arrow_Width)
 	{
 		for (;;)
 		{
 			bool		inside;
-		
+
 			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 			if (!buttons)
@@ -416,22 +416,22 @@ long CTextSlider::Drag()
 				UnlockLooper();
 				break;
 			}
-			
+
 			inside = (r.Contains( mousePos ) && mousePos.x < Arrow_Width);
 			if (inside != decLit)
 			{
 				decLit = inside;
 				Invalidate( BRect( r.left, r.top, r.left + Arrow_Width, r.bottom ) );
 			}
-			
+
 			if (decLit && currentVal > minVal) UpdateValue( currentVal - 1 );
-			
+
 			Window()->UpdateIfNeeded();
 			UnlockLooper();
 			snooze( delay );
 			delay = 50.0 * 1000.0;
 		}
-		
+
 		decLit = false;
 		LockLooper();
 		Invalidate( BRect( r.left, r.top, r.left + Arrow_Width, r.bottom ) );
@@ -442,7 +442,7 @@ long CTextSlider::Drag()
 		for (;;)
 		{
 			bool		inside;
-		
+
 			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
 			if (!buttons)
@@ -450,22 +450,22 @@ long CTextSlider::Drag()
 				UnlockLooper();
 				break;
 			}
-			
+
 			inside = (r.Contains( mousePos ) && r.right - Arrow_Width);
 			if (inside != incLit)
 			{
 				incLit = inside;
 				Invalidate( BRect( r.right - Arrow_Width, r.top, r.right, r.bottom ) );
 			}
-			
+
 			if (incLit && currentVal < maxVal) UpdateValue( currentVal + 1 );
-			
+
 			Window()->UpdateIfNeeded();
 			UnlockLooper();
 			snooze( delay );
 			delay = 50.0 * 1000.0;
 		}
-		
+
 		incLit = false;
 		LockLooper();
 		Invalidate( BRect( r.right - Arrow_Width, r.top, r.right, r.bottom ) );
@@ -482,15 +482,15 @@ long CTextSlider::Drag()
 				UnlockLooper();
 				break;
 			}
-	
+
 			KnobPosition( kPos, kWidth );
-	
+
 			if (mousePos.x < kPos) newValue = currentVal - bodyIncrement;
-		
+
 			UpdateValue( newValue );
 			Window()->UpdateIfNeeded();
 			UnlockLooper();
-	
+
 			snooze( delay * 2 );
 			delay = 70.0 * 1000.0;
 		}
@@ -506,15 +506,15 @@ long CTextSlider::Drag()
 				UnlockLooper();
 				break;
 			}
-	
+
 			KnobPosition( kPos, kWidth );
-	
+
 			if (mousePos.x > kPos + kWidth) newValue = currentVal + bodyIncrement;
-		
+
 			UpdateValue( newValue );
 			Window()->UpdateIfNeeded();
 			UnlockLooper();
-	
+
 			snooze( delay * 2 );
 			delay = 70.0 * 1000.0;
 		}
@@ -522,12 +522,12 @@ long CTextSlider::Drag()
 	else
 	{
 		float		offset = mousePos.x - kPos + r.left + Arrow_Width;
-	
+
 		do
 		{
 			LockLooper();
 			GetMouse( &mousePos, &buttons, TRUE );
-	
+
 				// If both buttons are held down, it means cancel the drag
 			if ((~buttons & (B_PRIMARY_MOUSE_BUTTON|B_SECONDARY_MOUSE_BUTTON)) == 0)
 			{
@@ -542,11 +542,11 @@ long CTextSlider::Drag()
 				UnlockLooper();
 				break;
 			}
-		
+
 			if (maxVal > minVal)
 			{
 				int32		pixelRange = r.Width() - Arrow_Width * 2 - kWidth;
-	
+
 				newValue =
 					((mousePos.x - offset) * (maxVal - minVal) + pixelRange/2)
 							/ pixelRange + minVal;
@@ -555,11 +555,11 @@ long CTextSlider::Drag()
 			{
 				newValue = minVal;
 			}
-		
+
 			UpdateValue( newValue );
 			Window()->UpdateIfNeeded();
 			UnlockLooper();
-	
+
 			snooze( 20.0 * 1000.0 );
 		}
 		while (buttons) ;
@@ -582,7 +582,7 @@ void CTextSlider::MouseDown( BPoint point )
 	if (IsEnabled())
 	{
 		mousePos = point;
-	
+
 			// spawn a thread to drag the slider
 		thread_id tid;
 		tid = spawn_thread(drag_entry, "", B_NORMAL_PRIORITY, this);

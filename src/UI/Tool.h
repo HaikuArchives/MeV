@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *
  * History:
@@ -42,10 +42,12 @@
 // Support Kit
 #include <Archivable.h>
 
+class CToolBar;
+
  /**
   *		CTool is complementary to the CToolBar class, defining the individual
   *		items displayed in a tool bar.
-  *		@author	Talin, Christoper Lenz.  
+  *		@author	Talin, Christoper Lenz.
   */
 
 class CTool :
@@ -66,7 +68,7 @@ public:									// Constants
 
 	enum tool_flags {
 										FORCE_SELECTION = 0x1
-	};										
+	};
 
 	static const size_t					TOOL_NAME_LENGTH;
 
@@ -149,7 +151,7 @@ public:									// Operations
 	void								SetEnabled(
 											bool enabled = true)
 										{ m_enabled = enabled; }
-	
+
 	void								SetFlags(
 											uint32 flags)
 										{ m_flags = flags; }

@@ -117,7 +117,7 @@ void CSpinner::UpdateValue( int32 inValue )
 
 void CSpinner::SetRange( int32 inMIN, int32 inMAX )
 {
-	inMAX = max( inMAX, inMIN );
+	inMAX = std::max( inMAX, inMIN );
 	if (minVal != inMIN || maxVal != inMAX)
 	{
 		minVal = inMIN;
@@ -144,7 +144,7 @@ long CSpinner::Drag()
 	BRect		r( Bounds() );
 	UnlockLooper();
 	mid  = (r.top + r.bottom) / 2;
-	
+
 	if (mousePos.y < mid)
 	{
 		incr = 0.1;
@@ -159,11 +159,11 @@ long CSpinner::Drag()
 		whichLit = Dec_Lit;
 		newVal -= 0.5;
 	}
-				
+
 	for (;;)
 	{
 		uint8		newLit;
-		
+
 		LockLooper();
 		GetMouse( &mousePos, &buttons, TRUE );
 		if ((buttons & (B_PRIMARY_MOUSE_BUTTON|B_SECONDARY_MOUSE_BUTTON)) == 0)
@@ -185,14 +185,14 @@ long CSpinner::Drag()
 			UnlockLooper();
 			break;
 		}
-			
+
 		newLit = (r.Contains( mousePos )) ? whichLit : 0;
 		if (newLit != lit)
 		{
 			lit = newLit;
 			Invalidate( r );
 		}
-		
+
 		if (lit)
 		{
 			if (newVal < minVal)			newVal = minVal;
@@ -208,7 +208,7 @@ long CSpinner::Drag()
 		UnlockLooper();
 		snooze( 20 * 1000 );
 	}
-		
+
 	lit = 0;
 	LockLooper();
 	Invalidate( r );
@@ -231,7 +231,7 @@ void CSpinner::MouseDown( BPoint point )
 	if (IsEnabled())
 	{
 		mousePos = point;
-	
+
 			// spawn a thread to drag the slider
 		thread_id tid;
 		tid = spawn_thread(drag_entry, "", B_NORMAL_PRIORITY, this);

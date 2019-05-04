@@ -14,11 +14,11 @@
  *
  *  The Original Code is MeV (Musical Environment) code.
  *
- *  The Initial Developer of the Original Code is Sylvan Technical 
- *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan 
+ *  The Initial Developer of the Original Code is Sylvan Technical
+ *  Arts. Portions created by Sylvan are Copyright (C) 1997 Sylvan
  *  Technical Arts. All Rights Reserved.
  *
- *  Contributor(s): 
+ *  Contributor(s):
  *		Christopher Lenz (cell)
  *		Dan Walton (dwalton)
  *
@@ -55,6 +55,9 @@
 #define CONTROLLER_NAME_LENGTH 128
 #define NOTE_NAME_LENGTH 128
 #define PROGRAM_NAME_LENGTH 128
+
+using std::list;
+using std::map;
 
 class CMeVDoc;
 
@@ -225,7 +228,7 @@ private:   						// Internal Operations
 private:						// Instance Data
 
 	/** The associated MIDI producer. */
-	BMidiLocalProducer *		m_producer;					
+	BMidiLocalProducer *		m_producer;
 
 	/** ID of the consumer the producer has been connected to via MeV. */
 	BString						m_consumerName;
